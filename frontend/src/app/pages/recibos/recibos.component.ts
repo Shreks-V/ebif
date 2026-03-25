@@ -60,90 +60,75 @@ interface Recibo {
         <!-- KPI Cards -->
         <div class="grid grid-cols-4 gap-4">
           <!-- Total Recibos -->
-          <div class="bg-white rounded-xl p-5 shadow-lg border-2 border-emerald-100">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-emerald-100">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="p-2 bg-emerald-100 rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
                   <path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>
                 </svg>
               </div>
-              <div>
-                <p class="text-xs text-slate-500 font-medium">Total Recibos</p>
-                <p class="text-2xl font-black text-slate-900">{{ recibos.length }}</p>
-              </div>
+              <p class="text-xs text-slate-600 font-semibold">Total Recibos</p>
             </div>
+            <p class="text-2xl font-black text-slate-900">{{ recibos.length }}</p>
           </div>
           <!-- Monto Total -->
-          <div class="bg-white rounded-xl p-5 shadow-lg border-2 border-blue-100">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-blue-100">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="p-2 bg-blue-100 rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                 </svg>
               </div>
-              <div>
-                <p class="text-xs text-slate-500 font-medium">Monto Total</p>
-                <p class="text-2xl font-black text-slate-900">\${{ montoTotal | number:'1.2-2' }}</p>
-              </div>
+              <p class="text-xs text-slate-600 font-semibold">Monto Total</p>
             </div>
+            <p class="text-2xl font-black text-slate-900">\${{ montoTotal | number:'1.0-0' }}</p>
           </div>
           <!-- Efectivo -->
-          <div class="bg-white rounded-xl p-5 shadow-lg border-2 border-emerald-100">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-emerald-100">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="p-2 bg-emerald-100 rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>
                 </svg>
               </div>
-              <div>
-                <p class="text-xs text-slate-500 font-medium">Efectivo</p>
-                <p class="text-2xl font-black text-slate-900">\${{ montoEfectivo | number:'1.2-2' }}</p>
-              </div>
+              <p class="text-xs text-slate-600 font-semibold">Efectivo</p>
             </div>
+            <p class="text-2xl font-black text-slate-900">\${{ montoEfectivo | number:'1.0-0' }}</p>
           </div>
           <!-- Tarjeta -->
-          <div class="bg-white rounded-xl p-5 shadow-lg border-2 border-blue-100">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-blue-100">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="p-2 bg-blue-100 rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
                 </svg>
               </div>
-              <div>
-                <p class="text-xs text-slate-500 font-medium">Tarjeta</p>
-                <p class="text-2xl font-black text-slate-900">\${{ montoTarjeta | number:'1.2-2' }}</p>
-              </div>
+              <p class="text-xs text-slate-600 font-semibold">Tarjeta</p>
             </div>
+            <p class="text-2xl font-black text-slate-900">\${{ montoTarjeta | number:'1.0-0' }}</p>
           </div>
         </div>
 
         <!-- Filters -->
-        <div class="bg-white rounded-xl p-5 shadow-lg border-2 border-slate-100">
-          <div class="grid grid-cols-3 gap-4 items-end">
-            <div>
-              <label class="text-xs font-semibold text-slate-500 mb-1 block">Buscar por folio</label>
-              <div class="relative">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-                </svg>
-                <input type="text" placeholder="REC-2026-..." [(ngModel)]="filtroFolio" (input)="filtrarRecibos()" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" />
-              </div>
+        <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-slate-100">
+          <div class="grid grid-cols-3 gap-4">
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+              <input type="text" placeholder="Buscar por folio..." [(ngModel)]="filtroFolio" (input)="filtrarRecibos()" class="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" />
             </div>
-            <div>
-              <label class="text-xs font-semibold text-slate-500 mb-1 block">Buscar por beneficiario</label>
-              <div class="relative">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-                <input type="text" placeholder="Nombre del beneficiario..." [(ngModel)]="filtroBeneficiario" (input)="filtrarRecibos()" class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" />
-              </div>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              <input type="text" placeholder="Buscar por beneficiario..." [(ngModel)]="filtroBeneficiario" (input)="filtrarRecibos()" class="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" />
             </div>
-            <div>
-              <button (click)="limpiarFiltros()" class="w-full py-2.5 px-4 border-2 border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">
-                Limpiar
-              </button>
-            </div>
+            <button (click)="limpiarFiltros()" class="w-full py-2.5 px-4 border-2 border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              Limpiar
+            </button>
           </div>
         </div>
 
@@ -152,40 +137,40 @@ interface Recibo {
           <table class="w-full">
             <thead class="bg-slate-50 border-b-2 border-slate-200">
               <tr>
-                <th class="text-left px-5 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></svg>
                     Folio
                   </div>
                 </th>
-                <th class="text-left px-5 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     Beneficiario
                   </div>
                 </th>
-                <th class="text-left px-5 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                     Fecha
                   </div>
                 </th>
-                <th class="text-left px-5 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
                     Items
                   </div>
                 </th>
-                <th class="text-left px-5 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     Total
                   </div>
                 </th>
-                <th class="text-left px-5 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   Pago
                 </th>
-                <th class="text-left px-5 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   Acci&oacute;n
                 </th>
               </tr>

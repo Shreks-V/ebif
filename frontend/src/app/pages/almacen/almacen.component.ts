@@ -54,40 +54,31 @@ interface Comodato {
           <!-- KPI Cards -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Total Items -->
-            <div class="bg-white rounded-2xl p-5 shadow-lg flex items-center gap-4">
-              <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                </svg>
-              </div>
-              <div>
-                <p class="text-2xl font-bold text-slate-800">{{ inventario.length }}</p>
-                <p class="text-sm text-slate-500">Total Items</p>
-              </div>
+            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
+              <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
+              <svg class="w-8 h-8 text-blue-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+              </svg>
+              <p class="text-4xl font-black text-slate-900">{{ inventario.length }}</p>
+              <p class="text-sm text-slate-600 mt-1">Items en inventario</p>
             </div>
             <!-- Bajo Stock -->
-            <div class="bg-white rounded-2xl p-5 shadow-lg flex items-center gap-4">
-              <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                </svg>
-              </div>
-              <div>
-                <p class="text-2xl font-bold text-slate-800">{{ getBajoStockCount() }}</p>
-                <p class="text-sm text-slate-500">Bajo Stock</p>
-              </div>
+            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-amber-200">
+              <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+              <svg class="w-8 h-8 text-amber-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              </svg>
+              <p class="text-4xl font-black text-slate-900">{{ getBajoStockCount() }}</p>
+              <p class="text-sm text-slate-600 mt-1">Alertas de stock</p>
             </div>
             <!-- Comodatos Activos -->
-            <div class="bg-white rounded-2xl p-5 shadow-lg flex items-center gap-4">
-              <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div>
-                <p class="text-2xl font-bold text-slate-800">{{ getComodatosActivosCount() }}</p>
-                <p class="text-sm text-slate-500">Comodatos Activos</p>
-              </div>
+            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
+              <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
+              <svg class="w-8 h-8 text-green-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <p class="text-4xl font-black text-slate-900">{{ getComodatosActivosCount() }}</p>
+              <p class="text-sm text-slate-600 mt-1">Comodatos activos</p>
             </div>
           </div>
 
@@ -178,20 +169,23 @@ interface Comodato {
               <button
                 (click)="toggleCategory('Comodato')"
                 [class]="selectedCategory === 'Comodato'
-                  ? 'bg-green-50 rounded-2xl p-5 shadow-lg hover:shadow-xl border-2 border-green-500 text-left transition-all'
-                  : 'bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl border-2 border-transparent text-left transition-all'"
+                  ? 'bg-green-50 rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-green-500 text-left transition-all'
+                  : 'bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-slate-200 hover:border-green-300 text-left transition-all'"
               >
-                <div class="flex items-center gap-4">
-                  <div [class]="selectedCategory === 'Comodato' ? 'w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center' : 'w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center'">
+                <div class="flex items-center gap-4 mb-3">
+                  <div [class]="selectedCategory === 'Comodato' ? 'p-3 bg-green-600 rounded-xl shadow-lg' : 'p-3 bg-green-100 rounded-xl'">
                     <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Comodato'" [class.text-green-600]="selectedCategory !== 'Comodato'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                     </svg>
                   </div>
                   <div>
-                    <p class="font-semibold text-slate-800">Equipo Comodato</p>
-                    <p class="text-sm text-slate-500">{{ getCategoryCount('Comodato') }} items</p>
+                    <h3 class="text-lg font-bold text-slate-900">Equipo Comodato</h3>
+                    <p class="text-sm text-slate-600">{{ getCategoryCount('Comodato') }} items</p>
                   </div>
                 </div>
+                <p class="text-sm font-semibold" [class]="selectedCategory === 'Comodato' ? 'text-green-700' : 'text-slate-500'">
+                  {{ selectedCategory === 'Comodato' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
+                </p>
               </button>
             </div>
 
