@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
+import { ApiService } from '../../services/api.service';
 
 interface ProductoItem {
   idProducto: number;
@@ -392,67 +393,81 @@ interface ComodatoItem {
     </div>
   `,
 })
-export class AlmacenComponent {
+export class AlmacenComponent implements OnInit {
   activeTab: 'inventario' | 'comodatos' = 'inventario';
   selectedCategory: string | null = null;
   searchInventario = '';
   searchComodatos = '';
 
-  productos: ProductoItem[] = [
-    // Medicamentos
-    {
-      idProducto: 1, claveInterna: 'MED-001', nombre: 'Oxibutinina 5mg', descripcion: 'Anticolinergico para vejiga neurogenica',
-      tipoProducto: 'MEDICAMENTO', precioA: 12.50, precioB: 18.00, activo: 'S',
-      presentacion: 'Tabletas', dosis: '5mg',
-      cantidadDisponible: 320, nivelMinimo: 100, unidadMedida: 'Piezas'
-    },
-    {
-      idProducto: 2, claveInterna: 'MED-002', nombre: 'Baclofeno 10mg', descripcion: 'Relajante muscular de accion central',
-      tipoProducto: 'MEDICAMENTO', precioA: 8.00, precioB: 12.00, activo: 'S',
-      presentacion: 'Tabletas', dosis: '10mg',
-      cantidadDisponible: 45, nivelMinimo: 80, unidadMedida: 'Piezas'
-    },
-    {
-      idProducto: 3, claveInterna: 'MED-003', nombre: 'Dicloxacilina 500mg', descripcion: 'Antibiotico para infecciones de piel',
-      tipoProducto: 'MEDICAMENTO', precioA: 15.00, precioB: 22.00, activo: 'S',
-      presentacion: 'Capsulas', dosis: '500mg',
-      cantidadDisponible: 200, nivelMinimo: 60, unidadMedida: 'Piezas'
-    },
-    // Equipos
-    {
-      idProducto: 4, claveInterna: 'EQP-001', nombre: 'Silla de Ruedas Pediatrica', descripcion: 'Silla de ruedas para uso pediatrico',
-      tipoProducto: 'EQUIPO', precioA: 50.00, precioB: 75.00, activo: 'S',
-      numeroSerie: 'SR-2024-001', marca: 'Sunrise Medical', modelo: 'Zippie TS', estatusEquipo: 'DISPONIBLE',
-      cantidadDisponible: 8, nivelMinimo: 3, unidadMedida: 'Pieza'
-    },
-    {
-      idProducto: 5, claveInterna: 'EQP-002', nombre: 'Andadera Ortopedica', descripcion: 'Andadera plegable con ruedas',
-      tipoProducto: 'EQUIPO', precioA: 35.00, precioB: 50.00, activo: 'S',
-      numeroSerie: 'AND-2024-001', marca: 'Drive Medical', modelo: 'Nitro Sprint', estatusEquipo: 'DISPONIBLE',
-      cantidadDisponible: 12, nivelMinimo: 5, unidadMedida: 'Pieza'
-    },
-    {
-      idProducto: 6, claveInterna: 'EQP-003', nombre: 'Ferula AFO', descripcion: 'Ortesis tobillo-pie para soporte',
-      tipoProducto: 'EQUIPO', precioA: 80.00, precioB: 120.00, activo: 'S',
-      numeroSerie: 'AFO-2024-001', marca: 'Ottobock', modelo: 'WalkOn Reaction', estatusEquipo: 'EN_PRESTAMO',
-      cantidadDisponible: 4, nivelMinimo: 5, unidadMedida: 'Pieza'
-    },
-  ];
+  productos: ProductoItem[] = [];
+  servicios: ServicioItem[] = [];
+  comodatos: ComodatoItem[] = [];
 
-  servicios: ServicioItem[] = [
-    { idServicio: 1, nombre: 'Consulta Ortopedica', descripcion: 'Valoracion ortopedica especializada', cuotaRecuperacion: 250.00, precioA: 250.00, precioB: 350.00, activo: 'S' },
-    { idServicio: 2, nombre: 'Consulta Neurologica', descripcion: 'Valoracion neurologica especializada', cuotaRecuperacion: 300.00, precioA: 300.00, precioB: 420.00, activo: 'S' },
-    { idServicio: 3, nombre: 'Consulta Urologica', descripcion: 'Valoracion urologica especializada', cuotaRecuperacion: 280.00, precioA: 280.00, precioB: 390.00, activo: 'S' },
-    { idServicio: 4, nombre: 'Fisioterapia', descripcion: 'Sesion de fisioterapia y rehabilitacion', cuotaRecuperacion: 200.00, precioA: 200.00, precioB: 280.00, activo: 'S' },
-    { idServicio: 5, nombre: 'Terapia Ocupacional', descripcion: 'Sesion de terapia ocupacional', cuotaRecuperacion: 180.00, precioA: 180.00, precioB: 250.00, activo: 'S' },
-  ];
+  constructor(private api: ApiService) {}
 
-  comodatos: ComodatoItem[] = [
-    { idComodato: 1, folioComodato: 'COM-000001', idEquipo: 4, nombreEquipo: 'Silla de Ruedas Pediatrica', idPaciente: 156, nombrePaciente: 'Carlos Rodriguez Gomez', folioPaciente: 'PAC-000156', fechaPrestamo: '2026-02-15', fechaDevolucion: null, estatus: 'PRESTADO', montoTotal: 750.00, montoPagado: 300.00, saldoPendiente: 450.00, exentoPago: 'N' },
-    { idComodato: 2, folioComodato: 'COM-000002', idEquipo: 5, nombreEquipo: 'Andadera Ortopedica', idPaciente: 89, nombrePaciente: 'Ana Martinez Torres', folioPaciente: 'PAC-000089', fechaPrestamo: '2026-01-20', fechaDevolucion: '2026-03-01', estatus: 'DEVUELTO', montoTotal: 500.00, montoPagado: 500.00, saldoPendiente: 0, exentoPago: 'N' },
-    { idComodato: 3, folioComodato: 'COM-000003', idEquipo: 6, nombreEquipo: 'Ferula AFO', idPaciente: 234, nombrePaciente: 'Juan Perez Martinez', folioPaciente: 'PAC-000234', fechaPrestamo: '2026-02-28', fechaDevolucion: null, estatus: 'PRESTADO', montoTotal: 1200.00, montoPagado: 400.00, saldoPendiente: 800.00, exentoPago: 'N' },
-    { idComodato: 4, folioComodato: 'COM-000004', idEquipo: 4, nombreEquipo: 'Silla de Ruedas Pediatrica', idPaciente: 123, nombrePaciente: 'Maria Garcia Lopez', folioPaciente: 'PAC-000123', fechaPrestamo: '2025-12-10', fechaDevolucion: null, estatus: 'CANCELADO', montoTotal: 750.00, montoPagado: 0, saldoPendiente: 750.00, exentoPago: 'S' },
-  ];
+  ngOnInit(): void {
+    this.api.getProductos().subscribe({
+      next: (data) => {
+        this.productos = data.map((p: any) => ({
+          idProducto: p.id_producto,
+          claveInterna: p.clave_interna,
+          nombre: p.nombre,
+          descripcion: p.descripcion,
+          tipoProducto: p.tipo_producto,
+          precioA: p.precio_cuota_a,
+          precioB: p.precio_cuota_b,
+          activo: p.activo,
+          presentacion: p.presentacion,
+          dosis: p.dosis,
+          numeroSerie: p.numero_serie,
+          marca: p.marca,
+          modelo: p.modelo,
+          estatusEquipo: p.estatus_equipo,
+          cantidadDisponible: p.cantidad_disponible,
+          nivelMinimo: p.nivel_minimo,
+          unidadMedida: p.unidad_medida,
+        }));
+      },
+      error: (err) => console.error('Error loading productos:', err),
+    });
+
+    this.api.getServicios().subscribe({
+      next: (data) => {
+        this.servicios = data.map((s: any) => ({
+          idServicio: s.id_servicio,
+          nombre: s.nombre,
+          descripcion: s.descripcion,
+          cuotaRecuperacion: s.cuota_recuperacion,
+          precioA: s.precio_cuota_a,
+          precioB: s.precio_cuota_b,
+          activo: s.activo,
+        }));
+      },
+      error: (err) => console.error('Error loading servicios:', err),
+    });
+
+    this.api.getComodatos().subscribe({
+      next: (data) => {
+        this.comodatos = data.map((c: any) => ({
+          idComodato: c.id_comodato,
+          folioComodato: c.folio_comodato,
+          idEquipo: c.id_equipo,
+          nombreEquipo: c.nombre_equipo,
+          idPaciente: c.id_paciente,
+          nombrePaciente: c.nombre_paciente,
+          folioPaciente: c.folio_paciente,
+          fechaPrestamo: c.fecha_prestamo,
+          fechaDevolucion: c.fecha_devolucion,
+          estatus: c.estatus,
+          montoTotal: c.monto_total,
+          montoPagado: c.monto_pagado,
+          saldoPendiente: c.saldo_pendiente,
+          exentoPago: c.exento_pago,
+        }));
+      },
+      error: (err) => console.error('Error loading comodatos:', err),
+    });
+  }
 
   getBajoStockCount(): number {
     return this.productos.filter(p =>

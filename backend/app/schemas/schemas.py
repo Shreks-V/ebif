@@ -393,15 +393,15 @@ class BitacoraCambios(BaseModel):
 
 
 # ──────────────────────────── PRE-REGISTRO ────────────────────────────
+# Pre-registro now writes directly to PACIENTE with ESTATUS_REGISTRO='PENDIENTE'
 
-class PreRegistroBase(BaseModel):
+class PreRegistroCreate(BaseModel):
     nombre: str
     apellido_paterno: str
     apellido_materno: Optional[str] = None
     fecha_nacimiento: Optional[str] = None
     genero: Optional[str] = None
     curp: str
-    tipo_espina_bifida: Optional[str] = None
     estado_nacimiento: Optional[str] = None
     hospital_nacimiento: Optional[str] = None
     nombre_padre_madre: Optional[str] = None
@@ -413,17 +413,10 @@ class PreRegistroBase(BaseModel):
     telefono_casa: Optional[str] = None
     telefono_celular: Optional[str] = None
     correo_electronico: Optional[str] = None
+    en_emergencia_avisar_a: Optional[str] = None
+    telefono_emergencia: Optional[str] = None
+    tipo_sangre: Optional[str] = None
+    usa_valvula: Optional[str] = "N"
     tipo_cuota: Optional[str] = None
-    notas: Optional[str] = None
+    notas_adicionales: Optional[str] = None
     paso_actual: int = 1
-    completado: bool = False
-
-
-class PreRegistroCreate(PreRegistroBase):
-    pass
-
-
-class PreRegistroResponse(PreRegistroBase):
-    id: int
-    fecha_solicitud: str
-    estatus: str = "PENDIENTE"

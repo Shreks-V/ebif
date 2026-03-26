@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-citas',
@@ -277,7 +278,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
     </div>
   `
 })
-export class CitasComponent {
+export class CitasComponent implements OnInit {
   activeTab: 'citas' | 'medicos' = 'citas';
 
   searchCitas = '';
@@ -288,25 +289,58 @@ export class CitasComponent {
   estadoFilters = ['Todas', 'PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
   tipoFilters = ['Todas', 'Consulta Neurocirugía', 'Consulta Ortopédica', 'Consulta Urológica', 'Fisioterapia', 'Terapia Ocupacional'];
 
-  citas = [
-    { idCita: 1, idPaciente: 1, nombrePaciente: 'María Fernanda García López', folioPaciente: 'BEN-000001', fechaHora: '2026-03-25T09:00:00', estatus: 'COMPLETADA', notas: 'Revisión postquirúrgica', servicios: [{idServicio: 1, nombre: 'Consulta Neurocirugía', cantidad: 1, montoPagado: 350}] },
-    { idCita: 2, idPaciente: 2, nombrePaciente: 'Carlos Eduardo Martínez Reyes', folioPaciente: 'BEN-000002', fechaHora: '2026-03-25T10:30:00', estatus: 'EN_CURSO', notas: 'Terapia física semanal', servicios: [{idServicio: 4, nombre: 'Fisioterapia', cantidad: 1, montoPagado: 200}] },
-    { idCita: 3, idPaciente: 3, nombrePaciente: 'Sofía Rodríguez Hernández', folioPaciente: 'BEN-000003', fechaHora: '2026-03-25T11:00:00', estatus: 'PROGRAMADA', notas: '', servicios: [{idServicio: 2, nombre: 'Consulta Ortopédica', cantidad: 1, montoPagado: 300}] },
-    { idCita: 4, idPaciente: 4, nombrePaciente: 'Diego Alejandro Treviño Garza', folioPaciente: 'BEN-000004', fechaHora: '2026-03-25T14:00:00', estatus: 'PROGRAMADA', notas: 'Seguimiento válvula', servicios: [{idServicio: 3, nombre: 'Consulta Urológica', cantidad: 1, montoPagado: 300}] },
-    { idCita: 5, idPaciente: 5, nombrePaciente: 'Valentina Flores Mendoza', folioPaciente: 'BEN-000005', fechaHora: '2026-03-25T15:30:00', estatus: 'CANCELADA', notas: 'Paciente canceló', servicios: [{idServicio: 6, nombre: 'Terapia Ocupacional', cantidad: 1, montoPagado: 250}] },
-  ];
+  citas: any[] = [];
+  citasFiltradas: any[] = [];
+  medicos: any[] = [];
+  medicosFiltrados: any[] = [];
 
-  citasFiltradas = [...this.citas];
+  constructor(private api: ApiService) {}
 
-  medicos = [
-    { idDoctor: 1, nombre: 'Alejandro', apellidoPaterno: 'Cavazos', apellidoMaterno: 'Garza', especialidad: 'Ortopedia', telefono: '8181234567', correo: 'a.cavazos@espinabifida.org', activo: 'S', servicios: [{idServicio: 1, nombre: 'Consulta Ortopédica'}], iniciales: 'AC' },
-    { idDoctor: 2, nombre: 'Patricia', apellidoPaterno: 'Elizondo', apellidoMaterno: 'Leal', especialidad: 'Neurología', telefono: '8182345678', correo: 'p.elizondo@espinabifida.org', activo: 'S', servicios: [{idServicio: 2, nombre: 'Consulta Neurológica'}], iniciales: 'PE' },
-    { idDoctor: 3, nombre: 'Ricardo', apellidoPaterno: 'Mendoza', apellidoMaterno: 'Treviño', especialidad: 'Urología', telefono: '8183456789', correo: 'r.mendoza@espinabifida.org', activo: 'S', servicios: [{idServicio: 3, nombre: 'Consulta Urológica'}], iniciales: 'RM' },
-    { idDoctor: 4, nombre: 'Laura', apellidoPaterno: 'Garza', apellidoMaterno: 'Salinas', especialidad: 'Fisioterapia', telefono: '8184567890', correo: 'l.garza@espinabifida.org', activo: 'S', servicios: [{idServicio: 4, nombre: 'Fisioterapia'}], iniciales: 'LG' },
-    { idDoctor: 5, nombre: 'Fernando', apellidoPaterno: 'Villarreal', apellidoMaterno: 'Cantú', especialidad: 'Pediatría', telefono: '8185678901', correo: 'f.villarreal@espinabifida.org', activo: 'S', servicios: [{idServicio: 5, nombre: 'Consulta Pediátrica'}], iniciales: 'FV' },
-  ];
+  ngOnInit(): void {
+    this.api.getCitas().subscribe({
+      next: (data) => {
+        this.citas = data.map((c: any) => ({
+          idCita: c.id_cita,
+          idPaciente: c.id_paciente,
+          nombrePaciente: c.nombre_paciente,
+          folioPaciente: c.folio_paciente,
+          fechaHora: c.fecha_hora,
+          estatus: c.estatus,
+          notas: c.notas,
+          servicios: (c.servicios || []).map((s: any) => ({
+            idServicio: s.id_servicio,
+            nombre: s.nombre,
+            cantidad: s.cantidad,
+            montoPagado: s.monto_pagado,
+          })),
+        }));
+        this.citasFiltradas = [...this.citas];
+      },
+      error: (err) => console.error('Error al cargar citas:', err),
+    });
 
-  medicosFiltrados = [...this.medicos];
+    this.api.getDoctores().subscribe({
+      next: (data) => {
+        this.medicos = data.map((d: any) => ({
+          idDoctor: d.id_doctor,
+          nombre: d.nombre,
+          apellidoPaterno: d.apellido_paterno,
+          apellidoMaterno: d.apellido_materno,
+          especialidad: d.especialidad,
+          telefono: d.telefono,
+          correo: d.correo,
+          activo: d.activo,
+          servicios: (d.servicios || []).map((s: any) => ({
+            idServicio: s.id_servicio,
+            nombre: s.nombre,
+          })),
+          iniciales: (d.nombre?.charAt(0) || '') + (d.apellido_paterno?.charAt(0) || ''),
+        }));
+        this.medicosFiltrados = [...this.medicos];
+      },
+      error: (err) => console.error('Error al cargar médicos:', err),
+    });
+  }
 
   getHora(fechaHora: string): string {
     return fechaHora.split('T')[1]?.substring(0, 5) || '';
@@ -338,7 +372,7 @@ export class CitasComponent {
 
     if (this.filtroTipo !== 'Todas') {
       resultado = resultado.filter(c =>
-        c.servicios.some(s => s.nombre === this.filtroTipo)
+        c.servicios.some((s: any) => s.nombre === this.filtroTipo)
       );
     }
 

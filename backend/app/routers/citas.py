@@ -101,7 +101,7 @@ def citas_hoy(current_user: dict = Depends(get_current_user)):
     }
 
 
-@router.get("/")
+@router.get("")
 def listar_citas(
     fecha: Optional[str] = Query(None),
     estatus: Optional[str] = Query(None),
@@ -161,7 +161,7 @@ def obtener_cita(id_cita: int, current_user: dict = Depends(get_current_user)):
     return cita
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def crear_cita(data: CitaCreate, current_user: dict = Depends(get_current_user)):
     """Crear nueva cita con sus servicios."""
     with get_db() as conn:

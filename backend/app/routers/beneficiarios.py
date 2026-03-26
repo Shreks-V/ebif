@@ -113,9 +113,9 @@ def stats_beneficiarios(current_user: dict = Depends(get_current_user)):
     """Conteo total de beneficiarios."""
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S'")
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND ESTATUS_REGISTRO = 'APROBADO'")
         total_activos = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM PACIENTE")
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ESTATUS_REGISTRO = 'APROBADO'")
         total = cur.fetchone()[0]
         return {"total": total, "activos": total_activos, "inactivos": total - total_activos}
 
@@ -127,27 +127,27 @@ def dashboard_stats(current_user: dict = Depends(get_current_user)):
         cur = conn.cursor()
 
         # Total patients
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S'")
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'")
         total = cur.fetchone()[0]
 
         # Activos by membresia
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND MEMBRESIA_ESTATUS = 'ACTIVO'")
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND MEMBRESIA_ESTATUS = 'ACTIVO'")
         activos = cur.fetchone()[0]
         inactivos = total - activos
 
         # By gender
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND GENERO = 'Masculino'")
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND GENERO = 'Masculino'")
         masculino = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND GENERO = 'Femenino'")
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND GENERO = 'Femenino'")
         femenino = cur.fetchone()[0]
 
         # By origin
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTADO = 'Nuevo León'")
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND ESTADO = 'Nuevo León'")
         nuevo_leon = cur.fetchone()[0]
         foraneos = total - nuevo_leon
 
         # Age distribution
-        cur.execute("SELECT FECHA_NACIMIENTO FROM PACIENTE WHERE ACTIVO = 'S'")
+        cur.execute("SELECT FECHA_NACIMIENTO FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'")
         fechas = [row[0] for row in cur.fetchall()]
         etapas: dict[str, int] = {}
         for fn in fechas:
@@ -165,7 +165,7 @@ def dashboard_stats(current_user: dict = Depends(get_current_user)):
         }
 
 
-@router.get("/", response_model=list[BeneficiarioResponse])
+@router.get("", response_model=list[BeneficiarioResponse])
 def listar_beneficiarios(
     nombre: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
@@ -177,7 +177,7 @@ def listar_beneficiarios(
 ):
     """Listar beneficiarios con filtros opcionales."""
     with get_db() as conn:
-        conditions = ["p.ACTIVO = 'S'"]
+        conditions = ["p.ACTIVO = 'S'", "p.ESTATUS_REGISTRO = 'APROBADO'"]
         params: dict = {}
 
         if nombre:
@@ -232,7 +232,7 @@ def obtener_beneficiario(folio: str, current_user: dict = Depends(get_current_us
         return _patient_row_to_response(row, conn)
 
 
-@router.post("/", status_code=201, response_model=BeneficiarioResponse)
+@router.post("", status_code=201, response_model=BeneficiarioResponse)
 def crear_beneficiario(
     data: BeneficiarioCreate, current_user: dict = Depends(get_current_user)
 ):
@@ -262,7 +262,7 @@ def crear_beneficiario(
                 MUNICIPIO_NACIMIENTO, ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO,
                 TIPO_SANGRE, USA_VALVULA, NOTAS_ADICIONALES,
                 FECHA_ALTA, MEMBRESIA_ESTATUS, ID_USUARIO_REGISTRO, FECHA_REGISTRO,
-                TIPO_CUOTA
+                TIPO_CUOTA, ESTATUS_REGISTRO
             ) VALUES (
                 :folio, :activo, :nombre, :apellido_paterno, :apellido_materno,
                 :genero, TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'), :curp, :nombre_padre_madre,
@@ -272,7 +272,7 @@ def crear_beneficiario(
                 :municipio_nacimiento, :estado_nacimiento, :hospital_nacimiento,
                 :tipo_sangre, :usa_valvula, :notas_adicionales,
                 SYSDATE, :membresia_estatus, :id_usuario_registro, SYSDATE,
-                :tipo_cuota
+                :tipo_cuota, 'APROBADO'
             )
             RETURNING ID_PACIENTE INTO :out_id
             """,

@@ -122,7 +122,7 @@ def listar_metodos_pago(current_user: dict = Depends(get_current_user)):
         return rows_to_dicts(cur)
 
 
-@router.get("/")
+@router.get("")
 def listar_ventas(
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None),
@@ -182,7 +182,7 @@ def listar_ventas(
     return results
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def crear_venta(
     data: VentaCreate, current_user: dict = Depends(get_current_user)
 ):

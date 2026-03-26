@@ -66,7 +66,7 @@ def _sync_doctor_servicios(conn, id_doctor: int, servicio_ids: list[int]):
 # ──────────────────────────── ENDPOINTS ────────────────────────────
 
 
-@router.get("/")
+@router.get("")
 def listar_doctores(current_user: dict = Depends(get_current_user)):
     """Listar todos los doctores con sus servicios."""
     try:
@@ -105,7 +105,7 @@ def obtener_doctor(id_doctor: int, current_user: dict = Depends(get_current_user
         raise HTTPException(status_code=500, detail=f"Error al consultar doctor: {str(e)}")
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def crear_doctor(data: DoctorCreate, current_user: dict = Depends(get_current_user)):
     """Crear nuevo doctor con servicios asociados."""
     try:

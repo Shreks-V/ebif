@@ -43,7 +43,14 @@
       "Read(//usr/local/**)",
       "Read(//opt/**)",
       "Bash(export TNS_ADMIN=\"/Users/maantora/Downloads/Wallet_FZ0FV0YXLD4QN44R \\(3\\)\")",
-      "Bash(/Users/maantora/Downloads/instantclient_23_3/sqlplus -L:*)"
+      "Bash(/Users/maantora/Downloads/instantclient_23_3/sqlplus -L:*)",
+      "Bash(python -c \":*)",
+      "Bash(pkill -f \"uvicorn app.main\")",
+      "Bash(find /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend -type f \\\\\\(-name *.sql -o -name *.ddl \\\\\\))",
+      "Bash(find /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif -type f -name *.sql)",
+      "Bash(grep -r \"PACIENTE\\\\|PRE_REGISTRO\\\\|FOREIGN KEY\\\\|REFERENCES\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/routers/*.py)",
+      "Bash(grep -h \"FROM\\\\|JOIN\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/routers/*.py)",
+      "Bash(python migrate_preregistro.py)"
     ]
   },
   "enableAllProjectMcpServers": true,

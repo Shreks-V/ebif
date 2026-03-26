@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -34,7 +35,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
               <div class="flex items-start justify-between mb-6">
                 <div class="flex items-center gap-4">
                   <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center font-black text-2xl backdrop-blur border-2 border-white/30 text-white">
-                    RM
+                    {{ doctorIniciales }}
                   </div>
                   <div>
                     <div class="flex items-center gap-2 mb-1">
@@ -46,8 +47,8 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                       </svg>
                       <span class="text-xs text-blue-200 font-bold uppercase tracking-wide">Consultorio Hoy</span>
                     </div>
-                    <h2 class="text-2xl font-black text-white">Dr. Ricardo Mendoza</h2>
-                    <p class="text-sm text-blue-200">Pediatría y Ortopedia</p>
+                    <h2 class="text-2xl font-black text-white">{{ doctorNombre }}</h2>
+                    <p class="text-sm text-blue-200">{{ doctorEspecialidad }}</p>
                   </div>
                 </div>
               </div>
@@ -287,7 +288,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                   </div>
                   <span class="text-xs text-blue-200 font-semibold">Cobros</span>
                 </div>
-                <p class="text-2xl font-black">12</p>
+                <p class="text-2xl font-black">{{ statCobros }}</p>
                 <p class="text-xs text-blue-200">recibos</p>
               </div>
               <!-- Citas -->
@@ -304,7 +305,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                   </div>
                   <span class="text-xs text-blue-200 font-semibold">Citas</span>
                 </div>
-                <p class="text-2xl font-black">8</p>
+                <p class="text-2xl font-black">{{ statCitas }}</p>
                 <p class="text-xs text-blue-200">programadas</p>
               </div>
               <!-- Pendientes -->
@@ -320,7 +321,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                   </div>
                   <span class="text-xs text-red-200 font-semibold">Pendientes</span>
                 </div>
-                <p class="text-2xl font-black">3</p>
+                <p class="text-2xl font-black">{{ statPendientes }}</p>
                 <p class="text-xs text-red-200">cobros pendientes</p>
               </div>
               <!-- Bajo Stock -->
@@ -337,7 +338,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                   </div>
                   <span class="text-xs text-amber-200 font-semibold">Bajo Stock</span>
                 </div>
-                <p class="text-2xl font-black">5</p>
+                <p class="text-2xl font-black">{{ statBajoStock }}</p>
                 <p class="text-xs text-amber-200">productos</p>
               </div>
             </div>
@@ -352,17 +353,26 @@ import { FooterComponent } from '../../shared/footer/footer.component';
 })
 export class DashboardComponent implements OnInit {
   todayFormatted = '';
+  pacientes: any[] = [];
 
-  pacientes = [
-    { nombre: 'María Fernanda', apellido: 'García López', folio: 'BEN-000001', hora: '09:00', iniciales: 'MG', color: 'bg-pink-400' },
-    { nombre: 'Carlos Eduardo', apellido: 'Martínez Reyes', folio: 'BEN-000002', hora: '09:30', iniciales: 'CM', color: 'bg-blue-400' },
-    { nombre: 'Sofía', apellido: 'Rodríguez Hernández', folio: 'BEN-000003', hora: '10:00', iniciales: 'SR', color: 'bg-purple-400' },
-    { nombre: 'Diego Alejandro', apellido: 'Treviño Garza', folio: 'BEN-000004', hora: '10:30', iniciales: 'DT', color: 'bg-emerald-400' },
-    { nombre: 'Valentina', apellido: 'Flores Mendoza', folio: 'BEN-000005', hora: '11:00', iniciales: 'VF', color: 'bg-amber-400' },
-    { nombre: 'José Manuel', apellido: 'Ramírez Salazar', folio: 'BEN-000006', hora: '11:30', iniciales: 'JR', color: 'bg-rose-400' },
+  // Stats
+  statCobros = 0;
+  statPendientes = 0;
+  statCitas = 0;
+  statBajoStock = 0;
+
+  // Doctor del día
+  doctorNombre = 'Sin doctor asignado';
+  doctorEspecialidad = '';
+  doctorIniciales = '--';
+
+  private colors = [
+    'bg-pink-400', 'bg-blue-400', 'bg-purple-400',
+    'bg-emerald-400', 'bg-amber-400', 'bg-rose-400',
+    'bg-cyan-400', 'bg-indigo-400', 'bg-teal-400',
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private api: ApiService) {}
 
   ngOnInit(): void {
     const today = new Date();
@@ -373,6 +383,95 @@ export class DashboardComponent implements OnInit {
       day: 'numeric',
     });
     this.todayFormatted = this.todayFormatted.charAt(0).toUpperCase() + this.todayFormatted.slice(1);
+
+    this.loadCitasHoy();
+    this.loadRecibosStats();
+    this.loadCitasStats();
+    this.loadAlmacenStats();
+    this.loadDoctor();
+  }
+
+  private loadCitasHoy(): void {
+    this.api.getCitasHoy().subscribe({
+      next: (data: any[]) => {
+        this.pacientes = data.map((cita: any, i: number) => {
+          const fullName = cita.nombre_paciente || '';
+          const parts = fullName.trim().split(/\s+/);
+          const nombre = parts[0] || '';
+          const apellido = parts.slice(1).join(' ') || '';
+          const iniciales = (nombre.charAt(0) + (apellido.charAt(0) || '')).toUpperCase();
+          let hora = '';
+          if (cita.fecha_hora) {
+            const date = new Date(cita.fecha_hora);
+            hora = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+          }
+          return {
+            nombre,
+            apellido,
+            folio: cita.folio_paciente || '',
+            hora,
+            iniciales,
+            color: this.colors[i % this.colors.length],
+          };
+        });
+      },
+      error: () => {
+        this.pacientes = [];
+      },
+    });
+  }
+
+  private loadRecibosStats(): void {
+    this.api.getRecibosStats().subscribe({
+      next: (stats: any) => {
+        this.statCobros = stats.total_hoy ?? stats.total ?? 0;
+        this.statPendientes = stats.pendientes ?? 0;
+      },
+      error: () => {
+        this.statCobros = 0;
+        this.statPendientes = 0;
+      },
+    });
+  }
+
+  private loadCitasStats(): void {
+    this.api.getCitasStats().subscribe({
+      next: (stats: any) => {
+        this.statCitas = stats.total_hoy ?? stats.total ?? 0;
+      },
+      error: () => {
+        this.statCitas = 0;
+      },
+    });
+  }
+
+  private loadAlmacenStats(): void {
+    this.api.getAlmacenStats().subscribe({
+      next: (stats: any) => {
+        this.statBajoStock = stats.bajo_stock ?? stats.productos_bajo_stock ?? 0;
+      },
+      error: () => {
+        this.statBajoStock = 0;
+      },
+    });
+  }
+
+  private loadDoctor(): void {
+    this.api.getDoctores().subscribe({
+      next: (doctores: any[]) => {
+        const doctor = doctores.find((d: any) => d.estatus === 'Activo' || d.activo) || doctores[0];
+        if (doctor) {
+          const nombre = doctor.nombre || '';
+          const apellido = doctor.apellido_paterno || doctor.apellido || '';
+          this.doctorNombre = `Dr. ${nombre} ${apellido}`.trim();
+          this.doctorEspecialidad = doctor.especialidad || '';
+          this.doctorIniciales = (nombre.charAt(0) + apellido.charAt(0)).toUpperCase();
+        }
+      },
+      error: () => {
+        // Keep defaults
+      },
+    });
   }
 
   navigateTo(route: string): void {

@@ -9,7 +9,8 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  // Beneficiarios
+  // ──────────────── Beneficiarios ────────────────
+
   getBeneficiarios(filters?: any): Observable<any[]> {
     let params = new HttpParams();
     if (filters) {
@@ -20,27 +21,40 @@ export class ApiService {
     return this.http.get<any[]>(`${this.apiUrl}/beneficiarios`, { params });
   }
 
-  getBeneficiario(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/beneficiarios/${id}`);
+  getBeneficiario(folio: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/beneficiarios/${folio}`);
   }
 
   createBeneficiario(data: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/beneficiarios`, data);
   }
 
-  updateBeneficiario(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/beneficiarios/${id}`, data);
+  updateBeneficiario(folio: string, data: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/beneficiarios/${folio}`, data);
   }
 
-  getBeneficiarioHistorial(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/beneficiarios/${id}/historial`);
+  deleteBeneficiario(folio: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/beneficiarios/${folio}`);
+  }
+
+  getBeneficiarioHistorial(folio: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/beneficiarios/${folio}/historial`);
+  }
+
+  getBeneficiariosStats(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/beneficiarios/stats`);
   }
 
   getDashboardStats(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/beneficiarios/stats/dashboard`);
   }
 
-  // Citas
+  getTiposEspina(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/beneficiarios/tipos-espina`);
+  }
+
+  // ──────────────── Citas ────────────────
+
   getCitas(filters?: any): Observable<any[]> {
     let params = new HttpParams();
     if (filters) {
@@ -51,6 +65,10 @@ export class ApiService {
     return this.http.get<any[]>(`${this.apiUrl}/citas`, { params });
   }
 
+  getCita(id: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/citas/${id}`);
+  }
+
   createCita(data: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/citas`, data);
   }
@@ -59,13 +77,30 @@ export class ApiService {
     return this.http.put<any>(`${this.apiUrl}/citas/${id}`, data);
   }
 
+  cancelarCita(id: number): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/citas/${id}/cancelar`, {});
+  }
+
+  deleteCita(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/citas/${id}`);
+  }
+
+  getCitasStats(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/citas/stats`);
+  }
+
   getCitasHoy(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/citas/hoy`);
   }
 
-  // Doctores
+  // ──────────────── Doctores ────────────────
+
   getDoctores(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/doctores`);
+  }
+
+  getDoctor(id: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/doctores/${id}`);
   }
 
   createDoctor(data: any): Observable<any> {
@@ -76,7 +111,20 @@ export class ApiService {
     return this.http.put<any>(`${this.apiUrl}/doctores/${id}`, data);
   }
 
-  // Almacén
+  deleteDoctor(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/doctores/${id}`);
+  }
+
+  getDoctorDisponibilidad(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/doctores/${id}/disponibilidad`);
+  }
+
+  getDoctorServicios(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/doctores/${id}/servicios`);
+  }
+
+  // ──────────────── Almacen ────────────────
+
   getProductos(filters?: any): Observable<any[]> {
     let params = new HttpParams();
     if (filters) {
@@ -93,6 +141,10 @@ export class ApiService {
 
   updateProducto(id: number, data: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/almacen/productos/${id}`, data);
+  }
+
+  deleteProducto(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/almacen/productos/${id}`);
   }
 
   getServicios(filters?: any): Observable<any[]> {
@@ -131,7 +183,18 @@ export class ApiService {
     return this.http.get<any>(`${this.apiUrl}/almacen/stats`);
   }
 
-  // Recibos
+  getMovimientos(filters?: any): Observable<any[]> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any[]>(`${this.apiUrl}/almacen/movimientos`, { params });
+  }
+
+  // ──────────────── Recibos ────────────────
+
   getRecibos(filters?: any): Observable<any[]> {
     let params = new HttpParams();
     if (filters) {
@@ -150,51 +213,109 @@ export class ApiService {
     return this.http.get<any>(`${this.apiUrl}/recibos/${id}`);
   }
 
-  getRecibosResumen(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/recibos/stats/resumen`);
+  cancelarRecibo(id: number): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/recibos/${id}/cancelar`, {});
   }
 
-  // Reportes
-  getPersonasAtendidas(filters?: any): Observable<any> {
+  getRecibosStats(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/recibos/stats`);
+  }
+
+  getMetodosPago(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/recibos/metodos-pago`);
+  }
+
+  // ──────────────── Reportes ────────────────
+
+  getReportePorGenero(filters?: any): Observable<any> {
     let params = new HttpParams();
     if (filters) {
       Object.keys(filters).forEach((key) => {
         if (filters[key]) params = params.set(key, filters[key]);
       });
     }
-    return this.http.get<any>(`${this.apiUrl}/reportes/personas-atendidas`, { params });
+    return this.http.get<any>(`${this.apiUrl}/reportes/por-genero`, { params });
   }
 
-  getPorGenero(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/reportes/por-genero`);
+  getReportePorEtapaVida(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/reportes/por-etapa-vida`, { params });
   }
 
-  getPorProcedencia(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/reportes/por-procedencia`);
+  getReportePorTipoEspina(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/reportes/por-tipo-espina`, { params });
   }
 
-  getPorEtapaVida(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/reportes/por-etapa-vida`);
+  getReportePorEstado(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/reportes/por-estado`, { params });
   }
 
-  getServiciosTop(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/reportes/servicios-top`);
+  getReporteResumen(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/reportes/resumen`, { params });
   }
 
-  getResumenMensual(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/reportes/resumen-mensual`);
+  getHistorialReportes(filters?: any): Observable<any[]> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any[]>(`${this.apiUrl}/reportes/historial`, { params });
   }
 
-  getReporteFundacion(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/reportes/fundacion`);
-  }
+  // ──────────────── Pre-registro ────────────────
 
-  // Pre-registro
   getPreRegistros(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/preregistro`);
   }
 
+  getPreRegistro(id: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/preregistro/${id}`);
+  }
+
   createPreRegistro(data: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/preregistro`, data);
+  }
+
+  updatePreRegistro(id: number, data: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/preregistro/${id}`, data);
+  }
+
+  aprobarPreRegistro(id: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/preregistro/${id}/aprobar`, {});
+  }
+
+  rechazarPreRegistro(id: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/preregistro/${id}/rechazar`, {});
+  }
+
+  // ──────────────── Auth (seed) ────────────────
+
+  seedUsers(): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/seed`, {});
   }
 }

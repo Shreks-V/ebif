@@ -21,7 +21,7 @@ mock_users = [
         "apellido_materno": None,
         "correo": "admin@espinabifida.org",
         "hashed_password": get_password_hash("admin123"),
-        "rol": "ADMIN",
+        "rol": "ADMINISTRADOR",
         "estatus": "ACTIVO",
     },
     {
@@ -31,7 +31,7 @@ mock_users = [
         "apellido_materno": None,
         "correo": "operativo@espinabifida.org",
         "hashed_password": get_password_hash("op123"),
-        "rol": "OPERATIVO",
+        "rol": "RECEPCIONISTA",
         "estatus": "ACTIVO",
     },
 ]
@@ -94,7 +94,7 @@ def seed_users():
             "apellido_materno": None,
             "correo": "admin@espinabifida.org",
             "contrasena": "admin123",
-            "rol": "ADMIN",
+            "rol": "ADMINISTRADOR",
         },
         {
             "nombre": "Usuario",
@@ -102,7 +102,7 @@ def seed_users():
             "apellido_materno": None,
             "correo": "operativo@espinabifida.org",
             "contrasena": "op123",
-            "rol": "OPERATIVO",
+            "rol": "RECEPCIONISTA",
         },
     ]
 

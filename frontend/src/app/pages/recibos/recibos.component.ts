@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
+import { ApiService } from '../../services/api.service';
 
 interface MetodoPagoItem {
   idMetodoPago: number;
@@ -213,12 +214,12 @@ interface Recibo {
                 <td class="px-5 py-4">
                   <span class="text-sm font-semibold"
                     [ngClass]="{
-                      'text-emerald-600': recibo.metodosPago[0]?.nombre === 'EFECTIVO',
-                      'text-blue-600': recibo.metodosPago[0]?.nombre === 'TARJETA',
-                      'text-purple-600': recibo.metodosPago[0]?.nombre === 'TRANSFERENCIA',
-                      'text-slate-500': recibo.metodosPago[0]?.nombre === 'EXENTO'
+                      'text-emerald-600': $any(recibo.metodosPago[0])?.nombre === 'EFECTIVO',
+                      'text-blue-600': $any(recibo.metodosPago[0])?.nombre === 'TARJETA',
+                      'text-purple-600': $any(recibo.metodosPago[0])?.nombre === 'TRANSFERENCIA',
+                      'text-slate-500': $any(recibo.metodosPago[0])?.nombre === 'EXENTO'
                     }">
-                    {{ recibo.metodosPago[0]?.nombre }}
+                    {{ $any(recibo.metodosPago[0])?.nombre }}
                   </span>
                 </td>
                 <td class="px-5 py-4">
@@ -367,18 +368,56 @@ export class RecibosComponent implements OnInit {
   showDetalle = false;
   reciboSeleccionado: Recibo | null = null;
 
-  ngOnInit(): void {
-    this.recibos = [
-      { idVenta: 1, folioVenta: 'VTA-2026-001', idPaciente: 1, nombrePaciente: 'María Fernanda García López', folioPaciente: 'BEN-000001', fechaVenta: '2026-03-20', montoTotal: 850, montoPagado: 850, saldoPendiente: 0, exentoPago: 'N', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 1, nombre: 'EFECTIVO', monto: 850}] },
-      { idVenta: 2, folioVenta: 'VTA-2026-002', idPaciente: 2, nombrePaciente: 'Carlos Eduardo Martínez Reyes', folioPaciente: 'BEN-000002', fechaVenta: '2026-03-21', montoTotal: 1200, montoPagado: 1200, saldoPendiente: 0, exentoPago: 'N', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 3, nombre: 'TARJETA', monto: 1200}] },
-      { idVenta: 3, folioVenta: 'VTA-2026-003', idPaciente: 3, nombrePaciente: 'Sofía Rodríguez Hernández', folioPaciente: 'BEN-000003', fechaVenta: '2026-03-21', montoTotal: 500, montoPagado: 500, saldoPendiente: 0, exentoPago: 'N', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 2, nombre: 'TRANSFERENCIA', monto: 500}] },
-      { idVenta: 4, folioVenta: 'VTA-2026-004', idPaciente: 4, nombrePaciente: 'Diego Alejandro Treviño Garza', folioPaciente: 'BEN-000004', fechaVenta: '2026-03-22', montoTotal: 0, montoPagado: 0, saldoPendiente: 0, exentoPago: 'S', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 4, nombre: 'EXENTO', monto: 0}] },
-      { idVenta: 5, folioVenta: 'VTA-2026-005', idPaciente: 5, nombrePaciente: 'Valentina Flores Mendoza', folioPaciente: 'BEN-000005', fechaVenta: '2026-03-23', montoTotal: 650, montoPagado: 400, saldoPendiente: 250, exentoPago: 'N', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 1, nombre: 'EFECTIVO', monto: 400}] },
-      { idVenta: 6, folioVenta: 'VTA-2026-006', idPaciente: 1, nombrePaciente: 'María Fernanda García López', folioPaciente: 'BEN-000001', fechaVenta: '2026-03-24', montoTotal: 350, montoPagado: 350, saldoPendiente: 0, exentoPago: 'N', cancelada: 'S', motivoCancelacion: 'Paciente canceló servicio', metodosPago: [{idMetodoPago: 1, nombre: 'EFECTIVO', monto: 350}] },
-    ];
+  constructor(private api: ApiService) {}
 
-    this.recibosFiltrados = [...this.recibos];
-    this.calcularEstadisticas();
+  ngOnInit(): void {
+    this.cargarRecibos();
+    this.cargarStats();
+  }
+
+  private cargarRecibos(): void {
+    this.api.getRecibos().subscribe({
+      next: (data: any[]) => {
+        this.recibos = data.map((r: any) => ({
+          idVenta: r.id_venta,
+          folioVenta: r.folio_venta,
+          idPaciente: r.id_paciente,
+          nombrePaciente: r.nombre_paciente,
+          folioPaciente: r.folio_paciente,
+          fechaVenta: r.fecha_venta,
+          montoTotal: r.monto_total,
+          montoPagado: r.monto_pagado,
+          saldoPendiente: r.saldo_pendiente,
+          exentoPago: r.exento_pago,
+          cancelada: r.cancelada,
+          motivoCancelacion: r.motivo_cancelacion,
+          metodosPago: (r.metodos_pago || []).map((mp: any) => ({
+            idMetodoPago: mp.id_metodo_pago,
+            nombre: mp.nombre,
+            monto: mp.monto
+          }))
+        }));
+        this.recibosFiltrados = [...this.recibos];
+        this.calcularEstadisticas();
+      },
+      error: (err) => {
+        console.error('Error al cargar recibos:', err);
+      }
+    });
+  }
+
+  private cargarStats(): void {
+    this.api.getRecibosStats().subscribe({
+      next: (stats: any) => {
+        this.montoTotal = stats.monto_total ?? 0;
+        this.montoEfectivo = stats.efectivo ?? 0;
+        this.montoTarjeta = stats.tarjeta ?? 0;
+        this.montoTransferencia = stats.transferencia ?? 0;
+      },
+      error: (err) => {
+        console.error('Error al cargar estadísticas de recibos:', err);
+      }
+    });
   }
 
   filtrarRecibos(): void {

@@ -1,198 +1,283 @@
-from fastapi import APIRouter, HTTPException
-from datetime import date
-from app.schemas.schemas import PreRegistroCreate, PreRegistroResponse
+from datetime import datetime, date
+from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import Optional
+from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.core.security import get_current_user
+from app.schemas.schemas import PreRegistroCreate
 
 router = APIRouter()
 
-# ──────────────────────────── MOCK DATA ────────────────────────────
 
-mock_preregistros = [
-    {
-        "id": 1,
-        "nombre": "Santiago",
-        "apellido_paterno": "Herrera",
-        "apellido_materno": "Domínguez",
-        "fecha_nacimiento": "2024-05-10",
-        "genero": "Masculino",
-        "curp": "HEDS240510HNLRMN01",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital Universitario UANL",
-        "nombre_padre_madre": "Claudia Domínguez Ramos",
-        "direccion": "Av. Constitución 1234",
-        "colonia": "Centro",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64000",
-        "telefono_casa": "8181234500",
-        "telefono_celular": "8119001122",
-        "correo_electronico": "claudia.dominguez@email.com",
-        "tipo_cuota": "mensual",
-        "notas": "Bebé diagnosticado al nacer, busca apoyo integral",
-        "paso_actual": 3,
-        "completado": True,
-        "fecha_solicitud": "2026-03-18",
-        "estatus": "PENDIENTE",
-    },
-    {
-        "id": 2,
-        "nombre": "Mariana",
-        "apellido_paterno": "Olvera",
-        "apellido_materno": "Sánchez",
-        "fecha_nacimiento": "2017-11-28",
-        "genero": "Femenino",
-        "curp": "OESM171128MNLLNR03",
-        "tipo_espina_bifida": "Meningocele",
-        "estado_nacimiento": "Coahuila",
-        "hospital_nacimiento": "Hospital General de Saltillo",
-        "nombre_padre_madre": "Rosa Sánchez Medina",
-        "direccion": "Calle Morelos 567",
-        "colonia": "Independencia",
-        "ciudad": "Saltillo",
-        "estado": "Coahuila",
-        "codigo_postal": "25000",
-        "telefono_casa": None,
-        "telefono_celular": "8442233445",
-        "correo_electronico": "rosa.sanchez@email.com",
-        "tipo_cuota": "mensual",
-        "notas": "Foránea, dispuesta a viajar a Monterrey para atención",
-        "paso_actual": 3,
-        "completado": True,
-        "fecha_solicitud": "2026-03-10",
-        "estatus": "REVISADO",
-    },
-    {
-        "id": 3,
-        "nombre": "Mateo",
-        "apellido_paterno": "Luna",
-        "apellido_materno": "Espinoza",
-        "fecha_nacimiento": "2021-08-03",
-        "genero": "Masculino",
-        "curp": "LUEM210803HNLNSP06",
-        "tipo_espina_bifida": "Lipomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Christus Muguerza",
-        "nombre_padre_madre": "Miguel Luna Torres",
-        "direccion": "Blvd. Acapulco 890",
-        "colonia": "Residencial Acapulco",
-        "ciudad": "San Nicolás de los Garza",
-        "estado": "Nuevo León",
-        "codigo_postal": "66480",
-        "telefono_casa": "8183456700",
-        "telefono_celular": "8117788990",
-        "correo_electronico": "miguel.luna@email.com",
-        "tipo_cuota": "mensual",
-        "notas": "",
-        "paso_actual": 2,
-        "completado": False,
-        "fecha_solicitud": "2026-03-22",
-        "estatus": "PENDIENTE",
-    },
-    {
-        "id": 4,
-        "nombre": "Valentina",
-        "apellido_paterno": "Garza",
-        "apellido_materno": "Treviño",
-        "fecha_nacimiento": "2023-01-15",
-        "genero": "Femenino",
-        "curp": "GATV230115MNLRRN08",
-        "tipo_espina_bifida": "Espina bífida oculta",
-        "estado_nacimiento": "Tamaulipas",
-        "hospital_nacimiento": "Hospital Civil de Ciudad Victoria",
-        "nombre_padre_madre": "Laura Treviño Pérez",
-        "direccion": "Calle Hidalgo 245",
-        "colonia": "Las Flores",
-        "ciudad": "Ciudad Victoria",
-        "estado": "Tamaulipas",
-        "codigo_postal": "87000",
-        "telefono_casa": None,
-        "telefono_celular": "8341556789",
-        "correo_electronico": "laura.trevino@email.com",
-        "tipo_cuota": "anual",
-        "notas": "Diagnóstico reciente, referida por pediatra",
-        "paso_actual": 1,
-        "completado": False,
-        "fecha_solicitud": "2026-03-24",
-        "estatus": "PENDIENTE",
-    },
-]
+# ──────────────────────────── HELPERS ────────────────────────────
 
-_next_id = len(mock_preregistros) + 1
+
+def _serialize(row: dict) -> dict:
+    result = {}
+    for key, value in row.items():
+        if isinstance(value, (datetime, date)):
+            result[key] = value.isoformat()
+        elif isinstance(value, str):
+            result[key] = value.strip()
+        else:
+            result[key] = value
+    return result
+
+
+_BASE_SQL = """
+    SELECT ID_PACIENTE, FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,
+           FECHA_NACIMIENTO, GENERO, CURP,
+           ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,
+           DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,
+           TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,
+           TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL, ESTATUS_REGISTRO,
+           FECHA_REGISTRO, EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,
+           TIPO_SANGRE, USA_VALVULA
+    FROM PACIENTE
+"""
 
 
 # ──────────────────────────── ENDPOINTS ────────────────────────────
-# Pre-registro is PUBLIC (no auth required)
+# Pre-registro is PUBLIC (no auth required) for POST
+# GET/PUT/approve require auth (admin reviewing submissions)
 
 
-@router.get("/")
-def listar_preregistros():
-    """Listar todos los pre-registros."""
-    return mock_preregistros
+@router.get("")
+def listar_preregistros(
+    estatus: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    """Listar todos los pre-registros (pacientes pendientes de aprobación)."""
+    sql = _BASE_SQL + " WHERE ESTATUS_REGISTRO IN ('PENDIENTE', 'RECHAZADO')"
+    params: dict = {}
+
+    if estatus:
+        sql = _BASE_SQL + " WHERE ESTATUS_REGISTRO = :estatus"
+        params["estatus"] = estatus
+
+    sql += " ORDER BY FECHA_REGISTRO DESC"
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+
+    return [_serialize(r) for r in rows]
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 def crear_preregistro(data: PreRegistroCreate):
     """Enviar un nuevo pre-registro (endpoint público, sin autenticación)."""
-    global _next_id
-    nuevo = data.model_dump()
-    nuevo["id"] = _next_id
-    nuevo["fecha_solicitud"] = date.today().isoformat()
-    nuevo["estatus"] = "PENDIENTE"
-    _next_id += 1
-    mock_preregistros.append(nuevo)
-    return nuevo
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Generate folio for pre-registro
+        cursor.execute("SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE")
+        next_id = cursor.fetchone()[0]
+        folio = f"PRE-{next_id:06d}"
+
+        id_var = cursor.var(int)
+
+        cursor.execute(
+            """INSERT INTO PACIENTE
+               (FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,
+                FECHA_NACIMIENTO, GENERO, CURP,
+                ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,
+                DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,
+                TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,
+                EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,
+                TIPO_SANGRE, USA_VALVULA,
+                TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL,
+                ESTATUS_REGISTRO, ACTIVO, FECHA_REGISTRO)
+               VALUES (:folio, :nombre, :ap, :am,
+                       TO_DATE(:fecha_nac, 'YYYY-MM-DD'), :genero, :curp,
+                       :estado_nac, :hospital, :padre_madre,
+                       :direccion, :colonia, :ciudad, :estado, :cp,
+                       :tel_casa, :tel_cel, :correo,
+                       :emergencia_avisar, :tel_emergencia,
+                       :tipo_sangre, :usa_valvula,
+                       :tipo_cuota, :notas, :paso,
+                       'PENDIENTE', 'S', SYSDATE)
+               RETURNING ID_PACIENTE INTO :id_out""",
+            {
+                "folio": folio,
+                "nombre": data.nombre,
+                "ap": data.apellido_paterno,
+                "am": data.apellido_materno,
+                "fecha_nac": data.fecha_nacimiento,
+                "genero": data.genero,
+                "curp": data.curp,
+                "estado_nac": data.estado_nacimiento,
+                "hospital": data.hospital_nacimiento,
+                "padre_madre": data.nombre_padre_madre,
+                "direccion": data.direccion,
+                "colonia": data.colonia,
+                "ciudad": data.ciudad,
+                "estado": data.estado,
+                "cp": data.codigo_postal,
+                "tel_casa": data.telefono_casa,
+                "tel_cel": data.telefono_celular,
+                "correo": data.correo_electronico,
+                "emergencia_avisar": data.en_emergencia_avisar_a,
+                "tel_emergencia": data.telefono_emergencia,
+                "tipo_sangre": data.tipo_sangre,
+                "usa_valvula": data.usa_valvula or "N",
+                "tipo_cuota": data.tipo_cuota,
+                "notas": data.notas_adicionales,
+                "paso": data.paso_actual or 1,
+                "id_out": id_var,
+            },
+        )
+        new_id = id_var.getvalue()[0]
+        conn.commit()
+
+    return _fetch_preregistro(new_id)
 
 
-@router.get("/{id_preregistro}")
-def obtener_preregistro(id_preregistro: int):
+def _fetch_preregistro(id_paciente: int) -> dict:
+    sql = _BASE_SQL + " WHERE ID_PACIENTE = :id"
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {"id": id_paciente})
+        row = row_to_dict(cursor)
+    if not row:
+        raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+    return _serialize(row)
+
+
+@router.get("/{id_paciente}")
+def obtener_preregistro(id_paciente: int):
     """Obtener detalle de un pre-registro."""
-    preregistro = next(
-        (p for p in mock_preregistros if p["id"] == id_preregistro), None
-    )
-    if preregistro is None:
-        raise HTTPException(
-            status_code=404, detail="Pre-registro no encontrado"
-        )
-    return preregistro
+    return _fetch_preregistro(id_paciente)
 
 
-@router.put("/{id_preregistro}")
-def actualizar_preregistro(id_preregistro: int, data: PreRegistroCreate):
+@router.put("/{id_paciente}")
+def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
     """Actualizar un pre-registro existente (formulario multi-paso)."""
-    preregistro = next(
-        (p for p in mock_preregistros if p["id"] == id_preregistro), None
-    )
-    if preregistro is None:
-        raise HTTPException(
-            status_code=404, detail="Pre-registro no encontrado"
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT ID_PACIENTE FROM PACIENTE WHERE ID_PACIENTE = :id AND ESTATUS_REGISTRO = 'PENDIENTE'",
+            {"id": id_paciente},
         )
-    actualizado = data.model_dump(exclude_unset=True)
-    preregistro.update(actualizado)
-    return preregistro
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+
+        cursor.execute(
+            """UPDATE PACIENTE SET
+                NOMBRE = :nombre, APELLIDO_PATERNO = :ap, APELLIDO_MATERNO = :am,
+                FECHA_NACIMIENTO = TO_DATE(:fecha_nac, 'YYYY-MM-DD'),
+                GENERO = :genero, CURP = :curp,
+                ESTADO_NACIMIENTO = :estado_nac, HOSPITAL_NACIMIENTO = :hospital,
+                NOMBRE_PADRE_MADRE = :padre_madre,
+                DIRECCION = :direccion, COLONIA = :colonia, CIUDAD = :ciudad,
+                ESTADO = :estado, CODIGO_POSTAL = :cp,
+                TELEFONO_CASA = :tel_casa, TELEFONO_CELULAR = :tel_cel,
+                CORREO_ELECTRONICO = :correo,
+                EN_EMERGENCIA_AVISAR_A = :emergencia_avisar,
+                TELEFONO_EMERGENCIA = :tel_emergencia,
+                TIPO_SANGRE = :tipo_sangre, USA_VALVULA = :usa_valvula,
+                TIPO_CUOTA = :tipo_cuota, NOTAS_ADICIONALES = :notas,
+                PASO_ACTUAL = :paso
+               WHERE ID_PACIENTE = :id""",
+            {
+                "nombre": data.nombre,
+                "ap": data.apellido_paterno,
+                "am": data.apellido_materno,
+                "fecha_nac": data.fecha_nacimiento,
+                "genero": data.genero,
+                "curp": data.curp,
+                "estado_nac": data.estado_nacimiento,
+                "hospital": data.hospital_nacimiento,
+                "padre_madre": data.nombre_padre_madre,
+                "direccion": data.direccion,
+                "colonia": data.colonia,
+                "ciudad": data.ciudad,
+                "estado": data.estado,
+                "cp": data.codigo_postal,
+                "tel_casa": data.telefono_casa,
+                "tel_cel": data.telefono_celular,
+                "correo": data.correo_electronico,
+                "emergencia_avisar": data.en_emergencia_avisar_a,
+                "tel_emergencia": data.telefono_emergencia,
+                "tipo_sangre": data.tipo_sangre,
+                "usa_valvula": data.usa_valvula or "N",
+                "tipo_cuota": data.tipo_cuota,
+                "notas": data.notas_adicionales,
+                "paso": data.paso_actual or 1,
+                "id": id_paciente,
+            },
+        )
+        conn.commit()
+
+    return _fetch_preregistro(id_paciente)
 
 
-@router.post("/{id_preregistro}/aprobar")
-def aprobar_preregistro(id_preregistro: int):
-    """Aprobar un pre-registro y convertirlo en beneficiario."""
-    preregistro = next(
-        (p for p in mock_preregistros if p["id"] == id_preregistro), None
-    )
-    if preregistro is None:
-        raise HTTPException(
-            status_code=404, detail="Pre-registro no encontrado"
+@router.post("/{id_paciente}/aprobar")
+def aprobar_preregistro(
+    id_paciente: int,
+    current_user: dict = Depends(get_current_user),
+):
+    """Aprobar un pre-registro y convertirlo en beneficiario aprobado."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT ESTATUS_REGISTRO FROM PACIENTE WHERE ID_PACIENTE = :id",
+            {"id": id_paciente},
         )
-    if not preregistro.get("completado"):
-        raise HTTPException(
-            status_code=400,
-            detail="El pre-registro no está completado. Todos los pasos deben finalizarse antes de aprobar.",
+        row = cursor.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+
+        estatus = row[0].strip() if row[0] else None
+        if estatus == "APROBADO":
+            raise HTTPException(status_code=400, detail="Este pre-registro ya fue aprobado")
+        if estatus != "PENDIENTE":
+            raise HTTPException(status_code=400, detail="Solo se pueden aprobar pre-registros pendientes")
+
+        # Generate proper BEN folio
+        cursor.execute("SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE")
+        folio_num = cursor.fetchone()[0]
+        new_folio = f"BEN-{folio_num:06d}"
+
+        cursor.execute(
+            """UPDATE PACIENTE SET
+                ESTATUS_REGISTRO = 'APROBADO',
+                FOLIO = :folio,
+                MEMBRESIA_ESTATUS = 'ACTIVO',
+                FECHA_ALTA = SYSDATE
+               WHERE ID_PACIENTE = :id""",
+            {"folio": new_folio, "id": id_paciente},
         )
-    if preregistro["estatus"] == "APROBADO":
-        raise HTTPException(
-            status_code=400, detail="Este pre-registro ya fue aprobado"
+        conn.commit()
+
+    preregistro = _fetch_preregistro(id_paciente)
+    return {"message": "Pre-registro aprobado exitosamente", "preregistro": preregistro}
+
+
+@router.post("/{id_paciente}/rechazar")
+def rechazar_preregistro(
+    id_paciente: int,
+    current_user: dict = Depends(get_current_user),
+):
+    """Rechazar un pre-registro."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT ESTATUS_REGISTRO FROM PACIENTE WHERE ID_PACIENTE = :id",
+            {"id": id_paciente},
         )
-    preregistro["estatus"] = "APROBADO"
-    # TODO: crear registro completo en PACIENTE / BENEFICIARIO
-    return {
-        "message": "Pre-registro aprobado exitosamente",
-        "preregistro": preregistro,
-    }
+        row = cursor.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+
+        cursor.execute(
+            "UPDATE PACIENTE SET ESTATUS_REGISTRO = 'RECHAZADO' WHERE ID_PACIENTE = :id",
+            {"id": id_paciente},
+        )
+        conn.commit()
+
+    preregistro = _fetch_preregistro(id_paciente)
+    return {"message": "Pre-registro rechazado", "preregistro": preregistro}

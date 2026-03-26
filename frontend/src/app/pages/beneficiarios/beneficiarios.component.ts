@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
+import { ApiService } from '../../services/api.service';
 
 interface Beneficiario {
   idPaciente: number;
@@ -42,12 +43,12 @@ interface Beneficiario {
 
 interface Preregistro {
   id: number;
+  folio: string;
   nombre: string;
   apellidoPaterno: string;
   apellidoMaterno: string;
   fechaNacimiento: string;
   curp: string;
-  tipoEspinaBifida: string;
   nombrePadreMadre: string;
   tipoCuota: string;
   fechaSolicitud: string;
@@ -162,7 +163,7 @@ interface Preregistro {
                       <span class="text-sm font-semibold text-slate-800">{{ b.nombre }} {{ b.apellidoPaterno }} {{ b.apellidoMaterno }}</span>
                     </div>
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-600">{{ b.tiposEspina[0]?.nombre || 'N/A' }}</td>
+                  <td class="px-6 py-4 text-sm text-slate-600">{{ $any(b.tiposEspina[0])?.nombre || 'N/A' }}</td>
                   <td class="px-6 py-4">
                     <span [class]="getCuotaBadgeClass(b.tipoCuota)">Cuota {{ b.tipoCuota }}</span>
                   </td>
@@ -229,7 +230,7 @@ interface Preregistro {
                 <tr class="bg-amber-50 border-b border-amber-200">
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo Espina Bífida</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estatus</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cuota</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Solicitud</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
@@ -246,7 +247,7 @@ interface Preregistro {
                       <span class="text-sm font-semibold text-slate-800">{{ p.nombre }} {{ p.apellidoPaterno }} {{ p.apellidoMaterno }}</span>
                     </div>
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-600">{{ p.tipoEspinaBifida }}</td>
+                  <td class="px-6 py-4 text-sm text-slate-600">{{ p.estatus }}</td>
                   <td class="px-6 py-4">
                     <span [class]="getCuotaBadgeClass(p.tipoCuota)">Cuota {{ p.tipoCuota }}</span>
                   </td>
@@ -310,7 +311,7 @@ interface Preregistro {
     </div>
   `
 })
-export class BeneficiariosComponent {
+export class BeneficiariosComponent implements OnInit {
   currentTab: 'activos' | 'preregistros' = 'activos';
   searchTerm = '';
 
@@ -319,119 +320,97 @@ export class BeneficiariosComponent {
   beneficiariosPage = 1;
   preregistrosPage = 1;
 
-  beneficiarios: Beneficiario[] = [
-    {
-      idPaciente: 1, folio: 'BEN-000001', nombre: 'María', apellidoPaterno: 'González', apellidoMaterno: 'López',
-      genero: 'F', fechaNacimiento: '2014-03-15', curp: 'GOLM140315MDFLPR01',
-      nombrePadreMadre: 'Laura López Martínez', direccion: 'Av. Insurgentes Sur 1234', colonia: 'Del Valle',
-      ciudad: 'Ciudad de México', estado: 'Ciudad de México', codigoPostal: '03100',
-      telefonoCasa: '5555123456', telefonoCelular: '5512345678', correoElectronico: 'laura.lopez@email.com',
-      enEmergenciaAvisarA: 'Carlos González Ruiz', telefonoEmergencia: '5598765432',
-      municipioNacimiento: 'Benito Juárez', estadoNacimiento: 'Ciudad de México',
-      hospitalNacimiento: 'Hospital General de México', tipoSangre: 'O+', usaValvula: 'S',
-      notasAdicionales: 'Requiere seguimiento neurológico trimestral', fechaAlta: '15/01/2025',
-      membresiaEstatus: 'ACTIVO', tipoCuota: 'A', activo: 'S',
-      tiposEspina: [{idTipoEspina: 1, nombre: 'Mielomeningocele'}],
-      iniciales: 'MG', color: 'bg-pink-400'
-    },
-    {
-      idPaciente: 2, folio: 'BEN-000002', nombre: 'Juan Carlos', apellidoPaterno: 'Martínez', apellidoMaterno: 'Pérez',
-      genero: 'M', fechaNacimiento: '2017-07-22', curp: 'MAPJ170722HDFRRS02',
-      nombrePadreMadre: 'Rosa Pérez Hernández', direccion: 'Calle Morelos 567', colonia: 'Centro',
-      ciudad: 'Guadalajara', estado: 'Jalisco', codigoPostal: '44100',
-      telefonoCasa: '3331234567', telefonoCelular: '3345678901', correoElectronico: 'rosa.perez@email.com',
-      enEmergenciaAvisarA: 'Miguel Martínez Díaz', telefonoEmergencia: '3356789012',
-      municipioNacimiento: 'Guadalajara', estadoNacimiento: 'Jalisco',
-      hospitalNacimiento: 'Hospital Civil de Guadalajara', tipoSangre: 'A+', usaValvula: 'N',
-      notasAdicionales: '', fechaAlta: '22/01/2025',
-      membresiaEstatus: 'ACTIVO', tipoCuota: 'B', activo: 'S',
-      tiposEspina: [{idTipoEspina: 2, nombre: 'Meningocele'}],
-      iniciales: 'JM', color: 'bg-blue-400'
-    },
-    {
-      idPaciente: 3, folio: 'BEN-000003', nombre: 'Ana Patricia', apellidoPaterno: 'Rodríguez', apellidoMaterno: 'Hernández',
-      genero: 'F', fechaNacimiento: '2010-11-05', curp: 'ROHA101105MDFDRN03',
-      nombrePadreMadre: 'Patricia Hernández Flores', direccion: 'Blvd. Adolfo López Mateos 890', colonia: 'Lindavista',
-      ciudad: 'Monterrey', estado: 'Nuevo León', codigoPostal: '64000',
-      telefonoCasa: '8187654321', telefonoCelular: '8112349876', correoElectronico: 'patricia.hdez@email.com',
-      enEmergenciaAvisarA: 'Fernando Rodríguez Soto', telefonoEmergencia: '8198761234',
-      municipioNacimiento: 'Monterrey', estadoNacimiento: 'Nuevo León',
-      hospitalNacimiento: 'Hospital Universitario de Nuevo León', tipoSangre: 'B+', usaValvula: 'S',
-      notasAdicionales: 'Alérgica a penicilina', fechaAlta: '10/12/2024',
-      membresiaEstatus: 'VENCIDO', tipoCuota: 'A', activo: 'S',
-      tiposEspina: [{idTipoEspina: 3, nombre: 'Espina bífida oculta'}],
-      iniciales: 'AR', color: 'bg-purple-400'
-    },
-    {
-      idPaciente: 4, folio: 'BEN-000004', nombre: 'Diego', apellidoPaterno: 'Ramírez', apellidoMaterno: 'Torres',
-      genero: 'M', fechaNacimiento: '2016-01-30', curp: 'RATD160130HDFMRG04',
-      nombrePadreMadre: 'Gabriela Torres Vega', direccion: 'Calle 5 de Febrero 321', colonia: 'Constitución',
-      ciudad: 'Puebla', estado: 'Puebla', codigoPostal: '72000',
-      telefonoCasa: '2221234567', telefonoCelular: '2229876543', correoElectronico: 'gabriela.torres@email.com',
-      enEmergenciaAvisarA: 'Alejandro Ramírez Mora', telefonoEmergencia: '2225678901',
-      municipioNacimiento: 'Puebla', estadoNacimiento: 'Puebla',
-      hospitalNacimiento: 'Hospital General de Puebla', tipoSangre: 'AB+', usaValvula: 'S',
-      notasAdicionales: 'Rehabilitación física dos veces por semana', fechaAlta: '05/02/2025',
-      membresiaEstatus: 'ACTIVO', tipoCuota: 'A', activo: 'S',
-      tiposEspina: [{idTipoEspina: 1, nombre: 'Mielomeningocele'}],
-      iniciales: 'DR', color: 'bg-green-400'
-    },
-    {
-      idPaciente: 5, folio: 'BEN-000005', nombre: 'Sofía', apellidoPaterno: 'Hernández', apellidoMaterno: 'Díaz',
-      genero: 'F', fechaNacimiento: '2019-06-12', curp: 'HEDS190612MDFRFZ05',
-      nombrePadreMadre: 'Claudia Díaz Mendoza', direccion: 'Av. Universidad 456', colonia: 'Narvarte',
-      ciudad: 'Ciudad de México', estado: 'Ciudad de México', codigoPostal: '03020',
-      telefonoCasa: '5556789012', telefonoCelular: '5543218765', correoElectronico: 'claudia.diaz@email.com',
-      enEmergenciaAvisarA: 'Jorge Hernández Luna', telefonoEmergencia: '5587654321',
-      municipioNacimiento: 'Coyoacán', estadoNacimiento: 'Ciudad de México',
-      hospitalNacimiento: 'Instituto Nacional de Pediatría', tipoSangre: 'O-', usaValvula: 'N',
-      notasAdicionales: '', fechaAlta: '18/03/2025',
-      membresiaEstatus: 'ACTIVO', tipoCuota: 'B', activo: 'S',
-      tiposEspina: [{idTipoEspina: 4, nombre: 'Lipomielomeningocele'}],
-      iniciales: 'SH', color: 'bg-rose-400'
-    },
-    {
-      idPaciente: 6, folio: 'BEN-000006', nombre: 'Carlos Eduardo', apellidoPaterno: 'López', apellidoMaterno: 'García',
-      genero: 'M', fechaNacimiento: '2012-09-08', curp: 'LOGC120908HDFPRC06',
-      nombrePadreMadre: 'María García Olvera', direccion: 'Calle Hidalgo 789', colonia: 'San Ángel',
-      ciudad: 'Querétaro', estado: 'Querétaro', codigoPostal: '76000',
-      telefonoCasa: '4421234567', telefonoCelular: '4429871234', correoElectronico: 'maria.garcia@email.com',
-      enEmergenciaAvisarA: 'Eduardo López Castillo', telefonoEmergencia: '4425671234',
-      municipioNacimiento: 'Querétaro', estadoNacimiento: 'Querétaro',
-      hospitalNacimiento: 'Hospital General de Querétaro', tipoSangre: 'A-', usaValvula: 'S',
-      notasAdicionales: 'Control urológico semestral', fechaAlta: '02/11/2024',
-      membresiaEstatus: 'SUSPENDIDO', tipoCuota: 'A', activo: 'N',
-      tiposEspina: [{idTipoEspina: 2, nombre: 'Meningocele'}, {idTipoEspina: 3, nombre: 'Espina bífida oculta'}],
-      iniciales: 'CL', color: 'bg-indigo-400'
-    }
+  private avatarColors = [
+    'bg-pink-400', 'bg-blue-400', 'bg-purple-400', 'bg-green-400',
+    'bg-rose-400', 'bg-indigo-400', 'bg-orange-400', 'bg-teal-400',
+    'bg-cyan-400', 'bg-amber-400'
   ];
 
-  preregistros: Preregistro[] = [
-    {
-      id: 101, nombre: 'Roberto', apellidoPaterno: 'Sánchez', apellidoMaterno: 'Cruz',
-      fechaNacimiento: '2016-05-20', curp: 'SACR160520HDFNRB01',
-      tipoEspinaBifida: 'Mielomeningocele', nombrePadreMadre: 'Elena Cruz Vargas',
-      tipoCuota: 'A', fechaSolicitud: '01/03/2025', estatus: 'PENDIENTE',
-      iniciales: 'RS', color: 'bg-orange-400'
-    },
-    {
-      id: 102, nombre: 'Elena', apellidoPaterno: 'Torres', apellidoMaterno: 'Ramírez',
-      fechaNacimiento: '2014-08-14', curp: 'TORE140814MDFRML02',
-      tipoEspinaBifida: 'Espina bífida oculta', nombrePadreMadre: 'Guadalupe Ramírez Solís',
-      tipoCuota: 'B', fechaSolicitud: '28/02/2025', estatus: 'PENDIENTE',
-      iniciales: 'ET', color: 'bg-teal-400'
-    },
-    {
-      id: 103, nombre: 'Fernando', apellidoPaterno: 'López', apellidoMaterno: 'García',
-      fechaNacimiento: '2018-12-03', curp: 'LOGF181203HDFPRC03',
-      tipoEspinaBifida: 'Meningocele', nombrePadreMadre: 'Isabel García Navarro',
-      tipoCuota: 'A', fechaSolicitud: '25/02/2025', estatus: 'PENDIENTE',
-      iniciales: 'FL', color: 'bg-indigo-400'
-    }
-  ];
+  beneficiarios: Beneficiario[] = [];
+  preregistros: Preregistro[] = [];
+  filteredBeneficiarios: Beneficiario[] = [];
+  filteredPreregistros: Preregistro[] = [];
 
-  filteredBeneficiarios: Beneficiario[] = [...this.beneficiarios];
-  filteredPreregistros: Preregistro[] = [...this.preregistros];
+  constructor(private api: ApiService) {}
+
+  ngOnInit(): void {
+    this.loadBeneficiarios();
+    this.loadPreregistros();
+  }
+
+  private loadBeneficiarios(): void {
+    this.api.getBeneficiarios().subscribe({
+      next: (data) => {
+        this.beneficiarios = data.map((item: any, index: number) => ({
+          idPaciente: item.id_paciente,
+          folio: item.folio,
+          nombre: item.nombre,
+          apellidoPaterno: item.apellido_paterno,
+          apellidoMaterno: item.apellido_materno,
+          genero: item.genero,
+          fechaNacimiento: item.fecha_nacimiento,
+          curp: item.curp,
+          nombrePadreMadre: item.nombre_padre_madre,
+          direccion: item.direccion,
+          colonia: item.colonia,
+          ciudad: item.ciudad,
+          estado: item.estado,
+          codigoPostal: item.codigo_postal,
+          telefonoCasa: item.telefono_casa,
+          telefonoCelular: item.telefono_celular,
+          correoElectronico: item.correo_electronico,
+          enEmergenciaAvisarA: item.en_emergencia_avisar_a,
+          telefonoEmergencia: item.telefono_emergencia,
+          municipioNacimiento: item.municipio_nacimiento,
+          estadoNacimiento: item.estado_nacimiento,
+          hospitalNacimiento: item.hospital_nacimiento,
+          tipoSangre: item.tipo_sangre,
+          usaValvula: item.usa_valvula,
+          notasAdicionales: item.notas_adicionales,
+          fechaAlta: item.fecha_alta,
+          membresiaEstatus: item.membresia_estatus,
+          tipoCuota: item.tipo_cuota,
+          activo: item.activo,
+          tiposEspina: (item.tipos_espina || []).map((te: any) => ({
+            idTipoEspina: te.id_tipo_espina,
+            nombre: te.nombre
+          })),
+          iniciales: (item.nombre?.charAt(0) || '') + (item.apellido_paterno?.charAt(0) || ''),
+          color: this.avatarColors[index % this.avatarColors.length]
+        } as Beneficiario));
+        this.filterData();
+      },
+      error: (err) => {
+        console.error('Error loading beneficiarios:', err);
+      }
+    });
+  }
+
+  private loadPreregistros(): void {
+    this.api.getPreRegistros().subscribe({
+      next: (data) => {
+        this.preregistros = data.map((item: any, index: number) => ({
+          id: item.id_paciente,
+          folio: item.folio,
+          nombre: item.nombre,
+          apellidoPaterno: item.apellido_paterno,
+          apellidoMaterno: item.apellido_materno || '',
+          fechaNacimiento: item.fecha_nacimiento,
+          curp: item.curp,
+          nombrePadreMadre: item.nombre_padre_madre,
+          tipoCuota: item.tipo_cuota || '',
+          fechaSolicitud: item.fecha_registro,
+          estatus: item.estatus_registro,
+          iniciales: (item.nombre?.charAt(0) || '') + (item.apellido_paterno?.charAt(0) || ''),
+          color: this.avatarColors[index % this.avatarColors.length]
+        } as Preregistro));
+        this.filterData();
+      },
+      error: (err) => {
+        console.error('Error loading preregistros:', err);
+      }
+    });
+  }
 
   get beneficiariosStart(): number {
     return (this.beneficiariosPage - 1) * this.pageSize;
@@ -512,14 +491,23 @@ export class BeneficiariosComponent {
   }
 
   aprobarPreregistro(p: Preregistro): void {
-    alert(`Preregistro #${p.id} de ${p.nombre} ${p.apellidoPaterno} ha sido aprobado.`);
-    this.preregistros = this.preregistros.filter(item => item.id !== p.id);
-    this.filterData();
+    this.api.aprobarPreRegistro(p.id).subscribe({
+      next: () => {
+        this.preregistros = this.preregistros.filter(item => item.id !== p.id);
+        this.filterData();
+        this.loadBeneficiarios();
+      },
+      error: (err) => console.error('Error al aprobar:', err)
+    });
   }
 
   rechazarPreregistro(p: Preregistro): void {
-    alert(`Preregistro #${p.id} de ${p.nombre} ${p.apellidoPaterno} ha sido rechazado.`);
-    this.preregistros = this.preregistros.filter(item => item.id !== p.id);
-    this.filterData();
+    this.api.rechazarPreRegistro(p.id).subscribe({
+      next: () => {
+        this.preregistros = this.preregistros.filter(item => item.id !== p.id);
+        this.filterData();
+      },
+      error: (err) => console.error('Error al rechazar:', err)
+    });
   }
 }

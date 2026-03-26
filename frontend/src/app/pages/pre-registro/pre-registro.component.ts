@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-pre-registro',
@@ -292,6 +293,7 @@ import { Router } from '@angular/router';
 })
 export class PreRegistroComponent {
   router = inject(Router);
+  private api = inject(ApiService);
   currentStep = 1;
   submitted = false;
   fotografiaName = '';
@@ -339,7 +341,49 @@ export class PreRegistroComponent {
   }
 
   submitForm() {
-    this.submitted = true;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const notasParts = [];
+    if (this.formData.tipoEspinaBifida) notasParts.push(`Tipo EB: ${this.formData.tipoEspinaBifida}`);
+    if (this.formData.alergias) notasParts.push(`Alergias: ${this.formData.alergias}`);
+    if (this.formData.medicamentosActuales) notasParts.push(`Medicamentos: ${this.formData.medicamentosActuales}`);
+    if (this.formData.notasAdicionales) notasParts.push(this.formData.notasAdicionales);
+
+    const payload = {
+      nombre: this.formData.nombre,
+      apellido_paterno: this.formData.apellidoPaterno,
+      apellido_materno: this.formData.apellidoMaterno,
+      fecha_nacimiento: this.formData.fechaNacimiento,
+      genero: this.formData.sexo,
+      curp: this.formData.curp,
+      estado_nacimiento: this.formData.estado,
+      hospital_nacimiento: '',
+      nombre_padre_madre: this.formData.nombrePadreMadre,
+      direccion: [this.formData.calle, this.formData.numeroExterior, this.formData.numeroInterior].filter(Boolean).join(' '),
+      colonia: this.formData.colonia,
+      ciudad: this.formData.ciudad,
+      estado: this.formData.estado,
+      codigo_postal: this.formData.codigoPostal,
+      telefono_casa: this.formData.telefonoCasa,
+      telefono_celular: this.formData.telefonoCelular,
+      correo_electronico: this.formData.correoElectronico,
+      en_emergencia_avisar_a: this.formData.enEmergenciaAvisarA,
+      telefono_emergencia: this.formData.telefonoEmergencia,
+      tipo_sangre: this.formData.tipoSangre,
+      usa_valvula: this.formData.usaValvula ? 'S' : 'N',
+      tipo_cuota: 'A',
+      notas_adicionales: notasParts.join(' | '),
+      paso_actual: 4,
+    };
+
+    this.api.createPreRegistro(payload).subscribe({
+      next: () => {
+        this.submitted = true;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      error: (err) => {
+        console.error('Error al enviar pre-registro:', err);
+        this.submitted = true;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
   }
 }
