@@ -34,7 +34,20 @@
       "Bash(npx ng:*)",
       "mcp__claude_ai_Figma__get_design_context",
       "mcp__claude_ai_Figma__get_screenshot",
-      "Bash(grep -l \"tailwind\\\\|postcss\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/*.*)"
+      "Bash(grep -l \"tailwind\\\\|postcss\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/*.*)",
+      "Bash(python3:*)",
+      "Bash(sqlplus -v)",
+      "WebFetch(domain:mcpservers.org)",
+      "Skill(update-config)",
+      "mcp__dbeaver__test_connection",
+      "Read(//usr/local/**)",
+      "Read(//opt/**)",
+      "Bash(export TNS_ADMIN=\"/Users/maantora/Downloads/Wallet_FZ0FV0YXLD4QN44R \\(3\\)\")",
+      "Bash(/Users/maantora/Downloads/instantclient_23_3/sqlplus -L:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "dbeaver"
+  ]
 }

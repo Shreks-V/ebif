@@ -4,27 +4,53 @@ import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 
-interface InventarioItem {
-  id: number;
+interface ProductoItem {
+  idProducto: number;
+  claveInterna: string;
   nombre: string;
-  categoria: string;
-  stock: number | null;
-  stockMinimo: number | null;
-  estado: string;
-  unidad: string;
-  precioA: number;
-  precioB: number;
+  descripcion: string;
+  tipoProducto: string; // MEDICAMENTO / EQUIPO
+  precioA: number | null;
+  precioB: number | null;
+  activo: string;
+  // Subtype fields
+  presentacion?: string; // medicamento
+  dosis?: string; // medicamento
+  numeroSerie?: string; // equipo
+  marca?: string; // equipo
+  modelo?: string; // equipo
+  estatusEquipo?: string; // equipo
+  // Existencia
+  cantidadDisponible: number | null;
+  nivelMinimo: number | null;
+  unidadMedida: string;
 }
 
-interface Comodato {
-  id: number;
-  folio: string;
-  folioBeneficiario: string;
-  beneficiario: string;
-  equipo: string;
-  fechaInicio: string;
-  devolucion: string | null;
-  estado: string;
+interface ServicioItem {
+  idServicio: number;
+  nombre: string;
+  descripcion: string;
+  cuotaRecuperacion: number;
+  precioA: number | null;
+  precioB: number | null;
+  activo: string;
+}
+
+interface ComodatoItem {
+  idComodato: number;
+  folioComodato: string;
+  idEquipo: number;
+  nombreEquipo: string;
+  idPaciente: number;
+  nombrePaciente: string;
+  folioPaciente: string;
+  fechaPrestamo: string;
+  fechaDevolucion: string | null;
+  estatus: string; // PRESTADO / DEVUELTO / CANCELADO
+  montoTotal: number;
+  montoPagado: number;
+  saldoPendiente: number;
+  exentoPago: string;
 }
 
 @Component({
@@ -59,7 +85,7 @@ interface Comodato {
               <svg class="w-8 h-8 text-blue-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
               </svg>
-              <p class="text-4xl font-black text-slate-900">{{ inventario.length }}</p>
+              <p class="text-4xl font-black text-slate-900">{{ productos.length + servicios.length }}</p>
               <p class="text-sm text-slate-600 mt-1">Items en inventario</p>
             </div>
             <!-- Bajo Stock -->
@@ -165,26 +191,26 @@ interface Comodato {
                 </p>
               </button>
 
-              <!-- Equipo Comodato -->
+              <!-- Equipo -->
               <button
-                (click)="toggleCategory('Comodato')"
-                [class]="selectedCategory === 'Comodato'
+                (click)="toggleCategory('Equipo')"
+                [class]="selectedCategory === 'Equipo'
                   ? 'bg-green-50 rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-green-500 text-left transition-all'
                   : 'bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-slate-200 hover:border-green-300 text-left transition-all'"
               >
                 <div class="flex items-center gap-4 mb-3">
-                  <div [class]="selectedCategory === 'Comodato' ? 'p-3 bg-green-600 rounded-xl shadow-lg' : 'p-3 bg-green-100 rounded-xl'">
-                    <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Comodato'" [class.text-green-600]="selectedCategory !== 'Comodato'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <div [class]="selectedCategory === 'Equipo' ? 'p-3 bg-green-600 rounded-xl shadow-lg' : 'p-3 bg-green-100 rounded-xl'">
+                    <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Equipo'" [class.text-green-600]="selectedCategory !== 'Equipo'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                     </svg>
                   </div>
                   <div>
-                    <h3 class="text-lg font-bold text-slate-900">Equipo Comodato</h3>
-                    <p class="text-sm text-slate-600">{{ getCategoryCount('Comodato') }} items</p>
+                    <h3 class="text-lg font-bold text-slate-900">Equipo</h3>
+                    <p class="text-sm text-slate-600">{{ getCategoryCount('Equipo') }} items</p>
                   </div>
                 </div>
-                <p class="text-sm font-semibold" [class]="selectedCategory === 'Comodato' ? 'text-green-700' : 'text-slate-500'">
-                  {{ selectedCategory === 'Comodato' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
+                <p class="text-sm font-semibold" [class]="selectedCategory === 'Equipo' ? 'text-green-700' : 'text-slate-500'">
+                  {{ selectedCategory === 'Equipo' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
                 </p>
               </button>
             </div>
@@ -234,13 +260,13 @@ interface Comodato {
                       <td class="px-5 py-4">
                         <div class="flex items-center gap-2">
                           <div [ngClass]="getCategoryIconBg(item.categoria)" class="w-7 h-7 rounded-lg flex items-center justify-center">
-                            <svg *ngIf="item.categoria === 'Medicamento'" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg *ngIf="item.categoria === 'MEDICAMENTO'" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>
                             </svg>
-                            <svg *ngIf="item.categoria === 'Servicios'" class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg *ngIf="item.categoria === 'SERVICIO'" class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V4"/>
                             </svg>
-                            <svg *ngIf="item.categoria === 'Comodato'" class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg *ngIf="item.categoria === 'EQUIPO'" class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                             </svg>
                           </div>
@@ -248,14 +274,14 @@ interface Comodato {
                         </div>
                       </td>
                       <td class="px-5 py-4 text-slate-800 font-medium">{{ item.nombre }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ item.unidad }}</td>
-                      <td class="px-5 py-4 text-slate-800 font-semibold">{{ item.stock !== null ? item.stock : '\u2014' }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ item.stockMinimo !== null ? item.stockMinimo : '\u2014' }}</td>
+                      <td class="px-5 py-4 text-slate-600">{{ item.unidadMedida }}</td>
+                      <td class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible !== null ? item.cantidadDisponible : '\u2014' }}</td>
+                      <td class="px-5 py-4 text-slate-600">{{ item.nivelMinimo !== null ? item.nivelMinimo : '\u2014' }}</td>
                       <td class="px-5 py-4">
-                        <span class="text-green-700 font-semibold">\${{ item.precioA.toFixed(2) }}</span>
+                        <span class="text-green-700 font-semibold">{{ item.precioA !== null ? '$' + item.precioA.toFixed(2) : '\u2014' }}</span>
                       </td>
                       <td class="px-5 py-4">
-                        <span class="text-blue-700 font-semibold">\${{ item.precioB.toFixed(2) }}</span>
+                        <span class="text-blue-700 font-semibold">{{ item.precioB !== null ? '$' + item.precioB.toFixed(2) : '\u2014' }}</span>
                       </td>
                       <td class="px-5 py-4">
                         <span [ngClass]="getEstadoBadgeClass(item.estado)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
@@ -318,29 +344,29 @@ interface Comodato {
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Folio</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Beneficiario</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Equipo</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Fecha Inicio</th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Fecha Pr&eacute;stamo</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Devoluci&oacute;n</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Estado</th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Estatus</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngFor="let com of filteredComodatos()" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       <td class="px-5 py-4">
-                        <span class="font-mono text-green-700 font-semibold bg-green-50 px-2 py-0.5 rounded">{{ com.folio }}</span>
+                        <span class="font-mono text-green-700 font-semibold bg-green-50 px-2 py-0.5 rounded">{{ com.folioComodato }}</span>
                       </td>
                       <td class="px-5 py-4">
                         <div>
-                          <p class="text-slate-800 font-medium">{{ com.beneficiario }}</p>
-                          <p class="text-xs text-slate-400">{{ com.folioBeneficiario }}</p>
+                          <p class="text-slate-800 font-medium">{{ com.nombrePaciente }}</p>
+                          <p class="text-xs text-slate-400">{{ com.folioPaciente }}</p>
                         </div>
                       </td>
-                      <td class="px-5 py-4 text-slate-700">{{ com.equipo }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ com.fechaInicio }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ com.devolucion ?? '\u2014' }}</td>
+                      <td class="px-5 py-4 text-slate-700">{{ com.nombreEquipo }}</td>
+                      <td class="px-5 py-4 text-slate-600">{{ com.fechaPrestamo }}</td>
+                      <td class="px-5 py-4 text-slate-600">{{ com.fechaDevolucion ?? '\u2014' }}</td>
                       <td class="px-5 py-4">
-                        <span [ngClass]="getComodatoEstadoBadgeClass(com.estado)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                          {{ com.estado }}
+                        <span [ngClass]="getComodatoEstadoBadgeClass(com.estatus)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                          {{ com.estatus }}
                         </span>
                       </td>
                       <td class="px-5 py-4">
@@ -372,68 +398,157 @@ export class AlmacenComponent {
   searchInventario = '';
   searchComodatos = '';
 
-  inventario: InventarioItem[] = [
-    { id: 1, nombre: 'Acarbixin (amoxicilina) 500/125 mg', categoria: 'Medicamento', stock: 450, stockMinimo: 100, estado: 'Normal', unidad: 'Piezas', precioA: 10.50, precioB: 15.00 },
-    { id: 2, nombre: 'Amikacina soluc. iny. 500 mg', categoria: 'Medicamento', stock: 30, stockMinimo: 50, estado: 'Bajo Stock', unidad: 'Piezas', precioA: 25.00, precioB: 35.00 },
-    { id: 3, nombre: 'Epamin 100mg c/50', categoria: 'Medicamento', stock: 75, stockMinimo: 20, estado: 'Normal', unidad: 'Piezas', precioA: 45.00, precioB: 60.00 },
-    { id: 4, nombre: 'Silla de ruedas aluminio 16"', categoria: 'Comodato', stock: 8, stockMinimo: 5, estado: 'Normal', unidad: 'Pieza', precioA: 50.00, precioB: 75.00 },
-    { id: 5, nombre: 'Silla de ruedas infantil rosa 12"', categoria: 'Comodato', stock: 12, stockMinimo: 10, estado: 'Normal', unidad: 'Pieza', precioA: 45.00, precioB: 65.00 },
-    { id: 6, nombre: 'Silla de ruedas todo terreno 18"', categoria: 'Comodato', stock: 6, stockMinimo: 5, estado: 'Normal', unidad: 'Pieza', precioA: 100.00, precioB: 140.00 },
-    { id: 7, nombre: 'Perfil bioquimico 24 elementos', categoria: 'Servicios', stock: null, stockMinimo: null, estado: 'N/A', unidad: 'Servicio', precioA: 250.00, precioB: 350.00 },
-    { id: 8, nombre: 'Perfil de lipidos', categoria: 'Servicios', stock: null, stockMinimo: null, estado: 'N/A', unidad: 'Servicio', precioA: 180.00, precioB: 250.00 },
-    { id: 9, nombre: 'Resonancia magnetica', categoria: 'Servicios', stock: null, stockMinimo: null, estado: 'N/A', unidad: 'Servicio', precioA: 800.00, precioB: 1100.00 },
+  productos: ProductoItem[] = [
+    // Medicamentos
+    {
+      idProducto: 1, claveInterna: 'MED-001', nombre: 'Oxibutinina 5mg', descripcion: 'Anticolinergico para vejiga neurogenica',
+      tipoProducto: 'MEDICAMENTO', precioA: 12.50, precioB: 18.00, activo: 'S',
+      presentacion: 'Tabletas', dosis: '5mg',
+      cantidadDisponible: 320, nivelMinimo: 100, unidadMedida: 'Piezas'
+    },
+    {
+      idProducto: 2, claveInterna: 'MED-002', nombre: 'Baclofeno 10mg', descripcion: 'Relajante muscular de accion central',
+      tipoProducto: 'MEDICAMENTO', precioA: 8.00, precioB: 12.00, activo: 'S',
+      presentacion: 'Tabletas', dosis: '10mg',
+      cantidadDisponible: 45, nivelMinimo: 80, unidadMedida: 'Piezas'
+    },
+    {
+      idProducto: 3, claveInterna: 'MED-003', nombre: 'Dicloxacilina 500mg', descripcion: 'Antibiotico para infecciones de piel',
+      tipoProducto: 'MEDICAMENTO', precioA: 15.00, precioB: 22.00, activo: 'S',
+      presentacion: 'Capsulas', dosis: '500mg',
+      cantidadDisponible: 200, nivelMinimo: 60, unidadMedida: 'Piezas'
+    },
+    // Equipos
+    {
+      idProducto: 4, claveInterna: 'EQP-001', nombre: 'Silla de Ruedas Pediatrica', descripcion: 'Silla de ruedas para uso pediatrico',
+      tipoProducto: 'EQUIPO', precioA: 50.00, precioB: 75.00, activo: 'S',
+      numeroSerie: 'SR-2024-001', marca: 'Sunrise Medical', modelo: 'Zippie TS', estatusEquipo: 'DISPONIBLE',
+      cantidadDisponible: 8, nivelMinimo: 3, unidadMedida: 'Pieza'
+    },
+    {
+      idProducto: 5, claveInterna: 'EQP-002', nombre: 'Andadera Ortopedica', descripcion: 'Andadera plegable con ruedas',
+      tipoProducto: 'EQUIPO', precioA: 35.00, precioB: 50.00, activo: 'S',
+      numeroSerie: 'AND-2024-001', marca: 'Drive Medical', modelo: 'Nitro Sprint', estatusEquipo: 'DISPONIBLE',
+      cantidadDisponible: 12, nivelMinimo: 5, unidadMedida: 'Pieza'
+    },
+    {
+      idProducto: 6, claveInterna: 'EQP-003', nombre: 'Ferula AFO', descripcion: 'Ortesis tobillo-pie para soporte',
+      tipoProducto: 'EQUIPO', precioA: 80.00, precioB: 120.00, activo: 'S',
+      numeroSerie: 'AFO-2024-001', marca: 'Ottobock', modelo: 'WalkOn Reaction', estatusEquipo: 'EN_PRESTAMO',
+      cantidadDisponible: 4, nivelMinimo: 5, unidadMedida: 'Pieza'
+    },
   ];
 
-  comodatos: Comodato[] = [
-    { id: 1, folio: 'COM-000001', folioBeneficiario: 'BEN-000156', beneficiario: 'Carlos Rodriguez', equipo: 'Silla de ruedas aluminio 16"', fechaInicio: '2026-02-15', devolucion: null, estado: 'Activo' },
-    { id: 2, folio: 'COM-000002', folioBeneficiario: 'BEN-000089', beneficiario: 'Ana Martinez Torres', equipo: 'Silla de ruedas infantil rosa 12"', fechaInicio: '2026-01-20', devolucion: '2026-03-01', estado: 'Devuelto' },
-    { id: 3, folio: 'COM-000003', folioBeneficiario: 'BEN-000234', beneficiario: 'Juan Perez Martinez', equipo: 'Muletas ajustables', fechaInicio: '2026-02-28', devolucion: null, estado: 'Devolucion Pendiente' },
-    { id: 4, folio: 'COM-000004', folioBeneficiario: 'BEN-000123', beneficiario: 'Maria Garcia Lopez', equipo: 'Andadera plegable', fechaInicio: '2025-12-10', devolucion: null, estado: 'Entregado Final' },
+  servicios: ServicioItem[] = [
+    { idServicio: 1, nombre: 'Consulta Ortopedica', descripcion: 'Valoracion ortopedica especializada', cuotaRecuperacion: 250.00, precioA: 250.00, precioB: 350.00, activo: 'S' },
+    { idServicio: 2, nombre: 'Consulta Neurologica', descripcion: 'Valoracion neurologica especializada', cuotaRecuperacion: 300.00, precioA: 300.00, precioB: 420.00, activo: 'S' },
+    { idServicio: 3, nombre: 'Consulta Urologica', descripcion: 'Valoracion urologica especializada', cuotaRecuperacion: 280.00, precioA: 280.00, precioB: 390.00, activo: 'S' },
+    { idServicio: 4, nombre: 'Fisioterapia', descripcion: 'Sesion de fisioterapia y rehabilitacion', cuotaRecuperacion: 200.00, precioA: 200.00, precioB: 280.00, activo: 'S' },
+    { idServicio: 5, nombre: 'Terapia Ocupacional', descripcion: 'Sesion de terapia ocupacional', cuotaRecuperacion: 180.00, precioA: 180.00, precioB: 250.00, activo: 'S' },
+  ];
+
+  comodatos: ComodatoItem[] = [
+    { idComodato: 1, folioComodato: 'COM-000001', idEquipo: 4, nombreEquipo: 'Silla de Ruedas Pediatrica', idPaciente: 156, nombrePaciente: 'Carlos Rodriguez Gomez', folioPaciente: 'PAC-000156', fechaPrestamo: '2026-02-15', fechaDevolucion: null, estatus: 'PRESTADO', montoTotal: 750.00, montoPagado: 300.00, saldoPendiente: 450.00, exentoPago: 'N' },
+    { idComodato: 2, folioComodato: 'COM-000002', idEquipo: 5, nombreEquipo: 'Andadera Ortopedica', idPaciente: 89, nombrePaciente: 'Ana Martinez Torres', folioPaciente: 'PAC-000089', fechaPrestamo: '2026-01-20', fechaDevolucion: '2026-03-01', estatus: 'DEVUELTO', montoTotal: 500.00, montoPagado: 500.00, saldoPendiente: 0, exentoPago: 'N' },
+    { idComodato: 3, folioComodato: 'COM-000003', idEquipo: 6, nombreEquipo: 'Ferula AFO', idPaciente: 234, nombrePaciente: 'Juan Perez Martinez', folioPaciente: 'PAC-000234', fechaPrestamo: '2026-02-28', fechaDevolucion: null, estatus: 'PRESTADO', montoTotal: 1200.00, montoPagado: 400.00, saldoPendiente: 800.00, exentoPago: 'N' },
+    { idComodato: 4, folioComodato: 'COM-000004', idEquipo: 4, nombreEquipo: 'Silla de Ruedas Pediatrica', idPaciente: 123, nombrePaciente: 'Maria Garcia Lopez', folioPaciente: 'PAC-000123', fechaPrestamo: '2025-12-10', fechaDevolucion: null, estatus: 'CANCELADO', montoTotal: 750.00, montoPagado: 0, saldoPendiente: 750.00, exentoPago: 'S' },
   ];
 
   getBajoStockCount(): number {
-    return this.inventario.filter(i => i.estado === 'Bajo Stock').length;
+    return this.productos.filter(p =>
+      p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo
+    ).length;
   }
 
   getComodatosActivosCount(): number {
-    return this.comodatos.filter(c => c.estado === 'Activo').length;
+    return this.comodatos.filter(c => c.estatus === 'PRESTADO').length;
   }
 
   getCategoryCount(categoria: string): number {
-    return this.inventario.filter(i => i.categoria === categoria).length;
+    if (categoria === 'Medicamento') {
+      return this.productos.filter(p => p.tipoProducto === 'MEDICAMENTO').length;
+    }
+    if (categoria === 'Servicios') {
+      return this.servicios.length;
+    }
+    if (categoria === 'Equipo') {
+      return this.productos.filter(p => p.tipoProducto === 'EQUIPO').length;
+    }
+    return 0;
   }
 
   toggleCategory(categoria: string): void {
     this.selectedCategory = this.selectedCategory === categoria ? null : categoria;
   }
 
-  filteredInventario(): InventarioItem[] {
-    let items = this.inventario;
-    if (this.selectedCategory) {
-      items = items.filter(i => i.categoria === this.selectedCategory);
+  // Unified row type for the inventory table
+  filteredInventario(): { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string }[] {
+    let items: { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string }[] = [];
+
+    const showMedicamentos = !this.selectedCategory || this.selectedCategory === 'Medicamento';
+    const showServicios = !this.selectedCategory || this.selectedCategory === 'Servicios';
+    const showEquipos = !this.selectedCategory || this.selectedCategory === 'Equipo';
+
+    if (showMedicamentos) {
+      this.productos
+        .filter(p => p.tipoProducto === 'MEDICAMENTO')
+        .forEach(p => {
+          const estado = (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo)
+            ? 'Bajo Stock'
+            : (p.cantidadDisponible === 0 ? 'Agotado' : 'Normal');
+          items.push({
+            id: p.idProducto, categoria: 'MEDICAMENTO', nombre: p.nombre, unidadMedida: p.unidadMedida,
+            cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
+            precioA: p.precioA, precioB: p.precioB, estado
+          });
+        });
     }
+
+    if (showServicios) {
+      this.servicios.forEach(s => {
+        items.push({
+          id: s.idServicio, categoria: 'SERVICIO', nombre: s.nombre, unidadMedida: 'Servicio',
+          cantidadDisponible: null, nivelMinimo: null,
+          precioA: s.precioA, precioB: s.precioB, estado: 'N/A'
+        });
+      });
+    }
+
+    if (showEquipos) {
+      this.productos
+        .filter(p => p.tipoProducto === 'EQUIPO')
+        .forEach(p => {
+          items.push({
+            id: p.idProducto, categoria: 'EQUIPO', nombre: p.nombre, unidadMedida: p.unidadMedida,
+            cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
+            precioA: p.precioA, precioB: p.precioB, estado: p.estatusEquipo ?? 'N/A'
+          });
+        });
+    }
+
     if (this.searchInventario.trim()) {
       const q = this.searchInventario.toLowerCase();
       items = items.filter(i => i.nombre.toLowerCase().includes(q) || i.categoria.toLowerCase().includes(q));
     }
+
     return items;
   }
 
-  filteredComodatos(): Comodato[] {
+  filteredComodatos(): ComodatoItem[] {
     if (!this.searchComodatos.trim()) return this.comodatos;
     const q = this.searchComodatos.toLowerCase();
     return this.comodatos.filter(c =>
-      c.beneficiario.toLowerCase().includes(q) ||
-      c.folio.toLowerCase().includes(q) ||
-      c.equipo.toLowerCase().includes(q)
+      c.nombrePaciente.toLowerCase().includes(q) ||
+      c.folioComodato.toLowerCase().includes(q) ||
+      c.nombreEquipo.toLowerCase().includes(q)
     );
   }
 
   getCategoryIconBg(categoria: string): string {
     switch (categoria) {
-      case 'Medicamento': return 'bg-blue-100';
-      case 'Servicios': return 'bg-purple-100';
-      case 'Comodato': return 'bg-green-100';
+      case 'MEDICAMENTO': return 'bg-blue-100';
+      case 'SERVICIO': return 'bg-purple-100';
+      case 'EQUIPO': return 'bg-green-100';
       default: return 'bg-slate-100';
     }
   }
@@ -441,19 +556,21 @@ export class AlmacenComponent {
   getEstadoBadgeClass(estado: string): string {
     switch (estado) {
       case 'Normal': return 'bg-green-100 text-green-700';
+      case 'DISPONIBLE': return 'bg-green-100 text-green-700';
       case 'Bajo Stock': return 'bg-amber-100 text-amber-700';
+      case 'EN_PRESTAMO': return 'bg-blue-100 text-blue-700';
       case 'Agotado': return 'bg-red-100 text-red-700';
+      case 'EN_MANTENIMIENTO': return 'bg-orange-100 text-orange-700';
       case 'N/A': return 'bg-slate-100 text-slate-500';
       default: return 'bg-slate-100 text-slate-500';
     }
   }
 
-  getComodatoEstadoBadgeClass(estado: string): string {
-    switch (estado) {
-      case 'Activo': return 'bg-green-100 text-green-700';
-      case 'Devuelto': return 'bg-slate-100 text-slate-600';
-      case 'Devolucion Pendiente': return 'bg-amber-100 text-amber-700';
-      case 'Entregado Final': return 'bg-red-100 text-red-700';
+  getComodatoEstadoBadgeClass(estatus: string): string {
+    switch (estatus) {
+      case 'PRESTADO': return 'bg-green-100 text-green-700';
+      case 'DEVUELTO': return 'bg-slate-100 text-slate-600';
+      case 'CANCELADO': return 'bg-red-100 text-red-700';
       default: return 'bg-slate-100 text-slate-500';
     }
   }

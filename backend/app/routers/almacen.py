@@ -1,625 +1,803 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Optional
-from datetime import date, datetime, timedelta
+from typing import Optional, List
+from datetime import date, datetime
 from app.core.security import get_current_user
-from app.schemas.schemas import ProductoCreate, ServicioOtorgado, Comodato
+from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.schemas.schemas import (
+    ProductoCreate,
+    ProductoResponse,
+    ServicioCreate,
+    ServicioResponse,
+    ComodatoCreate,
+    ComodatoResponse,
+    ExistenciaProducto,
+    MovimientoInventario,
+)
 
 router = APIRouter()
 
-# ──────────────────────────── MOCK DATA – PRODUCTOS ────────────────────────────
 
-mock_productos = [
-    {
-        "id_producto": 1,
-        "clave": "MED-001",
-        "nombre": "Oxibutinina 5mg",
-        "descripcion": "Anticolinérgico para vejiga neurogénica",
-        "categoria": "Medicamento",
-        "unidad": "Caja (30 tabletas)",
-        "cuota_recuperacion": 85.00,
-        "cantidad_disponible": 45,
-        "stock_minimo": 10,
-        "fecha_caducidad": "2027-06-15",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 2,
-        "clave": "MED-002",
-        "nombre": "Baclofeno 10mg",
-        "descripcion": "Relajante muscular para espasticidad",
-        "categoria": "Medicamento",
-        "unidad": "Caja (30 tabletas)",
-        "cuota_recuperacion": 120.00,
-        "cantidad_disponible": 30,
-        "stock_minimo": 10,
-        "fecha_caducidad": "2027-03-20",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 3,
-        "clave": "MED-003",
-        "nombre": "Gabapentina 300mg",
-        "descripcion": "Para dolor neuropático",
-        "categoria": "Medicamento",
-        "unidad": "Caja (30 cápsulas)",
-        "cuota_recuperacion": 95.00,
-        "cantidad_disponible": 25,
-        "stock_minimo": 8,
-        "fecha_caducidad": "2026-12-10",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 4,
-        "clave": "MED-004",
-        "nombre": "Trimetoprima/Sulfametoxazol",
-        "descripcion": "Antibiótico para infecciones urinarias",
-        "categoria": "Medicamento",
-        "unidad": "Caja (20 tabletas)",
-        "cuota_recuperacion": 65.00,
-        "cantidad_disponible": 50,
-        "stock_minimo": 15,
-        "fecha_caducidad": "2027-01-30",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 5,
-        "clave": "MED-005",
-        "nombre": "Nitrofurantoína 100mg",
-        "descripcion": "Antiséptico urinario",
-        "categoria": "Medicamento",
-        "unidad": "Caja (40 cápsulas)",
-        "cuota_recuperacion": 75.00,
-        "cantidad_disponible": 3,
-        "stock_minimo": 10,
-        "fecha_caducidad": "2026-08-15",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 6,
-        "clave": "MAT-001",
-        "nombre": "Sonda Nelaton No. 8",
-        "descripcion": "Sonda para cateterismo intermitente pediátrico",
-        "categoria": "Material",
-        "unidad": "Pieza",
-        "cuota_recuperacion": 15.00,
-        "cantidad_disponible": 200,
-        "stock_minimo": 50,
-        "fecha_caducidad": "2028-01-01",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 7,
-        "clave": "MAT-002",
-        "nombre": "Sonda Nelaton No. 12",
-        "descripcion": "Sonda para cateterismo intermitente adulto",
-        "categoria": "Material",
-        "unidad": "Pieza",
-        "cuota_recuperacion": 18.00,
-        "cantidad_disponible": 150,
-        "stock_minimo": 40,
-        "fecha_caducidad": "2028-01-01",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 8,
-        "clave": "MAT-003",
-        "nombre": "Gel lubricante estéril",
-        "descripcion": "Lubricante para cateterismo",
-        "categoria": "Material",
-        "unidad": "Tubo 100ml",
-        "cuota_recuperacion": 35.00,
-        "cantidad_disponible": 80,
-        "stock_minimo": 20,
-        "fecha_caducidad": "2027-09-01",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 9,
-        "clave": "MAT-004",
-        "nombre": "Pañales adulto talla M",
-        "descripcion": "Pañal desechable para adulto",
-        "categoria": "Material",
-        "unidad": "Paquete (10 piezas)",
-        "cuota_recuperacion": 55.00,
-        "cantidad_disponible": 60,
-        "stock_minimo": 20,
-        "fecha_caducidad": None,
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 10,
-        "clave": "MAT-005",
-        "nombre": "Guantes de látex talla M",
-        "descripcion": "Guantes desechables para procedimientos",
-        "categoria": "Material",
-        "unidad": "Caja (100 piezas)",
-        "cuota_recuperacion": 45.00,
-        "cantidad_disponible": 4,
-        "stock_minimo": 10,
-        "fecha_caducidad": "2027-06-01",
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 11,
-        "clave": "EQU-001",
-        "nombre": "Silla de ruedas estándar",
-        "descripcion": "Silla de ruedas plegable para adulto",
-        "categoria": "Equipo",
-        "unidad": "Pieza",
-        "cuota_recuperacion": 0.00,
-        "cantidad_disponible": 8,
-        "stock_minimo": 3,
-        "fecha_caducidad": None,
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 12,
-        "clave": "EQU-002",
-        "nombre": "Silla de ruedas pediátrica",
-        "descripcion": "Silla de ruedas plegable para niño",
-        "categoria": "Equipo",
-        "unidad": "Pieza",
-        "cuota_recuperacion": 0.00,
-        "cantidad_disponible": 5,
-        "stock_minimo": 2,
-        "fecha_caducidad": None,
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 13,
-        "clave": "EQU-003",
-        "nombre": "Muletas axilares aluminio",
-        "descripcion": "Par de muletas ajustables",
-        "categoria": "Equipo",
-        "unidad": "Par",
-        "cuota_recuperacion": 0.00,
-        "cantidad_disponible": 12,
-        "stock_minimo": 5,
-        "fecha_caducidad": None,
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 14,
-        "clave": "EQU-004",
-        "nombre": "Andadera plegable",
-        "descripcion": "Andadera de aluminio con ruedas frontales",
-        "categoria": "Equipo",
-        "unidad": "Pieza",
-        "cuota_recuperacion": 0.00,
-        "cantidad_disponible": 6,
-        "stock_minimo": 3,
-        "fecha_caducidad": None,
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 15,
-        "clave": "EQU-005",
-        "nombre": "Órtesis tobillo-pie (AFO)",
-        "descripcion": "Férula ortopédica para pie y tobillo",
-        "categoria": "Equipo",
-        "unidad": "Pieza",
-        "cuota_recuperacion": 0.00,
-        "cantidad_disponible": 2,
-        "stock_minimo": 3,
-        "fecha_caducidad": None,
-        "estatus": "Disponible",
-    },
-    {
-        "id_producto": 16,
-        "clave": "MAT-006",
-        "nombre": "Bolsa colectora de orina",
-        "descripcion": "Bolsa recolectora de pierna 750ml",
-        "categoria": "Material",
-        "unidad": "Pieza",
-        "cuota_recuperacion": 25.00,
-        "cantidad_disponible": 40,
-        "stock_minimo": 15,
-        "fecha_caducidad": "2027-12-01",
-        "estatus": "Disponible",
-    },
-]
-
-# ──────────────────────────── MOCK DATA – SERVICIOS OTORGADOS ────────────────────────────
-
-mock_servicios = [
-    {
-        "id": 1,
-        "folio_beneficiario": "BEN-000001",
-        "nombre_beneficiario": "María Fernanda García López",
-        "tipo_servicio": "Consulta Neurocirugía",
-        "fecha": "2026-03-15",
-        "monto_pagado": 150.00,
-        "notas": "Revisión postquirúrgica satisfactoria",
-    },
-    {
-        "id": 2,
-        "folio_beneficiario": "BEN-000004",
-        "nombre_beneficiario": "Diego Alejandro Treviño Salazar",
-        "tipo_servicio": "Consulta Urología",
-        "fecha": "2026-03-14",
-        "monto_pagado": 150.00,
-        "notas": "Estudios urodinámicos normales",
-    },
-    {
-        "id": 3,
-        "folio_beneficiario": "BEN-000002",
-        "nombre_beneficiario": "Carlos Eduardo Martínez Hernández",
-        "tipo_servicio": "Terapia Física",
-        "fecha": "2026-03-13",
-        "monto_pagado": 200.00,
-        "notas": "Sesión de rehabilitación",
-    },
-    {
-        "id": 4,
-        "folio_beneficiario": "BEN-000009",
-        "nombre_beneficiario": "Isabella Lozano Pérez",
-        "tipo_servicio": "Consulta Pediatría",
-        "fecha": "2026-03-12",
-        "monto_pagado": 100.00,
-        "notas": "Control de peso y talla",
-    },
-    {
-        "id": 5,
-        "folio_beneficiario": "BEN-000006",
-        "nombre_beneficiario": "José Manuel Ramírez Ochoa",
-        "tipo_servicio": "Consulta Ortopedia",
-        "fecha": "2026-03-10",
-        "monto_pagado": 150.00,
-        "notas": "Evaluación de equipo ortopédico",
-    },
-    {
-        "id": 6,
-        "folio_beneficiario": "BEN-000005",
-        "nombre_beneficiario": "Valentina Flores Cantú",
-        "tipo_servicio": "Consulta Neurología",
-        "fecha": "2026-03-08",
-        "monto_pagado": 180.00,
-        "notas": "Seguimiento trimestral",
-    },
-    {
-        "id": 7,
-        "folio_beneficiario": "BEN-000012",
-        "nombre_beneficiario": "Emiliano Reyes Morales",
-        "tipo_servicio": "Estudios Urodinámicos",
-        "fecha": "2026-03-05",
-        "monto_pagado": 350.00,
-        "notas": "Estudio completo",
-    },
-    {
-        "id": 8,
-        "folio_beneficiario": "BEN-000003",
-        "nombre_beneficiario": "Sofía Rodríguez Garza",
-        "tipo_servicio": "Terapia Física",
-        "fecha": "2026-03-03",
-        "monto_pagado": 200.00,
-        "notas": "Terapia de fortalecimiento",
-    },
-    {
-        "id": 9,
-        "folio_beneficiario": "BEN-000008",
-        "nombre_beneficiario": "Luis Ángel Salinas Gutiérrez",
-        "tipo_servicio": "Consulta Urología",
-        "fecha": "2026-02-28",
-        "monto_pagado": 150.00,
-        "notas": "Revisión semestral",
-    },
-    {
-        "id": 10,
-        "folio_beneficiario": "BEN-000015",
-        "nombre_beneficiario": "Ximena Guajardo Tamez",
-        "tipo_servicio": "Consulta Pediatría",
-        "fecha": "2026-02-25",
-        "monto_pagado": 100.00,
-        "notas": "Control de desarrollo",
-    },
-]
-
-# ──────────────────────────── MOCK DATA – COMODATOS ────────────────────────────
-
-mock_comodatos = [
-    {
-        "id": 1,
-        "folio_comodato": "COM-000001",
-        "folio_beneficiario": "BEN-000006",
-        "nombre_beneficiario": "José Manuel Ramírez Ochoa",
-        "equipo": "Silla de ruedas estándar",
-        "fecha_inicio": "2025-06-15",
-        "fecha_devolucion": None,
-        "monto_total": 0.00,
-        "monto_pagado": 0.00,
-        "saldo_pendiente": 0.00,
-        "estatus": "PRESTADO",
-    },
-    {
-        "id": 2,
-        "folio_comodato": "COM-000002",
-        "folio_beneficiario": "BEN-000001",
-        "nombre_beneficiario": "María Fernanda García López",
-        "equipo": "Silla de ruedas pediátrica",
-        "fecha_inicio": "2025-08-20",
-        "fecha_devolucion": None,
-        "monto_total": 0.00,
-        "monto_pagado": 0.00,
-        "saldo_pendiente": 0.00,
-        "estatus": "PRESTADO",
-    },
-    {
-        "id": 3,
-        "folio_comodato": "COM-000003",
-        "folio_beneficiario": "BEN-000012",
-        "nombre_beneficiario": "Emiliano Reyes Morales",
-        "equipo": "Muletas axilares aluminio",
-        "fecha_inicio": "2025-09-10",
-        "fecha_devolucion": "2026-01-15",
-        "monto_total": 0.00,
-        "monto_pagado": 0.00,
-        "saldo_pendiente": 0.00,
-        "estatus": "DEVUELTO",
-    },
-    {
-        "id": 4,
-        "folio_comodato": "COM-000004",
-        "folio_beneficiario": "BEN-000010",
-        "nombre_beneficiario": "Andrés De la Garza Ríos",
-        "equipo": "Silla de ruedas estándar",
-        "fecha_inicio": "2025-04-01",
-        "fecha_devolucion": None,
-        "monto_total": 0.00,
-        "monto_pagado": 0.00,
-        "saldo_pendiente": 0.00,
-        "estatus": "PRESTADO",
-    },
-    {
-        "id": 5,
-        "folio_comodato": "COM-000005",
-        "folio_beneficiario": "BEN-000004",
-        "nombre_beneficiario": "Diego Alejandro Treviño Salazar",
-        "equipo": "Órtesis tobillo-pie (AFO)",
-        "fecha_inicio": "2025-11-20",
-        "fecha_devolucion": None,
-        "monto_total": 0.00,
-        "monto_pagado": 0.00,
-        "saldo_pendiente": 0.00,
-        "estatus": "PRESTADO",
-    },
-    {
-        "id": 6,
-        "folio_comodato": "COM-000006",
-        "folio_beneficiario": "BEN-000014",
-        "nombre_beneficiario": "Roberto Chávez Banda",
-        "equipo": "Andadera plegable",
-        "fecha_inicio": "2025-07-05",
-        "fecha_devolucion": "2025-12-20",
-        "monto_total": 0.00,
-        "monto_pagado": 0.00,
-        "saldo_pendiente": 0.00,
-        "estatus": "CANCELADO",
-    },
-]
-
-_next_producto_id = len(mock_productos) + 1
-_next_servicio_id = len(mock_servicios) + 1
-_next_comodato_id = len(mock_comodatos) + 1
+# ══════════════════════════════════════════════════════════════════════════════
+#  HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
 
 
-# ──────────────────────────── ENDPOINTS – PRODUCTOS ────────────────────────────
+def _serialize(row: dict) -> dict:
+    """Strip CHAR padding and convert dates to ISO strings."""
+    result = {}
+    for key, value in row.items():
+        if isinstance(value, (datetime, date)):
+            result[key] = value.isoformat()
+        elif isinstance(value, str):
+            result[key] = value.strip()
+        else:
+            result[key] = value
+    return result
 
 
-@router.get("/productos")
+_PRODUCTOS_BASE_SQL = """
+    SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE, p.DESCRIPCION,
+           p.TIPO_PRODUCTO, p.ACTIVO, p.ID_USUARIO_REGISTRO, p.FECHA_REGISTRO,
+           p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,
+           m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,
+           e.NUMERO_SERIE, e2.MARCA, e2.MODELO, e2.ESTATUS_EQUIPO, e2.OBSERVACIONES,
+           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA
+    FROM PRODUCTO p
+    LEFT JOIN MEDICAMENTO m       ON m.ID_PRODUCTO  = p.ID_PRODUCTO
+    LEFT JOIN EQUIPO_MEDICO e2    ON e2.ID_PRODUCTO = p.ID_PRODUCTO
+    LEFT JOIN EXISTENCIA_PRODUCTO ex ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'
+"""
+
+# NOTE: The alias 'e' was reserved for EQUIPO_MEDICO in the original mock
+# which exposed NUMERO_SERIE at equipo level.  The DB schema puts NUMERO_SERIE
+# inside EQUIPO_MEDICO, so we just read it from e2.
+
+# Fix: remove the dangling LEFT JOIN alias 'e' – NUMERO_SERIE lives in EQUIPO_MEDICO.
+_PRODUCTOS_BASE_SQL = """
+    SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE, p.DESCRIPCION,
+           p.TIPO_PRODUCTO, p.ACTIVO, p.ID_USUARIO_REGISTRO, p.FECHA_REGISTRO,
+           p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,
+           m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,
+           eq.NUMERO_SERIE, eq.MARCA, eq.MODELO, eq.ESTATUS_EQUIPO, eq.OBSERVACIONES,
+           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA
+    FROM PRODUCTO p
+    LEFT JOIN MEDICAMENTO m        ON m.ID_PRODUCTO  = p.ID_PRODUCTO
+    LEFT JOIN EQUIPO_MEDICO eq     ON eq.ID_PRODUCTO = p.ID_PRODUCTO
+    LEFT JOIN EXISTENCIA_PRODUCTO ex ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'
+"""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ENDPOINTS - PRODUCTOS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/productos", response_model=List[ProductoResponse])
 def listar_productos(
-    categoria: Optional[str] = Query(None),
+    tipo_producto: Optional[str] = Query(None, description="MEDICAMENTO o EQUIPO"),
     busqueda: Optional[str] = Query(None),
-    estatus: Optional[str] = Query(None),
+    activo: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
 ):
-    """Listar productos del almacén con filtros opcionales."""
-    resultados = list(mock_productos)
+    """Listar productos del almacen con filtros opcionales."""
+    sql = _PRODUCTOS_BASE_SQL + " WHERE 1=1"
+    params: dict = {}
 
-    if categoria:
-        resultados = [p for p in resultados if p["categoria"] == categoria]
+    if tipo_producto:
+        sql += " AND p.TIPO_PRODUCTO = :tipo_producto"
+        params["tipo_producto"] = tipo_producto
 
-    if estatus:
-        resultados = [p for p in resultados if p["estatus"] == estatus]
+    if activo:
+        sql += " AND p.ACTIVO = :activo"
+        params["activo"] = activo
 
     if busqueda:
-        q = busqueda.lower()
-        resultados = [
-            p
-            for p in resultados
-            if q in p["nombre"].lower()
-            or q in (p.get("descripcion") or "").lower()
-            or q in p["clave"].lower()
-        ]
+        sql += (
+            " AND (LOWER(p.NOMBRE) LIKE :busqueda"
+            " OR LOWER(p.DESCRIPCION) LIKE :busqueda"
+            " OR LOWER(p.CLAVE_INTERNA) LIKE :busqueda)"
+        )
+        params["busqueda"] = f"%{busqueda.lower()}%"
 
-    return resultados
+    sql += " ORDER BY p.ID_PRODUCTO"
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+
+    return [_serialize(r) for r in rows]
 
 
-@router.post("/productos", status_code=201)
-def crear_producto(
-    data: ProductoCreate, current_user: dict = Depends(get_current_user)
+@router.get("/productos/{id_producto}", response_model=ProductoResponse)
+def obtener_producto(
+    id_producto: int,
+    current_user: dict = Depends(get_current_user),
 ):
-    """Agregar nuevo producto al almacén."""
-    global _next_producto_id
-    nuevo = data.model_dump()
-    nuevo["id_producto"] = _next_producto_id
-    _next_producto_id += 1
-    mock_productos.append(nuevo)
-    return nuevo
+    """Obtener un producto por ID."""
+    sql = _PRODUCTOS_BASE_SQL + " WHERE p.ID_PRODUCTO = :id_producto"
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {"id_producto": id_producto})
+        row = row_to_dict(cursor)
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return _serialize(row)
 
 
-@router.put("/productos/{id_producto}")
+@router.post("/productos", status_code=201, response_model=ProductoResponse)
+def crear_producto(
+    data: ProductoCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Crear un nuevo producto con su subtipo y existencia."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get("id_usuario", 1)
+
+        # Generate CLAVE_INTERNA  (MED-XXX or EQP-XXX)
+        if data.tipo_producto == "MEDICAMENTO":
+            prefix = "MED"
+        else:
+            prefix = "EQP"
+
+        cursor.execute(
+            "SELECT COUNT(*) FROM PRODUCTO WHERE TIPO_PRODUCTO = :tipo",
+            {"tipo": data.tipo_producto},
+        )
+        count = cursor.fetchone()[0]
+        clave_interna = f"{prefix}-{count + 1:03d}"
+
+        # Insert PRODUCTO
+        id_var = cursor.var(int)
+        cursor.execute(
+            """INSERT INTO PRODUCTO
+               (CLAVE_INTERNA, NOMBRE, DESCRIPCION, TIPO_PRODUCTO, ACTIVO,
+                ID_USUARIO_REGISTRO, FECHA_REGISTRO, PRECIO_CUOTA_A, PRECIO_CUOTA_B)
+               VALUES (:clave, :nombre, :descripcion, :tipo, :activo,
+                       :id_usuario, SYSDATE, :precio_a, :precio_b)
+               RETURNING ID_PRODUCTO INTO :id_out""",
+            {
+                "clave": clave_interna,
+                "nombre": data.nombre,
+                "descripcion": data.descripcion,
+                "tipo": data.tipo_producto,
+                "activo": data.activo,
+                "id_usuario": id_usuario,
+                "precio_a": data.precio_cuota_a,
+                "precio_b": data.precio_cuota_b,
+                "id_out": id_var,
+            },
+        )
+        id_producto = id_var.getvalue()[0]
+
+        # Insert subtype row
+        if data.tipo_producto == "MEDICAMENTO":
+            cursor.execute(
+                """INSERT INTO MEDICAMENTO
+                   (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)
+                   VALUES (:id, :presentacion, :dosis, :requiere)""",
+                {
+                    "id": id_producto,
+                    "presentacion": data.presentacion,
+                    "dosis": data.dosis,
+                    "requiere": data.requiere_caducidad or "N",
+                },
+            )
+        else:
+            cursor.execute(
+                """INSERT INTO EQUIPO_MEDICO
+                   (ID_PRODUCTO, NUMERO_SERIE, MARCA, MODELO,
+                    ESTATUS_EQUIPO, OBSERVACIONES)
+                   VALUES (:id, :serie, :marca, :modelo, :estatus, :obs)""",
+                {
+                    "id": id_producto,
+                    "serie": data.numero_serie,
+                    "marca": data.marca,
+                    "modelo": data.modelo,
+                    "estatus": data.estatus_equipo or "DISPONIBLE",
+                    "obs": data.observaciones,
+                },
+            )
+
+        # Insert EXISTENCIA_PRODUCTO
+        cursor.execute(
+            """INSERT INTO EXISTENCIA_PRODUCTO
+               (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO)
+               VALUES (:id, :cant, :nmin, :unidad, 'S')""",
+            {
+                "id": id_producto,
+                "cant": data.cantidad_disponible,
+                "nmin": data.nivel_minimo,
+                "unidad": data.unidad_medida,
+            },
+        )
+
+        conn.commit()
+
+    # Return the freshly-created product
+    return obtener_producto.__wrapped__(id_producto, current_user) if hasattr(obtener_producto, "__wrapped__") else _fetch_producto(id_producto)
+
+
+def _fetch_producto(id_producto: int) -> dict:
+    """Fetch a single product (internal helper, no auth)."""
+    sql = _PRODUCTOS_BASE_SQL + " WHERE p.ID_PRODUCTO = :id_producto"
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {"id_producto": id_producto})
+        row = row_to_dict(cursor)
+    if not row:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return _serialize(row)
+
+
+@router.put("/productos/{id_producto}", response_model=ProductoResponse)
 def actualizar_producto(
     id_producto: int,
     data: ProductoCreate,
     current_user: dict = Depends(get_current_user),
 ):
-    """Actualizar producto existente."""
-    for i, p in enumerate(mock_productos):
-        if p["id_producto"] == id_producto:
-            updated = data.model_dump()
-            updated["id_producto"] = id_producto
-            mock_productos[i] = updated
-            return updated
-    raise HTTPException(status_code=404, detail="Producto no encontrado")
+    """Actualizar un producto existente."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify product exists
+        cursor.execute(
+            "SELECT ID_PRODUCTO, TIPO_PRODUCTO FROM PRODUCTO WHERE ID_PRODUCTO = :id",
+            {"id": id_producto},
+        )
+        existing = cursor.fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+        # Update PRODUCTO
+        cursor.execute(
+            """UPDATE PRODUCTO SET
+                NOMBRE = :nombre, DESCRIPCION = :descripcion,
+                TIPO_PRODUCTO = :tipo, ACTIVO = :activo,
+                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b
+               WHERE ID_PRODUCTO = :id""",
+            {
+                "nombre": data.nombre,
+                "descripcion": data.descripcion,
+                "tipo": data.tipo_producto,
+                "activo": data.activo,
+                "precio_a": data.precio_cuota_a,
+                "precio_b": data.precio_cuota_b,
+                "id": id_producto,
+            },
+        )
+
+        # Update subtype
+        if data.tipo_producto == "MEDICAMENTO":
+            cursor.execute(
+                """MERGE INTO MEDICAMENTO m
+                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src
+                   ON (m.ID_PRODUCTO = src.ID_PRODUCTO)
+                   WHEN MATCHED THEN UPDATE SET
+                       PRESENTACION = :presentacion, DOSIS = :dosis,
+                       REQUIERE_CADUCIDAD = :requiere
+                   WHEN NOT MATCHED THEN INSERT
+                       (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)
+                       VALUES (:id, :presentacion, :dosis, :requiere)""",
+                {
+                    "id": id_producto,
+                    "presentacion": data.presentacion,
+                    "dosis": data.dosis,
+                    "requiere": data.requiere_caducidad or "N",
+                },
+            )
+        else:
+            cursor.execute(
+                """MERGE INTO EQUIPO_MEDICO eq
+                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src
+                   ON (eq.ID_PRODUCTO = src.ID_PRODUCTO)
+                   WHEN MATCHED THEN UPDATE SET
+                       NUMERO_SERIE = :serie, MARCA = :marca, MODELO = :modelo,
+                       ESTATUS_EQUIPO = :estatus, OBSERVACIONES = :obs
+                   WHEN NOT MATCHED THEN INSERT
+                       (ID_PRODUCTO, NUMERO_SERIE, MARCA, MODELO, ESTATUS_EQUIPO, OBSERVACIONES)
+                       VALUES (:id, :serie, :marca, :modelo, :estatus, :obs)""",
+                {
+                    "id": id_producto,
+                    "serie": data.numero_serie,
+                    "marca": data.marca,
+                    "modelo": data.modelo,
+                    "estatus": data.estatus_equipo or "DISPONIBLE",
+                    "obs": data.observaciones,
+                },
+            )
+
+        # Update EXISTENCIA_PRODUCTO
+        cursor.execute(
+            """MERGE INTO EXISTENCIA_PRODUCTO ex
+               USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src
+               ON (ex.ID_PRODUCTO = src.ID_PRODUCTO AND ex.ACTIVO = 'S')
+               WHEN MATCHED THEN UPDATE SET
+                   CANTIDAD_DISPONIBLE = :cant, NIVEL_MINIMO = :nmin,
+                   UNIDAD_MEDIDA = :unidad
+               WHEN NOT MATCHED THEN INSERT
+                   (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO)
+                   VALUES (:id, :cant, :nmin, :unidad, 'S')""",
+            {
+                "id": id_producto,
+                "cant": data.cantidad_disponible,
+                "nmin": data.nivel_minimo,
+                "unidad": data.unidad_medida,
+            },
+        )
+
+        conn.commit()
+
+    return _fetch_producto(id_producto)
 
 
-# ──────────────────────────── ENDPOINTS – SERVICIOS ────────────────────────────
+@router.delete("/productos/{id_producto}")
+def desactivar_producto(
+    id_producto: int,
+    current_user: dict = Depends(get_current_user),
+):
+    """Desactivar un producto (soft delete)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE PRODUCTO SET ACTIVO = 'N' WHERE ID_PRODUCTO = :id",
+            {"id": id_producto},
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        conn.commit()
+    return {"message": "Producto desactivado correctamente"}
 
 
-@router.get("/servicios")
+# ══════════════════════════════════════════════════════════════════════════════
+#  ENDPOINTS - SERVICIOS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/servicios", response_model=List[ServicioResponse])
 def listar_servicios(
     busqueda: Optional[str] = Query(None),
+    activo: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
 ):
-    """Listar servicios otorgados."""
-    resultados = list(mock_servicios)
+    """Listar servicios con filtros opcionales."""
+    sql = """
+        SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,
+               ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,
+               PRECIO_CUOTA_A, PRECIO_CUOTA_B
+        FROM SERVICIO WHERE 1=1
+    """
+    params: dict = {}
+
+    if activo:
+        sql += " AND ACTIVO = :activo"
+        params["activo"] = activo
+
     if busqueda:
-        q = busqueda.lower()
-        resultados = [
-            s
-            for s in resultados
-            if q in s["nombre_beneficiario"].lower()
-            or q in s["tipo_servicio"].lower()
-            or q in s["folio_beneficiario"].lower()
-        ]
-    return resultados
+        sql += (
+            " AND (LOWER(NOMBRE) LIKE :busqueda"
+            " OR LOWER(DESCRIPCION) LIKE :busqueda)"
+        )
+        params["busqueda"] = f"%{busqueda.lower()}%"
+
+    sql += " ORDER BY ID_SERVICIO"
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+
+    return [_serialize(r) for r in rows]
 
 
-@router.post("/servicios", status_code=201)
-def registrar_servicio(
-    data: ServicioOtorgado, current_user: dict = Depends(get_current_user)
+@router.get("/servicios/{id_servicio}", response_model=ServicioResponse)
+def obtener_servicio(
+    id_servicio: int,
+    current_user: dict = Depends(get_current_user),
 ):
-    """Registrar nuevo servicio otorgado."""
-    global _next_servicio_id
-    nuevo = data.model_dump()
-    nuevo["id"] = _next_servicio_id
-    _next_servicio_id += 1
-    mock_servicios.append(nuevo)
-    return nuevo
+    """Obtener un servicio por ID."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,
+                      ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,
+                      PRECIO_CUOTA_A, PRECIO_CUOTA_B
+               FROM SERVICIO WHERE ID_SERVICIO = :id""",
+            {"id": id_servicio},
+        )
+        row = row_to_dict(cursor)
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    return _serialize(row)
 
 
-# ──────────────────────────── ENDPOINTS – COMODATOS ────────────────────────────
+@router.post("/servicios", status_code=201, response_model=ServicioResponse)
+def crear_servicio(
+    data: ServicioCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Crear un nuevo servicio."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get("id_usuario", 1)
+        id_var = cursor.var(int)
+
+        cursor.execute(
+            """INSERT INTO SERVICIO
+               (NOMBRE, DESCRIPCION, CUOTA_RECUPERACION, ACTIVO,
+                ID_USUARIO_REGISTRO, FECHA_REGISTRO,
+                PRECIO_CUOTA_A, PRECIO_CUOTA_B)
+               VALUES (:nombre, :descripcion, :cuota, :activo,
+                       :id_usuario, SYSDATE, :precio_a, :precio_b)
+               RETURNING ID_SERVICIO INTO :id_out""",
+            {
+                "nombre": data.nombre,
+                "descripcion": data.descripcion,
+                "cuota": data.cuota_recuperacion,
+                "activo": data.activo,
+                "id_usuario": id_usuario,
+                "precio_a": data.precio_cuota_a,
+                "precio_b": data.precio_cuota_b,
+                "id_out": id_var,
+            },
+        )
+        id_servicio = id_var.getvalue()[0]
+        conn.commit()
+
+    return _fetch_servicio(id_servicio)
 
 
-@router.get("/comodatos")
+def _fetch_servicio(id_servicio: int) -> dict:
+    """Fetch a single service (internal helper)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,
+                      ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,
+                      PRECIO_CUOTA_A, PRECIO_CUOTA_B
+               FROM SERVICIO WHERE ID_SERVICIO = :id""",
+            {"id": id_servicio},
+        )
+        row = row_to_dict(cursor)
+    if not row:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+    return _serialize(row)
+
+
+@router.put("/servicios/{id_servicio}", response_model=ServicioResponse)
+def actualizar_servicio(
+    id_servicio: int,
+    data: ServicioCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Actualizar un servicio existente."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE SERVICIO SET
+                NOMBRE = :nombre, DESCRIPCION = :descripcion,
+                CUOTA_RECUPERACION = :cuota, ACTIVO = :activo,
+                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b
+               WHERE ID_SERVICIO = :id""",
+            {
+                "nombre": data.nombre,
+                "descripcion": data.descripcion,
+                "cuota": data.cuota_recuperacion,
+                "activo": data.activo,
+                "precio_a": data.precio_cuota_a,
+                "precio_b": data.precio_cuota_b,
+                "id": id_servicio,
+            },
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Servicio no encontrado")
+        conn.commit()
+
+    return _fetch_servicio(id_servicio)
+
+
+@router.delete("/servicios/{id_servicio}")
+def desactivar_servicio(
+    id_servicio: int,
+    current_user: dict = Depends(get_current_user),
+):
+    """Desactivar un servicio (soft delete)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE SERVICIO SET ACTIVO = 'N' WHERE ID_SERVICIO = :id",
+            {"id": id_servicio},
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Servicio no encontrado")
+        conn.commit()
+    return {"message": "Servicio desactivado correctamente"}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ENDPOINTS - COMODATOS
+# ══════════════════════════════════════════════════════════════════════════════
+
+_COMODATOS_BASE_SQL = """
+    SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.ID_EQUIPO, c.ID_PACIENTE,
+           c.ID_USUARIO_REGISTRO, c.FECHA_PRESTAMO, c.FECHA_DEVOLUCION,
+           c.ESTATUS, c.MONTO_TOTAL, c.MONTO_PAGADO, c.SALDO_PENDIENTE,
+           c.EXENTO_PAGO, c.NOTAS,
+           pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO || ' ' || NVL(pa.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,
+           pa.FOLIO AS FOLIO_PACIENTE,
+           pr.NOMBRE AS NOMBRE_EQUIPO
+    FROM COMODATO c
+    LEFT JOIN PACIENTE pa ON pa.ID_PACIENTE = c.ID_PACIENTE
+    LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO
+"""
+
+
+@router.get("/comodatos", response_model=List[ComodatoResponse])
 def listar_comodatos(
-    estatus: Optional[str] = Query(None),
+    estatus: Optional[str] = Query(None, description="PRESTADO, DEVUELTO, CANCELADO"),
     busqueda: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
 ):
-    """Listar comodatos (préstamos de equipo)."""
-    resultados = list(mock_comodatos)
+    """Listar comodatos con filtros opcionales."""
+    sql = _COMODATOS_BASE_SQL + " WHERE 1=1"
+    params: dict = {}
+
     if estatus:
-        resultados = [c for c in resultados if c["estatus"] == estatus]
+        sql += " AND c.ESTATUS = :estatus"
+        params["estatus"] = estatus
+
     if busqueda:
-        q = busqueda.lower()
-        resultados = [
-            c
-            for c in resultados
-            if q in c["nombre_beneficiario"].lower()
-            or q in c["equipo"].lower()
-            or q in c["folio_beneficiario"].lower()
-        ]
-    return resultados
+        sql += (
+            " AND (LOWER(pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO) LIKE :busqueda"
+            " OR LOWER(pr.NOMBRE) LIKE :busqueda"
+            " OR LOWER(pa.FOLIO) LIKE :busqueda"
+            " OR LOWER(c.FOLIO_COMODATO) LIKE :busqueda)"
+        )
+        params["busqueda"] = f"%{busqueda.lower()}%"
+
+    sql += " ORDER BY c.ID_COMODATO DESC"
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+
+    return [_serialize(r) for r in rows]
 
 
-@router.post("/comodatos", status_code=201)
-def registrar_comodato(
-    data: Comodato, current_user: dict = Depends(get_current_user)
-):
-    """Registrar nuevo comodato."""
-    global _next_comodato_id
-    nuevo = data.model_dump()
-    nuevo["id"] = _next_comodato_id
-    nuevo["folio_comodato"] = f"COM-{_next_comodato_id:06d}"
-    _next_comodato_id += 1
-    mock_comodatos.append(nuevo)
-    return nuevo
-
-
-@router.put("/comodatos/{id_comodato}")
-def actualizar_comodato(
+@router.get("/comodatos/{id_comodato}", response_model=ComodatoResponse)
+def obtener_comodato(
     id_comodato: int,
-    data: Comodato,
     current_user: dict = Depends(get_current_user),
 ):
-    """Actualizar estatus de comodato."""
-    for i, c in enumerate(mock_comodatos):
-        if c["id"] == id_comodato:
-            updated = data.model_dump()
-            updated["id"] = id_comodato
-            updated["folio_comodato"] = c["folio_comodato"]
-            mock_comodatos[i] = updated
-            return updated
-    raise HTTPException(status_code=404, detail="Comodato no encontrado")
+    """Obtener un comodato por ID."""
+    sql = _COMODATOS_BASE_SQL + " WHERE c.ID_COMODATO = :id"
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {"id": id_comodato})
+        row = row_to_dict(cursor)
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Comodato no encontrado")
+    return _serialize(row)
 
 
-# ──────────────────────────── ENDPOINTS – STATS ────────────────────────────
+@router.post("/comodatos", status_code=201, response_model=ComodatoResponse)
+def crear_comodato(
+    data: ComodatoCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Registrar un nuevo comodato."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get("id_usuario", 1)
+
+        # Generate FOLIO_COMODATO as COM-XXXXXX
+        cursor.execute("SELECT NVL(MAX(ID_COMODATO), 0) + 1 FROM COMODATO")
+        next_num = cursor.fetchone()[0]
+        folio = f"COM-{next_num:06d}"
+
+        id_var = cursor.var(int)
+        cursor.execute(
+            """INSERT INTO COMODATO
+               (FOLIO_COMODATO, ID_EQUIPO, ID_PACIENTE, ID_USUARIO_REGISTRO,
+                FECHA_PRESTAMO, FECHA_DEVOLUCION, ESTATUS,
+                MONTO_TOTAL, MONTO_PAGADO, SALDO_PENDIENTE,
+                EXENTO_PAGO, NOTAS)
+               VALUES (:folio, :id_equipo, :id_paciente, :id_usuario,
+                       TO_DATE(:fecha_prest, 'YYYY-MM-DD'),
+                       CASE WHEN :fecha_dev IS NOT NULL
+                            THEN TO_DATE(:fecha_dev, 'YYYY-MM-DD')
+                            ELSE NULL END,
+                       :estatus, :monto_total, :monto_pagado, :saldo,
+                       :exento, :notas)
+               RETURNING ID_COMODATO INTO :id_out""",
+            {
+                "folio": folio,
+                "id_equipo": data.id_equipo,
+                "id_paciente": data.id_paciente,
+                "id_usuario": id_usuario,
+                "fecha_prest": data.fecha_prestamo,
+                "fecha_dev": data.fecha_devolucion,
+                "estatus": data.estatus,
+                "monto_total": data.monto_total,
+                "monto_pagado": data.monto_pagado,
+                "saldo": data.saldo_pendiente,
+                "exento": data.exento_pago,
+                "notas": data.notas,
+                "id_out": id_var,
+            },
+        )
+        id_comodato = id_var.getvalue()[0]
+        conn.commit()
+
+    return _fetch_comodato(id_comodato)
+
+
+def _fetch_comodato(id_comodato: int) -> dict:
+    """Fetch a single comodato (internal helper)."""
+    sql = _COMODATOS_BASE_SQL + " WHERE c.ID_COMODATO = :id"
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {"id": id_comodato})
+        row = row_to_dict(cursor)
+    if not row:
+        raise HTTPException(status_code=404, detail="Comodato no encontrado")
+    return _serialize(row)
+
+
+@router.put("/comodatos/{id_comodato}", response_model=ComodatoResponse)
+def actualizar_comodato(
+    id_comodato: int,
+    data: ComodatoCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    """Actualizar un comodato existente."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """UPDATE COMODATO SET
+                ID_EQUIPO = :id_equipo, ID_PACIENTE = :id_paciente,
+                FECHA_PRESTAMO = TO_DATE(:fecha_prest, 'YYYY-MM-DD'),
+                FECHA_DEVOLUCION = CASE WHEN :fecha_dev IS NOT NULL
+                                        THEN TO_DATE(:fecha_dev, 'YYYY-MM-DD')
+                                        ELSE NULL END,
+                ESTATUS = :estatus, MONTO_TOTAL = :monto_total,
+                MONTO_PAGADO = :monto_pagado, SALDO_PENDIENTE = :saldo,
+                EXENTO_PAGO = :exento, NOTAS = :notas
+               WHERE ID_COMODATO = :id""",
+            {
+                "id_equipo": data.id_equipo,
+                "id_paciente": data.id_paciente,
+                "fecha_prest": data.fecha_prestamo,
+                "fecha_dev": data.fecha_devolucion,
+                "estatus": data.estatus,
+                "monto_total": data.monto_total,
+                "monto_pagado": data.monto_pagado,
+                "saldo": data.saldo_pendiente,
+                "exento": data.exento_pago,
+                "notas": data.notas,
+                "id": id_comodato,
+            },
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Comodato no encontrado")
+        conn.commit()
+
+    return _fetch_comodato(id_comodato)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ENDPOINTS - MOVIMIENTOS INVENTARIO
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/movimientos", response_model=List[MovimientoInventario])
+def listar_movimientos(
+    id_producto: Optional[int] = Query(None),
+    tipo_movimiento: Optional[str] = Query(None, description="ENTRADA, SALIDA, AJUSTE"),
+    current_user: dict = Depends(get_current_user),
+):
+    """Listar movimientos de inventario con filtros opcionales."""
+    sql = """
+        SELECT ID_MOVIMIENTO, ID_PRODUCTO, ID_USUARIO_REGISTRO,
+               ID_VENTA, ID_COMODATO, FECHA_MOVIMIENTO,
+               TIPO_MOVIMIENTO, CANTIDAD, OBSERVACIONES
+        FROM MOVIMIENTO_INVENTARIO WHERE 1=1
+    """
+    params: dict = {}
+
+    if id_producto:
+        sql += " AND ID_PRODUCTO = :id_producto"
+        params["id_producto"] = id_producto
+
+    if tipo_movimiento:
+        sql += " AND TIPO_MOVIMIENTO = :tipo"
+        params["tipo"] = tipo_movimiento
+
+    sql += " ORDER BY FECHA_MOVIMIENTO DESC, ID_MOVIMIENTO DESC"
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+
+    return [_serialize(r) for r in rows]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ENDPOINTS - ESTADISTICAS
+# ══════════════════════════════════════════════════════════════════════════════
 
 
 @router.get("/stats")
 def almacen_stats(current_user: dict = Depends(get_current_user)):
-    """Estadísticas del almacén para dashboard."""
-    total_productos = len(mock_productos)
-    total_unidades = sum(p["cantidad_disponible"] for p in mock_productos)
+    """Estadisticas del almacen para dashboard."""
+    with get_db() as conn:
+        cursor = conn.cursor()
 
-    # Alerta de stock bajo
-    stock_bajo = [
-        {
-            "id_producto": p["id_producto"],
-            "clave": p["clave"],
-            "nombre": p["nombre"],
-            "cantidad_disponible": p["cantidad_disponible"],
-            "stock_minimo": p["stock_minimo"],
-        }
-        for p in mock_productos
-        if p["cantidad_disponible"] < p["stock_minimo"]
-    ]
+        # Total productos activos y unidades
+        cursor.execute(
+            """SELECT COUNT(p.ID_PRODUCTO),
+                      NVL(SUM(ex.CANTIDAD_DISPONIBLE), 0)
+               FROM PRODUCTO p
+               LEFT JOIN EXISTENCIA_PRODUCTO ex
+                   ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'
+               WHERE p.ACTIVO = 'S'"""
+        )
+        row = cursor.fetchone()
+        total_productos = row[0]
+        total_unidades = int(row[1])
 
-    # Próximos a caducar (dentro de 6 meses)
-    hoy = date.today()
-    limite = hoy + timedelta(days=180)
-    proximos_caducar = []
-    for p in mock_productos:
-        if p["fecha_caducidad"]:
-            try:
-                fc = datetime.strptime(p["fecha_caducidad"], "%Y-%m-%d").date()
-                if fc <= limite:
-                    proximos_caducar.append(
-                        {
-                            "id_producto": p["id_producto"],
-                            "clave": p["clave"],
-                            "nombre": p["nombre"],
-                            "fecha_caducidad": p["fecha_caducidad"],
-                            "dias_restantes": (fc - hoy).days,
-                        }
-                    )
-            except ValueError:
-                pass
+        # Stock bajo
+        cursor.execute(
+            """SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE,
+                      ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO
+               FROM PRODUCTO p
+               JOIN EXISTENCIA_PRODUCTO ex
+                   ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'
+               WHERE p.ACTIVO = 'S'
+                 AND ex.CANTIDAD_DISPONIBLE < ex.NIVEL_MINIMO"""
+        )
+        stock_bajo = rows_to_dicts(cursor)
+        stock_bajo = [_serialize(r) for r in stock_bajo]
 
-    por_categoria = {}
-    for p in mock_productos:
-        cat = p["categoria"]
-        por_categoria[cat] = por_categoria.get(cat, 0) + 1
+        # Productos por tipo
+        cursor.execute(
+            """SELECT TIPO_PRODUCTO, COUNT(*)
+               FROM PRODUCTO WHERE ACTIVO = 'S'
+               GROUP BY TIPO_PRODUCTO"""
+        )
+        por_tipo = {r[0].strip(): r[1] for r in cursor.fetchall()}
 
-    comodatos_activos = sum(
-        1 for c in mock_comodatos if c["estatus"] == "PRESTADO"
-    )
+        # Comodatos activos
+        cursor.execute(
+            "SELECT COUNT(*) FROM COMODATO WHERE ESTATUS = 'PRESTADO'"
+        )
+        comodatos_activos = cursor.fetchone()[0]
+
+        # Servicios activos
+        cursor.execute(
+            "SELECT COUNT(*) FROM SERVICIO WHERE ACTIVO = 'S'"
+        )
+        servicios_activos = cursor.fetchone()[0]
+
+        # Total movimientos
+        cursor.execute("SELECT COUNT(*) FROM MOVIMIENTO_INVENTARIO")
+        total_movimientos = cursor.fetchone()[0]
 
     return {
         "total_productos": total_productos,
         "total_unidades": total_unidades,
         "stock_bajo": stock_bajo,
         "alertas_stock_bajo": len(stock_bajo),
-        "proximos_caducar": proximos_caducar,
-        "alertas_caducidad": len(proximos_caducar),
-        "por_categoria": por_categoria,
+        "por_tipo": por_tipo,
         "comodatos_activos": comodatos_activos,
-        "total_servicios_mes": len(
-            [
-                s
-                for s in mock_servicios
-                if s["fecha"].startswith(hoy.strftime("%Y-%m"))
-            ]
-        ),
+        "servicios_activos": servicios_activos,
+        "total_movimientos": total_movimientos,
     }

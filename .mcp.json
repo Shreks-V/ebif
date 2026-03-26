@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dbeaver": {
+      "command": "dbeaver-mcp-server",
+      "args": []
+    }
+  }
+}

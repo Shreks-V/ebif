@@ -127,15 +127,15 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   <tr *ngFor="let cita of citasFiltradas" class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4 font-medium text-slate-900">{{ cita.hora }}</td>
-                    <td class="px-6 py-4 text-slate-700">{{ cita.paciente }}</td>
-                    <td class="px-6 py-4 text-slate-700">{{ cita.tipo }}</td>
+                    <td class="px-6 py-4 font-medium text-slate-900">{{ getHora(cita.fechaHora) }}</td>
+                    <td class="px-6 py-4 text-slate-700">{{ cita.nombrePaciente }}</td>
+                    <td class="px-6 py-4 text-slate-700">{{ cita.servicios[0]?.nombre || 'N/A' }}</td>
                     <td class="px-6 py-4">
                       <span
                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
-                        [ngClass]="getEstadoBadgeClass(cita.estado)"
+                        [ngClass]="getEstadoBadgeClass(cita.estatus)"
                       >
-                        {{ cita.estado }}
+                        {{ cita.estatus }}
                       </span>
                     </td>
                     <td class="px-6 py-4">
@@ -195,10 +195,9 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                   <tr class="border-t border-slate-200 bg-slate-50">
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Especialidad</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">C&eacute;dula</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Contacto</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Horario</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">D&iacute;as</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Servicios</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
@@ -209,7 +208,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#00328b] to-[#0052cc] flex items-center justify-center text-white text-xs font-bold">
                           {{ medico.iniciales }}
                         </div>
-                        <span class="font-medium text-slate-900">{{ medico.nombre }}</span>
+                        <span class="font-medium text-slate-900">Dr(a). {{ medico.nombre }} {{ medico.apellidoPaterno }}</span>
                       </div>
                     </td>
                     <td class="px-6 py-4">
@@ -217,7 +216,6 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                         {{ medico.especialidad }}
                       </span>
                     </td>
-                    <td class="px-6 py-4 text-slate-700">{{ medico.cedula }}</td>
                     <td class="px-6 py-4">
                       <div class="flex flex-col gap-0.5">
                         <span class="text-slate-700 flex items-center gap-1">
@@ -231,20 +229,27 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                             <rect width="20" height="16" x="2" y="4" rx="2"/>
                             <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                           </svg>
-                          {{ medico.email }}
+                          {{ medico.correo }}
                         </span>
                       </div>
                     </td>
-                    <td class="px-6 py-4 text-slate-700">{{ medico.horario }}</td>
                     <td class="px-6 py-4">
                       <div class="flex flex-wrap gap-1">
                         <span
-                          *ngFor="let dia of medico.dias"
-                          class="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs font-medium rounded"
+                          *ngFor="let servicio of medico.servicios"
+                          class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded border border-amber-200"
                         >
-                          {{ dia }}
+                          {{ servicio.nombre }}
                         </span>
                       </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                        [ngClass]="medico.activo === 'S' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'"
+                      >
+                        {{ medico.activo === 'S' ? 'Activo' : 'Inactivo' }}
+                      </span>
                     </td>
                     <td class="px-6 py-4">
                       <button class="p-1.5 text-slate-400 hover:text-[#00328b] hover:bg-slate-100 rounded-lg transition-colors">
@@ -256,7 +261,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                     </td>
                   </tr>
                   <tr *ngIf="medicosFiltrados.length === 0">
-                    <td colspan="7" class="px-6 py-12 text-center text-slate-400 text-sm">
+                    <td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm">
                       No se encontraron m&eacute;dicos con la b&uacute;squeda actual.
                     </td>
                   </tr>
@@ -280,34 +285,39 @@ export class CitasComponent {
   filtroEstado = 'Todas';
   filtroTipo = 'Todas';
 
-  estadoFilters = ['Todas', 'Programada', 'En curso', 'Completada', 'Cancelada'];
-  tipoFilters = ['Todas', 'Consulta general', 'Fisioterapia', 'Consulta especializada', 'Seguimiento', 'Terapia ocupacional'];
+  estadoFilters = ['Todas', 'PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
+  tipoFilters = ['Todas', 'Consulta Neurocirugía', 'Consulta Ortopédica', 'Consulta Urológica', 'Fisioterapia', 'Terapia Ocupacional'];
 
   citas = [
-    { id: 1, paciente: 'María González López', hora: '09:00', tipo: 'Consulta general', estado: 'Completada' },
-    { id: 2, paciente: 'Juan Carlos Martínez', hora: '10:30', tipo: 'Fisioterapia', estado: 'En curso' },
-    { id: 3, paciente: 'Ana Patricia Rodríguez', hora: '11:00', tipo: 'Consulta especializada', estado: 'Programada' },
-    { id: 4, paciente: 'Pedro Sánchez Torres', hora: '14:00', tipo: 'Seguimiento', estado: 'Programada' },
-    { id: 5, paciente: 'Laura Jiménez Ruiz', hora: '15:30', tipo: 'Terapia ocupacional', estado: 'Programada' }
+    { idCita: 1, idPaciente: 1, nombrePaciente: 'María Fernanda García López', folioPaciente: 'BEN-000001', fechaHora: '2026-03-25T09:00:00', estatus: 'COMPLETADA', notas: 'Revisión postquirúrgica', servicios: [{idServicio: 1, nombre: 'Consulta Neurocirugía', cantidad: 1, montoPagado: 350}] },
+    { idCita: 2, idPaciente: 2, nombrePaciente: 'Carlos Eduardo Martínez Reyes', folioPaciente: 'BEN-000002', fechaHora: '2026-03-25T10:30:00', estatus: 'EN_CURSO', notas: 'Terapia física semanal', servicios: [{idServicio: 4, nombre: 'Fisioterapia', cantidad: 1, montoPagado: 200}] },
+    { idCita: 3, idPaciente: 3, nombrePaciente: 'Sofía Rodríguez Hernández', folioPaciente: 'BEN-000003', fechaHora: '2026-03-25T11:00:00', estatus: 'PROGRAMADA', notas: '', servicios: [{idServicio: 2, nombre: 'Consulta Ortopédica', cantidad: 1, montoPagado: 300}] },
+    { idCita: 4, idPaciente: 4, nombrePaciente: 'Diego Alejandro Treviño Garza', folioPaciente: 'BEN-000004', fechaHora: '2026-03-25T14:00:00', estatus: 'PROGRAMADA', notas: 'Seguimiento válvula', servicios: [{idServicio: 3, nombre: 'Consulta Urológica', cantidad: 1, montoPagado: 300}] },
+    { idCita: 5, idPaciente: 5, nombrePaciente: 'Valentina Flores Mendoza', folioPaciente: 'BEN-000005', fechaHora: '2026-03-25T15:30:00', estatus: 'CANCELADA', notas: 'Paciente canceló', servicios: [{idServicio: 6, nombre: 'Terapia Ocupacional', cantidad: 1, montoPagado: 250}] },
   ];
 
   citasFiltradas = [...this.citas];
 
   medicos = [
-    { id: 1, nombre: 'Dr. Carlos Ramírez Sánchez', especialidad: 'Pediatría', cedula: '1234567', telefono: '(555) 123-4567', email: 'carlos.ramirez@hospital.com', horario: '08:00 - 14:00', dias: ['Lun', 'Mié', 'Vie'], iniciales: 'CR' },
-    { id: 2, nombre: 'Dra. María Fernández López', especialidad: 'Fisioterapia', cedula: '2345678', telefono: '(555) 234-5678', email: 'maria.fernandez@hospital.com', horario: '09:00 - 17:00', dias: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'], iniciales: 'MF' },
-    { id: 3, nombre: 'Dr. Jorge Mendoza Torres', especialidad: 'Neurología', cedula: '3456789', telefono: '(555) 345-6789', email: 'jorge.mendoza@hospital.com', horario: '10:00 - 16:00', dias: ['Mar', 'Jue'], iniciales: 'JM' },
-    { id: 4, nombre: 'Dra. Ana Patricia Cruz', especialidad: 'Terapia Ocupacional', cedula: '4567890', telefono: '(555) 456-7890', email: 'ana.cruz@hospital.com', horario: '08:00 - 15:00', dias: ['Lun', 'Mié', 'Vie'], iniciales: 'AC' }
+    { idDoctor: 1, nombre: 'Alejandro', apellidoPaterno: 'Cavazos', apellidoMaterno: 'Garza', especialidad: 'Ortopedia', telefono: '8181234567', correo: 'a.cavazos@espinabifida.org', activo: 'S', servicios: [{idServicio: 1, nombre: 'Consulta Ortopédica'}], iniciales: 'AC' },
+    { idDoctor: 2, nombre: 'Patricia', apellidoPaterno: 'Elizondo', apellidoMaterno: 'Leal', especialidad: 'Neurología', telefono: '8182345678', correo: 'p.elizondo@espinabifida.org', activo: 'S', servicios: [{idServicio: 2, nombre: 'Consulta Neurológica'}], iniciales: 'PE' },
+    { idDoctor: 3, nombre: 'Ricardo', apellidoPaterno: 'Mendoza', apellidoMaterno: 'Treviño', especialidad: 'Urología', telefono: '8183456789', correo: 'r.mendoza@espinabifida.org', activo: 'S', servicios: [{idServicio: 3, nombre: 'Consulta Urológica'}], iniciales: 'RM' },
+    { idDoctor: 4, nombre: 'Laura', apellidoPaterno: 'Garza', apellidoMaterno: 'Salinas', especialidad: 'Fisioterapia', telefono: '8184567890', correo: 'l.garza@espinabifida.org', activo: 'S', servicios: [{idServicio: 4, nombre: 'Fisioterapia'}], iniciales: 'LG' },
+    { idDoctor: 5, nombre: 'Fernando', apellidoPaterno: 'Villarreal', apellidoMaterno: 'Cantú', especialidad: 'Pediatría', telefono: '8185678901', correo: 'f.villarreal@espinabifida.org', activo: 'S', servicios: [{idServicio: 5, nombre: 'Consulta Pediátrica'}], iniciales: 'FV' },
   ];
 
   medicosFiltrados = [...this.medicos];
 
-  getEstadoBadgeClass(estado: string): string {
-    switch (estado) {
-      case 'Completada': return 'bg-green-100 text-green-800 border-green-200';
-      case 'En curso': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Programada': return 'bg-slate-100 text-slate-800 border-slate-200';
-      case 'Cancelada': return 'bg-red-100 text-red-800 border-red-200';
+  getHora(fechaHora: string): string {
+    return fechaHora.split('T')[1]?.substring(0, 5) || '';
+  }
+
+  getEstadoBadgeClass(estatus: string): string {
+    switch (estatus) {
+      case 'COMPLETADA': return 'bg-green-100 text-green-800 border-green-200';
+      case 'EN_CURSO': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'PROGRAMADA': return 'bg-slate-100 text-slate-800 border-slate-200';
+      case 'CANCELADA': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   }
@@ -318,16 +328,18 @@ export class CitasComponent {
     if (this.searchCitas) {
       const busqueda = this.searchCitas.toLowerCase();
       resultado = resultado.filter(c =>
-        c.paciente.toLowerCase().includes(busqueda)
+        c.nombrePaciente.toLowerCase().includes(busqueda)
       );
     }
 
     if (this.filtroEstado !== 'Todas') {
-      resultado = resultado.filter(c => c.estado === this.filtroEstado);
+      resultado = resultado.filter(c => c.estatus === this.filtroEstado);
     }
 
     if (this.filtroTipo !== 'Todas') {
-      resultado = resultado.filter(c => c.tipo === this.filtroTipo);
+      resultado = resultado.filter(c =>
+        c.servicios.some(s => s.nombre === this.filtroTipo)
+      );
     }
 
     this.citasFiltradas = resultado;
@@ -341,6 +353,7 @@ export class CitasComponent {
     const busqueda = this.searchMedicos.toLowerCase();
     this.medicosFiltrados = this.medicos.filter(m =>
       m.nombre.toLowerCase().includes(busqueda) ||
+      m.apellidoPaterno.toLowerCase().includes(busqueda) ||
       m.especialidad.toLowerCase().includes(busqueda)
     );
   }

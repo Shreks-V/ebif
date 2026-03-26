@@ -10,7 +10,8 @@ interface LoginResponse {
 }
 
 interface UserInfo {
-  username: string;
+  id_usuario: number;
+  correo: string;
   nombre: string;
   rol: string;
 }
@@ -25,11 +26,8 @@ export class AuthService {
     this.loadUser();
   }
 
-  login(username: string, password: string): Observable<LoginResponse> {
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, formData).pipe(
+  login(correo: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { correo, password }).pipe(
       tap((res) => {
         localStorage.setItem('token', res.access_token);
         this.loadUser();
@@ -43,9 +41,10 @@ export class AuthService {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         this.userSubject.next({
-          username: payload.sub,
+          id_usuario: payload.id_usuario,
+          correo: payload.sub,
           nombre: payload.nombre || payload.sub,
-          rol: payload.role || 'operativo',
+          rol: payload.rol || 'OPERATIVO',
         });
       } catch {
         this.logout();

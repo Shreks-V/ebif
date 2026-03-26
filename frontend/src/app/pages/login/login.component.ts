@@ -88,23 +88,23 @@ import { AuthService } from '../../services/auth.service';
                   <p class="text-sm text-red-800 font-bold">{{ errorMessage }}</p>
                 </div>
 
-                <!-- Username field -->
+                <!-- Correo field -->
                 <div class="space-y-2">
-                  <label for="username" class="text-sm font-bold text-slate-900">Usuario</label>
+                  <label for="correo" class="text-sm font-bold text-slate-900">Correo electrónico</label>
                   <div class="relative">
                     <div class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-xl flex items-center justify-center">
                       <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
+                        <rect width="20" height="16" x="2" y="4" rx="2"/>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                       </svg>
                     </div>
                     <input
-                      id="username"
-                      type="text"
-                      [(ngModel)]="username"
-                      name="username"
-                      placeholder="admin o admin@espinabifida.org"
-                      autocomplete="username"
+                      id="correo"
+                      type="email"
+                      [(ngModel)]="correo"
+                      name="correo"
+                      placeholder="admin@espinabifida.org"
+                      autocomplete="email"
                       [disabled]="loading"
                       required
                       class="w-full pl-16 h-14 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:bg-white focus:border-[#00328b] outline-none transition-colors text-slate-900"
@@ -139,7 +139,7 @@ import { AuthService } from '../../services/auth.service';
                 <!-- Submit button -->
                 <button
                   type="submit"
-                  [disabled]="loading || !username || !password"
+                  [disabled]="loading || !correo || !password"
                   class="w-full h-14 bg-gradient-to-r from-[#00328b] via-[#0052cc] to-[#00328b] text-white rounded-2xl font-bold shadow-2xl text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                 >
                   <ng-container *ngIf="!loading">
@@ -169,7 +169,7 @@ import { AuthService } from '../../services/auth.service';
                   </svg>
                   <span class="text-sm font-bold text-[#00328b]">Credenciales de demostración:</span>
                 </div>
-                <p class="text-sm text-slate-700">Usuario: <span class="font-semibold">admin</span></p>
+                <p class="text-sm text-slate-700">Correo: <span class="font-semibold">admin&#64;espinabifida.org</span></p>
                 <p class="text-sm text-slate-700">Contraseña: <span class="font-semibold">admin123</span></p>
               </div>
 
@@ -197,7 +197,7 @@ import { AuthService } from '../../services/auth.service';
   styles: [],
 })
 export class LoginComponent {
-  username = '';
+  correo = '';
   password = '';
   showPassword = false;
   loading = false;
@@ -209,19 +209,19 @@ export class LoginComponent {
   ) {}
 
   onLogin(): void {
-    if (!this.username || !this.password) return;
+    if (!this.correo || !this.password) return;
 
     this.loading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.username, this.password).subscribe({
+    this.authService.login(this.correo, this.password).subscribe({
       next: () => {
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.loading = false;
         if (err.status === 401) {
-          this.errorMessage = 'Usuario o contraseña incorrectos.';
+          this.errorMessage = 'Correo o contraseña incorrectos.';
         } else if (err.status === 0) {
           this.errorMessage = 'No se pudo conectar con el servidor.';
         } else {

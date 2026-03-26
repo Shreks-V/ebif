@@ -2,456 +2,75 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
 from datetime import date, datetime
 from app.core.security import get_current_user
+from app.core.database import get_db, rows_to_dicts, row_to_dict
 from app.schemas.schemas import BeneficiarioCreate, BeneficiarioResponse
 
 router = APIRouter()
-
-# ──────────────────────────── MOCK DATA ────────────────────────────
-
-mock_beneficiarios = [
-    {
-        "folio": "BEN-000001",
-        "nombre": "María Fernanda",
-        "apellido_paterno": "García",
-        "apellido_materno": "López",
-        "fecha_nacimiento": "2018-03-15",
-        "genero": "Femenino",
-        "curp": "GALF180315MNLRPR01",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital Universitario UANL",
-        "nombre_tutor": "Ana López Martínez",
-        "calle": "Av. Universidad",
-        "numero": "1450",
-        "colonia": "Mitras Centro",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64460",
-        "telefono_casa": "8183456789",
-        "telefono_celular": "8111234567",
-        "correo": "ana.lopez@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2019-06-01",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Requiere silla de ruedas pediátrica",
-    },
-    {
-        "folio": "BEN-000002",
-        "nombre": "Carlos Eduardo",
-        "apellido_paterno": "Martínez",
-        "apellido_materno": "Hernández",
-        "fecha_nacimiento": "2010-07-22",
-        "genero": "Masculino",
-        "curp": "MAHC100722HNLRRR05",
-        "tipo_espina_bifida": "Espina bífida oculta",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Christus Muguerza",
-        "nombre_tutor": "Eduardo Martínez Salinas",
-        "calle": "Calzada del Valle",
-        "numero": "320",
-        "colonia": "Del Valle",
-        "ciudad": "San Pedro Garza García",
-        "estado": "Nuevo León",
-        "codigo_postal": "66220",
-        "telefono_casa": "8188765432",
-        "telefono_celular": "8119876543",
-        "correo": "edu.martinez@email.com",
-        "tipo_cuota": "anual",
-        "fecha_ingreso": "2015-01-15",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Terapia física semanal",
-    },
-    {
-        "folio": "BEN-000003",
-        "nombre": "Sofía",
-        "apellido_paterno": "Rodríguez",
-        "apellido_materno": "Garza",
-        "fecha_nacimiento": "2015-11-03",
-        "genero": "Femenino",
-        "curp": "ROGS151103MNLDRF08",
-        "tipo_espina_bifida": "Meningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital San José",
-        "nombre_tutor": "Patricia Garza Villarreal",
-        "calle": "Av. Lázaro Cárdenas",
-        "numero": "2810",
-        "colonia": "Residencial San Agustín",
-        "ciudad": "San Pedro Garza García",
-        "estado": "Nuevo León",
-        "codigo_postal": "66260",
-        "telefono_casa": "8187654321",
-        "telefono_celular": "8112345678",
-        "correo": "patricia.garza@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2020-03-10",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "",
-    },
-    {
-        "folio": "BEN-000004",
-        "nombre": "Diego Alejandro",
-        "apellido_paterno": "Treviño",
-        "apellido_materno": "Salazar",
-        "fecha_nacimiento": "2005-01-28",
-        "genero": "Masculino",
-        "curp": "TESD050128HNLRLZ03",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital Metropolitano",
-        "nombre_tutor": "Roberto Treviño Peña",
-        "calle": "Av. Ruiz Cortines",
-        "numero": "455",
-        "colonia": "Cumbres",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64610",
-        "telefono_casa": "8181122334",
-        "telefono_celular": "8114455667",
-        "correo": "roberto.trevino@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2010-08-20",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Usa cateterismo intermitente",
-    },
-    {
-        "folio": "BEN-000005",
-        "nombre": "Valentina",
-        "apellido_paterno": "Flores",
-        "apellido_materno": "Cantú",
-        "fecha_nacimiento": "2020-06-12",
-        "genero": "Femenino",
-        "curp": "FOCV200612MNLLNT04",
-        "tipo_espina_bifida": "Lipomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital Universitario UANL",
-        "nombre_tutor": "Laura Cantú de Flores",
-        "calle": "Paseo de los Leones",
-        "numero": "1200",
-        "colonia": "Las Cumbres",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64619",
-        "telefono_casa": "8183344556",
-        "telefono_celular": "8116677889",
-        "correo": "laura.cantu@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2021-02-14",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Seguimiento neurológico trimestral",
-    },
-    {
-        "folio": "BEN-000006",
-        "nombre": "José Manuel",
-        "apellido_paterno": "Ramírez",
-        "apellido_materno": "Ochoa",
-        "fecha_nacimiento": "1995-09-08",
-        "genero": "Masculino",
-        "curp": "RAOJ950908HNLMCH02",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "Tamaulipas",
-        "hospital_nacimiento": "Hospital Civil de Ciudad Victoria",
-        "nombre_tutor": None,
-        "calle": "Calle Hidalgo",
-        "numero": "789",
-        "colonia": "Centro",
-        "ciudad": "Guadalupe",
-        "estado": "Nuevo León",
-        "codigo_postal": "67100",
-        "telefono_casa": None,
-        "telefono_celular": "8117788990",
-        "correo": "jmanuel.ramirez@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2018-05-22",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Adulto, independiente. Usa silla de ruedas.",
-    },
-    {
-        "folio": "BEN-000007",
-        "nombre": "Ana Lucía",
-        "apellido_paterno": "Villarreal",
-        "apellido_materno": "Mendoza",
-        "fecha_nacimiento": "2012-04-17",
-        "genero": "Femenino",
-        "curp": "VIMA120417MNLLND06",
-        "tipo_espina_bifida": "Espina bífida oculta",
-        "estado_nacimiento": "Coahuila",
-        "hospital_nacimiento": "Hospital Universitario de Saltillo",
-        "nombre_tutor": "Gabriela Mendoza Torres",
-        "calle": "Av. Constitución",
-        "numero": "567",
-        "colonia": "Obispado",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64060",
-        "telefono_casa": "8182233445",
-        "telefono_celular": "8118899001",
-        "correo": "gabriela.mendoza@email.com",
-        "tipo_cuota": "anual",
-        "fecha_ingreso": "2017-09-03",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Proveniente de Saltillo, acude cada 2 meses",
-    },
-    {
-        "folio": "BEN-000008",
-        "nombre": "Luis Ángel",
-        "apellido_paterno": "Salinas",
-        "apellido_materno": "Gutiérrez",
-        "fecha_nacimiento": "2000-12-05",
-        "genero": "Masculino",
-        "curp": "SAGL001205HNLLTS09",
-        "tipo_espina_bifida": "Meningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Christus Muguerza",
-        "nombre_tutor": None,
-        "calle": "Av. Revolución",
-        "numero": "890",
-        "colonia": "Contry",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64860",
-        "telefono_casa": "8184455667",
-        "telefono_celular": "8113344556",
-        "correo": "luis.salinas@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2016-11-28",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Estudiante universitario",
-    },
-    {
-        "folio": "BEN-000009",
-        "nombre": "Isabella",
-        "apellido_paterno": "Lozano",
-        "apellido_materno": "Pérez",
-        "fecha_nacimiento": "2022-02-14",
-        "genero": "Femenino",
-        "curp": "LOPI220214MNLZRR07",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital Universitario UANL",
-        "nombre_tutor": "Mariana Pérez de Lozano",
-        "calle": "Sierra Madre",
-        "numero": "234",
-        "colonia": "Chepevera",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64030",
-        "telefono_casa": "8185566778",
-        "telefono_celular": "8112233445",
-        "correo": "mariana.perez@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2022-08-05",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Bebé, seguimiento mensual con neurocirugía",
-    },
-    {
-        "folio": "BEN-000010",
-        "nombre": "Andrés",
-        "apellido_paterno": "De la Garza",
-        "apellido_materno": "Ríos",
-        "fecha_nacimiento": "1988-05-30",
-        "genero": "Masculino",
-        "curp": "GARA880530HNLRNS01",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "San Luis Potosí",
-        "hospital_nacimiento": "Hospital Central Dr. Ignacio Morones Prieto",
-        "nombre_tutor": None,
-        "calle": "Av. Morones Prieto",
-        "numero": "1500",
-        "colonia": "Independencia",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64720",
-        "telefono_casa": None,
-        "telefono_celular": "8119900112",
-        "correo": "andres.garza@email.com",
-        "tipo_cuota": "anual",
-        "fecha_ingreso": "2012-04-18",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Adulto, trabaja. Foráneo de SLP.",
-    },
-    {
-        "folio": "BEN-000011",
-        "nombre": "Regina",
-        "apellido_paterno": "Cavazos",
-        "apellido_materno": "Luna",
-        "fecha_nacimiento": "2016-08-21",
-        "genero": "Femenino",
-        "curp": "CALR160821MNLVNR03",
-        "tipo_espina_bifida": "Lipomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital San José",
-        "nombre_tutor": "Teresa Luna Garza",
-        "calle": "Blvd. Díaz Ordaz",
-        "numero": "1020",
-        "colonia": "Santa María",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64650",
-        "telefono_casa": "8186677889",
-        "telefono_celular": "8115544332",
-        "correo": "teresa.luna@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2019-10-12",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "",
-    },
-    {
-        "folio": "BEN-000012",
-        "nombre": "Emiliano",
-        "apellido_paterno": "Reyes",
-        "apellido_materno": "Morales",
-        "fecha_nacimiento": "2008-03-10",
-        "genero": "Masculino",
-        "curp": "REME080310HNLYRL07",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital Metropolitano",
-        "nombre_tutor": "Carmen Morales Vázquez",
-        "calle": "Av. Lincoln",
-        "numero": "3450",
-        "colonia": "Valle de Lincoln",
-        "ciudad": "García",
-        "estado": "Nuevo León",
-        "codigo_postal": "66000",
-        "telefono_casa": "8187788990",
-        "telefono_celular": "8116655443",
-        "correo": "carmen.morales@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2014-07-20",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Cirugía de derivación VP en 2009",
-    },
-    {
-        "folio": "BEN-000013",
-        "nombre": "Camila",
-        "apellido_paterno": "Soto",
-        "apellido_materno": "Elizondo",
-        "fecha_nacimiento": "2019-01-25",
-        "genero": "Femenino",
-        "curp": "SOEC190125MNLTLM05",
-        "tipo_espina_bifida": "Meningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital Universitario UANL",
-        "nombre_tutor": "Daniela Elizondo Cantú",
-        "calle": "Calle Juárez",
-        "numero": "456",
-        "colonia": "Centro",
-        "ciudad": "Santa Catarina",
-        "estado": "Nuevo León",
-        "codigo_postal": "66350",
-        "telefono_casa": "8188899001",
-        "telefono_celular": "8117766554",
-        "correo": "daniela.elizondo@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2020-06-30",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "",
-    },
-    {
-        "folio": "BEN-000014",
-        "nombre": "Roberto",
-        "apellido_paterno": "Chávez",
-        "apellido_materno": "Banda",
-        "fecha_nacimiento": "1970-11-18",
-        "genero": "Masculino",
-        "curp": "CABR701118HNLHND04",
-        "tipo_espina_bifida": "Espina bífida oculta",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Hospital Universitario UANL",
-        "nombre_tutor": None,
-        "calle": "Av. Eugenio Garza Sada",
-        "numero": "2501",
-        "colonia": "Tecnológico",
-        "ciudad": "Monterrey",
-        "estado": "Nuevo León",
-        "codigo_postal": "64849",
-        "telefono_casa": "8181234567",
-        "telefono_celular": "8118877665",
-        "correo": "roberto.chavez@email.com",
-        "tipo_cuota": "anual",
-        "fecha_ingreso": "2005-02-10",
-        "estado_membresia": "inactivo",
-        "fotografia_url": None,
-        "notas": "Adulto mayor, diagnóstico tardío",
-    },
-    {
-        "folio": "BEN-000015",
-        "nombre": "Ximena",
-        "apellido_paterno": "Guajardo",
-        "apellido_materno": "Tamez",
-        "fecha_nacimiento": "2023-09-02",
-        "genero": "Femenino",
-        "curp": "GUTX230902MNLJMX02",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "Nuevo León",
-        "hospital_nacimiento": "Christus Muguerza",
-        "nombre_tutor": "Sandra Tamez Longoria",
-        "calle": "Av. Sendero",
-        "numero": "780",
-        "colonia": "Sendero",
-        "ciudad": "Apodaca",
-        "estado": "Nuevo León",
-        "codigo_postal": "66600",
-        "telefono_casa": None,
-        "telefono_celular": "8119988776",
-        "correo": "sandra.tamez@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2024-01-20",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Bebé, cirugía correctiva al nacer",
-    },
-    {
-        "folio": "BEN-000016",
-        "nombre": "Fernando",
-        "apellido_paterno": "Peña",
-        "apellido_materno": "Villarreal",
-        "fecha_nacimiento": "2002-06-14",
-        "genero": "Masculino",
-        "curp": "PEVF020614HNLNLR08",
-        "tipo_espina_bifida": "Mielomeningocele",
-        "estado_nacimiento": "Chihuahua",
-        "hospital_nacimiento": "Hospital Central de Chihuahua",
-        "nombre_tutor": None,
-        "calle": "Av. Fidel Velázquez",
-        "numero": "1234",
-        "colonia": "San Nicolás de los Garza",
-        "ciudad": "San Nicolás de los Garza",
-        "estado": "Nuevo León",
-        "codigo_postal": "66450",
-        "telefono_casa": None,
-        "telefono_celular": "8114433221",
-        "correo": "fernando.pena@email.com",
-        "tipo_cuota": "mensual",
-        "fecha_ingreso": "2022-09-15",
-        "estado_membresia": "activo",
-        "fotografia_url": None,
-        "notas": "Foráneo de Chihuahua, estudia en Monterrey",
-    },
-]
-
-_next_folio_counter = len(mock_beneficiarios) + 1
 
 
 # ──────────────────────────── HELPERS ────────────────────────────
 
 
-def _calculate_age(fecha_nac_str: str) -> int:
+def _date_to_str(val) -> str | None:
+    """Convert a datetime/date object to ISO string, or return None."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val.isoformat()
+    if isinstance(val, date):
+        return val.isoformat()
+    return str(val)
+
+
+def _strip_char(val) -> str | None:
+    """Strip trailing spaces from CHAR columns."""
+    if val is None:
+        return None
+    return str(val).strip()
+
+
+def _fetch_tipos_espina(conn, id_paciente: int) -> list[dict]:
+    """Fetch tipos_espina for a given patient."""
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT te.ID_TIPO_ESPINA, te.NOMBRE
+        FROM PACIENTE_TIPO_ESPINA pte
+        JOIN TIPO_ESPINA_BIFIDA te ON te.ID_TIPO_ESPINA = pte.ID_TIPO_ESPINA
+        WHERE pte.ID_PACIENTE = :id
+        """,
+        {"id": id_paciente},
+    )
+    rows = rows_to_dicts(cur)
+    return [{"id_tipo_espina": r["id_tipo_espina"], "nombre": _strip_char(r["nombre"])} for r in rows]
+
+
+def _patient_row_to_response(row: dict, conn) -> dict:
+    """Convert a raw patient row dict to the API response format."""
+    row["fecha_nacimiento"] = _date_to_str(row.get("fecha_nacimiento"))
+    row["fecha_alta"] = _date_to_str(row.get("fecha_alta"))
+    row["fecha_registro"] = _date_to_str(row.get("fecha_registro"))
+    # Strip CHAR(1) fields
+    for field in ("activo", "usa_valvula", "genero", "membresia_estatus", "tipo_cuota"):
+        if field in row and row[field] is not None:
+            row[field] = _strip_char(row[field])
+    # Fetch tipos_espina
+    row["tipos_espina"] = _fetch_tipos_espina(conn, row["id_paciente"])
+    return row
+
+
+def _calculate_age(fecha_nac) -> int:
+    if not fecha_nac:
+        return 0
     try:
-        fn = datetime.strptime(fecha_nac_str, "%Y-%m-%d").date()
+        if isinstance(fecha_nac, str):
+            fn = datetime.strptime(fecha_nac, "%Y-%m-%d").date()
+        elif isinstance(fecha_nac, datetime):
+            fn = fecha_nac.date()
+        elif isinstance(fecha_nac, date):
+            fn = fecha_nac
+        else:
+            return 0
         today = date.today()
         return today.year - fn.year - ((today.month, today.day) < (fn.month, fn.day))
     except Exception:
@@ -476,119 +95,354 @@ def _etapa_vida(edad: int) -> str:
 # ──────────────────────────── ENDPOINTS ────────────────────────────
 
 
+@router.get("/tipos-espina")
+def listar_tipos_espina(current_user: dict = Depends(get_current_user)):
+    """Listar todos los tipos de espina bífida."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT ID_TIPO_ESPINA, NOMBRE, DESCRIPCION, ACTIVO FROM TIPO_ESPINA_BIFIDA WHERE ACTIVO = 'S' ORDER BY ID_TIPO_ESPINA")
+        rows = rows_to_dicts(cur)
+        for r in rows:
+            r["activo"] = _strip_char(r.get("activo"))
+            r["nombre"] = _strip_char(r.get("nombre"))
+        return rows
+
+
+@router.get("/stats")
+def stats_beneficiarios(current_user: dict = Depends(get_current_user)):
+    """Conteo total de beneficiarios."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S'")
+        total_activos = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM PACIENTE")
+        total = cur.fetchone()[0]
+        return {"total": total, "activos": total_activos, "inactivos": total - total_activos}
+
+
 @router.get("/stats/dashboard")
 def dashboard_stats(current_user: dict = Depends(get_current_user)):
     """Estadísticas generales para el dashboard."""
-    total = len(mock_beneficiarios)
-    activos = sum(1 for b in mock_beneficiarios if b["estado_membresia"] == "activo")
-    inactivos = total - activos
-    masculino = sum(1 for b in mock_beneficiarios if b["genero"] == "Masculino")
-    femenino = sum(1 for b in mock_beneficiarios if b["genero"] == "Femenino")
-    nuevo_leon = sum(1 for b in mock_beneficiarios if b["estado"] == "Nuevo León")
-    foraneos = total - nuevo_leon
+    with get_db() as conn:
+        cur = conn.cursor()
 
-    edades = [_calculate_age(b["fecha_nacimiento"]) for b in mock_beneficiarios]
-    etapas: dict[str, int] = {}
-    for edad in edades:
-        e = _etapa_vida(edad)
-        etapas[e] = etapas.get(e, 0) + 1
+        # Total patients
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S'")
+        total = cur.fetchone()[0]
 
-    return {
-        "total": total,
-        "activos": activos,
-        "inactivos": inactivos,
-        "por_genero": {"Masculino": masculino, "Femenino": femenino},
-        "por_procedencia": {"Nuevo León": nuevo_leon, "Foráneos": foraneos},
-        "por_etapa_vida": etapas,
-    }
+        # Activos by membresia
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND MEMBRESIA_ESTATUS = 'ACTIVO'")
+        activos = cur.fetchone()[0]
+        inactivos = total - activos
+
+        # By gender
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND GENERO = 'Masculino'")
+        masculino = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND GENERO = 'Femenino'")
+        femenino = cur.fetchone()[0]
+
+        # By origin
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTADO = 'Nuevo León'")
+        nuevo_leon = cur.fetchone()[0]
+        foraneos = total - nuevo_leon
+
+        # Age distribution
+        cur.execute("SELECT FECHA_NACIMIENTO FROM PACIENTE WHERE ACTIVO = 'S'")
+        fechas = [row[0] for row in cur.fetchall()]
+        etapas: dict[str, int] = {}
+        for fn in fechas:
+            edad = _calculate_age(fn)
+            e = _etapa_vida(edad)
+            etapas[e] = etapas.get(e, 0) + 1
+
+        return {
+            "total": total,
+            "activos": activos,
+            "inactivos": inactivos,
+            "por_genero": {"Masculino": masculino, "Femenino": femenino},
+            "por_procedencia": {"Nuevo León": nuevo_leon, "Foráneos": foraneos},
+            "por_etapa_vida": etapas,
+        }
 
 
-@router.get("/")
+@router.get("/", response_model=list[BeneficiarioResponse])
 def listar_beneficiarios(
     nombre: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
     genero: Optional[str] = Query(None),
     busqueda: Optional[str] = Query(None),
+    membresia_estatus: Optional[str] = Query(None),
+    tipo_cuota: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
 ):
     """Listar beneficiarios con filtros opcionales."""
-    resultados = list(mock_beneficiarios)
+    with get_db() as conn:
+        conditions = ["p.ACTIVO = 'S'"]
+        params: dict = {}
 
-    if nombre:
-        nombre_lower = nombre.lower()
-        resultados = [
-            b
-            for b in resultados
-            if nombre_lower in b["nombre"].lower()
-            or nombre_lower in b["apellido_paterno"].lower()
-            or nombre_lower in b["apellido_materno"].lower()
-        ]
+        if nombre:
+            conditions.append(
+                "(LOWER(p.NOMBRE) LIKE :nombre OR LOWER(p.APELLIDO_PATERNO) LIKE :nombre OR LOWER(p.APELLIDO_MATERNO) LIKE :nombre)"
+            )
+            params["nombre"] = f"%{nombre.lower()}%"
 
-    if estado:
-        resultados = [b for b in resultados if b["estado_membresia"] == estado]
+        if estado:
+            conditions.append("p.MEMBRESIA_ESTATUS = :estado")
+            params["estado"] = estado
 
-    if genero:
-        resultados = [b for b in resultados if b["genero"] == genero]
+        if membresia_estatus:
+            conditions.append("p.MEMBRESIA_ESTATUS = :membresia_estatus")
+            params["membresia_estatus"] = membresia_estatus
 
-    if busqueda:
-        q = busqueda.lower()
-        resultados = [
-            b
-            for b in resultados
-            if q in b["nombre"].lower()
-            or q in b["apellido_paterno"].lower()
-            or q in b["apellido_materno"].lower()
-            or q in b["folio"].lower()
-            or q in (b.get("curp") or "").lower()
-            or q in (b.get("ciudad") or "").lower()
-        ]
+        if tipo_cuota:
+            conditions.append("p.TIPO_CUOTA = :tipo_cuota")
+            params["tipo_cuota"] = tipo_cuota
 
-    return resultados
+        if genero:
+            conditions.append("p.GENERO = :genero")
+            params["genero"] = genero
+
+        if busqueda:
+            conditions.append(
+                "(LOWER(p.NOMBRE) LIKE :busqueda OR LOWER(p.APELLIDO_PATERNO) LIKE :busqueda "
+                "OR LOWER(p.APELLIDO_MATERNO) LIKE :busqueda OR LOWER(p.FOLIO) LIKE :busqueda "
+                "OR LOWER(p.CURP) LIKE :busqueda OR LOWER(p.CIUDAD) LIKE :busqueda)"
+            )
+            params["busqueda"] = f"%{busqueda.lower()}%"
+
+        where_clause = " AND ".join(conditions)
+        sql = f"SELECT p.* FROM PACIENTE p WHERE {where_clause} ORDER BY p.ID_PACIENTE"
+
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        rows = rows_to_dicts(cur)
+
+        return [_patient_row_to_response(row, conn) for row in rows]
 
 
-@router.get("/{folio}")
+@router.get("/{folio}", response_model=BeneficiarioResponse)
 def obtener_beneficiario(folio: str, current_user: dict = Depends(get_current_user)):
     """Obtener beneficiario por folio."""
-    beneficiario = next(
-        (b for b in mock_beneficiarios if b["folio"] == folio), None
-    )
-    if beneficiario is None:
-        raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
-    edad = _calculate_age(beneficiario["fecha_nacimiento"])
-    return {**beneficiario, "edad": edad, "etapa_vida": _etapa_vida(edad)}
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM PACIENTE WHERE FOLIO = :folio", {"folio": folio})
+        row = row_to_dict(cur)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+        return _patient_row_to_response(row, conn)
 
 
-@router.post("/", status_code=201)
+@router.post("/", status_code=201, response_model=BeneficiarioResponse)
 def crear_beneficiario(
     data: BeneficiarioCreate, current_user: dict = Depends(get_current_user)
 ):
     """Crear nuevo beneficiario con folio auto-generado."""
-    global _next_folio_counter
-    folio = f"BEN-{_next_folio_counter:06d}"
-    _next_folio_counter += 1
+    with get_db() as conn:
+        cur = conn.cursor()
 
-    nuevo = data.model_dump()
-    nuevo["folio"] = folio
-    if not nuevo.get("fecha_ingreso"):
-        nuevo["fecha_ingreso"] = date.today().isoformat()
-    mock_beneficiarios.append(nuevo)
-    return nuevo
+        # Generate folio
+        cur.execute("SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE")
+        next_id = cur.fetchone()[0]
+        folio = f"BEN-{next_id:06d}"
+
+        payload = data.model_dump()
+        tipos_ids = payload.pop("tipos_espina", None) or []
+
+        # Prepare output variable for RETURNING clause
+        out_id = cur.var(int)
+
+        cur.execute(
+            """
+            INSERT INTO PACIENTE (
+                FOLIO, ACTIVO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,
+                GENERO, FECHA_NACIMIENTO, CURP, NOMBRE_PADRE_MADRE,
+                DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,
+                TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,
+                EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,
+                MUNICIPIO_NACIMIENTO, ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO,
+                TIPO_SANGRE, USA_VALVULA, NOTAS_ADICIONALES,
+                FECHA_ALTA, MEMBRESIA_ESTATUS, ID_USUARIO_REGISTRO, FECHA_REGISTRO,
+                TIPO_CUOTA
+            ) VALUES (
+                :folio, :activo, :nombre, :apellido_paterno, :apellido_materno,
+                :genero, TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'), :curp, :nombre_padre_madre,
+                :direccion, :colonia, :ciudad, :estado, :codigo_postal,
+                :telefono_casa, :telefono_celular, :correo_electronico,
+                :en_emergencia_avisar_a, :telefono_emergencia,
+                :municipio_nacimiento, :estado_nacimiento, :hospital_nacimiento,
+                :tipo_sangre, :usa_valvula, :notas_adicionales,
+                SYSDATE, :membresia_estatus, :id_usuario_registro, SYSDATE,
+                :tipo_cuota
+            )
+            RETURNING ID_PACIENTE INTO :out_id
+            """,
+            {
+                "folio": folio,
+                "activo": payload.get("activo", "S"),
+                "nombre": payload["nombre"],
+                "apellido_paterno": payload["apellido_paterno"],
+                "apellido_materno": payload.get("apellido_materno"),
+                "genero": payload.get("genero"),
+                "fecha_nacimiento": payload.get("fecha_nacimiento"),
+                "curp": payload["curp"],
+                "nombre_padre_madre": payload.get("nombre_padre_madre"),
+                "direccion": payload.get("direccion"),
+                "colonia": payload.get("colonia"),
+                "ciudad": payload.get("ciudad"),
+                "estado": payload.get("estado"),
+                "codigo_postal": payload.get("codigo_postal"),
+                "telefono_casa": payload.get("telefono_casa"),
+                "telefono_celular": payload.get("telefono_celular"),
+                "correo_electronico": payload.get("correo_electronico"),
+                "en_emergencia_avisar_a": payload.get("en_emergencia_avisar_a"),
+                "telefono_emergencia": payload.get("telefono_emergencia"),
+                "municipio_nacimiento": payload.get("municipio_nacimiento"),
+                "estado_nacimiento": payload.get("estado_nacimiento"),
+                "hospital_nacimiento": payload.get("hospital_nacimiento"),
+                "tipo_sangre": payload.get("tipo_sangre"),
+                "usa_valvula": payload.get("usa_valvula", "N"),
+                "notas_adicionales": payload.get("notas_adicionales"),
+                "membresia_estatus": payload.get("membresia_estatus", "ACTIVO"),
+                "id_usuario_registro": current_user.get("id_usuario"),
+                "tipo_cuota": payload.get("tipo_cuota"),
+                "out_id": out_id,
+            },
+        )
+
+        new_id = out_id.getvalue()[0]
+
+        # Insert tipos_espina
+        for tid in tipos_ids:
+            cur.execute(
+                """
+                INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO)
+                VALUES (:id_paciente, :id_tipo_espina, SYSDATE)
+                """,
+                {"id_paciente": new_id, "id_tipo_espina": tid},
+            )
+
+        conn.commit()
+
+        # Fetch the created record
+        cur.execute("SELECT * FROM PACIENTE WHERE ID_PACIENTE = :id", {"id": new_id})
+        row = row_to_dict(cur)
+        return _patient_row_to_response(row, conn)
 
 
-@router.put("/{folio}")
+@router.put("/{folio}", response_model=BeneficiarioResponse)
 def actualizar_beneficiario(
     folio: str,
     data: BeneficiarioCreate,
     current_user: dict = Depends(get_current_user),
 ):
     """Actualizar beneficiario existente."""
-    for i, b in enumerate(mock_beneficiarios):
-        if b["folio"] == folio:
-            updated = data.model_dump()
-            updated["folio"] = folio
-            mock_beneficiarios[i] = updated
-            return updated
-    raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+    with get_db() as conn:
+        cur = conn.cursor()
+
+        # Find patient
+        cur.execute("SELECT ID_PACIENTE FROM PACIENTE WHERE FOLIO = :folio", {"folio": folio})
+        row = cur.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+        id_paciente = row[0]
+
+        payload = data.model_dump()
+        tipos_ids = payload.pop("tipos_espina", None) or []
+
+        cur.execute(
+            """
+            UPDATE PACIENTE SET
+                NOMBRE = :nombre,
+                APELLIDO_PATERNO = :apellido_paterno,
+                APELLIDO_MATERNO = :apellido_materno,
+                GENERO = :genero,
+                FECHA_NACIMIENTO = TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'),
+                CURP = :curp,
+                NOMBRE_PADRE_MADRE = :nombre_padre_madre,
+                DIRECCION = :direccion,
+                COLONIA = :colonia,
+                CIUDAD = :ciudad,
+                ESTADO = :estado,
+                CODIGO_POSTAL = :codigo_postal,
+                TELEFONO_CASA = :telefono_casa,
+                TELEFONO_CELULAR = :telefono_celular,
+                CORREO_ELECTRONICO = :correo_electronico,
+                EN_EMERGENCIA_AVISAR_A = :en_emergencia_avisar_a,
+                TELEFONO_EMERGENCIA = :telefono_emergencia,
+                MUNICIPIO_NACIMIENTO = :municipio_nacimiento,
+                ESTADO_NACIMIENTO = :estado_nacimiento,
+                HOSPITAL_NACIMIENTO = :hospital_nacimiento,
+                TIPO_SANGRE = :tipo_sangre,
+                USA_VALVULA = :usa_valvula,
+                NOTAS_ADICIONALES = :notas_adicionales,
+                MEMBRESIA_ESTATUS = :membresia_estatus,
+                ACTIVO = :activo,
+                TIPO_CUOTA = :tipo_cuota
+            WHERE ID_PACIENTE = :id_paciente
+            """,
+            {
+                "nombre": payload["nombre"],
+                "apellido_paterno": payload["apellido_paterno"],
+                "apellido_materno": payload.get("apellido_materno"),
+                "genero": payload.get("genero"),
+                "fecha_nacimiento": payload.get("fecha_nacimiento"),
+                "curp": payload["curp"],
+                "nombre_padre_madre": payload.get("nombre_padre_madre"),
+                "direccion": payload.get("direccion"),
+                "colonia": payload.get("colonia"),
+                "ciudad": payload.get("ciudad"),
+                "estado": payload.get("estado"),
+                "codigo_postal": payload.get("codigo_postal"),
+                "telefono_casa": payload.get("telefono_casa"),
+                "telefono_celular": payload.get("telefono_celular"),
+                "correo_electronico": payload.get("correo_electronico"),
+                "en_emergencia_avisar_a": payload.get("en_emergencia_avisar_a"),
+                "telefono_emergencia": payload.get("telefono_emergencia"),
+                "municipio_nacimiento": payload.get("municipio_nacimiento"),
+                "estado_nacimiento": payload.get("estado_nacimiento"),
+                "hospital_nacimiento": payload.get("hospital_nacimiento"),
+                "tipo_sangre": payload.get("tipo_sangre"),
+                "usa_valvula": payload.get("usa_valvula", "N"),
+                "notas_adicionales": payload.get("notas_adicionales"),
+                "membresia_estatus": payload.get("membresia_estatus", "ACTIVO"),
+                "activo": payload.get("activo", "S"),
+                "tipo_cuota": payload.get("tipo_cuota"),
+                "id_paciente": id_paciente,
+            },
+        )
+
+        # Replace tipos_espina: delete old, insert new
+        cur.execute("DELETE FROM PACIENTE_TIPO_ESPINA WHERE ID_PACIENTE = :id", {"id": id_paciente})
+        for tid in tipos_ids:
+            cur.execute(
+                """
+                INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO)
+                VALUES (:id_paciente, :id_tipo_espina, SYSDATE)
+                """,
+                {"id_paciente": id_paciente, "id_tipo_espina": tid},
+            )
+
+        conn.commit()
+
+        # Fetch updated record
+        cur.execute("SELECT * FROM PACIENTE WHERE ID_PACIENTE = :id", {"id": id_paciente})
+        row = row_to_dict(cur)
+        return _patient_row_to_response(row, conn)
+
+
+@router.delete("/{folio}", status_code=200)
+def eliminar_beneficiario(folio: str, current_user: dict = Depends(get_current_user)):
+    """Soft delete: marcar beneficiario como inactivo."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT ID_PACIENTE FROM PACIENTE WHERE FOLIO = :folio", {"folio": folio})
+        row = cur.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+
+        cur.execute("UPDATE PACIENTE SET ACTIVO = 'N' WHERE FOLIO = :folio", {"folio": folio})
+        conn.commit()
+        return {"detail": "Beneficiario eliminado correctamente"}
 
 
 @router.get("/{folio}/historial")
@@ -596,53 +450,24 @@ def historial_beneficiario(
     folio: str, current_user: dict = Depends(get_current_user)
 ):
     """Obtener historial de servicios, pagos y citas del beneficiario."""
-    beneficiario = next(
-        (b for b in mock_beneficiarios if b["folio"] == folio), None
-    )
-    if beneficiario is None:
-        raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM PACIENTE WHERE FOLIO = :folio", {"folio": folio})
+        paciente = row_to_dict(cur)
+        if paciente is None:
+            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
 
-    nombre_completo = f"{beneficiario['nombre']} {beneficiario['apellido_paterno']} {beneficiario['apellido_materno']}"
+        nombre_completo = (
+            f"{paciente['nombre']} {paciente['apellido_paterno']}"
+            f" {paciente.get('apellido_materno') or ''}".strip()
+        )
 
-    # Mock historial
-    historial = {
-        "folio": folio,
-        "nombre": nombre_completo,
-        "servicios": [
-            {
-                "tipo": "Consulta Urología",
-                "fecha": "2025-11-15",
-                "monto": 150.00,
-                "notas": "Revisión rutinaria",
-            },
-            {
-                "tipo": "Terapia Física",
-                "fecha": "2025-10-20",
-                "monto": 200.00,
-                "notas": "Sesión de rehabilitación",
-            },
-        ],
-        "pagos": [
-            {
-                "tipo": "Cuota mensual",
-                "fecha": "2025-12-01",
-                "monto": 100.00,
-                "metodo": "Efectivo",
-            },
-            {
-                "tipo": "Cuota mensual",
-                "fecha": "2025-11-01",
-                "monto": 100.00,
-                "metodo": "Transferencia",
-            },
-        ],
-        "citas": [
-            {
-                "fecha": "2026-01-15",
-                "doctor": "Dr. Alejandro Cavazos",
-                "especialidad": "Neurocirugía",
-                "estatus": "PROGRAMADA",
-            },
-        ],
-    }
-    return historial
+        # Historial placeholder - will be populated when related tables are integrated
+        historial = {
+            "folio": folio,
+            "nombre": nombre_completo,
+            "servicios": [],
+            "pagos": [],
+            "citas": [],
+        }
+        return historial

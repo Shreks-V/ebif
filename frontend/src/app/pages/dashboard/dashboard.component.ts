@@ -248,7 +248,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
                   </div>
                   <!-- Name + Folio -->
                   <div class="flex-1 min-w-0">
-                    <p class="font-bold text-slate-900">{{ paciente.nombre }}</p>
+                    <p class="font-bold text-slate-900">{{ paciente.nombre + ' ' + paciente.apellido }}</p>
                     <p class="text-xs text-slate-400 font-mono">{{ paciente.folio }}</p>
                   </div>
                   <!-- Type Badge -->
@@ -354,14 +354,12 @@ export class DashboardComponent implements OnInit {
   todayFormatted = '';
 
   pacientes = [
-    { nombre: 'María González', folio: 'BEN-000123', hora: '09:30', iniciales: 'MG', color: 'bg-pink-500' },
-    { nombre: 'Juan Pérez', folio: 'BEN-000234', hora: '10:00', iniciales: 'JP', color: 'bg-blue-500' },
-    { nombre: 'Ana Rodríguez', folio: 'BEN-000156', hora: '10:30', iniciales: 'AR', color: 'bg-purple-500' },
-    { nombre: 'Carlos López', folio: 'BEN-000289', hora: '11:00', iniciales: 'CL', color: 'bg-green-500' },
-    { nombre: 'Laura Martínez', folio: 'BEN-000312', hora: '11:30', iniciales: 'LM', color: 'bg-yellow-500' },
-    { nombre: 'Roberto Sánchez', folio: 'BEN-000345', hora: '12:00', iniciales: 'RS', color: 'bg-indigo-500' },
-    { nombre: 'Patricia Torres', folio: 'BEN-000378', hora: '12:30', iniciales: 'PT', color: 'bg-rose-500' },
-    { nombre: 'Miguel Ramírez', folio: 'BEN-000401', hora: '13:00', iniciales: 'MR', color: 'bg-teal-500' },
+    { nombre: 'María Fernanda', apellido: 'García López', folio: 'BEN-000001', hora: '09:00', iniciales: 'MG', color: 'bg-pink-400' },
+    { nombre: 'Carlos Eduardo', apellido: 'Martínez Reyes', folio: 'BEN-000002', hora: '09:30', iniciales: 'CM', color: 'bg-blue-400' },
+    { nombre: 'Sofía', apellido: 'Rodríguez Hernández', folio: 'BEN-000003', hora: '10:00', iniciales: 'SR', color: 'bg-purple-400' },
+    { nombre: 'Diego Alejandro', apellido: 'Treviño Garza', folio: 'BEN-000004', hora: '10:30', iniciales: 'DT', color: 'bg-emerald-400' },
+    { nombre: 'Valentina', apellido: 'Flores Mendoza', folio: 'BEN-000005', hora: '11:00', iniciales: 'VF', color: 'bg-amber-400' },
+    { nombre: 'José Manuel', apellido: 'Ramírez Salazar', folio: 'BEN-000006', hora: '11:30', iniciales: 'JR', color: 'bg-rose-400' },
   ];
 
   constructor(private router: Router) {}

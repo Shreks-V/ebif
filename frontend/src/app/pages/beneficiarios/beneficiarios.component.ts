@@ -5,14 +5,37 @@ import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 
 interface Beneficiario {
-  id: number;
+  idPaciente: number;
+  folio: string;
   nombre: string;
   apellidoPaterno: string;
   apellidoMaterno: string;
-  edad: number;
-  membresia: string;
-  cuota: string;
-  fechaRegistro: string;
+  genero: string;
+  fechaNacimiento: string;
+  curp: string;
+  nombrePadreMadre: string;
+  direccion: string;
+  colonia: string;
+  ciudad: string;
+  estado: string;
+  codigoPostal: string;
+  telefonoCasa: string;
+  telefonoCelular: string;
+  correoElectronico: string;
+  enEmergenciaAvisarA: string;
+  telefonoEmergencia: string;
+  municipioNacimiento: string;
+  estadoNacimiento: string;
+  hospitalNacimiento: string;
+  tipoSangre: string;
+  usaValvula: string;
+  notasAdicionales: string;
+  fechaAlta: string;
+  membresiaEstatus: string;
+  tipoCuota: string;
+  activo: string;
+  tiposEspina: {idTipoEspina: number, nombre: string}[];
+  // UI helpers
   iniciales: string;
   color: string;
 }
@@ -22,9 +45,14 @@ interface Preregistro {
   nombre: string;
   apellidoPaterno: string;
   apellidoMaterno: string;
-  edad: number;
-  cuota: string;
-  fechaPreregistro: string;
+  fechaNacimiento: string;
+  curp: string;
+  tipoEspinaBifida: string;
+  nombrePadreMadre: string;
+  tipoCuota: string;
+  fechaSolicitud: string;
+  estatus: string;
+  // UI helpers
   iniciales: string;
   color: string;
 }
@@ -76,7 +104,7 @@ interface Preregistro {
                   type="text"
                   [(ngModel)]="searchTerm"
                   (ngModelChange)="filterData()"
-                  placeholder="Buscar por nombre, ID o membresía..."
+                  placeholder="Buscar por nombre, folio, CURP o membresía..."
                   class="w-full pl-14 h-14 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#007BFF] focus:ring-2 focus:ring-[#007BFF]/20 transition-all"
                 />
               </div>
@@ -114,18 +142,18 @@ interface Preregistro {
             <table class="w-full">
               <thead>
                 <tr class="bg-slate-50 border-b border-slate-200">
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Folio</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Edad</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo Espina</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cuota</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Membresía</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Registro</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Alta</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let b of paginatedBeneficiarios; let i = index" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                  <td class="px-6 py-4 text-sm font-semibold text-slate-700">#{{ b.id }}</td>
+                  <td class="px-6 py-4 text-sm font-semibold text-slate-700">{{ b.folio }}</td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
                       <div [class]="b.color + ' w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm'">
@@ -134,14 +162,14 @@ interface Preregistro {
                       <span class="text-sm font-semibold text-slate-800">{{ b.nombre }} {{ b.apellidoPaterno }} {{ b.apellidoMaterno }}</span>
                     </div>
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-600">{{ b.edad }} años</td>
+                  <td class="px-6 py-4 text-sm text-slate-600">{{ b.tiposEspina[0]?.nombre || 'N/A' }}</td>
                   <td class="px-6 py-4">
-                    <span [class]="getCuotaBadgeClass(b.cuota)">{{ b.cuota }}</span>
+                    <span [class]="getCuotaBadgeClass(b.tipoCuota)">Cuota {{ b.tipoCuota }}</span>
                   </td>
                   <td class="px-6 py-4">
-                    <span [class]="getMembresiaBadgeClass(b.membresia)">{{ b.membresia }}</span>
+                    <span [class]="getMembresiaBadgeClass(b.membresiaEstatus)">{{ b.membresiaEstatus }}</span>
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-600">{{ b.fechaRegistro }}</td>
+                  <td class="px-6 py-4 text-sm text-slate-600">{{ b.fechaAlta }}</td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-2">
                       <!-- Eye -->
@@ -201,15 +229,15 @@ interface Preregistro {
                 <tr class="bg-amber-50 border-b border-amber-200">
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Edad</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo Espina Bífida</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cuota</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Preregistro</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Solicitud</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let p of paginatedPreregistros; let i = index" class="border-b border-slate-100 hover:bg-amber-50/30 transition-colors">
-                  <td class="px-6 py-4 text-sm font-semibold text-slate-700">#{{ p.id }}</td>
+                  <td class="px-6 py-4 text-sm font-semibold text-slate-700">{{ p.id }}</td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
                       <div [class]="p.color + ' w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm'">
@@ -218,11 +246,11 @@ interface Preregistro {
                       <span class="text-sm font-semibold text-slate-800">{{ p.nombre }} {{ p.apellidoPaterno }} {{ p.apellidoMaterno }}</span>
                     </div>
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-600">{{ p.edad }} años</td>
+                  <td class="px-6 py-4 text-sm text-slate-600">{{ p.tipoEspinaBifida }}</td>
                   <td class="px-6 py-4">
-                    <span [class]="getCuotaBadgeClass(p.cuota)">{{ p.cuota }}</span>
+                    <span [class]="getCuotaBadgeClass(p.tipoCuota)">Cuota {{ p.tipoCuota }}</span>
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-600">{{ p.fechaPreregistro }}</td>
+                  <td class="px-6 py-4 text-sm text-slate-600">{{ p.fechaSolicitud }}</td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-2">
                       <!-- Eye -->
@@ -292,15 +320,114 @@ export class BeneficiariosComponent {
   preregistrosPage = 1;
 
   beneficiarios: Beneficiario[] = [
-    { id: 1, nombre: 'María', apellidoPaterno: 'González', apellidoMaterno: 'López', edad: 12, membresia: 'Activa', cuota: 'Cuota A', fechaRegistro: '15/01/2025', iniciales: 'MG', color: 'bg-pink-400' },
-    { id: 2, nombre: 'Juan Carlos', apellidoPaterno: 'Martínez', apellidoMaterno: 'Pérez', edad: 8, membresia: 'Activa', cuota: 'Cuota B', fechaRegistro: '22/01/2025', iniciales: 'JM', color: 'bg-blue-400' },
-    { id: 3, nombre: 'Ana Patricia', apellidoPaterno: 'Rodríguez', apellidoMaterno: 'Hernández', edad: 15, membresia: 'Vencida', cuota: 'Cuota A', fechaRegistro: '10/12/2024', iniciales: 'AR', color: 'bg-purple-400' }
+    {
+      idPaciente: 1, folio: 'BEN-000001', nombre: 'María', apellidoPaterno: 'González', apellidoMaterno: 'López',
+      genero: 'F', fechaNacimiento: '2014-03-15', curp: 'GOLM140315MDFLPR01',
+      nombrePadreMadre: 'Laura López Martínez', direccion: 'Av. Insurgentes Sur 1234', colonia: 'Del Valle',
+      ciudad: 'Ciudad de México', estado: 'Ciudad de México', codigoPostal: '03100',
+      telefonoCasa: '5555123456', telefonoCelular: '5512345678', correoElectronico: 'laura.lopez@email.com',
+      enEmergenciaAvisarA: 'Carlos González Ruiz', telefonoEmergencia: '5598765432',
+      municipioNacimiento: 'Benito Juárez', estadoNacimiento: 'Ciudad de México',
+      hospitalNacimiento: 'Hospital General de México', tipoSangre: 'O+', usaValvula: 'S',
+      notasAdicionales: 'Requiere seguimiento neurológico trimestral', fechaAlta: '15/01/2025',
+      membresiaEstatus: 'ACTIVO', tipoCuota: 'A', activo: 'S',
+      tiposEspina: [{idTipoEspina: 1, nombre: 'Mielomeningocele'}],
+      iniciales: 'MG', color: 'bg-pink-400'
+    },
+    {
+      idPaciente: 2, folio: 'BEN-000002', nombre: 'Juan Carlos', apellidoPaterno: 'Martínez', apellidoMaterno: 'Pérez',
+      genero: 'M', fechaNacimiento: '2017-07-22', curp: 'MAPJ170722HDFRRS02',
+      nombrePadreMadre: 'Rosa Pérez Hernández', direccion: 'Calle Morelos 567', colonia: 'Centro',
+      ciudad: 'Guadalajara', estado: 'Jalisco', codigoPostal: '44100',
+      telefonoCasa: '3331234567', telefonoCelular: '3345678901', correoElectronico: 'rosa.perez@email.com',
+      enEmergenciaAvisarA: 'Miguel Martínez Díaz', telefonoEmergencia: '3356789012',
+      municipioNacimiento: 'Guadalajara', estadoNacimiento: 'Jalisco',
+      hospitalNacimiento: 'Hospital Civil de Guadalajara', tipoSangre: 'A+', usaValvula: 'N',
+      notasAdicionales: '', fechaAlta: '22/01/2025',
+      membresiaEstatus: 'ACTIVO', tipoCuota: 'B', activo: 'S',
+      tiposEspina: [{idTipoEspina: 2, nombre: 'Meningocele'}],
+      iniciales: 'JM', color: 'bg-blue-400'
+    },
+    {
+      idPaciente: 3, folio: 'BEN-000003', nombre: 'Ana Patricia', apellidoPaterno: 'Rodríguez', apellidoMaterno: 'Hernández',
+      genero: 'F', fechaNacimiento: '2010-11-05', curp: 'ROHA101105MDFDRN03',
+      nombrePadreMadre: 'Patricia Hernández Flores', direccion: 'Blvd. Adolfo López Mateos 890', colonia: 'Lindavista',
+      ciudad: 'Monterrey', estado: 'Nuevo León', codigoPostal: '64000',
+      telefonoCasa: '8187654321', telefonoCelular: '8112349876', correoElectronico: 'patricia.hdez@email.com',
+      enEmergenciaAvisarA: 'Fernando Rodríguez Soto', telefonoEmergencia: '8198761234',
+      municipioNacimiento: 'Monterrey', estadoNacimiento: 'Nuevo León',
+      hospitalNacimiento: 'Hospital Universitario de Nuevo León', tipoSangre: 'B+', usaValvula: 'S',
+      notasAdicionales: 'Alérgica a penicilina', fechaAlta: '10/12/2024',
+      membresiaEstatus: 'VENCIDO', tipoCuota: 'A', activo: 'S',
+      tiposEspina: [{idTipoEspina: 3, nombre: 'Espina bífida oculta'}],
+      iniciales: 'AR', color: 'bg-purple-400'
+    },
+    {
+      idPaciente: 4, folio: 'BEN-000004', nombre: 'Diego', apellidoPaterno: 'Ramírez', apellidoMaterno: 'Torres',
+      genero: 'M', fechaNacimiento: '2016-01-30', curp: 'RATD160130HDFMRG04',
+      nombrePadreMadre: 'Gabriela Torres Vega', direccion: 'Calle 5 de Febrero 321', colonia: 'Constitución',
+      ciudad: 'Puebla', estado: 'Puebla', codigoPostal: '72000',
+      telefonoCasa: '2221234567', telefonoCelular: '2229876543', correoElectronico: 'gabriela.torres@email.com',
+      enEmergenciaAvisarA: 'Alejandro Ramírez Mora', telefonoEmergencia: '2225678901',
+      municipioNacimiento: 'Puebla', estadoNacimiento: 'Puebla',
+      hospitalNacimiento: 'Hospital General de Puebla', tipoSangre: 'AB+', usaValvula: 'S',
+      notasAdicionales: 'Rehabilitación física dos veces por semana', fechaAlta: '05/02/2025',
+      membresiaEstatus: 'ACTIVO', tipoCuota: 'A', activo: 'S',
+      tiposEspina: [{idTipoEspina: 1, nombre: 'Mielomeningocele'}],
+      iniciales: 'DR', color: 'bg-green-400'
+    },
+    {
+      idPaciente: 5, folio: 'BEN-000005', nombre: 'Sofía', apellidoPaterno: 'Hernández', apellidoMaterno: 'Díaz',
+      genero: 'F', fechaNacimiento: '2019-06-12', curp: 'HEDS190612MDFRFZ05',
+      nombrePadreMadre: 'Claudia Díaz Mendoza', direccion: 'Av. Universidad 456', colonia: 'Narvarte',
+      ciudad: 'Ciudad de México', estado: 'Ciudad de México', codigoPostal: '03020',
+      telefonoCasa: '5556789012', telefonoCelular: '5543218765', correoElectronico: 'claudia.diaz@email.com',
+      enEmergenciaAvisarA: 'Jorge Hernández Luna', telefonoEmergencia: '5587654321',
+      municipioNacimiento: 'Coyoacán', estadoNacimiento: 'Ciudad de México',
+      hospitalNacimiento: 'Instituto Nacional de Pediatría', tipoSangre: 'O-', usaValvula: 'N',
+      notasAdicionales: '', fechaAlta: '18/03/2025',
+      membresiaEstatus: 'ACTIVO', tipoCuota: 'B', activo: 'S',
+      tiposEspina: [{idTipoEspina: 4, nombre: 'Lipomielomeningocele'}],
+      iniciales: 'SH', color: 'bg-rose-400'
+    },
+    {
+      idPaciente: 6, folio: 'BEN-000006', nombre: 'Carlos Eduardo', apellidoPaterno: 'López', apellidoMaterno: 'García',
+      genero: 'M', fechaNacimiento: '2012-09-08', curp: 'LOGC120908HDFPRC06',
+      nombrePadreMadre: 'María García Olvera', direccion: 'Calle Hidalgo 789', colonia: 'San Ángel',
+      ciudad: 'Querétaro', estado: 'Querétaro', codigoPostal: '76000',
+      telefonoCasa: '4421234567', telefonoCelular: '4429871234', correoElectronico: 'maria.garcia@email.com',
+      enEmergenciaAvisarA: 'Eduardo López Castillo', telefonoEmergencia: '4425671234',
+      municipioNacimiento: 'Querétaro', estadoNacimiento: 'Querétaro',
+      hospitalNacimiento: 'Hospital General de Querétaro', tipoSangre: 'A-', usaValvula: 'S',
+      notasAdicionales: 'Control urológico semestral', fechaAlta: '02/11/2024',
+      membresiaEstatus: 'SUSPENDIDO', tipoCuota: 'A', activo: 'N',
+      tiposEspina: [{idTipoEspina: 2, nombre: 'Meningocele'}, {idTipoEspina: 3, nombre: 'Espina bífida oculta'}],
+      iniciales: 'CL', color: 'bg-indigo-400'
+    }
   ];
 
   preregistros: Preregistro[] = [
-    { id: 101, nombre: 'Roberto', apellidoPaterno: 'Sánchez', apellidoMaterno: 'Cruz', edad: 9, cuota: 'Cuota A', fechaPreregistro: '01/03/2025', iniciales: 'RS', color: 'bg-orange-400' },
-    { id: 102, nombre: 'Elena', apellidoPaterno: 'Torres', apellidoMaterno: 'Ramírez', edad: 11, cuota: 'Cuota B', fechaPreregistro: '28/02/2025', iniciales: 'ET', color: 'bg-teal-400' },
-    { id: 103, nombre: 'Fernando', apellidoPaterno: 'López', apellidoMaterno: 'García', edad: 7, cuota: 'Cuota A', fechaPreregistro: '25/02/2025', iniciales: 'FL', color: 'bg-indigo-400' }
+    {
+      id: 101, nombre: 'Roberto', apellidoPaterno: 'Sánchez', apellidoMaterno: 'Cruz',
+      fechaNacimiento: '2016-05-20', curp: 'SACR160520HDFNRB01',
+      tipoEspinaBifida: 'Mielomeningocele', nombrePadreMadre: 'Elena Cruz Vargas',
+      tipoCuota: 'A', fechaSolicitud: '01/03/2025', estatus: 'PENDIENTE',
+      iniciales: 'RS', color: 'bg-orange-400'
+    },
+    {
+      id: 102, nombre: 'Elena', apellidoPaterno: 'Torres', apellidoMaterno: 'Ramírez',
+      fechaNacimiento: '2014-08-14', curp: 'TORE140814MDFRML02',
+      tipoEspinaBifida: 'Espina bífida oculta', nombrePadreMadre: 'Guadalupe Ramírez Solís',
+      tipoCuota: 'B', fechaSolicitud: '28/02/2025', estatus: 'PENDIENTE',
+      iniciales: 'ET', color: 'bg-teal-400'
+    },
+    {
+      id: 103, nombre: 'Fernando', apellidoPaterno: 'López', apellidoMaterno: 'García',
+      fechaNacimiento: '2018-12-03', curp: 'LOGF181203HDFPRC03',
+      tipoEspinaBifida: 'Meningocele', nombrePadreMadre: 'Isabel García Navarro',
+      tipoCuota: 'A', fechaSolicitud: '25/02/2025', estatus: 'PENDIENTE',
+      iniciales: 'FL', color: 'bg-indigo-400'
+    }
   ];
 
   filteredBeneficiarios: Beneficiario[] = [...this.beneficiarios];
@@ -344,16 +471,18 @@ export class BeneficiariosComponent {
       b.nombre.toLowerCase().includes(term) ||
       b.apellidoPaterno.toLowerCase().includes(term) ||
       b.apellidoMaterno.toLowerCase().includes(term) ||
-      b.id.toString().includes(term) ||
-      b.membresia.toLowerCase().includes(term) ||
-      b.cuota.toLowerCase().includes(term)
+      b.folio.toLowerCase().includes(term) ||
+      b.curp.toLowerCase().includes(term) ||
+      b.membresiaEstatus.toLowerCase().includes(term) ||
+      b.tipoCuota.toLowerCase().includes(term)
     );
     this.filteredPreregistros = this.preregistros.filter(p =>
       p.nombre.toLowerCase().includes(term) ||
       p.apellidoPaterno.toLowerCase().includes(term) ||
       p.apellidoMaterno.toLowerCase().includes(term) ||
       p.id.toString().includes(term) ||
-      p.cuota.toLowerCase().includes(term)
+      p.curp.toLowerCase().includes(term) ||
+      p.tipoCuota.toLowerCase().includes(term)
     );
     this.beneficiariosPage = 1;
     this.preregistrosPage = 1;
@@ -369,16 +498,16 @@ export class BeneficiariosComponent {
 
   getCuotaBadgeClass(cuota: string): string {
     const base = 'px-3 py-1 rounded-full text-xs font-bold';
-    if (cuota === 'Cuota A') return `${base} bg-emerald-100 text-emerald-800`;
-    if (cuota === 'Cuota B') return `${base} bg-blue-100 text-blue-800`;
+    if (cuota === 'A') return `${base} bg-emerald-100 text-emerald-800`;
+    if (cuota === 'B') return `${base} bg-blue-100 text-blue-800`;
     return `${base} bg-slate-100 text-slate-800`;
   }
 
   getMembresiaBadgeClass(membresia: string): string {
     const base = 'px-3 py-1 rounded-full text-xs font-bold';
-    if (membresia === 'Activa') return `${base} bg-green-100 text-green-800`;
-    if (membresia === 'Vencida') return `${base} bg-red-100 text-red-800`;
-    if (membresia === 'Pendiente') return `${base} bg-amber-100 text-amber-800`;
+    if (membresia === 'ACTIVO') return `${base} bg-green-100 text-green-800`;
+    if (membresia === 'VENCIDO') return `${base} bg-red-100 text-red-800`;
+    if (membresia === 'SUSPENDIDO') return `${base} bg-amber-100 text-amber-800`;
     return `${base} bg-slate-100 text-slate-800`;
   }
 

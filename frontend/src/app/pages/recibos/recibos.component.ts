@@ -4,22 +4,26 @@ import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 
-interface ReciboItem {
-  id: number;
-  nombre: string;
-  tipo: 'Consulta' | 'Servicio' | 'Producto';
-  precio: number;
-  cantidad: number;
+interface MetodoPagoItem {
+  idMetodoPago: number;
+  nombre: string; // EFECTIVO / TRANSFERENCIA / TARJETA / EXENTO
+  monto: number;
 }
 
 interface Recibo {
-  folio: string;
-  usuario: string;
-  fecha: string;
-  items: ReciboItem[];
+  idVenta: number;
+  folioVenta: string;
+  idPaciente: number;
+  nombrePaciente: string;
+  folioPaciente: string;
+  fechaVenta: string;
+  montoTotal: number;
   montoPagado: number;
-  metodoPago: 'Efectivo' | 'Tarjeta';
-  detallesTarjeta?: { ultimos4: string; banco: string; tipo: string };
+  saldoPendiente: number;
+  exentoPago: string; // S / N
+  cancelada: string; // S / N
+  motivoCancelacion: string | null;
+  metodosPago: MetodoPagoItem[];
 }
 
 @Component({
@@ -97,7 +101,7 @@ interface Recibo {
             <p class="text-2xl font-black text-slate-900">\${{ montoEfectivo | number:'1.0-0' }}</p>
           </div>
           <!-- Tarjeta -->
-          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-blue-100">
+          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-emerald-100">
             <div class="flex items-center gap-3 mb-2">
               <div class="p-2 bg-blue-100 rounded-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -107,6 +111,21 @@ interface Recibo {
               <p class="text-xs text-slate-600 font-semibold">Tarjeta</p>
             </div>
             <p class="text-2xl font-black text-slate-900">\${{ montoTarjeta | number:'1.0-0' }}</p>
+          </div>
+        </div>
+
+        <!-- Transferencia KPI -->
+        <div class="grid grid-cols-4 gap-4">
+          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-purple-100">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="p-2 bg-purple-100 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 12h16"/><path d="m8 8-4 4 4 4"/><path d="M20 4v16"/>
+                </svg>
+              </div>
+              <p class="text-xs text-slate-600 font-semibold">Transferencia</p>
+            </div>
+            <p class="text-2xl font-black text-slate-900">\${{ montoTransferencia | number:'1.0-0' }}</p>
           </div>
         </div>
 
@@ -157,18 +176,24 @@ interface Recibo {
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-                    Items
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Monto Total
                   </div>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    Total
+                    Pagado
                   </div>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
+                  Saldo
+                </th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   Pago
+                </th>
+                <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
+                  Estado
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   Acci&oacute;n
@@ -178,37 +203,33 @@ interface Recibo {
             <tbody>
               <tr *ngFor="let recibo of recibosFiltrados; let i = index" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                 <td class="px-5 py-4">
-                  <span class="font-mono text-sm font-bold text-emerald-600">{{ recibo.folio }}</span>
+                  <span class="font-mono text-sm font-bold text-emerald-600">{{ recibo.folioVenta }}</span>
                 </td>
-                <td class="px-5 py-4 text-sm text-slate-700">{{ recibo.usuario }}</td>
-                <td class="px-5 py-4 text-sm text-slate-600">{{ recibo.fecha }}</td>
-                <td class="px-5 py-4">
-                  <div class="flex flex-wrap gap-1">
-                    <span *ngFor="let item of recibo.items"
-                      class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
-                      [ngClass]="{
-                        'bg-blue-100 text-blue-700': item.tipo === 'Consulta',
-                        'bg-purple-100 text-purple-700': item.tipo === 'Servicio',
-                        'bg-emerald-100 text-emerald-700': item.tipo === 'Producto'
-                      }">
-                      {{ item.tipo }} x{{ item.cantidad }}
-                    </span>
-                  </div>
-                </td>
+                <td class="px-5 py-4 text-sm text-slate-700">{{ recibo.nombrePaciente }}</td>
+                <td class="px-5 py-4 text-sm text-slate-600">{{ recibo.fechaVenta }}</td>
+                <td class="px-5 py-4 text-sm font-bold text-slate-900">\${{ recibo.montoTotal | number:'1.2-2' }}</td>
                 <td class="px-5 py-4 text-sm font-bold text-slate-900">\${{ recibo.montoPagado | number:'1.2-2' }}</td>
+                <td class="px-5 py-4 text-sm font-semibold" [ngClass]="recibo.saldoPendiente > 0 ? 'text-amber-600' : 'text-slate-500'">\${{ recibo.saldoPendiente | number:'1.2-2' }}</td>
                 <td class="px-5 py-4">
-                  <div class="flex items-center gap-1.5 text-sm" *ngIf="recibo.metodoPago === 'Efectivo'">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>
-                    </svg>
-                    <span class="text-emerald-600 font-semibold">Efectivo</span>
-                  </div>
-                  <div class="flex items-center gap-1.5 text-sm" *ngIf="recibo.metodoPago === 'Tarjeta'">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
-                    </svg>
-                    <span class="text-blue-600 font-semibold">Tarjeta</span>
-                  </div>
+                  <span class="text-sm font-semibold"
+                    [ngClass]="{
+                      'text-emerald-600': recibo.metodosPago[0]?.nombre === 'EFECTIVO',
+                      'text-blue-600': recibo.metodosPago[0]?.nombre === 'TARJETA',
+                      'text-purple-600': recibo.metodosPago[0]?.nombre === 'TRANSFERENCIA',
+                      'text-slate-500': recibo.metodosPago[0]?.nombre === 'EXENTO'
+                    }">
+                    {{ recibo.metodosPago[0]?.nombre }}
+                  </span>
+                </td>
+                <td class="px-5 py-4">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
+                    [ngClass]="{
+                      'bg-red-100 text-red-700': recibo.cancelada === 'S',
+                      'bg-emerald-100 text-emerald-700': recibo.cancelada !== 'S' && recibo.saldoPendiente === 0,
+                      'bg-amber-100 text-amber-700': recibo.cancelada !== 'S' && recibo.saldoPendiente > 0
+                    }">
+                    {{ recibo.cancelada === 'S' ? 'Cancelada' : (recibo.saldoPendiente === 0 ? 'Pagada' : 'Pendiente') }}
+                  </span>
                 </td>
                 <td class="px-5 py-4">
                   <button (click)="verDetalle(recibo)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-500 hover:text-emerald-600 transition-all cursor-pointer">
@@ -219,7 +240,7 @@ interface Recibo {
                 </td>
               </tr>
               <tr *ngIf="recibosFiltrados.length === 0">
-                <td colspan="7" class="text-center py-8 text-slate-400 text-sm">No se encontraron recibos</td>
+                <td colspan="9" class="text-center py-8 text-slate-400 text-sm">No se encontraron recibos</td>
               </tr>
             </tbody>
           </table>
@@ -242,7 +263,7 @@ interface Recibo {
             </div>
             <div>
               <h2 class="text-lg font-bold text-slate-900">Detalle de Recibo</h2>
-              <p class="text-xs text-slate-500">{{ reciboSeleccionado.folio }}</p>
+              <p class="text-xs text-slate-500">{{ reciboSeleccionado.folioVenta }}</p>
             </div>
           </div>
           <button (click)="closeDetalle()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
@@ -258,74 +279,70 @@ interface Recibo {
           <div class="grid grid-cols-3 gap-4">
             <div>
               <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Folio</p>
-              <p class="font-mono text-sm font-bold text-emerald-600">{{ reciboSeleccionado.folio }}</p>
+              <p class="font-mono text-sm font-bold text-emerald-600">{{ reciboSeleccionado.folioVenta }}</p>
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Fecha</p>
-              <p class="text-sm text-slate-700">{{ reciboSeleccionado.fecha }}</p>
+              <p class="text-sm text-slate-700">{{ reciboSeleccionado.fechaVenta }}</p>
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Beneficiario</p>
-              <p class="text-sm text-slate-700 font-medium">{{ reciboSeleccionado.usuario }}</p>
+              <p class="text-sm text-slate-700 font-medium">{{ reciboSeleccionado.nombrePaciente }}</p>
             </div>
           </div>
 
-          <!-- Items List -->
+          <!-- Patient Info -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Folio Paciente</p>
+              <p class="font-mono text-sm text-slate-700">{{ reciboSeleccionado.folioPaciente }}</p>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Exento de Pago</p>
+              <p class="text-sm text-slate-700 font-medium">{{ reciboSeleccionado.exentoPago === 'S' ? 'S&iacute;' : 'No' }}</p>
+            </div>
+          </div>
+
+          <!-- Payment Methods -->
           <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Items</p>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">M&eacute;todos de Pago</p>
             <div class="space-y-2">
-              <div *ngFor="let item of reciboSeleccionado.items" class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div class="flex items-center gap-3">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
-                    [ngClass]="{
-                      'bg-blue-100 text-blue-700': item.tipo === 'Consulta',
-                      'bg-purple-100 text-purple-700': item.tipo === 'Servicio',
-                      'bg-emerald-100 text-emerald-700': item.tipo === 'Producto'
-                    }">
-                    {{ item.tipo }}
-                  </span>
-                  <span class="text-sm text-slate-700">{{ item.nombre }}</span>
-                </div>
-                <div class="text-right">
-                  <span class="text-sm text-slate-500">{{ item.cantidad }} x \${{ item.precio | number:'1.2-2' }}</span>
-                  <span class="ml-3 text-sm font-bold text-slate-900">\${{ item.cantidad * item.precio | number:'1.2-2' }}</span>
-                </div>
+              <div *ngFor="let mp of reciboSeleccionado.metodosPago" class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <span class="text-sm font-semibold"
+                  [ngClass]="{
+                    'text-emerald-600': mp.nombre === 'EFECTIVO',
+                    'text-blue-600': mp.nombre === 'TARJETA',
+                    'text-purple-600': mp.nombre === 'TRANSFERENCIA',
+                    'text-slate-500': mp.nombre === 'EXENTO'
+                  }">
+                  {{ mp.nombre }}
+                </span>
+                <span class="text-sm font-bold text-slate-900">\${{ mp.monto | number:'1.2-2' }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Payment Method -->
-          <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">M&eacute;todo de Pago</p>
-            <div class="flex items-center gap-2" *ngIf="reciboSeleccionado.metodoPago === 'Efectivo'">
-              <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>
-                </svg>
-              </div>
-              <span class="text-sm font-semibold text-emerald-600">Efectivo</span>
-            </div>
-            <div *ngIf="reciboSeleccionado.metodoPago === 'Tarjeta'">
-              <div class="flex items-center gap-2 mb-2">
-                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
-                  </svg>
-                </div>
-                <span class="text-sm font-semibold text-blue-600">Tarjeta</span>
-              </div>
-              <div *ngIf="reciboSeleccionado.detallesTarjeta" class="ml-10 p-3 bg-blue-50 rounded-lg text-sm space-y-1">
-                <p class="text-slate-600">Terminaci&oacute;n: <span class="font-bold text-slate-800">**** {{ reciboSeleccionado.detallesTarjeta.ultimos4 }}</span></p>
-                <p class="text-slate-600">Banco: <span class="font-bold text-slate-800">{{ reciboSeleccionado.detallesTarjeta.banco }}</span></p>
-                <p class="text-slate-600">Tipo: <span class="font-bold text-slate-800">{{ reciboSeleccionado.detallesTarjeta.tipo }}</span></p>
-              </div>
-            </div>
+          <!-- Cancellation info -->
+          <div *ngIf="reciboSeleccionado.cancelada === 'S'" class="p-3 bg-red-50 rounded-lg border border-red-200">
+            <p class="text-xs font-semibold text-red-500 uppercase tracking-wider mb-1">Cancelada</p>
+            <p class="text-sm text-red-700">{{ reciboSeleccionado.motivoCancelacion }}</p>
           </div>
 
-          <!-- Total -->
-          <div class="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl">
-            <span class="text-white font-bold text-lg">Total</span>
-            <span class="text-white font-black text-2xl">\${{ reciboSeleccionado.montoPagado | number:'1.2-2' }}</span>
+          <!-- Totals -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+              <span class="text-sm font-semibold text-slate-600">Monto Total</span>
+              <span class="text-sm font-bold text-slate-900">\${{ reciboSeleccionado.montoTotal | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+              <span class="text-sm font-semibold text-slate-600">Monto Pagado</span>
+              <span class="text-sm font-bold text-slate-900">\${{ reciboSeleccionado.montoPagado | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-gradient-to-r rounded-xl"
+              [ngClass]="reciboSeleccionado.saldoPendiente > 0 ? 'from-amber-500 to-amber-600' : 'from-emerald-500 to-emerald-600'">
+              <span class="text-white font-bold text-lg">Saldo Pendiente</span>
+              <span class="text-white font-black text-2xl">\${{ reciboSeleccionado.saldoPendiente | number:'1.2-2' }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -345,29 +362,19 @@ export class RecibosComponent implements OnInit {
   montoTotal = 0;
   montoEfectivo = 0;
   montoTarjeta = 0;
+  montoTransferencia = 0;
 
   showDetalle = false;
   reciboSeleccionado: Recibo | null = null;
 
   ngOnInit(): void {
     this.recibos = [
-      {
-        folio: 'REC-2026-001', usuario: 'María González López', fecha: '2026-03-20',
-        items: [
-          { id: 1, nombre: 'Consulta General', tipo: 'Consulta', precio: 450, cantidad: 1 },
-          { id: 2, nombre: 'Paracetamol 500mg', tipo: 'Producto', precio: 150, cantidad: 2 }
-        ],
-        montoPagado: 750, metodoPago: 'Efectivo'
-      },
-      {
-        folio: 'REC-2026-002', usuario: 'Juan Pérez Martínez', fecha: '2026-03-21',
-        items: [
-          { id: 1, nombre: 'Fisioterapia', tipo: 'Servicio', precio: 350, cantidad: 2 },
-          { id: 2, nombre: 'Ibuprofeno 400mg', tipo: 'Producto', precio: 8, cantidad: 20 }
-        ],
-        montoPagado: 860, metodoPago: 'Tarjeta',
-        detallesTarjeta: { ultimos4: '4532', banco: 'BBVA', tipo: 'Débito' }
-      }
+      { idVenta: 1, folioVenta: 'VTA-2026-001', idPaciente: 1, nombrePaciente: 'María Fernanda García López', folioPaciente: 'BEN-000001', fechaVenta: '2026-03-20', montoTotal: 850, montoPagado: 850, saldoPendiente: 0, exentoPago: 'N', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 1, nombre: 'EFECTIVO', monto: 850}] },
+      { idVenta: 2, folioVenta: 'VTA-2026-002', idPaciente: 2, nombrePaciente: 'Carlos Eduardo Martínez Reyes', folioPaciente: 'BEN-000002', fechaVenta: '2026-03-21', montoTotal: 1200, montoPagado: 1200, saldoPendiente: 0, exentoPago: 'N', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 3, nombre: 'TARJETA', monto: 1200}] },
+      { idVenta: 3, folioVenta: 'VTA-2026-003', idPaciente: 3, nombrePaciente: 'Sofía Rodríguez Hernández', folioPaciente: 'BEN-000003', fechaVenta: '2026-03-21', montoTotal: 500, montoPagado: 500, saldoPendiente: 0, exentoPago: 'N', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 2, nombre: 'TRANSFERENCIA', monto: 500}] },
+      { idVenta: 4, folioVenta: 'VTA-2026-004', idPaciente: 4, nombrePaciente: 'Diego Alejandro Treviño Garza', folioPaciente: 'BEN-000004', fechaVenta: '2026-03-22', montoTotal: 0, montoPagado: 0, saldoPendiente: 0, exentoPago: 'S', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 4, nombre: 'EXENTO', monto: 0}] },
+      { idVenta: 5, folioVenta: 'VTA-2026-005', idPaciente: 5, nombrePaciente: 'Valentina Flores Mendoza', folioPaciente: 'BEN-000005', fechaVenta: '2026-03-23', montoTotal: 650, montoPagado: 400, saldoPendiente: 250, exentoPago: 'N', cancelada: 'N', motivoCancelacion: null, metodosPago: [{idMetodoPago: 1, nombre: 'EFECTIVO', monto: 400}] },
+      { idVenta: 6, folioVenta: 'VTA-2026-006', idPaciente: 1, nombrePaciente: 'María Fernanda García López', folioPaciente: 'BEN-000001', fechaVenta: '2026-03-24', montoTotal: 350, montoPagado: 350, saldoPendiente: 0, exentoPago: 'N', cancelada: 'S', motivoCancelacion: 'Paciente canceló servicio', metodosPago: [{idMetodoPago: 1, nombre: 'EFECTIVO', monto: 350}] },
     ];
 
     this.recibosFiltrados = [...this.recibos];
@@ -377,9 +384,9 @@ export class RecibosComponent implements OnInit {
   filtrarRecibos(): void {
     this.recibosFiltrados = this.recibos.filter(r => {
       const matchFolio = !this.filtroFolio ||
-        r.folio.toLowerCase().includes(this.filtroFolio.toLowerCase());
+        r.folioVenta.toLowerCase().includes(this.filtroFolio.toLowerCase());
       const matchBeneficiario = !this.filtroBeneficiario ||
-        r.usuario.toLowerCase().includes(this.filtroBeneficiario.toLowerCase());
+        r.nombrePaciente.toLowerCase().includes(this.filtroBeneficiario.toLowerCase());
       return matchFolio && matchBeneficiario;
     });
   }
@@ -391,9 +398,18 @@ export class RecibosComponent implements OnInit {
   }
 
   calcularEstadisticas(): void {
-    this.montoTotal = this.recibos.reduce((sum, r) => sum + r.montoPagado, 0);
-    this.montoEfectivo = this.recibos.filter(r => r.metodoPago === 'Efectivo').reduce((sum, r) => sum + r.montoPagado, 0);
-    this.montoTarjeta = this.recibos.filter(r => r.metodoPago === 'Tarjeta').reduce((sum, r) => sum + r.montoPagado, 0);
+    this.montoTotal = this.recibos
+      .filter(r => r.cancelada !== 'S')
+      .reduce((sum, r) => sum + r.montoTotal, 0);
+    this.montoEfectivo = this.recibos
+      .filter(r => r.cancelada !== 'S')
+      .reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'EFECTIVO').reduce((s, mp) => s + mp.monto, 0), 0);
+    this.montoTarjeta = this.recibos
+      .filter(r => r.cancelada !== 'S')
+      .reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'TARJETA').reduce((s, mp) => s + mp.monto, 0), 0);
+    this.montoTransferencia = this.recibos
+      .filter(r => r.cancelada !== 'S')
+      .reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'TRANSFERENCIA').reduce((s, mp) => s + mp.monto, 0), 0);
   }
 
   openNuevoCobro(): void {

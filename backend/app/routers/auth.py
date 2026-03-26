@@ -1,53 +1,197 @@
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordRequestForm
 from app.core.security import (
     get_current_user,
     create_access_token,
     verify_password,
     get_password_hash,
 )
-from app.schemas.schemas import Token, UserResponse
+from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.schemas.schemas import UserLogin, Token, UserResponse
 
 router = APIRouter()
 
-# ──────────────────────────── MOCK DATA ────────────────────────────
+# ──────────────────────────── MOCK FALLBACK DATA ────────────────────────────
 
 mock_users = [
     {
-        "username": "admin",
-        "nombre": "Administrador General",
-        "rol": "admin",
+        "id_usuario": 1,
+        "nombre": "Administrador",
+        "apellido_paterno": "General",
+        "apellido_materno": None,
+        "correo": "admin@espinabifida.org",
         "hashed_password": get_password_hash("admin123"),
+        "rol": "ADMIN",
+        "estatus": "ACTIVO",
     },
     {
-        "username": "operativo",
-        "nombre": "Usuario Operativo",
-        "rol": "operativo",
+        "id_usuario": 2,
+        "nombre": "Usuario",
+        "apellido_paterno": "Operativo",
+        "apellido_materno": None,
+        "correo": "operativo@espinabifida.org",
         "hashed_password": get_password_hash("op123"),
+        "rol": "OPERATIVO",
+        "estatus": "ACTIVO",
     },
 ]
+
+# ──────────────────────────── HELPERS ────────────────────────────
+
+
+def _serialize_user(row: dict) -> dict:
+    """Convert DB row to a safe dict, converting datetimes to ISO strings."""
+    result = {}
+    for key, value in row.items():
+        if isinstance(value, datetime):
+            result[key] = value.isoformat()
+        else:
+            result[key] = value
+    return result
+
+
+def _find_user_in_db(correo: str) -> dict | None:
+    """Look up a user in USUARIO_SISTEMA by correo. Returns dict or None."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT ID_USUARIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, "
+                "CORREO, CONTRASENA_HASH, ROL, ESTATUS, FECHA_CREACION "
+                "FROM USUARIO_SISTEMA WHERE CORREO = :1",
+                [correo],
+            )
+            row = row_to_dict(cursor)
+            if row is not None:
+                return _serialize_user(row)
+            return None
+    except Exception:
+        return None
+
+
+def _db_has_users() -> bool:
+    """Check whether USUARIO_SISTEMA has at least one row."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) AS cnt FROM USUARIO_SISTEMA")
+            row = row_to_dict(cursor)
+            return row is not None and row.get("cnt", 0) > 0
+    except Exception:
+        return False
 
 
 # ──────────────────────────── ENDPOINTS ────────────────────────────
 
 
+@router.post("/seed")
+def seed_users():
+    """Insert default admin and operativo users into the DB if they don't exist."""
+    default_users = [
+        {
+            "nombre": "Administrador",
+            "apellido_paterno": "General",
+            "apellido_materno": None,
+            "correo": "admin@espinabifida.org",
+            "contrasena": "admin123",
+            "rol": "ADMIN",
+        },
+        {
+            "nombre": "Usuario",
+            "apellido_paterno": "Operativo",
+            "apellido_materno": None,
+            "correo": "operativo@espinabifida.org",
+            "contrasena": "op123",
+            "rol": "OPERATIVO",
+        },
+    ]
+
+    inserted = []
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            for u in default_users:
+                # Check if user already exists
+                cursor.execute(
+                    "SELECT ID_USUARIO FROM USUARIO_SISTEMA WHERE CORREO = :1",
+                    [u["correo"]],
+                )
+                if cursor.fetchone() is not None:
+                    continue
+
+                cursor.execute(
+                    "INSERT INTO USUARIO_SISTEMA "
+                    "(NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, CORREO, "
+                    "CONTRASENA_HASH, ROL, ESTATUS) "
+                    "VALUES (:1, :2, :3, :4, :5, :6, :7)",
+                    [
+                        u["nombre"],
+                        u["apellido_paterno"],
+                        u["apellido_materno"],
+                        u["correo"],
+                        get_password_hash(u["contrasena"]),
+                        u["rol"],
+                        "ACTIVO",
+                    ],
+                )
+                inserted.append(u["correo"])
+            conn.commit()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al insertar usuarios en la BD: {str(e)}",
+        )
+
+    if not inserted:
+        return {"message": "Los usuarios por defecto ya existen en la BD."}
+    return {"message": f"Usuarios insertados: {', '.join(inserted)}"}
+
+
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
+def login(form_data: UserLogin):
     """Iniciar sesión y obtener token JWT."""
-    user = next(
-        (u for u in mock_users if u["username"] == form_data.username), None
+
+    # 1. Try to find user in the real DB
+    db_user = _find_user_in_db(form_data.correo)
+
+    if db_user is not None:
+        # Verify password against DB hash
+        if not verify_password(form_data.password, db_user["contrasena_hash"]):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Correo o contraseña incorrectos",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        access_token = create_access_token(
+            data={
+                "sub": db_user["correo"],
+                "rol": db_user["rol"],
+                "nombre": db_user["nombre"],
+                "id_usuario": db_user["id_usuario"],
+            }
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    # 2. Fallback to mock users when DB is empty or user not found
+    mock_user = next(
+        (u for u in mock_users if u["correo"] == form_data.correo), None
     )
-    if user is None or not verify_password(
-        form_data.password, user["hashed_password"]
+    if mock_user is None or not verify_password(
+        form_data.password, mock_user["hashed_password"]
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario o contraseña incorrectos",
+            detail="Correo o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     access_token = create_access_token(
-        data={"sub": user["username"], "role": user["rol"], "nombre": user["nombre"]}
+        data={
+            "sub": mock_user["correo"],
+            "rol": mock_user["rol"],
+            "nombre": mock_user["nombre"],
+            "id_usuario": mock_user["id_usuario"],
+        }
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -55,17 +199,36 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: dict = Depends(get_current_user)):
     """Obtener información del usuario autenticado."""
-    user = next(
-        (u for u in mock_users if u["username"] == current_user["username"]),
+
+    # 1. Try the real DB first
+    db_user = _find_user_in_db(current_user["correo"])
+    if db_user is not None:
+        return {
+            "id_usuario": db_user["id_usuario"],
+            "nombre": db_user["nombre"],
+            "apellido_paterno": db_user.get("apellido_paterno"),
+            "apellido_materno": db_user.get("apellido_materno"),
+            "correo": db_user["correo"],
+            "rol": db_user["rol"],
+            "estatus": db_user["estatus"],
+        }
+
+    # 2. Fallback to mock users
+    mock_user = next(
+        (u for u in mock_users if u["correo"] == current_user["correo"]),
         None,
     )
-    if user is None:
+    if mock_user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuario no encontrado",
         )
     return {
-        "username": user["username"],
-        "nombre": user["nombre"],
-        "rol": user["rol"],
+        "id_usuario": mock_user["id_usuario"],
+        "nombre": mock_user["nombre"],
+        "apellido_paterno": mock_user["apellido_paterno"],
+        "apellido_materno": mock_user["apellido_materno"],
+        "correo": mock_user["correo"],
+        "rol": mock_user["rol"],
+        "estatus": mock_user["estatus"],
     }

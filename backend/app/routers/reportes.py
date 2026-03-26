@@ -1,168 +1,116 @@
-from fastapi import APIRouter, Query, Depends
-from typing import Optional
-from datetime import date, datetime
+from datetime import datetime
+from fastapi import APIRouter, Query, Depends, HTTPException
+from typing import Optional, List
 from app.core.security import get_current_user
+from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.schemas.schemas import ReporteFilter, ReporteResponse
 
 router = APIRouter()
-
-# ──────────────────────────── SHARED MOCK REFERENCES ────────────────────────────
-# We replicate some data here for the reports module to be self-contained.
-# In production these would come from a shared database.
-
-_mock_beneficiarios = [
-    {"nombre": "María Fernanda García López", "fecha_nacimiento": "2018-03-15", "genero": "Femenino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2019-06-01", "estado_membresia": "activo", "tipo_espina_bifida": "Mielomeningocele"},
-    {"nombre": "Carlos Eduardo Martínez Hernández", "fecha_nacimiento": "2010-07-22", "genero": "Masculino", "estado": "Nuevo León", "ciudad": "San Pedro Garza García", "fecha_ingreso": "2015-01-15", "estado_membresia": "activo", "tipo_espina_bifida": "Espina bífida oculta"},
-    {"nombre": "Sofía Rodríguez Garza", "fecha_nacimiento": "2015-11-03", "genero": "Femenino", "estado": "Nuevo León", "ciudad": "San Pedro Garza García", "fecha_ingreso": "2020-03-10", "estado_membresia": "activo", "tipo_espina_bifida": "Meningocele"},
-    {"nombre": "Diego Alejandro Treviño Salazar", "fecha_nacimiento": "2005-01-28", "genero": "Masculino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2010-08-20", "estado_membresia": "activo", "tipo_espina_bifida": "Mielomeningocele"},
-    {"nombre": "Valentina Flores Cantú", "fecha_nacimiento": "2020-06-12", "genero": "Femenino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2021-02-14", "estado_membresia": "activo", "tipo_espina_bifida": "Lipomeningocele"},
-    {"nombre": "José Manuel Ramírez Ochoa", "fecha_nacimiento": "1995-09-08", "genero": "Masculino", "estado": "Nuevo León", "ciudad": "Guadalupe", "fecha_ingreso": "2018-05-22", "estado_membresia": "activo", "tipo_espina_bifida": "Mielomeningocele"},
-    {"nombre": "Ana Lucía Villarreal Mendoza", "fecha_nacimiento": "2012-04-17", "genero": "Femenino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2017-09-03", "estado_membresia": "activo", "tipo_espina_bifida": "Espina bífida oculta"},
-    {"nombre": "Luis Ángel Salinas Gutiérrez", "fecha_nacimiento": "2000-12-05", "genero": "Masculino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2016-11-28", "estado_membresia": "activo", "tipo_espina_bifida": "Meningocele"},
-    {"nombre": "Isabella Lozano Pérez", "fecha_nacimiento": "2022-02-14", "genero": "Femenino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2022-08-05", "estado_membresia": "activo", "tipo_espina_bifida": "Mielomeningocele"},
-    {"nombre": "Andrés De la Garza Ríos", "fecha_nacimiento": "1988-05-30", "genero": "Masculino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2012-04-18", "estado_membresia": "activo", "tipo_espina_bifida": "Mielomeningocele"},
-    {"nombre": "Regina Cavazos Luna", "fecha_nacimiento": "2016-08-21", "genero": "Femenino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2019-10-12", "estado_membresia": "activo", "tipo_espina_bifida": "Lipomeningocele"},
-    {"nombre": "Emiliano Reyes Morales", "fecha_nacimiento": "2008-03-10", "genero": "Masculino", "estado": "Nuevo León", "ciudad": "García", "fecha_ingreso": "2014-07-20", "estado_membresia": "activo", "tipo_espina_bifida": "Mielomeningocele"},
-    {"nombre": "Camila Soto Elizondo", "fecha_nacimiento": "2019-01-25", "genero": "Femenino", "estado": "Nuevo León", "ciudad": "Santa Catarina", "fecha_ingreso": "2020-06-30", "estado_membresia": "activo", "tipo_espina_bifida": "Meningocele"},
-    {"nombre": "Roberto Chávez Banda", "fecha_nacimiento": "1970-11-18", "genero": "Masculino", "estado": "Nuevo León", "ciudad": "Monterrey", "fecha_ingreso": "2005-02-10", "estado_membresia": "inactivo", "tipo_espina_bifida": "Espina bífida oculta"},
-    {"nombre": "Ximena Guajardo Tamez", "fecha_nacimiento": "2023-09-02", "genero": "Femenino", "estado": "Nuevo León", "ciudad": "Apodaca", "fecha_ingreso": "2024-01-20", "estado_membresia": "activo", "tipo_espina_bifida": "Mielomeningocele"},
-    {"nombre": "Fernando Peña Villarreal", "fecha_nacimiento": "2002-06-14", "genero": "Masculino", "estado": "Nuevo León", "ciudad": "San Nicolás de los Garza", "fecha_ingreso": "2022-09-15", "estado_membresia": "activo", "tipo_espina_bifida": "Mielomeningocele"},
-]
-
-_mock_servicios = [
-    {"tipo_servicio": "Consulta Neurocirugía", "fecha": "2026-03-15", "monto": 150.00},
-    {"tipo_servicio": "Consulta Urología", "fecha": "2026-03-14", "monto": 150.00},
-    {"tipo_servicio": "Terapia Física", "fecha": "2026-03-13", "monto": 200.00},
-    {"tipo_servicio": "Consulta Pediatría", "fecha": "2026-03-12", "monto": 100.00},
-    {"tipo_servicio": "Consulta Ortopedia", "fecha": "2026-03-10", "monto": 150.00},
-    {"tipo_servicio": "Consulta Neurología", "fecha": "2026-03-08", "monto": 180.00},
-    {"tipo_servicio": "Estudios Urodinámicos", "fecha": "2026-03-05", "monto": 350.00},
-    {"tipo_servicio": "Terapia Física", "fecha": "2026-03-03", "monto": 200.00},
-    {"tipo_servicio": "Consulta Urología", "fecha": "2026-02-28", "monto": 150.00},
-    {"tipo_servicio": "Consulta Pediatría", "fecha": "2026-02-25", "monto": 100.00},
-    {"tipo_servicio": "Terapia Física", "fecha": "2026-02-20", "monto": 200.00},
-    {"tipo_servicio": "Consulta Neurocirugía", "fecha": "2026-02-15", "monto": 150.00},
-    {"tipo_servicio": "Consulta Ortopedia", "fecha": "2026-02-10", "monto": 150.00},
-    {"tipo_servicio": "Consulta Urología", "fecha": "2026-01-22", "monto": 150.00},
-    {"tipo_servicio": "Terapia Física", "fecha": "2026-01-15", "monto": 200.00},
-    {"tipo_servicio": "Consulta Pediatría", "fecha": "2026-01-10", "monto": 100.00},
-    {"tipo_servicio": "Consulta Neurocirugía", "fecha": "2025-12-18", "monto": 150.00},
-    {"tipo_servicio": "Terapia Física", "fecha": "2025-12-12", "monto": 200.00},
-    {"tipo_servicio": "Consulta Neurología", "fecha": "2025-12-05", "monto": 180.00},
-    {"tipo_servicio": "Estudios Urodinámicos", "fecha": "2025-11-28", "monto": 350.00},
-]
 
 
 # ──────────────────────────── HELPERS ────────────────────────────
 
 
-def _age(fecha_nac_str: str) -> int:
-    try:
-        fn = datetime.strptime(fecha_nac_str, "%Y-%m-%d").date()
-        today = date.today()
-        return today.year - fn.year - ((today.month, today.day) < (fn.month, fn.day))
-    except Exception:
-        return 0
+def _serialize(row: dict) -> dict:
+    """Strip CHAR padding and convert datetimes to ISO strings."""
+    result = {}
+    for key, value in row.items():
+        if isinstance(value, str):
+            result[key] = value.strip()
+        elif isinstance(value, datetime):
+            result[key] = value.isoformat()
+        else:
+            result[key] = value
+    return result
 
 
-def _etapa_vida(edad: int) -> str:
-    if edad <= 5:
-        return "Primera Infancia (0-5)"
-    elif edad <= 11:
-        return "Infancia (6-11)"
-    elif edad <= 17:
-        return "Adolescencia (12-17)"
-    elif edad <= 29:
-        return "Juventud (18-29)"
-    elif edad <= 59:
-        return "Adultez (30-59)"
-    else:
-        return "Adulto Mayor (60+)"
+def _build_where_clauses(filtro: ReporteFilter) -> tuple[str, dict]:
+    """Build WHERE clause fragments and bind params from ReporteFilter."""
+    clauses = ["p.ACTIVO = 'S'"]
+    params: dict = {}
+
+    if filtro.genero:
+        clauses.append("p.GENERO = :genero")
+        params["genero"] = filtro.genero.upper()
+    if filtro.estado:
+        clauses.append("p.ESTADO = :estado")
+        params["estado"] = filtro.estado
+    if filtro.tipo_espina is not None:
+        clauses.append(
+            "EXISTS (SELECT 1 FROM PACIENTE_TIPO_ESPINA pte "
+            "WHERE pte.ID_PACIENTE = p.ID_PACIENTE "
+            "AND pte.ID_TIPO_ESPINA = :tipo_espina)"
+        )
+        params["tipo_espina"] = filtro.tipo_espina
+    if filtro.fecha_inicio:
+        clauses.append("p.FECHA_NACIMIENTO >= TO_DATE(:fecha_inicio, 'YYYY-MM-DD')")
+        params["fecha_inicio"] = filtro.fecha_inicio
+    if filtro.fecha_fin:
+        clauses.append("p.FECHA_NACIMIENTO <= TO_DATE(:fecha_fin, 'YYYY-MM-DD')")
+        params["fecha_fin"] = filtro.fecha_fin
+
+    where = " AND ".join(clauses)
+    return where, params
 
 
 # ──────────────────────────── ENDPOINTS ────────────────────────────
 
 
-@router.get("/personas-atendidas")
-def personas_atendidas(
-    periodo: Optional[str] = Query("mes", description="dia, mes o anio"),
+@router.get("/por-genero")
+def reporte_por_genero(
+    genero: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_espina: Optional[int] = Query(None),
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
 ):
-    """Personas atendidas agrupadas por día, mes o año."""
-    servicios = list(_mock_servicios)
+    """Distribucion de pacientes por genero (PACIENTE.GENERO)."""
+    filtro = ReporteFilter(
+        genero=genero, estado=estado, tipo_espina=tipo_espina,
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
+    )
+    where, params = _build_where_clauses(filtro)
 
-    if fecha_inicio:
-        servicios = [s for s in servicios if s["fecha"] >= fecha_inicio]
-    if fecha_fin:
-        servicios = [s for s in servicios if s["fecha"] <= fecha_fin]
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"SELECT p.GENERO AS label, COUNT(*) AS cnt "
+                f"FROM PACIENTE p WHERE {where} "
+                f"GROUP BY p.GENERO ORDER BY p.GENERO",
+                params,
+            )
+            rows = rows_to_dicts(cursor)
 
-    agrupado: dict[str, int] = {}
-    for s in servicios:
-        if periodo == "dia":
-            key = s["fecha"]
-        elif periodo == "anio":
-            key = s["fecha"][:4]
-        else:  # mes
-            key = s["fecha"][:7]
-        agrupado[key] = agrupado.get(key, 0) + 1
+            labels = [r["label"].strip() if r["label"] else "SIN DATO" for r in rows]
+            values = [r["cnt"] for r in rows]
 
-    sorted_keys = sorted(agrupado.keys())
-    return {
-        "periodo": periodo,
-        "labels": sorted_keys,
-        "values": [agrupado[k] for k in sorted_keys],
-        "total": sum(agrupado.values()),
-    }
-
-
-@router.get("/por-genero")
-def reporte_por_genero(current_user: dict = Depends(get_current_user)):
-    """Distribución de beneficiarios por género."""
-    conteo: dict[str, int] = {}
-    for b in _mock_beneficiarios:
-        g = b["genero"]
-        conteo[g] = conteo.get(g, 0) + 1
-
-    labels = list(conteo.keys())
-    values = [conteo[k] for k in labels]
-
-    return {
-        "labels": labels,
-        "values": values,
-        "total": sum(values),
-    }
-
-
-@router.get("/por-procedencia")
-def reporte_por_procedencia(current_user: dict = Depends(get_current_user)):
-    """Distribución Nuevo León vs foráneos."""
-    nl = sum(1 for b in _mock_beneficiarios if b["estado"] == "Nuevo León")
-    foraneos = len(_mock_beneficiarios) - nl
-
-    # Desglose por ciudad para NL
-    ciudades: dict[str, int] = {}
-    for b in _mock_beneficiarios:
-        if b["estado"] == "Nuevo León":
-            c = b["ciudad"]
-            ciudades[c] = ciudades.get(c, 0) + 1
-
-    ciudades_labels = sorted(ciudades.keys(), key=lambda x: ciudades[x], reverse=True)
-
-    return {
-        "labels": ["Nuevo León", "Foráneos"],
-        "values": [nl, foraneos],
-        "total": len(_mock_beneficiarios),
-        "desglose_nl": {
-            "labels": ciudades_labels,
-            "values": [ciudades[c] for c in ciudades_labels],
-        },
-    }
+            return {
+                "labels": labels,
+                "values": values,
+                "total": sum(values),
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en reporte por genero: {str(e)}")
 
 
 @router.get("/por-etapa-vida")
-def reporte_por_etapa_vida(current_user: dict = Depends(get_current_user)):
-    """Distribución por grupo de edad / etapa de vida."""
+def reporte_por_etapa_vida(
+    genero: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_espina: Optional[int] = Query(None),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    """Distribucion por grupo de edad calculado desde PACIENTE.FECHA_NACIMIENTO."""
+    filtro = ReporteFilter(
+        genero=genero, estado=estado, tipo_espina=tipo_espina,
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
+    )
+    where, params = _build_where_clauses(filtro)
+
     etapas_orden = [
         "Primera Infancia (0-5)",
         "Infancia (6-11)",
@@ -171,146 +119,265 @@ def reporte_por_etapa_vida(current_user: dict = Depends(get_current_user)):
         "Adultez (30-59)",
         "Adulto Mayor (60+)",
     ]
-    conteo: dict[str, int] = {e: 0 for e in etapas_orden}
 
-    for b in _mock_beneficiarios:
-        edad = _age(b["fecha_nacimiento"])
-        etapa = _etapa_vida(edad)
-        conteo[etapa] = conteo.get(etapa, 0) + 1
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"SELECT "
+                f"  CASE "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 5 "
+                f"      THEN 'Primera Infancia (0-5)' "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 11 "
+                f"      THEN 'Infancia (6-11)' "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 17 "
+                f"      THEN 'Adolescencia (12-17)' "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 29 "
+                f"      THEN 'Juventud (18-29)' "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 59 "
+                f"      THEN 'Adultez (30-59)' "
+                f"    ELSE 'Adulto Mayor (60+)' "
+                f"  END AS etapa, "
+                f"  COUNT(*) AS cnt "
+                f"FROM PACIENTE p WHERE {where} "
+                f"GROUP BY "
+                f"  CASE "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 5 "
+                f"      THEN 'Primera Infancia (0-5)' "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 11 "
+                f"      THEN 'Infancia (6-11)' "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 17 "
+                f"      THEN 'Adolescencia (12-17)' "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 29 "
+                f"      THEN 'Juventud (18-29)' "
+                f"    WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12) <= 59 "
+                f"      THEN 'Adultez (30-59)' "
+                f"    ELSE 'Adulto Mayor (60+)' "
+                f"  END",
+                params,
+            )
+            rows = rows_to_dicts(cursor)
 
-    return {
-        "labels": etapas_orden,
-        "values": [conteo[e] for e in etapas_orden],
-        "total": len(_mock_beneficiarios),
-    }
+            conteo = {r["etapa"].strip(): r["cnt"] for r in rows}
+            values = [conteo.get(e, 0) for e in etapas_orden]
 
-
-@router.get("/servicios-top")
-def servicios_top(
-    limite: int = Query(10),
-    current_user: dict = Depends(get_current_user),
-):
-    """Servicios más utilizados."""
-    conteo: dict[str, int] = {}
-    ingresos: dict[str, float] = {}
-    for s in _mock_servicios:
-        t = s["tipo_servicio"]
-        conteo[t] = conteo.get(t, 0) + 1
-        ingresos[t] = ingresos.get(t, 0.0) + s["monto"]
-
-    sorted_servicios = sorted(conteo.keys(), key=lambda x: conteo[x], reverse=True)[
-        :limite
-    ]
-
-    return {
-        "labels": sorted_servicios,
-        "values": [conteo[s] for s in sorted_servicios],
-        "ingresos": [ingresos[s] for s in sorted_servicios],
-        "total_servicios": sum(conteo.values()),
-        "total_ingresos": sum(ingresos.values()),
-    }
-
-
-@router.get("/resumen-mensual")
-def resumen_mensual(
-    mes: Optional[str] = Query(None, description="Formato YYYY-MM"),
-    current_user: dict = Depends(get_current_user),
-):
-    """Reporte mensual consolidado."""
-    if not mes:
-        mes = date.today().strftime("%Y-%m")
-
-    servicios_mes = [s for s in _mock_servicios if s["fecha"].startswith(mes)]
-    total_servicios = len(servicios_mes)
-    total_ingresos = sum(s["monto"] for s in servicios_mes)
-
-    # Conteo por tipo
-    por_tipo: dict[str, int] = {}
-    for s in servicios_mes:
-        t = s["tipo_servicio"]
-        por_tipo[t] = por_tipo.get(t, 0) + 1
-
-    activos = sum(
-        1 for b in _mock_beneficiarios if b["estado_membresia"] == "activo"
-    )
-
-    # Nuevos ingresos del mes
-    nuevos = sum(
-        1
-        for b in _mock_beneficiarios
-        if b["fecha_ingreso"].startswith(mes)
-    )
-
-    return {
-        "mes": mes,
-        "beneficiarios_activos": activos,
-        "nuevos_ingresos": nuevos,
-        "total_servicios": total_servicios,
-        "total_ingresos": total_ingresos,
-        "servicios_por_tipo": {
-            "labels": list(por_tipo.keys()),
-            "values": list(por_tipo.values()),
-        },
-    }
+            return {
+                "labels": etapas_orden,
+                "values": values,
+                "total": sum(values),
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en reporte por etapa de vida: {str(e)}")
 
 
-@router.get("/fundacion")
-def reporte_fundacion(
+@router.get("/por-tipo-espina")
+def reporte_por_tipo_espina(
+    genero: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_espina: Optional[int] = Query(None),
     fecha_inicio: Optional[str] = Query(None),
     fecha_fin: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_user),
 ):
-    """Reporte ejecutivo para fundaciones donantes."""
-    total_beneficiarios = len(_mock_beneficiarios)
-    activos = sum(
-        1 for b in _mock_beneficiarios if b["estado_membresia"] == "activo"
+    """Distribucion por tipo de espina bifida (TIPO_ESPINA_BIFIDA table)."""
+    filtro = ReporteFilter(
+        genero=genero, estado=estado, tipo_espina=tipo_espina,
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
     )
+    where, params = _build_where_clauses(filtro)
 
-    # Género
-    masculino = sum(1 for b in _mock_beneficiarios if b["genero"] == "Masculino")
-    femenino = sum(1 for b in _mock_beneficiarios if b["genero"] == "Femenino")
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"SELECT t.NOMBRE AS label, COUNT(*) AS cnt "
+                f"FROM PACIENTE p "
+                f"JOIN PACIENTE_TIPO_ESPINA pte ON p.ID_PACIENTE = pte.ID_PACIENTE "
+                f"JOIN TIPO_ESPINA_BIFIDA t ON pte.ID_TIPO_ESPINA = t.ID_TIPO_ESPINA "
+                f"WHERE {where} "
+                f"GROUP BY t.NOMBRE ORDER BY cnt DESC",
+                params,
+            )
+            rows = rows_to_dicts(cursor)
 
-    # Etapa de vida
-    etapas: dict[str, int] = {}
-    for b in _mock_beneficiarios:
-        edad = _age(b["fecha_nacimiento"])
-        etapa = _etapa_vida(edad)
-        etapas[etapa] = etapas.get(etapa, 0) + 1
+            labels = [r["label"].strip() for r in rows]
+            values = [r["cnt"] for r in rows]
 
-    # Tipos de espina bífida
-    tipos: dict[str, int] = {}
-    for b in _mock_beneficiarios:
-        t = b["tipo_espina_bifida"]
-        tipos[t] = tipos.get(t, 0) + 1
+            return {
+                "labels": labels,
+                "values": values,
+                "total": sum(values),
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en reporte por tipo espina: {str(e)}")
 
-    # Servicios en rango
-    servicios = list(_mock_servicios)
-    if fecha_inicio:
-        servicios = [s for s in servicios if s["fecha"] >= fecha_inicio]
-    if fecha_fin:
-        servicios = [s for s in servicios if s["fecha"] <= fecha_fin]
 
-    total_servicios = len(servicios)
-    total_inversion = sum(s["monto"] for s in servicios)
+@router.get("/por-estado")
+def reporte_por_estado(
+    genero: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_espina: Optional[int] = Query(None),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    """Distribucion de pacientes por estado/region (PACIENTE.ESTADO)."""
+    filtro = ReporteFilter(
+        genero=genero, estado=estado, tipo_espina=tipo_espina,
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
+    )
+    where, params = _build_where_clauses(filtro)
 
-    return {
-        "titulo": "Reporte para Fundaciones Donantes",
-        "fecha_generacion": date.today().isoformat(),
-        "rango": {
-            "inicio": fecha_inicio or "Sin filtro",
-            "fin": fecha_fin or "Sin filtro",
-        },
-        "poblacion": {
-            "total_beneficiarios": total_beneficiarios,
-            "activos": activos,
-            "por_genero": {"labels": ["Masculino", "Femenino"], "values": [masculino, femenino]},
-            "por_etapa_vida": {"labels": list(etapas.keys()), "values": list(etapas.values())},
-            "por_tipo_espina_bifida": {"labels": list(tipos.keys()), "values": list(tipos.values())},
-        },
-        "impacto": {
-            "total_servicios_otorgados": total_servicios,
-            "inversion_total": total_inversion,
-            "promedio_por_servicio": round(total_inversion / total_servicios, 2) if total_servicios else 0,
-        },
-        "mensaje": "Gracias a su apoyo, la Asociación de Espina Bífida continúa brindando atención integral a personas con esta condición en el noreste de México.",
-    }
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"SELECT p.ESTADO AS label, COUNT(*) AS cnt "
+                f"FROM PACIENTE p WHERE {where} "
+                f"GROUP BY p.ESTADO ORDER BY cnt DESC",
+                params,
+            )
+            rows = rows_to_dicts(cursor)
+
+            labels = [r["label"].strip() if r["label"] else "SIN DATO" for r in rows]
+            values = [r["cnt"] for r in rows]
+
+            return {
+                "labels": labels,
+                "values": values,
+                "total": sum(values),
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en reporte por estado: {str(e)}")
+
+
+@router.get("/resumen")
+def reporte_resumen(
+    genero: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_espina: Optional[int] = Query(None),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    """Resumen general de estadisticas del sistema."""
+    filtro = ReporteFilter(
+        genero=genero, estado=estado, tipo_espina=tipo_espina,
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin,
+    )
+    where, params = _build_where_clauses(filtro)
+
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            # Total and active/inactive
+            cursor.execute(
+                f"SELECT COUNT(*) AS total, "
+                f"  SUM(CASE WHEN p.ACTIVO = 'S' THEN 1 ELSE 0 END) AS activos, "
+                f"  SUM(CASE WHEN p.ACTIVO = 'N' THEN 1 ELSE 0 END) AS inactivos "
+                f"FROM PACIENTE p WHERE {where}",
+                params,
+            )
+            totals = row_to_dict(cursor) or {"total": 0, "activos": 0, "inactivos": 0}
+
+            # Gender breakdown
+            cursor.execute(
+                f"SELECT p.GENERO, COUNT(*) AS cnt "
+                f"FROM PACIENTE p WHERE {where} "
+                f"GROUP BY p.GENERO",
+                params,
+            )
+            genero_rows = rows_to_dicts(cursor)
+            por_genero = {
+                (r["genero"].strip() if r["genero"] else "SIN DATO"): r["cnt"]
+                for r in genero_rows
+            }
+
+            # Age stats
+            cursor.execute(
+                f"SELECT "
+                f"  ROUND(AVG(FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)), 1) AS edad_promedio, "
+                f"  MIN(FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)) AS edad_minima, "
+                f"  MAX(FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)) AS edad_maxima "
+                f"FROM PACIENTE p WHERE {where} AND p.FECHA_NACIMIENTO IS NOT NULL",
+                params,
+            )
+            age_row = row_to_dict(cursor) or {"edad_promedio": 0, "edad_minima": 0, "edad_maxima": 0}
+
+            # Type breakdown
+            cursor.execute(
+                f"SELECT t.NOMBRE, COUNT(*) AS cnt "
+                f"FROM PACIENTE p "
+                f"JOIN PACIENTE_TIPO_ESPINA pte ON p.ID_PACIENTE = pte.ID_PACIENTE "
+                f"JOIN TIPO_ESPINA_BIFIDA t ON pte.ID_TIPO_ESPINA = t.ID_TIPO_ESPINA "
+                f"WHERE {where} "
+                f"GROUP BY t.NOMBRE",
+                params,
+            )
+            tipo_rows = rows_to_dicts(cursor)
+            por_tipo_espina = {
+                r["nombre"].strip(): r["cnt"] for r in tipo_rows
+            }
+
+            # States count
+            cursor.execute(
+                f"SELECT COUNT(DISTINCT p.ESTADO) AS cnt "
+                f"FROM PACIENTE p WHERE {where}",
+                params,
+            )
+            estados_row = row_to_dict(cursor) or {"cnt": 0}
+
+            return {
+                "total_pacientes": totals["total"] or 0,
+                "activos": totals["activos"] or 0,
+                "inactivos": totals["inactivos"] or 0,
+                "por_genero": por_genero,
+                "edad_promedio": float(age_row["edad_promedio"] or 0),
+                "edad_minima": int(age_row["edad_minima"] or 0),
+                "edad_maxima": int(age_row["edad_maxima"] or 0),
+                "por_tipo_espina": por_tipo_espina,
+                "estados_representados": estados_row["cnt"] or 0,
+                "fecha_generacion": datetime.now().isoformat(),
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en reporte resumen: {str(e)}")
+
+
+@router.get("/historial", response_model=List[ReporteResponse])
+def historial_reportes(
+    tipo_reporte: Optional[str] = Query(None),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    """Historial de reportes generados (tabla REPORTE)."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            clauses = ["1=1"]
+            params: dict = {}
+
+            if tipo_reporte:
+                clauses.append("TIPO_REPORTE = :tipo_reporte")
+                params["tipo_reporte"] = tipo_reporte.upper()
+            if fecha_inicio:
+                clauses.append("FECHA_GENERACION >= TO_DATE(:fecha_inicio, 'YYYY-MM-DD')")
+                params["fecha_inicio"] = fecha_inicio
+            if fecha_fin:
+                clauses.append("FECHA_GENERACION <= TO_DATE(:fecha_fin, 'YYYY-MM-DD') + 1")
+                params["fecha_fin"] = fecha_fin
+
+            where = " AND ".join(clauses)
+            cursor.execute(
+                f"SELECT ID_REPORTE, ID_USUARIO, TIPO_REPORTE, FECHA_GENERACION, "
+                f"FECHA_INICIO, FECHA_FIN, FORMATO "
+                f"FROM REPORTE WHERE {where} "
+                f"ORDER BY FECHA_GENERACION DESC",
+                params,
+            )
+            rows = rows_to_dicts(cursor)
+            return [_serialize(r) for r in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al consultar historial: {str(e)}")

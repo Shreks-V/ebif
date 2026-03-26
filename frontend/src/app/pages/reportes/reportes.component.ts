@@ -304,12 +304,14 @@ export class ReportesComponent {
 
   indicadorOptions: IndicadorOption[] = [
     { id: 'beneficiarios-activos', nombre: 'Beneficiarios Activos' },
-    { id: 'beneficiarios-genero', nombre: 'Beneficiarios por Genero' },
-    { id: 'beneficiarios-municipio', nombre: 'Beneficiarios por Municipio' },
-    { id: 'beneficiarios-edad', nombre: 'Beneficiarios por Edad' },
-    { id: 'beneficiarios-locales', nombre: 'Usuarios Locales' },
-    { id: 'beneficiarios-foraneos', nombre: 'Usuarios Foraneos' },
-    { id: 'beneficiarios-origen', nombre: 'Usuarios por Origen' }
+    { id: 'beneficiarios-genero', nombre: 'Distribución por Género' },
+    { id: 'beneficiarios-estado', nombre: 'Distribución por Estado' },
+    { id: 'beneficiarios-edad', nombre: 'Distribución por Edad' },
+    { id: 'tipo-espina', nombre: 'Por Tipo de Espina Bífida' },
+    { id: 'tipo-sangre', nombre: 'Por Tipo de Sangre' },
+    { id: 'uso-valvula', nombre: 'Uso de Válvula' },
+    { id: 'membresia-estatus', nombre: 'Estatus de Membresía' },
+    { id: 'tipo-cuota', nombre: 'Por Tipo de Cuota' },
   ];
 
   selectPeriod(id: string): void {

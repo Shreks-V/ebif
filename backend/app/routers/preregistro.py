@@ -18,16 +18,15 @@ mock_preregistros = [
         "tipo_espina_bifida": "Mielomeningocele",
         "estado_nacimiento": "Nuevo León",
         "hospital_nacimiento": "Hospital Universitario UANL",
-        "nombre_tutor": "Claudia Domínguez Ramos",
-        "calle": "Av. Constitución",
-        "numero": "1234",
+        "nombre_padre_madre": "Claudia Domínguez Ramos",
+        "direccion": "Av. Constitución 1234",
         "colonia": "Centro",
         "ciudad": "Monterrey",
         "estado": "Nuevo León",
         "codigo_postal": "64000",
         "telefono_casa": "8181234500",
         "telefono_celular": "8119001122",
-        "correo": "claudia.dominguez@email.com",
+        "correo_electronico": "claudia.dominguez@email.com",
         "tipo_cuota": "mensual",
         "notas": "Bebé diagnosticado al nacer, busca apoyo integral",
         "paso_actual": 3,
@@ -46,16 +45,15 @@ mock_preregistros = [
         "tipo_espina_bifida": "Meningocele",
         "estado_nacimiento": "Coahuila",
         "hospital_nacimiento": "Hospital General de Saltillo",
-        "nombre_tutor": "Rosa Sánchez Medina",
-        "calle": "Calle Morelos",
-        "numero": "567",
+        "nombre_padre_madre": "Rosa Sánchez Medina",
+        "direccion": "Calle Morelos 567",
         "colonia": "Independencia",
         "ciudad": "Saltillo",
         "estado": "Coahuila",
         "codigo_postal": "25000",
         "telefono_casa": None,
         "telefono_celular": "8442233445",
-        "correo": "rosa.sanchez@email.com",
+        "correo_electronico": "rosa.sanchez@email.com",
         "tipo_cuota": "mensual",
         "notas": "Foránea, dispuesta a viajar a Monterrey para atención",
         "paso_actual": 3,
@@ -74,21 +72,47 @@ mock_preregistros = [
         "tipo_espina_bifida": "Lipomeningocele",
         "estado_nacimiento": "Nuevo León",
         "hospital_nacimiento": "Christus Muguerza",
-        "nombre_tutor": "Miguel Luna Torres",
-        "calle": "Blvd. Acapulco",
-        "numero": "890",
+        "nombre_padre_madre": "Miguel Luna Torres",
+        "direccion": "Blvd. Acapulco 890",
         "colonia": "Residencial Acapulco",
         "ciudad": "San Nicolás de los Garza",
         "estado": "Nuevo León",
         "codigo_postal": "66480",
         "telefono_casa": "8183456700",
         "telefono_celular": "8117788990",
-        "correo": "miguel.luna@email.com",
+        "correo_electronico": "miguel.luna@email.com",
         "tipo_cuota": "mensual",
         "notas": "",
         "paso_actual": 2,
         "completado": False,
         "fecha_solicitud": "2026-03-22",
+        "estatus": "PENDIENTE",
+    },
+    {
+        "id": 4,
+        "nombre": "Valentina",
+        "apellido_paterno": "Garza",
+        "apellido_materno": "Treviño",
+        "fecha_nacimiento": "2023-01-15",
+        "genero": "Femenino",
+        "curp": "GATV230115MNLRRN08",
+        "tipo_espina_bifida": "Espina bífida oculta",
+        "estado_nacimiento": "Tamaulipas",
+        "hospital_nacimiento": "Hospital Civil de Ciudad Victoria",
+        "nombre_padre_madre": "Laura Treviño Pérez",
+        "direccion": "Calle Hidalgo 245",
+        "colonia": "Las Flores",
+        "ciudad": "Ciudad Victoria",
+        "estado": "Tamaulipas",
+        "codigo_postal": "87000",
+        "telefono_casa": None,
+        "telefono_celular": "8341556789",
+        "correo_electronico": "laura.trevino@email.com",
+        "tipo_cuota": "anual",
+        "notas": "Diagnóstico reciente, referida por pediatra",
+        "paso_actual": 1,
+        "completado": False,
+        "fecha_solicitud": "2026-03-24",
         "estatus": "PENDIENTE",
     },
 ]
@@ -130,3 +154,45 @@ def obtener_preregistro(id_preregistro: int):
             status_code=404, detail="Pre-registro no encontrado"
         )
     return preregistro
+
+
+@router.put("/{id_preregistro}")
+def actualizar_preregistro(id_preregistro: int, data: PreRegistroCreate):
+    """Actualizar un pre-registro existente (formulario multi-paso)."""
+    preregistro = next(
+        (p for p in mock_preregistros if p["id"] == id_preregistro), None
+    )
+    if preregistro is None:
+        raise HTTPException(
+            status_code=404, detail="Pre-registro no encontrado"
+        )
+    actualizado = data.model_dump(exclude_unset=True)
+    preregistro.update(actualizado)
+    return preregistro
+
+
+@router.post("/{id_preregistro}/aprobar")
+def aprobar_preregistro(id_preregistro: int):
+    """Aprobar un pre-registro y convertirlo en beneficiario."""
+    preregistro = next(
+        (p for p in mock_preregistros if p["id"] == id_preregistro), None
+    )
+    if preregistro is None:
+        raise HTTPException(
+            status_code=404, detail="Pre-registro no encontrado"
+        )
+    if not preregistro.get("completado"):
+        raise HTTPException(
+            status_code=400,
+            detail="El pre-registro no está completado. Todos los pasos deben finalizarse antes de aprobar.",
+        )
+    if preregistro["estatus"] == "APROBADO":
+        raise HTTPException(
+            status_code=400, detail="Este pre-registro ya fue aprobado"
+        )
+    preregistro["estatus"] = "APROBADO"
+    # TODO: crear registro completo en PACIENTE / BENEFICIARIO
+    return {
+        "message": "Pre-registro aprobado exitosamente",
+        "preregistro": preregistro,
+    }
