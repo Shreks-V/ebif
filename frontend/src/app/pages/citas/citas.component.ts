@@ -81,16 +81,32 @@ import { ApiService } from '../../services/api.service';
                 />
               </div>
 
-              <!-- Estado filters -->
-              <div class="flex flex-wrap gap-2">
-                <button
-                  *ngFor="let estado of estadoFilters"
-                  (click)="filtroEstado = estado; filtrarCitas()"
-                  class="px-4 py-2 text-xs font-semibold rounded-lg transition-all"
-                  [ngClass]="filtroEstado === estado ? 'bg-[#00328b] text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                >
-                  {{ estado }}
-                </button>
+              <!-- Date filter + Estado filters -->
+              <div class="flex items-center gap-4 flex-wrap">
+                <div class="flex items-center gap-2">
+                  <label class="text-xs font-semibold text-slate-500">Fecha:</label>
+                  <input
+                    type="date"
+                    [(ngModel)]="filtroFecha"
+                    (change)="filtrarCitas()"
+                    class="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00328b]/20 focus:border-[#00328b] transition-all"
+                  />
+                  <button *ngIf="filtroFecha" (click)="filtroFecha = ''; filtrarCitas()" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Limpiar fecha">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    *ngFor="let estado of estadoFilters"
+                    (click)="filtroEstado = estado; filtrarCitas()"
+                    class="px-4 py-2 text-xs font-semibold rounded-lg transition-all"
+                    [ngClass]="filtroEstado === estado ? 'bg-[#00328b] text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                  >
+                    {{ estado }}
+                  </button>
+                </div>
               </div>
 
               <!-- Tipo consulta filters -->
@@ -114,10 +130,12 @@ import { ApiService } from '../../services/api.service';
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       <div class="flex items-center gap-1.5">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="12" cy="12" r="10"/>
-                          <polyline points="12 6 12 12 16 14"/>
+                          <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                          <line x1="16" x2="16" y1="2" y2="6"/>
+                          <line x1="8" x2="8" y1="2" y2="6"/>
+                          <line x1="3" x2="21" y1="10" y2="10"/>
                         </svg>
-                        Hora
+                        Fecha / Hora
                       </div>
                     </th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Paciente</th>
@@ -128,7 +146,10 @@ import { ApiService } from '../../services/api.service';
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   <tr *ngFor="let cita of citasFiltradas" class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4 font-medium text-slate-900">{{ getHora(cita.fechaHora) }}</td>
+                    <td class="px-6 py-4 font-medium text-slate-900">
+                      <div>{{ getFecha(cita.fechaHora) }}</div>
+                      <div class="text-xs text-slate-500">{{ getHora(cita.fechaHora) }}</div>
+                    </td>
                     <td class="px-6 py-4 text-slate-700">{{ cita.nombrePaciente }}</td>
                     <td class="px-6 py-4 text-slate-700">{{ cita.servicios[0]?.nombre || 'N/A' }}</td>
                     <td class="px-6 py-4">
@@ -669,6 +690,7 @@ export class CitasComponent implements OnInit {
   searchMedicos = '';
   filtroEstado = 'Todas';
   filtroTipo = 'Todas';
+  filtroFecha = '';
 
   estadoFilters = ['Todas', 'PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
   tipoFilters = ['Todas', 'Consulta Neurocirugía', 'Consulta Ortopédica', 'Consulta Urológica', 'Fisioterapia', 'Terapia Ocupacional'];
@@ -774,6 +796,12 @@ export class CitasComponent implements OnInit {
     return fechaHora.split('T')[1]?.substring(0, 5) || '';
   }
 
+  getFecha(fechaHora: string): string {
+    if (!fechaHora) return '';
+    const d = new Date(fechaHora);
+    return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
   formatFechaHora(fechaHora: string): string {
     if (!fechaHora) return '';
     const date = new Date(fechaHora);
@@ -798,6 +826,13 @@ export class CitasComponent implements OnInit {
       resultado = resultado.filter(c =>
         c.nombrePaciente.toLowerCase().includes(busqueda)
       );
+    }
+
+    if (this.filtroFecha) {
+      resultado = resultado.filter(c => {
+        const citaDate = c.fechaHora?.split('T')[0];
+        return citaDate === this.filtroFecha;
+      });
     }
 
     if (this.filtroEstado !== 'Todas') {

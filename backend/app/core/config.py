@@ -22,5 +22,8 @@ class Settings(BaseModel):
     ORACLE_WALLET_DIR: str = os.getenv("ORACLE_WALLET_DIR", "")
     ORACLE_WALLET_PASSWORD: str = os.getenv("ORACLE_WALLET_PASSWORD", "")
 
+    # Cifrado de datos personales (AES-256-GCM) - LFPDPPP
+    DATA_ENCRYPTION_KEY: str = os.getenv("DATA_ENCRYPTION_KEY", "")
+
 
 settings = Settings()

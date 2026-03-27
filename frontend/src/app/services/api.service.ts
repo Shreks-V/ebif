@@ -77,6 +77,10 @@ export class ApiService {
     return this.http.put<any>(`${this.apiUrl}/citas/${id}`, data);
   }
 
+  completarCita(id: number): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/citas/${id}/completar`, {});
+  }
+
   cancelarCita(id: number): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/citas/${id}/cancelar`, {});
   }
@@ -97,6 +101,10 @@ export class ApiService {
 
   getDoctores(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/doctores`);
+  }
+
+  getDoctorHoy(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/doctores/hoy`);
   }
 
   getDoctor(id: number): Observable<any> {

@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import date, datetime
 from app.core.security import get_current_user
 from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.core.crypto import encrypt, decrypt_row, decrypt_rows, PACIENTE_ENCRYPTED_FIELDS
 from app.schemas.schemas import BeneficiarioCreate, BeneficiarioResponse
 
 router = APIRouter()
@@ -47,6 +48,8 @@ def _fetch_tipos_espina(conn, id_paciente: int) -> list[dict]:
 
 def _patient_row_to_response(row: dict, conn) -> dict:
     """Convert a raw patient row dict to the API response format."""
+    # Descifrar campos sensibles (LFPDPPP)
+    row = decrypt_row(row, PACIENTE_ENCRYPTED_FIELDS)
     row["fecha_nacimiento"] = _date_to_str(row.get("fecha_nacimiento"))
     row["fecha_alta"] = _date_to_str(row.get("fecha_alta"))
     row["fecha_registro"] = _date_to_str(row.get("fecha_registro"))
@@ -203,10 +206,11 @@ def listar_beneficiarios(
             params["genero"] = genero
 
         if busqueda:
+            # CURP esta cifrado, no se puede buscar con LIKE en SQL
             conditions.append(
                 "(LOWER(p.NOMBRE) LIKE :busqueda OR LOWER(p.APELLIDO_PATERNO) LIKE :busqueda "
                 "OR LOWER(p.APELLIDO_MATERNO) LIKE :busqueda OR LOWER(p.FOLIO) LIKE :busqueda "
-                "OR LOWER(p.CURP) LIKE :busqueda OR LOWER(p.CIUDAD) LIKE :busqueda)"
+                "OR LOWER(p.CIUDAD) LIKE :busqueda)"
             )
             params["busqueda"] = f"%{busqueda.lower()}%"
 
@@ -284,24 +288,24 @@ def crear_beneficiario(
                 "apellido_materno": payload.get("apellido_materno"),
                 "genero": payload.get("genero"),
                 "fecha_nacimiento": payload.get("fecha_nacimiento"),
-                "curp": payload["curp"],
-                "nombre_padre_madre": payload.get("nombre_padre_madre"),
-                "direccion": payload.get("direccion"),
+                "curp": encrypt(payload.get("curp")),
+                "nombre_padre_madre": encrypt(payload.get("nombre_padre_madre")),
+                "direccion": encrypt(payload.get("direccion")),
                 "colonia": payload.get("colonia"),
                 "ciudad": payload.get("ciudad"),
                 "estado": payload.get("estado"),
                 "codigo_postal": payload.get("codigo_postal"),
-                "telefono_casa": payload.get("telefono_casa"),
-                "telefono_celular": payload.get("telefono_celular"),
-                "correo_electronico": payload.get("correo_electronico"),
-                "en_emergencia_avisar_a": payload.get("en_emergencia_avisar_a"),
-                "telefono_emergencia": payload.get("telefono_emergencia"),
+                "telefono_casa": encrypt(payload.get("telefono_casa")),
+                "telefono_celular": encrypt(payload.get("telefono_celular")),
+                "correo_electronico": encrypt(payload.get("correo_electronico")),
+                "en_emergencia_avisar_a": encrypt(payload.get("en_emergencia_avisar_a")),
+                "telefono_emergencia": encrypt(payload.get("telefono_emergencia")),
                 "municipio_nacimiento": payload.get("municipio_nacimiento"),
                 "estado_nacimiento": payload.get("estado_nacimiento"),
-                "hospital_nacimiento": payload.get("hospital_nacimiento"),
-                "tipo_sangre": payload.get("tipo_sangre"),
+                "hospital_nacimiento": encrypt(payload.get("hospital_nacimiento")),
+                "tipo_sangre": encrypt(payload.get("tipo_sangre")),
                 "usa_valvula": payload.get("usa_valvula", "N"),
-                "notas_adicionales": payload.get("notas_adicionales"),
+                "notas_adicionales": encrypt(payload.get("notas_adicionales")),
                 "membresia_estatus": payload.get("membresia_estatus", "ACTIVO"),
                 "id_usuario_registro": current_user.get("id_usuario"),
                 "tipo_cuota": payload.get("tipo_cuota"),
@@ -386,24 +390,24 @@ def actualizar_beneficiario(
                 "apellido_materno": payload.get("apellido_materno"),
                 "genero": payload.get("genero"),
                 "fecha_nacimiento": payload.get("fecha_nacimiento"),
-                "curp": payload["curp"],
-                "nombre_padre_madre": payload.get("nombre_padre_madre"),
-                "direccion": payload.get("direccion"),
+                "curp": encrypt(payload.get("curp")),
+                "nombre_padre_madre": encrypt(payload.get("nombre_padre_madre")),
+                "direccion": encrypt(payload.get("direccion")),
                 "colonia": payload.get("colonia"),
                 "ciudad": payload.get("ciudad"),
                 "estado": payload.get("estado"),
                 "codigo_postal": payload.get("codigo_postal"),
-                "telefono_casa": payload.get("telefono_casa"),
-                "telefono_celular": payload.get("telefono_celular"),
-                "correo_electronico": payload.get("correo_electronico"),
-                "en_emergencia_avisar_a": payload.get("en_emergencia_avisar_a"),
-                "telefono_emergencia": payload.get("telefono_emergencia"),
+                "telefono_casa": encrypt(payload.get("telefono_casa")),
+                "telefono_celular": encrypt(payload.get("telefono_celular")),
+                "correo_electronico": encrypt(payload.get("correo_electronico")),
+                "en_emergencia_avisar_a": encrypt(payload.get("en_emergencia_avisar_a")),
+                "telefono_emergencia": encrypt(payload.get("telefono_emergencia")),
                 "municipio_nacimiento": payload.get("municipio_nacimiento"),
                 "estado_nacimiento": payload.get("estado_nacimiento"),
-                "hospital_nacimiento": payload.get("hospital_nacimiento"),
-                "tipo_sangre": payload.get("tipo_sangre"),
+                "hospital_nacimiento": encrypt(payload.get("hospital_nacimiento")),
+                "tipo_sangre": encrypt(payload.get("tipo_sangre")),
                 "usa_valvula": payload.get("usa_valvula", "N"),
-                "notas_adicionales": payload.get("notas_adicionales"),
+                "notas_adicionales": encrypt(payload.get("notas_adicionales")),
                 "membresia_estatus": payload.get("membresia_estatus", "ACTIVO"),
                 "activo": payload.get("activo", "S"),
                 "tipo_cuota": payload.get("tipo_cuota"),
@@ -456,6 +460,7 @@ def historial_beneficiario(
         paciente = row_to_dict(cur)
         if paciente is None:
             raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+        paciente = decrypt_row(paciente, PACIENTE_ENCRYPTED_FIELDS)
 
         nombre_completo = (
             f"{paciente['nombre']} {paciente['apellido_paterno']}"

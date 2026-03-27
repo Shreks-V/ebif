@@ -55,7 +55,15 @@
       "Bash(cd /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend)",
       "Bash(grep -r \"uvicorn\\\\|port\\\\|host\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/*.py)",
       "Bash(docker compose:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(python -c \"from app.core.config import settings; print\\(''SECRET_KEY:'', repr\\(settings.SECRET_KEY\\)\\)\")",
+      "Bash(python -c \"import bcrypt; print\\(bcrypt.__version__\\)\")",
+      "Bash(python -c \"import argon2; print\\(argon2.__version__\\)\")",
+      "Bash(find /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend -type f -name *.sh -o -name init*.sql -o -name *schema*)",
+      "Bash(find /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif -type f \\\\\\(-name *.sql -o -name init*.py -o -name *create* \\\\\\))",
+      "Bash(python -c \"from cryptography.hazmat.primitives.ciphers.aead import AESGCM; print\\(''cryptography ya instalada''\\)\")",
+      "Bash(python seed_data.py)",
+      "Bash(find /Users/maantora/Desktop/Tec -name *.py -path */routers/*)"
     ]
   },
   "enableAllProjectMcpServers": true,

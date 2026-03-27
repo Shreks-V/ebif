@@ -606,7 +606,7 @@ export class BeneficiariosComponent implements OnInit {
   searchTerm = '';
 
   // Pagination
-  pageSize = 5;
+  pageSize = 20;
   beneficiariosPage = 1;
   preregistrosPage = 1;
 

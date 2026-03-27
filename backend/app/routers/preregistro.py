@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
 from app.core.database import get_db, rows_to_dicts, row_to_dict
 from app.core.security import get_current_user
+from app.core.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS
 from app.schemas.schemas import PreRegistroCreate
 
 router = APIRouter()
@@ -61,7 +62,7 @@ def listar_preregistros(
         cursor.execute(sql, params)
         rows = rows_to_dicts(cursor)
 
-    return [_serialize(r) for r in rows]
+    return [_serialize(decrypt_row(r, PACIENTE_ENCRYPTED_FIELDS)) for r in rows]
 
 
 @router.post("", status_code=201)
@@ -105,24 +106,24 @@ def crear_preregistro(data: PreRegistroCreate):
                 "am": data.apellido_materno,
                 "fecha_nac": data.fecha_nacimiento,
                 "genero": data.genero,
-                "curp": data.curp,
+                "curp": encrypt(data.curp),
                 "estado_nac": data.estado_nacimiento,
-                "hospital": data.hospital_nacimiento,
-                "padre_madre": data.nombre_padre_madre,
-                "direccion": data.direccion,
+                "hospital": encrypt(data.hospital_nacimiento),
+                "padre_madre": encrypt(data.nombre_padre_madre),
+                "direccion": encrypt(data.direccion),
                 "colonia": data.colonia,
                 "ciudad": data.ciudad,
                 "estado": data.estado,
                 "cp": data.codigo_postal,
-                "tel_casa": data.telefono_casa,
-                "tel_cel": data.telefono_celular,
-                "correo": data.correo_electronico,
-                "emergencia_avisar": data.en_emergencia_avisar_a,
-                "tel_emergencia": data.telefono_emergencia,
-                "tipo_sangre": data.tipo_sangre,
+                "tel_casa": encrypt(data.telefono_casa),
+                "tel_cel": encrypt(data.telefono_celular),
+                "correo": encrypt(data.correo_electronico),
+                "emergencia_avisar": encrypt(data.en_emergencia_avisar_a),
+                "tel_emergencia": encrypt(data.telefono_emergencia),
+                "tipo_sangre": encrypt(data.tipo_sangre),
                 "usa_valvula": data.usa_valvula or "N",
                 "tipo_cuota": data.tipo_cuota,
-                "notas": data.notas_adicionales,
+                "notas": encrypt(data.notas_adicionales),
                 "paso": data.paso_actual or 1,
                 "id_out": id_var,
             },
@@ -141,7 +142,7 @@ def _fetch_preregistro(id_paciente: int) -> dict:
         row = row_to_dict(cursor)
     if not row:
         raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
-    return _serialize(row)
+    return _serialize(decrypt_row(row, PACIENTE_ENCRYPTED_FIELDS))
 
 
 @router.get("/{id_paciente}")
@@ -186,24 +187,24 @@ def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
                 "am": data.apellido_materno,
                 "fecha_nac": data.fecha_nacimiento,
                 "genero": data.genero,
-                "curp": data.curp,
+                "curp": encrypt(data.curp),
                 "estado_nac": data.estado_nacimiento,
-                "hospital": data.hospital_nacimiento,
-                "padre_madre": data.nombre_padre_madre,
-                "direccion": data.direccion,
+                "hospital": encrypt(data.hospital_nacimiento),
+                "padre_madre": encrypt(data.nombre_padre_madre),
+                "direccion": encrypt(data.direccion),
                 "colonia": data.colonia,
                 "ciudad": data.ciudad,
                 "estado": data.estado,
                 "cp": data.codigo_postal,
-                "tel_casa": data.telefono_casa,
-                "tel_cel": data.telefono_celular,
-                "correo": data.correo_electronico,
-                "emergencia_avisar": data.en_emergencia_avisar_a,
-                "tel_emergencia": data.telefono_emergencia,
-                "tipo_sangre": data.tipo_sangre,
+                "tel_casa": encrypt(data.telefono_casa),
+                "tel_cel": encrypt(data.telefono_celular),
+                "correo": encrypt(data.correo_electronico),
+                "emergencia_avisar": encrypt(data.en_emergencia_avisar_a),
+                "tel_emergencia": encrypt(data.telefono_emergencia),
+                "tipo_sangre": encrypt(data.tipo_sangre),
                 "usa_valvula": data.usa_valvula or "N",
                 "tipo_cuota": data.tipo_cuota,
-                "notas": data.notas_adicionales,
+                "notas": encrypt(data.notas_adicionales),
                 "paso": data.paso_actual or 1,
                 "id": id_paciente,
             },

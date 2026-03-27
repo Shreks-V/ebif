@@ -57,7 +57,8 @@ def _enrich_cita(conn, cita: dict) -> dict:
 
 @router.get("/stats")
 def citas_stats(current_user: dict = Depends(get_current_user)):
-    """Obtener conteo de citas por estatus."""
+    """Obtener conteo de citas por estatus + total de hoy."""
+    hoy = date.today()
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -68,33 +69,45 @@ def citas_stats(current_user: dict = Depends(get_current_user)):
             """
         )
         rows = rows_to_dicts(cursor)
+
+        # Citas programadas de hoy (usa fecha local, no SYSDATE de Oracle/UTC)
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS TOTAL_HOY
+            FROM CITA
+            WHERE TRUNC(FECHA_HORA) = TO_DATE(:fecha, 'YYYY-MM-DD') AND ESTATUS = 'PROGRAMADA'
+            """,
+            {"fecha": hoy.isoformat()},
+        )
+        hoy_row = row_to_dict(cursor)
+
     stats = {r["estatus"]: r["total"] for r in rows}
+    stats["total_hoy"] = int(hoy_row["total_hoy"]) if hoy_row else 0
+    stats["total"] = sum(r["total"] for r in rows)
     return stats
 
 
 @router.get("/hoy")
 def citas_hoy(current_user: dict = Depends(get_current_user)):
-    """Obtener el conteo de citas de hoy."""
+    """Obtener las citas de hoy (hora local del servidor Python, no UTC de Oracle)."""
     hoy = date.today()
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
             CITA_BASE_QUERY
-            + " WHERE TRUNC(c.FECHA_HORA) = :fecha ORDER BY c.FECHA_HORA",
-            {"fecha": hoy},
+            + " WHERE TRUNC(c.FECHA_HORA) = TO_DATE(:fecha, 'YYYY-MM-DD') ORDER BY c.FECHA_HORA",
+            {"fecha": hoy.isoformat()},
         )
         citas = rows_to_dicts(cursor)
         citas = [_enrich_cita(conn, c) for c in citas]
 
     programadas = sum(1 for c in citas if c["estatus"] == "PROGRAMADA")
-    en_curso = sum(1 for c in citas if c["estatus"] == "EN_CURSO")
     completadas = sum(1 for c in citas if c["estatus"] == "COMPLETADA")
     canceladas = sum(1 for c in citas if c["estatus"] == "CANCELADA")
     return {
         "fecha": hoy.isoformat(),
         "total": len(citas),
         "programadas": programadas,
-        "en_curso": en_curso,
         "completadas": completadas,
         "canceladas": canceladas,
         "citas": citas,
@@ -283,6 +296,36 @@ def actualizar_cita(
         conn.commit()
 
         # Return updated cita
+        cursor.execute(
+            CITA_BASE_QUERY + " WHERE c.ID_CITA = :id_cita",
+            {"id_cita": id_cita},
+        )
+        cita = row_to_dict(cursor)
+        cita = _enrich_cita(conn, cita)
+
+    return cita
+
+
+@router.put("/{id_cita}/completar")
+def completar_cita(id_cita: int, current_user: dict = Depends(get_current_user)):
+    """Marcar una cita como COMPLETADA."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita",
+            {"id_cita": id_cita},
+        )
+        row = cursor.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Cita no encontrada")
+
+        cursor.execute(
+            "UPDATE CITA SET ESTATUS = 'COMPLETADA' WHERE ID_CITA = :id_cita",
+            {"id_cita": id_cita},
+        )
+        conn.commit()
+
         cursor.execute(
             CITA_BASE_QUERY + " WHERE c.ID_CITA = :id_cita",
             {"id_cita": id_cita},

@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.security import get_current_user
 from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.core.crypto import encrypt, decrypt_row, DOCTOR_ENCRYPTED_FIELDS
 from app.schemas.schemas import (
     DoctorCreate,
     DoctorResponse,
@@ -42,8 +43,8 @@ def _get_servicios_for_doctor(conn, id_doctor: int) -> list[dict]:
 
 
 def _doctor_with_servicios(conn, doctor_row: dict) -> dict:
-    """Attach servicios list to a doctor dict."""
-    d = _serialize(doctor_row)
+    """Attach servicios list to a doctor dict, descifrar datos sensibles."""
+    d = _serialize(decrypt_row(doctor_row, DOCTOR_ENCRYPTED_FIELDS))
     d["servicios"] = _get_servicios_for_doctor(conn, d["id_doctor"])
     return d
 
@@ -64,6 +65,38 @@ def _sync_doctor_servicios(conn, id_doctor: int, servicio_ids: list[int]):
 
 
 # ──────────────────────────── ENDPOINTS ────────────────────────────
+
+
+@router.get("/hoy")
+def doctor_del_dia(current_user: dict = Depends(get_current_user)):
+    """Obtener el doctor asignado para hoy según DISPONIBILIDAD_DOCTOR."""
+    hoy = date.today().isoformat()
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT d.ID_DOCTOR, d.NOMBRE, d.APELLIDO_PATERNO, d.APELLIDO_MATERNO, "
+                "d.ESPECIALIDAD, d.TELEFONO, d.CORREO, d.ACTIVO, d.FECHA_REGISTRO, "
+                "dd.HORA_INICIO, dd.HORA_FIN "
+                "FROM DISPONIBILIDAD_DOCTOR dd "
+                "JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR "
+                "WHERE TRUNC(dd.FECHA) = TO_DATE(:fecha, 'YYYY-MM-DD') "
+                "AND dd.DISPONIBLE = 'S' AND d.ACTIVO = 'S' "
+                "ORDER BY dd.HORA_INICIO "
+                "FETCH FIRST 1 ROWS ONLY",
+                {"fecha": hoy},
+            )
+            row = row_to_dict(cursor)
+            if row is None:
+                return {"doctor": None, "hora_inicio": None, "hora_fin": None}
+            hora_inicio = row.pop("hora_inicio", None)
+            hora_fin = row.pop("hora_fin", None)
+            doctor = _doctor_with_servicios(conn, row)
+            doctor["hora_inicio"] = hora_inicio.isoformat() if isinstance(hora_inicio, datetime) else str(hora_inicio) if hora_inicio else None
+            doctor["hora_fin"] = hora_fin.isoformat() if isinstance(hora_fin, datetime) else str(hora_fin) if hora_fin else None
+            return {"doctor": doctor, "hora_inicio": doctor["hora_inicio"], "hora_fin": doctor["hora_fin"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al consultar doctor del día: {str(e)}")
 
 
 @router.get("")
@@ -122,8 +155,8 @@ def crear_doctor(data: DoctorCreate, current_user: dict = Depends(get_current_us
                     "ap": data.apellido_paterno,
                     "am": data.apellido_materno,
                     "esp": data.especialidad,
-                    "tel": data.telefono,
-                    "correo": data.correo,
+                    "tel": encrypt(data.telefono),
+                    "correo": encrypt(data.correo),
                     "activo": data.activo,
                     "id_out": id_var,
                 },
@@ -177,8 +210,8 @@ def actualizar_doctor(
                     "ap": data.apellido_paterno,
                     "am": data.apellido_materno,
                     "esp": data.especialidad,
-                    "tel": data.telefono,
-                    "correo": data.correo,
+                    "tel": encrypt(data.telefono),
+                    "correo": encrypt(data.correo),
                     "activo": data.activo,
                     "id_doctor": id_doctor,
                 },

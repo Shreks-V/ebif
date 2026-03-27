@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
-import hashlib
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -7,13 +8,24 @@ from app.core.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
+# Argon2id: ganador de la Password Hashing Competition (PHC)
+# - Memory-hard: resiste ataques con GPUs/ASICs
+# - Argon2id combina resistencia a side-channel + GPU attacks
+# - Recomendado por OWASP como primera opción
+ph = PasswordHasher()
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return get_password_hash(plain_password) == hashed_password
+    """Verifica contraseña contra hash Argon2id."""
+    try:
+        return ph.verify(hashed_password, plain_password)
+    except VerifyMismatchError:
+        return False
 
 
 def get_password_hash(password: str) -> str:
-    return hashlib.sha256((password + settings.SECRET_KEY).encode()).hexdigest()
+    """Genera hash Argon2id con salt aleatorio único."""
+    return ph.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

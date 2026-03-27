@@ -81,6 +81,29 @@ def stats_ventas(current_user: dict = Depends(get_current_user)):
         )
         totals = row_to_dict(cur)
 
+        # Cobros de hoy (fecha local Python, no SYSDATE Oracle/UTC)
+        from datetime import date as date_type
+        hoy_str = date_type.today().isoformat()
+        cur.execute(
+            """
+            SELECT COUNT(*) AS total_hoy
+              FROM VENTA v
+             WHERE v.CANCELADA = 'N' AND TRUNC(v.FECHA_VENTA) = TO_DATE(:fecha, 'YYYY-MM-DD')
+            """,
+            {"fecha": hoy_str},
+        )
+        hoy = row_to_dict(cur)
+
+        # Cobros pendientes (saldo > 0)
+        cur.execute(
+            """
+            SELECT COUNT(*) AS pendientes
+              FROM VENTA v
+             WHERE v.CANCELADA = 'N' AND v.SALDO_PENDIENTE > 0
+            """
+        )
+        pend = row_to_dict(cur)
+
         cur.execute(
             """
             SELECT NVL(SUM(CASE WHEN UPPER(mp.NOMBRE) = 'EFECTIVO'       THEN vmp.MONTO ELSE 0 END), 0) AS monto_efectivo,
@@ -100,6 +123,8 @@ def stats_ventas(current_user: dict = Depends(get_current_user)):
         "monto_tarjeta": float(by_method["monto_tarjeta"]),
         "monto_transferencia": float(by_method["monto_transferencia"]),
         "count": int(totals["count"]),
+        "total_hoy": int(hoy["total_hoy"]),
+        "pendientes": int(pend["pendientes"]),
     }
 
 

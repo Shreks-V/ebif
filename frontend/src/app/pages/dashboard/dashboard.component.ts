@@ -61,7 +61,7 @@ import { ApiService } from '../../services/api.service';
                   </svg>
                   <p class="text-xs text-blue-200 font-bold">Horario</p>
                 </div>
-                <p class="text-lg font-black text-white">09:00 - 14:00</p>
+                <p class="text-lg font-black text-white">{{ doctorHorario }}</p>
               </div>
               <div class="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
                 <div class="flex items-center gap-2 mb-2">
@@ -71,7 +71,7 @@ import { ApiService } from '../../services/api.service';
                   </svg>
                   <p class="text-xs text-blue-200 font-bold">Atendidos</p>
                 </div>
-                <p class="text-lg font-black text-white">3 / 8</p>
+                <p class="text-lg font-black text-white">{{ doctorAtendidos }} / {{ doctorTotalHoy }}</p>
               </div>
               </div>
             </div>
@@ -253,10 +253,10 @@ import { ApiService } from '../../services/api.service';
                     <p class="text-xs text-slate-400 font-mono">{{ paciente.folio }}</p>
                   </div>
                   <!-- Type Badge -->
-                  <span class="px-3 py-1.5 bg-[#00328b]/10 rounded-lg text-[#00328b] text-xs font-semibold flex-shrink-0">Consulta</span>
+                  <span class="px-3 py-1.5 bg-[#00328b]/10 rounded-lg text-[#00328b] text-xs font-semibold flex-shrink-0">{{ paciente.servicio }}</span>
                   <!-- Atender Button -->
-                  <button (click)="navigateTo('/citas')" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer border-0 flex-shrink-0 whitespace-nowrap">
-                    Atender Ahora
+                  <button (click)="atenderAhora(paciente)" [disabled]="paciente.atendiendo" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer border-0 flex-shrink-0 whitespace-nowrap disabled:opacity-50">
+                    {{ paciente.atendiendo ? 'Atendiendo...' : 'Atender Ahora' }}
                   </button>
                 </div>
               </div>
@@ -365,6 +365,9 @@ export class DashboardComponent implements OnInit {
   doctorNombre = 'Sin doctor asignado';
   doctorEspecialidad = '';
   doctorIniciales = '--';
+  doctorAtendidos = 0;
+  doctorTotalHoy = 0;
+  doctorHorario = '—';
 
   private colors = [
     'bg-pink-400', 'bg-blue-400', 'bg-purple-400',
@@ -393,27 +396,38 @@ export class DashboardComponent implements OnInit {
 
   private loadCitasHoy(): void {
     this.api.getCitasHoy().subscribe({
-      next: (data: any[]) => {
-        this.pacientes = data.map((cita: any, i: number) => {
-          const fullName = cita.nombre_paciente || '';
-          const parts = fullName.trim().split(/\s+/);
-          const nombre = parts[0] || '';
-          const apellido = parts.slice(1).join(' ') || '';
-          const iniciales = (nombre.charAt(0) + (apellido.charAt(0) || '')).toUpperCase();
-          let hora = '';
-          if (cita.fecha_hora) {
-            const date = new Date(cita.fecha_hora);
-            hora = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
-          }
-          return {
-            nombre,
-            apellido,
-            folio: cita.folio_paciente || '',
-            hora,
-            iniciales,
-            color: this.colors[i % this.colors.length],
-          };
-        });
+      next: (resp: any) => {
+        // Backend returns {fecha, total, programadas, completadas, ..., citas: [...]}
+        const citas = resp.citas || resp || [];
+        this.doctorTotalHoy = resp.total || citas.length || 0;
+        this.doctorAtendidos = resp.completadas || 0;
+
+        this.pacientes = citas
+          .filter((c: any) => c.estatus === 'PROGRAMADA')
+          .map((cita: any, i: number) => {
+            const fullName = cita.nombre_paciente || '';
+            const parts = fullName.trim().split(/\s+/);
+            const nombre = parts[0] || '';
+            const apellido = parts.slice(1).join(' ') || '';
+            const iniciales = (nombre.charAt(0) + (apellido.charAt(0) || '')).toUpperCase();
+            let hora = '';
+            if (cita.fecha_hora) {
+              const date = new Date(cita.fecha_hora);
+              hora = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+            }
+            const servicio = cita.servicios?.[0]?.nombre || 'Consulta';
+            return {
+              idCita: cita.id_cita,
+              nombre,
+              apellido,
+              folio: cita.folio_paciente || '',
+              hora,
+              iniciales,
+              servicio,
+              color: this.colors[i % this.colors.length],
+              atendiendo: false,
+            };
+          });
       },
       error: () => {
         this.pacientes = [];
@@ -457,19 +471,43 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadDoctor(): void {
-    this.api.getDoctores().subscribe({
-      next: (doctores: any[]) => {
-        const doctor = doctores.find((d: any) => d.estatus === 'Activo' || d.activo) || doctores[0];
+    this.api.getDoctorHoy().subscribe({
+      next: (resp: any) => {
+        const doctor = resp.doctor;
         if (doctor) {
           const nombre = doctor.nombre || '';
-          const apellido = doctor.apellido_paterno || doctor.apellido || '';
+          const apellido = doctor.apellido_paterno || '';
           this.doctorNombre = `Dr. ${nombre} ${apellido}`.trim();
           this.doctorEspecialidad = doctor.especialidad || '';
           this.doctorIniciales = (nombre.charAt(0) + apellido.charAt(0)).toUpperCase();
+          // Parse horario from timestamps
+          const formatTime = (ts: string) => {
+            if (!ts) return '';
+            const d = new Date(ts);
+            return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+          };
+          const inicio = formatTime(resp.hora_inicio);
+          const fin = formatTime(resp.hora_fin);
+          this.doctorHorario = inicio && fin ? `${inicio} - ${fin}` : '—';
         }
       },
       error: () => {
         // Keep defaults
+      },
+    });
+  }
+
+  atenderAhora(paciente: any): void {
+    if (!paciente.idCita) return;
+    paciente.atendiendo = true;
+    this.api.completarCita(paciente.idCita).subscribe({
+      next: () => {
+        // Remove from queue
+        this.pacientes = this.pacientes.filter(p => p.idCita !== paciente.idCita);
+        this.doctorAtendidos++;
+      },
+      error: () => {
+        paciente.atendiendo = false;
       },
     });
   }
