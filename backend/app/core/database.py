@@ -1,3 +1,4 @@
+import os
 import oracledb
 from contextlib import contextmanager
 from app.core.config import settings
@@ -8,7 +9,11 @@ _initialized = False
 def _init_client():
     global _initialized
     if not _initialized:
-        oracledb.init_oracle_client(lib_dir=settings.ORACLE_CLIENT_DIR)
+        # Use thick mode only if ORACLE_CLIENT_DIR points to a valid directory
+        # In Docker, we use thin mode (no Oracle Instant Client needed)
+        client_dir = settings.ORACLE_CLIENT_DIR
+        if client_dir and os.path.isdir(client_dir):
+            oracledb.init_oracle_client(lib_dir=client_dir)
         _initialized = True
 
 

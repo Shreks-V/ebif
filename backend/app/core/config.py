@@ -1,22 +1,26 @@
+import os
+from dotenv import load_dotenv
 from pydantic import BaseModel
+
+load_dotenv()
 
 
 class Settings(BaseModel):
     APP_NAME: str = "Sistema Espina Bífida API"
     APP_VERSION: str = "1.0.0"
-    SECRET_KEY: str = "espina-bifida-secret-key-change-in-production"
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "change-in-production")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 hours
-    CORS_ORIGINS: list[str] = ["http://localhost:4200"]
+    CORS_ORIGINS: list[str] = os.getenv("CORS_ORIGINS", "http://localhost:4200").split(",")
 
     # Oracle DB
-    ORACLE_USER: str = "ADMIN"
-    ORACLE_PASSWORD: str = "ZN9LjzV+#sUfqM."
-    ORACLE_DSN: str = "fz0fv0yxld4qn44r_low"
-    ORACLE_CLIENT_DIR: str = "/Users/maantora/Downloads/instantclient_23_3"
-    ORACLE_CONFIG_DIR: str = "/Users/maantora/Downloads/Wallet_FZ0FV0YXLD4QN44R (3)"
-    ORACLE_WALLET_DIR: str = "/Users/maantora/Downloads/Wallet_FZ0FV0YXLD4QN44R (3)"
-    ORACLE_WALLET_PASSWORD: str = "ZN9LjzV+#sUfqM."
+    ORACLE_USER: str = os.getenv("ORACLE_USER", "")
+    ORACLE_PASSWORD: str = os.getenv("ORACLE_PASSWORD", "")
+    ORACLE_DSN: str = os.getenv("ORACLE_DSN", "")
+    ORACLE_CLIENT_DIR: str = os.getenv("ORACLE_CLIENT_DIR", "")
+    ORACLE_CONFIG_DIR: str = os.getenv("ORACLE_CONFIG_DIR", "")
+    ORACLE_WALLET_DIR: str = os.getenv("ORACLE_WALLET_DIR", "")
+    ORACLE_WALLET_PASSWORD: str = os.getenv("ORACLE_WALLET_PASSWORD", "")
 
 
 settings = Settings()

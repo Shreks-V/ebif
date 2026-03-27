@@ -50,7 +50,12 @@
       "Bash(find /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif -type f -name *.sql)",
       "Bash(grep -r \"PACIENTE\\\\|PRE_REGISTRO\\\\|FOREIGN KEY\\\\|REFERENCES\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/routers/*.py)",
       "Bash(grep -h \"FROM\\\\|JOIN\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/routers/*.py)",
-      "Bash(python migrate_preregistro.py)"
+      "Bash(python migrate_preregistro.py)",
+      "Bash(cd /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif)",
+      "Bash(cd /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend)",
+      "Bash(grep -r \"uvicorn\\\\|port\\\\|host\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/*.py)",
+      "Bash(docker compose:*)",
+      "Bash(pip install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

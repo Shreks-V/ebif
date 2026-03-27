@@ -64,3 +64,8 @@ out-tsc/
 
 # Testing
 coverage/
+
+# =========================
+# Oracle Wallet (credentials)
+# =========================
+wallet/

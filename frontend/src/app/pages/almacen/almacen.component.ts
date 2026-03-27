@@ -17,10 +17,12 @@ interface ProductoItem {
   // Subtype fields
   presentacion?: string; // medicamento
   dosis?: string; // medicamento
+  requiereCaducidad?: string; // medicamento
   numeroSerie?: string; // equipo
   marca?: string; // equipo
   modelo?: string; // equipo
   estatusEquipo?: string; // equipo
+  observaciones?: string; // equipo
   // Existencia
   cantidadDisponible: number | null;
   nivelMinimo: number | null;
@@ -52,6 +54,7 @@ interface ComodatoItem {
   montoPagado: number;
   saldoPendiente: number;
   exentoPago: string;
+  notas?: string;
 }
 
 @Component({
@@ -229,7 +232,7 @@ interface ComodatoItem {
                   class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
               </div>
-              <button class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors shadow-lg flex items-center gap-2">
+              <button (click)="openNuevoProductoModal()" class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors shadow-lg flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -291,13 +294,13 @@ interface ComodatoItem {
                       </td>
                       <td class="px-5 py-4">
                         <div class="flex items-center gap-1">
-                          <button class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
+                          <button (click)="openEditProductoModal(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                               <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                             </svg>
                           </button>
-                          <button class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
+                          <button (click)="openConfirmDeleteModal(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
                             </svg>
@@ -328,7 +331,7 @@ interface ComodatoItem {
                   class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                 />
               </div>
-              <button class="px-6 py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors shadow-lg flex items-center gap-2">
+              <button (click)="openNuevoComodatoModal()" class="px-6 py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors shadow-lg flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -371,7 +374,7 @@ interface ComodatoItem {
                         </span>
                       </td>
                       <td class="px-5 py-4">
-                        <button class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1 text-xs" title="Imprimir">
+                        <button (click)="printComodato(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1 text-xs" title="Imprimir">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/>
                           </svg>
@@ -391,7 +394,349 @@ interface ComodatoItem {
 
       <app-footer />
     </div>
+
+    <!-- ==================== MODAL: Nuevo / Editar Producto ==================== -->
+    <div *ngIf="showNuevoProductoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeProductoModal()">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">{{ editingProduct ? 'Editar Producto' : 'Agregar Nuevo Item' }}</h2>
+          <button (click)="closeProductoModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <form (ngSubmit)="submitProducto()" class="space-y-4">
+          <!-- Row: Clave Interna + Nombre -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Clave Interna *</label>
+              <input type="text" [(ngModel)]="productoForm.clave_interna" name="clave_interna" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: MED-001" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
+              <input type="text" [(ngModel)]="productoForm.nombre" name="nombre" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Nombre del producto" />
+            </div>
+          </div>
+
+          <!-- Descripcion -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Descripci&oacute;n</label>
+            <textarea [(ngModel)]="productoForm.descripcion" name="descripcion" rows="2"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none" placeholder="Descripci&oacute;n del producto"></textarea>
+          </div>
+
+          <!-- Row: Tipo Producto + Activo -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Producto *</label>
+              <select [(ngModel)]="productoForm.tipo_producto" name="tipo_producto" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                <option value="">Seleccionar...</option>
+                <option value="MEDICAMENTO">Medicamento</option>
+                <option value="EQUIPO">Equipo</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Activo</label>
+              <select [(ngModel)]="productoForm.activo" name="activo"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                <option value="S">S&iacute;</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row: Precios -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota A</label>
+              <input type="number" [(ngModel)]="productoForm.precio_cuota_a" name="precio_cuota_a" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota B</label>
+              <input type="number" [(ngModel)]="productoForm.precio_cuota_b" name="precio_cuota_b" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+            </div>
+          </div>
+
+          <!-- MEDICAMENTO-specific fields -->
+          <ng-container *ngIf="productoForm.tipo_producto === 'MEDICAMENTO'">
+            <div class="border-t-2 border-slate-100 pt-4">
+              <h3 class="text-sm font-bold text-blue-700 mb-3">Datos de Medicamento</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Presentaci&oacute;n</label>
+                  <input type="text" [(ngModel)]="productoForm.presentacion" name="presentacion"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: Tableta" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Dosis</label>
+                  <input type="text" [(ngModel)]="productoForm.dosis" name="dosis"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: 500mg" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Requiere Caducidad</label>
+                  <select [(ngModel)]="productoForm.requiere_caducidad" name="requiere_caducidad"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                    <option value="S">S&iacute;</option>
+                    <option value="N">No</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- EQUIPO-specific fields -->
+          <ng-container *ngIf="productoForm.tipo_producto === 'EQUIPO'">
+            <div class="border-t-2 border-slate-100 pt-4">
+              <h3 class="text-sm font-bold text-green-700 mb-3">Datos de Equipo</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">N&uacute;mero de Serie</label>
+                  <input type="text" [(ngModel)]="productoForm.numero_serie" name="numero_serie"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="N&uacute;mero de serie" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Marca</label>
+                  <input type="text" [(ngModel)]="productoForm.marca" name="marca"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Marca" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Modelo</label>
+                  <input type="text" [(ngModel)]="productoForm.modelo" name="modelo"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Modelo" />
+                </div>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus Equipo</label>
+                  <select [(ngModel)]="productoForm.estatus_equipo" name="estatus_equipo"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                    <option value="DISPONIBLE">Disponible</option>
+                    <option value="EN_USO">En Uso</option>
+                    <option value="DAÑADO">Da&ntilde;ado</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Observaciones</label>
+                  <input type="text" [(ngModel)]="productoForm.observaciones" name="observaciones"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Observaciones" />
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Row: Cantidad, Nivel Minimo, Unidad Medida -->
+          <div class="border-t-2 border-slate-100 pt-4">
+            <h3 class="text-sm font-bold text-slate-600 mb-3">Existencia</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Cantidad Disponible</label>
+                <input type="number" [(ngModel)]="productoForm.cantidad_disponible" name="cantidad_disponible" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nivel M&iacute;nimo</label>
+                <input type="number" [(ngModel)]="productoForm.nivel_minimo" name="nivel_minimo" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="5" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Unidad de Medida</label>
+                <input type="text" [(ngModel)]="productoForm.unidad_medida" name="unidad_medida"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: Pieza, Caja" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
+            <button type="button" (click)="closeProductoModal()"
+              class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="submittingProducto"
+              class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ submittingProducto ? 'Guardando...' : (editingProduct ? 'Actualizar' : 'Guardar') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Confirmar Eliminacion ==================== -->
+    <div *ngIf="showConfirmDeleteModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeConfirmDeleteModal()">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-slate-800">Confirmar Eliminaci&oacute;n</h2>
+          <button (click)="closeConfirmDeleteModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="mb-6">
+          <div class="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </div>
+          <p class="text-center text-slate-700 text-lg font-semibold">&iquest;Est&aacute;s seguro?</p>
+          <p class="text-center text-slate-500 text-sm mt-1">
+            Se eliminar&aacute; <span class="font-semibold text-slate-700">"{{ productoToDelete?.nombre }}"</span> del inventario. Esta acci&oacute;n no se puede deshacer.
+          </p>
+        </div>
+        <div class="flex items-center justify-end gap-3">
+          <button (click)="closeConfirmDeleteModal()"
+            class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+            Cancelar
+          </button>
+          <button (click)="confirmDelete()" [disabled]="submittingDelete"
+            class="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ submittingDelete ? 'Eliminando...' : 'Eliminar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Nuevo Comodato ==================== -->
+    <div *ngIf="showNuevoComodatoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeComodatoModal()">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">Nuevo Comodato</h2>
+          <button (click)="closeComodatoModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <form (ngSubmit)="submitComodato()" class="space-y-4">
+          <!-- Row: Paciente + Equipo -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Paciente *</label>
+              <select [(ngModel)]="comodatoForm.id_paciente" name="id_paciente" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                <option [ngValue]="null">Seleccionar paciente...</option>
+                <option *ngFor="let b of beneficiariosList" [ngValue]="b.id">{{ b.nombre }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Equipo *</label>
+              <select [(ngModel)]="comodatoForm.id_equipo" name="id_equipo" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                <option [ngValue]="null">Seleccionar equipo...</option>
+                <option *ngFor="let e of equiposList" [ngValue]="e.idProducto">{{ e.nombre }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row: Fechas -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
+              <input type="date" [(ngModel)]="comodatoForm.fecha_prestamo" name="fecha_prestamo" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
+              <input type="date" [(ngModel)]="comodatoForm.fecha_devolucion" name="fecha_devolucion"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+            </div>
+          </div>
+
+          <!-- Row: Estatus + Exento -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
+              <select [(ngModel)]="comodatoForm.estatus" name="estatus"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                <option value="PRESTADO">Prestado</option>
+                <option value="DEVUELTO">Devuelto</option>
+                <option value="CANCELADO">Cancelado</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
+              <select [(ngModel)]="comodatoForm.exento_pago" name="exento_pago"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                <option value="N">No</option>
+                <option value="S">S&iacute;</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row: Montos -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
+              <input type="number" [(ngModel)]="comodatoForm.monto_total" name="monto_total" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
+              <input type="number" [(ngModel)]="comodatoForm.monto_pagado" name="monto_pagado" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
+              <input type="number" [(ngModel)]="comodatoForm.saldo_pendiente" name="saldo_pendiente" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+            </div>
+          </div>
+
+          <!-- Notas -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
+            <textarea [(ngModel)]="comodatoForm.notas" name="notas" rows="3"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none" placeholder="Notas adicionales..."></textarea>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
+            <button type="button" (click)="closeComodatoModal()"
+              class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="submittingComodato"
+              class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ submittingComodato ? 'Guardando...' : 'Crear Comodato' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== PRINT CONTAINER (hidden, used by window.print) ==================== -->
+    <div id="print-comodato" class="hidden print:block print:p-8" *ngIf="printingComodato">
+      <h1 class="text-2xl font-bold mb-4">Comodato {{ printingComodato.folioComodato }}</h1>
+      <table class="w-full border-collapse text-sm">
+        <tr class="border-b"><td class="py-2 font-semibold w-40">Folio:</td><td class="py-2">{{ printingComodato.folioComodato }}</td></tr>
+        <tr class="border-b"><td class="py-2 font-semibold">Paciente:</td><td class="py-2">{{ printingComodato.nombrePaciente }} ({{ printingComodato.folioPaciente }})</td></tr>
+        <tr class="border-b"><td class="py-2 font-semibold">Equipo:</td><td class="py-2">{{ printingComodato.nombreEquipo }}</td></tr>
+        <tr class="border-b"><td class="py-2 font-semibold">Fecha Pr&eacute;stamo:</td><td class="py-2">{{ printingComodato.fechaPrestamo }}</td></tr>
+        <tr class="border-b"><td class="py-2 font-semibold">Fecha Devoluci&oacute;n:</td><td class="py-2">{{ printingComodato.fechaDevolucion ?? 'Pendiente' }}</td></tr>
+        <tr class="border-b"><td class="py-2 font-semibold">Estatus:</td><td class="py-2">{{ printingComodato.estatus }}</td></tr>
+        <tr class="border-b"><td class="py-2 font-semibold">Monto Total:</td><td class="py-2">\${{ printingComodato.montoTotal.toFixed(2) }}</td></tr>
+        <tr class="border-b"><td class="py-2 font-semibold">Monto Pagado:</td><td class="py-2">\${{ printingComodato.montoPagado.toFixed(2) }}</td></tr>
+        <tr class="border-b"><td class="py-2 font-semibold">Saldo Pendiente:</td><td class="py-2">\${{ printingComodato.saldoPendiente.toFixed(2) }}</td></tr>
+        <tr><td class="py-2 font-semibold">Exento de Pago:</td><td class="py-2">{{ printingComodato.exentoPago === 'S' ? 'S&iacute;' : 'No' }}</td></tr>
+      </table>
+    </div>
   `,
+  styles: [`
+    @media print {
+      app-navbar, app-footer, main, .fixed { display: none !important; }
+      #print-comodato { display: block !important; }
+    }
+  `],
 })
 export class AlmacenComponent implements OnInit {
   activeTab: 'inventario' | 'comodatos' = 'inventario';
@@ -403,9 +748,42 @@ export class AlmacenComponent implements OnInit {
   servicios: ServicioItem[] = [];
   comodatos: ComodatoItem[] = [];
 
+  // Modal state
+  showNuevoProductoModal = false;
+  showNuevoComodatoModal = false;
+  showConfirmDeleteModal = false;
+  editingProduct: ProductoItem | null = null;
+  productoToDelete: { id: number; nombre: string; categoria: string } | null = null;
+
+  // Submission flags
+  submittingProducto = false;
+  submittingDelete = false;
+  submittingComodato = false;
+
+  // Print
+  printingComodato: ComodatoItem | null = null;
+
+  // Producto form
+  productoForm = this.getEmptyProductoForm();
+
+  // Comodato form
+  comodatoForm = this.getEmptyComodatoForm();
+
+  // Data for comodato selects
+  beneficiariosList: { id: number; nombre: string }[] = [];
+  equiposList: ProductoItem[] = [];
+
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
+    this.loadProductos();
+    this.loadServicios();
+    this.loadComodatos();
+  }
+
+  // ──────────────── Data Loading ────────────────
+
+  loadProductos(): void {
     this.api.getProductos().subscribe({
       next: (data) => {
         this.productos = data.map((p: any) => ({
@@ -419,10 +797,12 @@ export class AlmacenComponent implements OnInit {
           activo: p.activo,
           presentacion: p.presentacion,
           dosis: p.dosis,
+          requiereCaducidad: p.requiere_caducidad,
           numeroSerie: p.numero_serie,
           marca: p.marca,
           modelo: p.modelo,
           estatusEquipo: p.estatus_equipo,
+          observaciones: p.observaciones,
           cantidadDisponible: p.cantidad_disponible,
           nivelMinimo: p.nivel_minimo,
           unidadMedida: p.unidad_medida,
@@ -430,7 +810,9 @@ export class AlmacenComponent implements OnInit {
       },
       error: (err) => console.error('Error loading productos:', err),
     });
+  }
 
+  loadServicios(): void {
     this.api.getServicios().subscribe({
       next: (data) => {
         this.servicios = data.map((s: any) => ({
@@ -445,7 +827,9 @@ export class AlmacenComponent implements OnInit {
       },
       error: (err) => console.error('Error loading servicios:', err),
     });
+  }
 
+  loadComodatos(): void {
     this.api.getComodatos().subscribe({
       next: (data) => {
         this.comodatos = data.map((c: any) => ({
@@ -463,11 +847,227 @@ export class AlmacenComponent implements OnInit {
           montoPagado: c.monto_pagado,
           saldoPendiente: c.saldo_pendiente,
           exentoPago: c.exento_pago,
+          notas: c.notas,
         }));
       },
       error: (err) => console.error('Error loading comodatos:', err),
     });
   }
+
+  // ──────────────── Form Defaults ────────────────
+
+  getEmptyProductoForm() {
+    return {
+      clave_interna: '',
+      nombre: '',
+      descripcion: '',
+      tipo_producto: '',
+      precio_cuota_a: null as number | null,
+      precio_cuota_b: null as number | null,
+      activo: 'S',
+      presentacion: '',
+      dosis: '',
+      requiere_caducidad: 'S',
+      numero_serie: '',
+      marca: '',
+      modelo: '',
+      estatus_equipo: 'DISPONIBLE',
+      observaciones: '',
+      cantidad_disponible: 0,
+      nivel_minimo: 5,
+      unidad_medida: '',
+    };
+  }
+
+  getEmptyComodatoForm() {
+    return {
+      id_paciente: null as number | null,
+      id_equipo: null as number | null,
+      fecha_prestamo: '',
+      fecha_devolucion: '',
+      estatus: 'PRESTADO',
+      monto_total: 0,
+      monto_pagado: 0,
+      saldo_pendiente: 0,
+      exento_pago: 'N',
+      notas: '',
+    };
+  }
+
+  // ──────────────── Producto Modal ────────────────
+
+  openNuevoProductoModal(): void {
+    this.editingProduct = null;
+    this.productoForm = this.getEmptyProductoForm();
+    this.showNuevoProductoModal = true;
+  }
+
+  openEditProductoModal(item: { id: number; categoria: string; nombre: string }): void {
+    // Find the actual product from the productos array
+    const producto = this.productos.find(p => p.idProducto === item.id);
+    if (!producto) return;
+
+    this.editingProduct = producto;
+    this.productoForm = {
+      clave_interna: producto.claveInterna,
+      nombre: producto.nombre,
+      descripcion: producto.descripcion,
+      tipo_producto: producto.tipoProducto,
+      precio_cuota_a: producto.precioA,
+      precio_cuota_b: producto.precioB,
+      activo: producto.activo,
+      presentacion: producto.presentacion ?? '',
+      dosis: producto.dosis ?? '',
+      requiere_caducidad: producto.requiereCaducidad ?? 'S',
+      numero_serie: producto.numeroSerie ?? '',
+      marca: producto.marca ?? '',
+      modelo: producto.modelo ?? '',
+      estatus_equipo: producto.estatusEquipo ?? 'DISPONIBLE',
+      observaciones: producto.observaciones ?? '',
+      cantidad_disponible: producto.cantidadDisponible ?? 0,
+      nivel_minimo: producto.nivelMinimo ?? 5,
+      unidad_medida: producto.unidadMedida,
+    };
+    this.showNuevoProductoModal = true;
+  }
+
+  closeProductoModal(): void {
+    this.showNuevoProductoModal = false;
+    this.editingProduct = null;
+  }
+
+  submitProducto(): void {
+    if (!this.productoForm.clave_interna || !this.productoForm.nombre || !this.productoForm.tipo_producto) return;
+
+    this.submittingProducto = true;
+    const payload: any = { ...this.productoForm };
+
+    // Clean up type-specific fields
+    if (payload.tipo_producto === 'MEDICAMENTO') {
+      delete payload.numero_serie;
+      delete payload.marca;
+      delete payload.modelo;
+      delete payload.estatus_equipo;
+      delete payload.observaciones;
+    } else if (payload.tipo_producto === 'EQUIPO') {
+      delete payload.presentacion;
+      delete payload.dosis;
+      delete payload.requiere_caducidad;
+    }
+
+    if (this.editingProduct) {
+      this.api.updateProducto(this.editingProduct.idProducto, payload).subscribe({
+        next: () => {
+          this.loadProductos();
+          this.closeProductoModal();
+          this.submittingProducto = false;
+        },
+        error: (err) => {
+          console.error('Error updating producto:', err);
+          this.submittingProducto = false;
+        },
+      });
+    } else {
+      this.api.createProducto(payload).subscribe({
+        next: () => {
+          this.loadProductos();
+          this.closeProductoModal();
+          this.submittingProducto = false;
+        },
+        error: (err) => {
+          console.error('Error creating producto:', err);
+          this.submittingProducto = false;
+        },
+      });
+    }
+  }
+
+  // ──────────────── Delete Modal ────────────────
+
+  openConfirmDeleteModal(item: { id: number; nombre: string; categoria: string }): void {
+    this.productoToDelete = item;
+    this.showConfirmDeleteModal = true;
+  }
+
+  closeConfirmDeleteModal(): void {
+    this.showConfirmDeleteModal = false;
+    this.productoToDelete = null;
+  }
+
+  confirmDelete(): void {
+    if (!this.productoToDelete) return;
+
+    this.submittingDelete = true;
+    this.api.deleteProducto(this.productoToDelete.id).subscribe({
+      next: () => {
+        this.loadProductos();
+        this.closeConfirmDeleteModal();
+        this.submittingDelete = false;
+      },
+      error: (err) => {
+        console.error('Error deleting producto:', err);
+        this.submittingDelete = false;
+      },
+    });
+  }
+
+  // ──────────────── Comodato Modal ────────────────
+
+  openNuevoComodatoModal(): void {
+    this.comodatoForm = this.getEmptyComodatoForm();
+    this.equiposList = this.productos.filter(p => p.tipoProducto === 'EQUIPO');
+
+    // Load beneficiarios for the select
+    this.api.getBeneficiarios().subscribe({
+      next: (data) => {
+        this.beneficiariosList = data.map((b: any) => ({
+          id: b.id_paciente ?? b.id,
+          nombre: `${b.nombre ?? ''} ${b.apellido_paterno ?? ''} ${b.apellido_materno ?? ''}`.trim() || b.nombre_completo || `Paciente ${b.folio}`,
+        }));
+      },
+      error: (err) => console.error('Error loading beneficiarios:', err),
+    });
+
+    this.showNuevoComodatoModal = true;
+  }
+
+  closeComodatoModal(): void {
+    this.showNuevoComodatoModal = false;
+  }
+
+  submitComodato(): void {
+    if (!this.comodatoForm.id_paciente || !this.comodatoForm.id_equipo || !this.comodatoForm.fecha_prestamo) return;
+
+    this.submittingComodato = true;
+    const payload: any = { ...this.comodatoForm };
+    if (!payload.fecha_devolucion) {
+      payload.fecha_devolucion = null;
+    }
+
+    this.api.createComodato(payload).subscribe({
+      next: () => {
+        this.loadComodatos();
+        this.closeComodatoModal();
+        this.submittingComodato = false;
+      },
+      error: (err) => {
+        console.error('Error creating comodato:', err);
+        this.submittingComodato = false;
+      },
+    });
+  }
+
+  // ──────────────── Print Comodato ────────────────
+
+  printComodato(com: ComodatoItem): void {
+    this.printingComodato = com;
+    setTimeout(() => {
+      window.print();
+      this.printingComodato = null;
+    }, 100);
+  }
+
+  // ──────────────── KPI Helpers ────────────────
 
   getBajoStockCount(): number {
     return this.productos.filter(p =>

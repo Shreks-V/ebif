@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
+import { ApiService } from '../../services/api.service';
 
 interface IndicadorOption {
   id: string;
@@ -54,8 +55,22 @@ interface IndicadorOption {
               </div>
               <div>
                 <h2 class="text-xl font-bold text-slate-800">Generar Reporte Documento</h2>
-                <p class="text-slate-500 text-sm">Selecciona el periodo y genera un reporte en formato PDF</p>
+                <p class="text-slate-500 text-sm">Selecciona el tipo de reporte, periodo y genera un reporte</p>
               </div>
+            </div>
+
+            <!-- Report type selector -->
+            <div class="mb-6">
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Reporte</label>
+              <select [(ngModel)]="tipoReporte"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
+                <option value="">Seleccionar tipo de reporte...</option>
+                <option value="genero">Reporte por Genero</option>
+                <option value="etapa-vida">Reporte por Etapa de Vida</option>
+                <option value="tipo-espina">Reporte por Tipo de Espina</option>
+                <option value="estado">Reporte por Estado</option>
+                <option value="resumen">Reporte Resumen</option>
+              </select>
             </div>
 
             <!-- Period selector grid -->
@@ -63,7 +78,7 @@ interface IndicadorOption {
               <button
                 *ngFor="let period of periods"
                 (click)="selectPeriod(period.id)"
-                class="px-4 py-3 rounded-lg border-2 font-semibold text-sm flex flex-col items-center gap-1 transition-all"
+                class="px-4 py-3 rounded-lg border-2 font-semibold text-sm flex flex-col items-center gap-1 transition-all cursor-pointer"
                 [ngClass]="{
                   'bg-[#00328b] text-white border-[#00328b] shadow-lg': selectedPeriod === period.id,
                   'bg-white text-slate-700 border-slate-300 hover:border-[#00328b]': selectedPeriod !== period.id
@@ -93,9 +108,14 @@ interface IndicadorOption {
               </div>
             </div>
 
+            <!-- Error / info messages -->
+            <div *ngIf="reporteError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+              {{ reporteError }}
+            </div>
+
             <!-- Action buttons -->
             <div class="flex gap-3 pt-4 border-t border-slate-200">
-              <button (click)="generarReporte()" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2">
+              <button (click)="generarReporte()" [disabled]="generandoReporte" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 <!-- FileText icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
@@ -104,9 +124,9 @@ interface IndicadorOption {
                   <line x1="16" x2="8" y1="17" y2="17"/>
                   <polyline points="10 9 9 9 8 9"/>
                 </svg>
-                Generar Reporte
+                {{ generandoReporte ? 'Generando...' : 'Generar Reporte' }}
               </button>
-              <button (click)="vistaPrevia()" class="px-6 py-2.5 border-2 border-[#00328b] text-[#00328b] hover:bg-blue-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2">
+              <button (click)="vistaPrevia()" [disabled]="generandoReporte" class="px-6 py-2.5 border-2 border-[#00328b] text-[#00328b] hover:bg-blue-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 <!-- Eye icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
@@ -114,15 +134,51 @@ interface IndicadorOption {
                 </svg>
                 Vista Previa
               </button>
-              <button (click)="exportarPDF()" class="px-6 py-2.5 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2">
+              <button (click)="exportarPDF()" [disabled]="!reporteData || reporteData.length === 0" class="px-6 py-2.5 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 <!-- Download icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/>
                   <line x1="12" x2="12" y1="15" y2="3"/>
                 </svg>
-                Exportar PDF
+                Exportar CSV
               </button>
+            </div>
+          </div>
+
+          <!-- Report Results Section -->
+          <div *ngIf="reporteData && reporteData.length > 0" class="bg-white rounded-xl shadow-lg border-2 border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="bg-emerald-500 p-2 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-xl font-bold text-slate-800">Resultados del Reporte</h2>
+                  <p class="text-slate-500 text-sm">{{ getReporteTipoLabel() }} - {{ reporteData.length }} registros</p>
+                </div>
+              </div>
+              <button (click)="limpiarReporte()" class="text-sm font-semibold text-slate-500 hover:text-red-500 cursor-pointer">Limpiar</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-slate-50 border-b-2 border-slate-200">
+                  <tr>
+                    <th *ngFor="let col of reporteColumnas" class="text-left px-5 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      {{ col }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of reporteData" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                    <td *ngFor="let col of reporteColumnas" class="px-5 py-3 text-sm text-slate-700">
+                      {{ row[col] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -146,7 +202,7 @@ interface IndicadorOption {
                 </div>
               </div>
               <div class="flex gap-2 flex-wrap">
-                <button (click)="toggleModal()" class="px-4 py-2 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2">
+                <button (click)="toggleModal()" class="px-4 py-2 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
                   <!-- Plus icon -->
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" x2="12" y1="5" y2="19"/>
@@ -154,7 +210,7 @@ interface IndicadorOption {
                   </svg>
                   Agregar Graficas
                 </button>
-                <button (click)="limpiarGraficas()" class="px-4 py-2 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2">
+                <button (click)="limpiarGraficas()" class="px-4 py-2 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
                   <!-- Trash icon -->
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"/>
@@ -162,7 +218,7 @@ interface IndicadorOption {
                   </svg>
                   Limpiar
                 </button>
-                <button (click)="imprimir()" class="px-4 py-2 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2">
+                <button (click)="imprimir()" class="px-4 py-2 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
                   <!-- Printer icon -->
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="6 9 6 2 18 2 18 9"/>
@@ -181,7 +237,7 @@ interface IndicadorOption {
                 <span *ngFor="let chart of selectedCharts"
                   class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
                   {{ getChartName(chart) }}
-                  <button (click)="removeChart(chart)" class="ml-1 hover:text-red-600 transition-colors">
+                  <button (click)="removeChart(chart)" class="ml-1 hover:text-red-600 transition-colors cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="18" x2="6" y1="6" y2="18"/>
                       <line x1="6" x2="18" y1="6" y2="18"/>
@@ -204,7 +260,7 @@ interface IndicadorOption {
               </div>
               <h3 class="text-lg font-bold text-slate-700 mb-2">No hay graficas para visualizar</h3>
               <p class="text-slate-500 text-sm mb-6">Agrega indicadores para generar graficas y visualizar los datos</p>
-              <button (click)="toggleModal()" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors inline-flex items-center gap-2">
+              <button (click)="toggleModal()" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors inline-flex items-center gap-2 cursor-pointer">
                 <!-- Plus icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" x2="12" y1="5" y2="19"/>
@@ -219,7 +275,7 @@ interface IndicadorOption {
               <div *ngFor="let chart of selectedCharts" class="bg-white rounded-xl shadow border-2 border-slate-200 p-6">
                 <div class="flex items-center justify-between mb-4">
                   <h3 class="text-base font-bold text-slate-800">{{ getChartName(chart) }}</h3>
-                  <button (click)="removeChart(chart)" class="text-slate-400 hover:text-red-500 transition-colors">
+                  <button (click)="removeChart(chart)" class="text-slate-400 hover:text-red-500 transition-colors cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="18" x2="6" y1="6" y2="18"/>
                       <line x1="6" x2="18" y1="6" y2="18"/>
@@ -251,7 +307,7 @@ interface IndicadorOption {
         <div class="bg-white rounded-xl shadow-2xl border-2 border-slate-200 w-full max-w-md mx-4 p-6" (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-slate-800">Agregar Graficas</h3>
-            <button (click)="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+            <button (click)="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" x2="6" y1="6" y2="18"/>
                 <line x1="6" x2="18" y1="6" y2="18"/>
@@ -262,7 +318,7 @@ interface IndicadorOption {
           <div class="space-y-2 max-h-72 overflow-y-auto">
             <button *ngFor="let option of indicadorOptions"
               (click)="toggleChart(option.id)"
-              class="w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all flex items-center justify-between"
+              class="w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all flex items-center justify-between cursor-pointer"
               [ngClass]="{
                 'bg-[#00328b] text-white border-[#00328b]': isChartSelected(option.id),
                 'bg-white text-slate-700 border-slate-200 hover:border-[#00328b] hover:bg-blue-50': !isChartSelected(option.id)
@@ -274,12 +330,74 @@ interface IndicadorOption {
             </button>
           </div>
           <div class="flex gap-3 mt-6 pt-4 border-t border-slate-200">
-            <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors">
+            <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors cursor-pointer">
               Aceptar
             </button>
-            <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm transition-colors">
+            <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm transition-colors cursor-pointer">
               Cancelar
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Previa Modal -->
+      <div *ngIf="showVistaPrevia" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeVistaPrevia()">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-[#00328b] rounded-xl flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-slate-900">Vista Previa del Reporte</h2>
+                <p class="text-xs text-slate-500">{{ getReporteTipoLabel() }}</p>
+              </div>
+            </div>
+            <button (click)="closeVistaPrevia()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Loading state -->
+          <div *ngIf="generandoReporte" class="text-center py-12">
+            <p class="text-slate-500 text-sm">Cargando datos...</p>
+          </div>
+
+          <!-- Preview error -->
+          <div *ngIf="vistaPreviaError" class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4">
+            {{ vistaPreviaError }}
+          </div>
+
+          <!-- Preview table -->
+          <div *ngIf="!generandoReporte && vistaPreviaData && vistaPreviaData.length > 0" class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-slate-50 border-b-2 border-slate-200">
+                <tr>
+                  <th *ngFor="let col of vistaPreviaColumnas" class="text-left px-4 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    {{ col }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of vistaPreviaData" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                  <td *ngFor="let col of vistaPreviaColumnas" class="px-4 py-3 text-sm text-slate-700">
+                    {{ row[col] }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="text-xs text-slate-400 mt-3 text-right">{{ vistaPreviaData.length }} registros</p>
+          </div>
+
+          <!-- Empty -->
+          <div *ngIf="!generandoReporte && vistaPreviaData && vistaPreviaData.length === 0" class="text-center py-12">
+            <p class="text-slate-400 text-sm">No se encontraron datos para los filtros seleccionados.</p>
           </div>
         </div>
       </div>
@@ -290,8 +408,21 @@ export class ReportesComponent {
   selectedPeriod = 'ultimo-mes';
   fechaInicio = '';
   fechaFin = '';
+  tipoReporte = '';
   selectedCharts: string[] = [];
   showModal = false;
+
+  // Report results
+  reporteData: any[] | null = null;
+  reporteColumnas: string[] = [];
+  reporteError = '';
+  generandoReporte = false;
+
+  // Vista previa
+  showVistaPrevia = false;
+  vistaPreviaData: any[] | null = null;
+  vistaPreviaColumnas: string[] = [];
+  vistaPreviaError = '';
 
   periods = [
     { id: 'ultimo-mes', label: 'Ultimo Mes' },
@@ -313,6 +444,8 @@ export class ReportesComponent {
     { id: 'membresia-estatus', nombre: 'Estatus de Membresía' },
     { id: 'tipo-cuota', nombre: 'Por Tipo de Cuota' },
   ];
+
+  constructor(private api: ApiService) {}
 
   selectPeriod(id: string): void {
     this.selectedPeriod = id;
@@ -348,16 +481,174 @@ export class ReportesComponent {
     this.selectedCharts = [];
   }
 
+  getReporteTipoLabel(): string {
+    const labels: Record<string, string> = {
+      'genero': 'Reporte por Genero',
+      'etapa-vida': 'Reporte por Etapa de Vida',
+      'tipo-espina': 'Reporte por Tipo de Espina',
+      'estado': 'Reporte por Estado',
+      'resumen': 'Reporte Resumen'
+    };
+    return labels[this.tipoReporte] || 'Reporte';
+  }
+
+  private buildFilters(): any {
+    const filters: any = { periodo: this.selectedPeriod };
+    if (this.selectedPeriod === 'personalizado') {
+      if (this.fechaInicio) filters.fecha_inicio = this.fechaInicio;
+      if (this.fechaFin) filters.fecha_fin = this.fechaFin;
+    }
+    return filters;
+  }
+
+  private getApiCall(filters: any) {
+    switch (this.tipoReporte) {
+      case 'genero': return this.api.getReportePorGenero(filters);
+      case 'etapa-vida': return this.api.getReportePorEtapaVida(filters);
+      case 'tipo-espina': return this.api.getReportePorTipoEspina(filters);
+      case 'estado': return this.api.getReportePorEstado(filters);
+      case 'resumen': return this.api.getReporteResumen(filters);
+      default: return null;
+    }
+  }
+
+  private extractColumnsAndData(response: any): { columnas: string[]; data: any[] } {
+    // Handle different response shapes
+    let data: any[] = [];
+    if (Array.isArray(response)) {
+      data = response;
+    } else if (response && Array.isArray(response.data)) {
+      data = response.data;
+    } else if (response && Array.isArray(response.resultados)) {
+      data = response.resultados;
+    } else if (response && typeof response === 'object') {
+      // Single object - wrap it
+      data = [response];
+    }
+
+    const columnas = data.length > 0 ? Object.keys(data[0]) : [];
+    return { columnas, data };
+  }
+
   generarReporte(): void {
-    // TODO: integrate with API to generate report
+    if (!this.tipoReporte) {
+      this.reporteError = 'Selecciona un tipo de reporte.';
+      return;
+    }
+    if (this.selectedPeriod === 'personalizado' && (!this.fechaInicio || !this.fechaFin)) {
+      this.reporteError = 'Ingresa ambas fechas para el periodo personalizado.';
+      return;
+    }
+
+    this.reporteError = '';
+    this.generandoReporte = true;
+    const filters = this.buildFilters();
+    const apiCall = this.getApiCall(filters);
+
+    if (!apiCall) {
+      this.reporteError = 'Tipo de reporte no valido.';
+      this.generandoReporte = false;
+      return;
+    }
+
+    apiCall.subscribe({
+      next: (response: any) => {
+        const { columnas, data } = this.extractColumnsAndData(response);
+        this.reporteColumnas = columnas;
+        this.reporteData = data;
+        this.generandoReporte = false;
+      },
+      error: (err: any) => {
+        this.reporteError = err?.error?.detail || 'Error al generar el reporte. Intenta de nuevo.';
+        this.generandoReporte = false;
+        console.error('Error al generar reporte:', err);
+      }
+    });
+  }
+
+  limpiarReporte(): void {
+    this.reporteData = null;
+    this.reporteColumnas = [];
   }
 
   vistaPrevia(): void {
-    // TODO: integrate with API for preview
+    if (!this.tipoReporte) {
+      this.vistaPreviaError = 'Selecciona un tipo de reporte.';
+      this.showVistaPrevia = true;
+      this.vistaPreviaData = null;
+      return;
+    }
+    if (this.selectedPeriod === 'personalizado' && (!this.fechaInicio || !this.fechaFin)) {
+      this.vistaPreviaError = 'Ingresa ambas fechas para el periodo personalizado.';
+      this.showVistaPrevia = true;
+      this.vistaPreviaData = null;
+      return;
+    }
+
+    this.vistaPreviaError = '';
+    this.generandoReporte = true;
+    this.showVistaPrevia = true;
+    this.vistaPreviaData = null;
+
+    const filters = this.buildFilters();
+    const apiCall = this.getApiCall(filters);
+
+    if (!apiCall) {
+      this.vistaPreviaError = 'Tipo de reporte no valido.';
+      this.generandoReporte = false;
+      return;
+    }
+
+    apiCall.subscribe({
+      next: (response: any) => {
+        const { columnas, data } = this.extractColumnsAndData(response);
+        this.vistaPreviaColumnas = columnas;
+        this.vistaPreviaData = data;
+        this.generandoReporte = false;
+      },
+      error: (err: any) => {
+        this.vistaPreviaError = err?.error?.detail || 'Error al cargar vista previa.';
+        this.generandoReporte = false;
+        console.error('Error en vista previa:', err);
+      }
+    });
+  }
+
+  closeVistaPrevia(): void {
+    this.showVistaPrevia = false;
+    this.vistaPreviaData = null;
+    this.vistaPreviaColumnas = [];
+    this.vistaPreviaError = '';
   }
 
   exportarPDF(): void {
-    // TODO: integrate PDF export
+    if (!this.reporteData || this.reporteData.length === 0) return;
+
+    const separator = ',';
+    const columns = this.reporteColumnas;
+
+    // Build CSV content
+    let csv = columns.join(separator) + '\n';
+    for (const row of this.reporteData) {
+      const values = columns.map(col => {
+        const val = row[col] != null ? String(row[col]) : '';
+        // Escape commas and quotes
+        if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+          return '"' + val.replace(/"/g, '""') + '"';
+        }
+        return val;
+      });
+      csv += values.join(separator) + '\n';
+    }
+
+    // Trigger download
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte_${this.tipoReporte}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   imprimir(): void {

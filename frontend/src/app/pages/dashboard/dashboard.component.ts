@@ -255,7 +255,7 @@ import { ApiService } from '../../services/api.service';
                   <!-- Type Badge -->
                   <span class="px-3 py-1.5 bg-[#00328b]/10 rounded-lg text-[#00328b] text-xs font-semibold flex-shrink-0">Consulta</span>
                   <!-- Atender Button -->
-                  <button class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer border-0 flex-shrink-0 whitespace-nowrap">
+                  <button (click)="navigateTo('/citas')" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer border-0 flex-shrink-0 whitespace-nowrap">
                     Atender Ahora
                   </button>
                 </div>

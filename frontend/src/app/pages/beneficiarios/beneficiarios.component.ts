@@ -82,10 +82,10 @@ interface Preregistro {
               </div>
               <div>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight">Registro de Beneficiarios</h1>
-                <p class="text-slate-600 font-semibold">Gestión completa de beneficiarios y membresías</p>
+                <p class="text-slate-600 font-semibold">Gestion completa de beneficiarios y membresias</p>
               </div>
             </div>
-            <button class="bg-gradient-to-r from-[#f3ad1c] to-[#ffb84d] text-white shadow-xl font-bold px-6 py-3 rounded-xl flex items-center gap-2 hover:shadow-2xl transition-all">
+            <button (click)="openNuevoModal()" class="bg-gradient-to-r from-[#f3ad1c] to-[#ffb84d] text-white shadow-xl font-bold px-6 py-3 rounded-xl flex items-center gap-2 hover:shadow-2xl transition-all">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
               </svg>
@@ -105,11 +105,11 @@ interface Preregistro {
                   type="text"
                   [(ngModel)]="searchTerm"
                   (ngModelChange)="filterData()"
-                  placeholder="Buscar por nombre, folio, CURP o membresía..."
+                  placeholder="Buscar por nombre, folio, CURP o membresia..."
                   class="w-full pl-14 h-14 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#007BFF] focus:ring-2 focus:ring-[#007BFF]/20 transition-all"
                 />
               </div>
-              <button class="h-14 border-2 border-slate-200 font-bold px-6 rounded-2xl text-slate-700 bg-white hover:bg-slate-50 flex items-center gap-2 transition-all">
+              <button (click)="exportarCSV()" class="h-14 border-2 border-slate-200 font-bold px-6 rounded-2xl text-slate-700 bg-white hover:bg-slate-50 flex items-center gap-2 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
@@ -134,7 +134,7 @@ interface Preregistro {
                 ? 'bg-[#f3ad1c] text-white rounded-xl font-bold px-6 py-2 transition-all'
                 : 'text-slate-600 font-bold px-6 py-2 rounded-xl hover:bg-slate-100 transition-all'"
             >
-              Aprobación de Preregistro ({{ filteredPreregistros.length }})
+              Aprobacion de Preregistro ({{ filteredPreregistros.length }})
             </button>
           </div>
 
@@ -147,7 +147,7 @@ interface Preregistro {
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo Espina</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cuota</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Membresía</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Membresia</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Alta</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -174,7 +174,7 @@ interface Preregistro {
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-2">
                       <!-- Eye -->
-                      <button class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Ver detalle">
+                      <button (click)="verDetalleBeneficiario(b)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Ver detalle">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                           <circle cx="12" cy="12" r="3"/>
@@ -255,7 +255,7 @@ interface Preregistro {
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-2">
                       <!-- Eye -->
-                      <button class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Ver detalle">
+                      <button (click)="verDetallePreregistro(p)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Ver detalle">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                           <circle cx="12" cy="12" r="3"/>
@@ -309,6 +309,296 @@ interface Preregistro {
         <app-footer />
       </main>
     </div>
+
+    <!-- ==================== MODAL: Nuevo Beneficiario ==================== -->
+    <div *ngIf="showNuevoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeNuevoModal()">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-black text-slate-900">Nuevo Beneficiario</h2>
+          <button (click)="closeNuevoModal()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <form (ngSubmit)="submitNuevoBeneficiario()">
+          <!-- Datos personales -->
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Datos Personales</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
+              <input type="text" [(ngModel)]="formData.nombre" name="nombre" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Paterno *</label>
+              <input type="text" [(ngModel)]="formData.apellido_paterno" name="apellido_paterno" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Materno</label>
+              <input type="text" [(ngModel)]="formData.apellido_materno" name="apellido_materno" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Genero *</label>
+              <select [(ngModel)]="formData.genero" name="genero" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento *</label>
+              <input type="date" [(ngModel)]="formData.fecha_nacimiento" name="fecha_nacimiento" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">CURP *</label>
+              <input type="text" [(ngModel)]="formData.curp" name="curp" required maxlength="18" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all uppercase" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del Padre/Madre</label>
+              <input type="text" [(ngModel)]="formData.nombre_padre_madre" name="nombre_padre_madre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+          </div>
+
+          <!-- Direccion -->
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Direccion</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Direccion</label>
+              <input type="text" [(ngModel)]="formData.direccion" name="direccion" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Colonia</label>
+              <input type="text" [(ngModel)]="formData.colonia" name="colonia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Ciudad</label>
+              <input type="text" [(ngModel)]="formData.ciudad" name="ciudad" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+              <select [(ngModel)]="formData.estado" name="estado" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option *ngFor="let e of estadosMexicanos" [value]="e">{{ e }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Codigo Postal</label>
+              <input type="text" [(ngModel)]="formData.codigo_postal" name="codigo_postal" maxlength="5" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+          </div>
+
+          <!-- Contacto -->
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Contacto</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Casa</label>
+              <input type="tel" [(ngModel)]="formData.telefono_casa" name="telefono_casa" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Celular</label>
+              <input type="tel" [(ngModel)]="formData.telefono_celular" name="telefono_celular" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electronico</label>
+              <input type="email" [(ngModel)]="formData.correo_electronico" name="correo_electronico" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">En emergencia avisar a</label>
+              <input type="text" [(ngModel)]="formData.en_emergencia_avisar_a" name="en_emergencia_avisar_a" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Emergencia</label>
+              <input type="tel" [(ngModel)]="formData.telefono_emergencia" name="telefono_emergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+          </div>
+
+          <!-- Medico -->
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Informacion Medica</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Sangre</label>
+              <select [(ngModel)]="formData.tipo_sangre" name="tipo_sangre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option *ngFor="let ts of tiposSangre" [value]="ts">{{ ts }}</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-3 pt-7">
+              <input type="checkbox" [(ngModel)]="formDataUsaValvula" name="usa_valvula" id="usa_valvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+              <label for="usa_valvula" class="text-sm font-semibold text-slate-700">Usa Valvula</label>
+            </div>
+          </div>
+
+          <!-- Membresia -->
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Membresia</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota *</label>
+              <select [(ngModel)]="formData.tipo_cuota" name="tipo_cuota" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus de Membresia *</label>
+              <select [(ngModel)]="formData.membresia_estatus" name="membresia_estatus" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="VENCIDO">VENCIDO</option>
+                <option value="SUSPENDIDO">SUSPENDIDO</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Error message -->
+          <div *ngIf="nuevoError" class="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-sm font-semibold">
+            {{ nuevoError }}
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex items-center justify-end gap-3">
+            <button type="button" (click)="closeNuevoModal()" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="submittingNuevo" class="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-[#00328b] to-[#0052cc] text-white hover:shadow-lg transition-all disabled:opacity-50">
+              {{ submittingNuevo ? 'Guardando...' : 'Guardar Beneficiario' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Detalle Beneficiario ==================== -->
+    <div *ngIf="showDetalleModal && beneficiarioSeleccionado" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeDetalleModal()">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-4">
+            <div [class]="beneficiarioSeleccionado.color + ' w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg'">
+              {{ beneficiarioSeleccionado.iniciales }}
+            </div>
+            <div>
+              <h2 class="text-2xl font-black text-slate-900">{{ beneficiarioSeleccionado.nombre }} {{ beneficiarioSeleccionado.apellidoPaterno }} {{ beneficiarioSeleccionado.apellidoMaterno }}</h2>
+              <p class="text-slate-500 font-semibold">Folio: {{ beneficiarioSeleccionado.folio }}</p>
+            </div>
+          </div>
+          <button (click)="closeDetalleModal()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Badges -->
+        <div class="flex items-center gap-3 mb-6">
+          <span [class]="getMembresiaBadgeClass(beneficiarioSeleccionado.membresiaEstatus)">{{ beneficiarioSeleccionado.membresiaEstatus }}</span>
+          <span [class]="getCuotaBadgeClass(beneficiarioSeleccionado.tipoCuota)">Cuota {{ beneficiarioSeleccionado.tipoCuota }}</span>
+        </div>
+
+        <!-- Personal -->
+        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3 border-b-2 border-slate-100 pb-2">Datos Personales</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-6">
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Genero</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.genero || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Fecha Nacimiento</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.fechaNacimiento || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">CURP</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.curp || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Padre/Madre</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.nombrePadreMadre || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Fecha Alta</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.fechaAlta || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Tipo Espina</span><p class="text-sm font-semibold text-slate-800">{{ $any(beneficiarioSeleccionado.tiposEspina[0])?.nombre || 'N/A' }}</p></div>
+        </div>
+
+        <!-- Direccion -->
+        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3 border-b-2 border-slate-100 pb-2">Direccion</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-6">
+          <div class="md:col-span-2"><span class="text-xs font-bold text-slate-400 uppercase">Direccion</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.direccion || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Colonia</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.colonia || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Ciudad</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.ciudad || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Estado</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.estado || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Codigo Postal</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.codigoPostal || '-' }}</p></div>
+        </div>
+
+        <!-- Contacto -->
+        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3 border-b-2 border-slate-100 pb-2">Contacto</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-6">
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Telefono Casa</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.telefonoCasa || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Telefono Celular</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.telefonoCelular || '-' }}</p></div>
+          <div class="md:col-span-2"><span class="text-xs font-bold text-slate-400 uppercase">Correo Electronico</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.correoElectronico || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">En emergencia avisar a</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.enEmergenciaAvisarA || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Telefono Emergencia</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.telefonoEmergencia || '-' }}</p></div>
+        </div>
+
+        <!-- Medico -->
+        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3 border-b-2 border-slate-100 pb-2">Informacion Medica</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-6">
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Tipo de Sangre</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.tipoSangre || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Usa Valvula</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.usaValvula === 'S' ? 'Si' : 'No' }}</p></div>
+          <div class="md:col-span-2"><span class="text-xs font-bold text-slate-400 uppercase">Notas Adicionales</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.notasAdicionales || '-' }}</p></div>
+        </div>
+
+        <!-- Close -->
+        <div class="flex justify-end">
+          <button (click)="closeDetalleModal()" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Detalle Preregistro ==================== -->
+    <div *ngIf="showDetallePreregistroModal && preregistroSeleccionado" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeDetallePreregistroModal()">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-4">
+            <div [class]="preregistroSeleccionado.color + ' w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg'">
+              {{ preregistroSeleccionado.iniciales }}
+            </div>
+            <div>
+              <h2 class="text-2xl font-black text-slate-900">{{ preregistroSeleccionado.nombre }} {{ preregistroSeleccionado.apellidoPaterno }} {{ preregistroSeleccionado.apellidoMaterno }}</h2>
+              <p class="text-slate-500 font-semibold">Pre-registro #{{ preregistroSeleccionado.id }}</p>
+            </div>
+          </div>
+          <button (click)="closeDetallePreregistroModal()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Badges -->
+        <div class="flex items-center gap-3 mb-6">
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">{{ preregistroSeleccionado.estatus }}</span>
+          <span [class]="getCuotaBadgeClass(preregistroSeleccionado.tipoCuota)">Cuota {{ preregistroSeleccionado.tipoCuota }}</span>
+        </div>
+
+        <!-- Personal -->
+        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3 border-b-2 border-slate-100 pb-2">Datos Personales</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-6">
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Nombre</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.nombre }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Apellido Paterno</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.apellidoPaterno }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Apellido Materno</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.apellidoMaterno || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Fecha Nacimiento</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.fechaNacimiento || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">CURP</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.curp || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Padre/Madre</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.nombrePadreMadre || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Fecha Solicitud</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.fechaSolicitud || '-' }}</p></div>
+          <div><span class="text-xs font-bold text-slate-400 uppercase">Folio</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.folio || '-' }}</p></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3">
+          <button (click)="closeDetallePreregistroModal()" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+            Cerrar
+          </button>
+          <button (click)="closeDetallePreregistroModal(); aprobarPreregistro(preregistroSeleccionado)" class="px-6 py-3 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
+            Aprobar
+          </button>
+          <button (click)="closeDetallePreregistroModal(); rechazarPreregistro(preregistroSeleccionado)" class="px-6 py-3 rounded-xl font-bold border-2 border-red-400 text-red-500 hover:bg-red-50 transition-all">
+            Rechazar
+          </button>
+        </div>
+      </div>
+    </div>
   `
 })
 export class BeneficiariosComponent implements OnInit {
@@ -319,6 +609,32 @@ export class BeneficiariosComponent implements OnInit {
   pageSize = 5;
   beneficiariosPage = 1;
   preregistrosPage = 1;
+
+  // Modal state
+  showNuevoModal = false;
+  showDetalleModal = false;
+  showDetallePreregistroModal = false;
+  beneficiarioSeleccionado: Beneficiario | null = null;
+  preregistroSeleccionado: Preregistro | null = null;
+  submittingNuevo = false;
+  nuevoError = '';
+  formDataUsaValvula = false;
+
+  // Form data for new beneficiario
+  formData: any = {};
+
+  // Select options
+  estadosMexicanos = [
+    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
+    'Chihuahua', 'Ciudad de Mexico', 'Coahuila', 'Colima', 'Durango',
+    'Estado de Mexico', 'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco',
+    'Michoacan', 'Morelos', 'Nayarit', 'Nuevo Leon', 'Oaxaca',
+    'Puebla', 'Queretaro', 'Quintana Roo', 'San Luis Potosi', 'Sinaloa',
+    'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz',
+    'Yucatan', 'Zacatecas'
+  ];
+
+  tiposSangre = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
 
   private avatarColors = [
     'bg-pink-400', 'bg-blue-400', 'bg-purple-400', 'bg-green-400',
@@ -336,6 +652,34 @@ export class BeneficiariosComponent implements OnInit {
   ngOnInit(): void {
     this.loadBeneficiarios();
     this.loadPreregistros();
+    this.resetFormData();
+  }
+
+  private resetFormData(): void {
+    this.formData = {
+      nombre: '',
+      apellido_paterno: '',
+      apellido_materno: '',
+      genero: '',
+      fecha_nacimiento: '',
+      curp: '',
+      nombre_padre_madre: '',
+      direccion: '',
+      colonia: '',
+      ciudad: '',
+      estado: '',
+      codigo_postal: '',
+      telefono_casa: '',
+      telefono_celular: '',
+      correo_electronico: '',
+      en_emergencia_avisar_a: '',
+      telefono_emergencia: '',
+      tipo_sangre: '',
+      usa_valvula: 'N',
+      tipo_cuota: '',
+      membresia_estatus: ''
+    };
+    this.formDataUsaValvula = false;
   }
 
   private loadBeneficiarios(): void {
@@ -411,6 +755,111 @@ export class BeneficiariosComponent implements OnInit {
       }
     });
   }
+
+  // ──────────── Modal: Nuevo Beneficiario ────────────
+
+  openNuevoModal(): void {
+    this.resetFormData();
+    this.nuevoError = '';
+    this.showNuevoModal = true;
+  }
+
+  closeNuevoModal(): void {
+    this.showNuevoModal = false;
+  }
+
+  submitNuevoBeneficiario(): void {
+    if (!this.formData.nombre || !this.formData.apellido_paterno || !this.formData.genero ||
+        !this.formData.fecha_nacimiento || !this.formData.curp || !this.formData.tipo_cuota ||
+        !this.formData.membresia_estatus) {
+      this.nuevoError = 'Por favor completa todos los campos obligatorios marcados con *.';
+      return;
+    }
+
+    this.submittingNuevo = true;
+    this.nuevoError = '';
+
+    const payload = { ...this.formData };
+    payload.usa_valvula = this.formDataUsaValvula ? 'S' : 'N';
+
+    this.api.createBeneficiario(payload).subscribe({
+      next: () => {
+        this.submittingNuevo = false;
+        this.showNuevoModal = false;
+        this.loadBeneficiarios();
+      },
+      error: (err) => {
+        this.submittingNuevo = false;
+        this.nuevoError = err?.error?.detail || 'Error al crear el beneficiario. Intenta de nuevo.';
+        console.error('Error creating beneficiario:', err);
+      }
+    });
+  }
+
+  // ──────────── Modal: Detalle Beneficiario ────────────
+
+  verDetalleBeneficiario(b: Beneficiario): void {
+    this.beneficiarioSeleccionado = b;
+    this.showDetalleModal = true;
+  }
+
+  closeDetalleModal(): void {
+    this.showDetalleModal = false;
+    this.beneficiarioSeleccionado = null;
+  }
+
+  // ──────────── Modal: Detalle Preregistro ────────────
+
+  verDetallePreregistro(p: Preregistro): void {
+    this.preregistroSeleccionado = p;
+    this.showDetallePreregistroModal = true;
+  }
+
+  closeDetallePreregistroModal(): void {
+    this.showDetallePreregistroModal = false;
+    this.preregistroSeleccionado = null;
+  }
+
+  // ──────────── Exportar CSV ────────────
+
+  exportarCSV(): void {
+    const headers = ['Folio', 'Nombre', 'Apellido Paterno', 'Apellido Materno', 'CURP', 'Genero', 'Ciudad', 'Estado', 'Membresia', 'Cuota'];
+    const rows = this.filteredBeneficiarios.map(b => [
+      b.folio,
+      b.nombre,
+      b.apellidoPaterno,
+      b.apellidoMaterno,
+      b.curp,
+      b.genero,
+      b.ciudad,
+      b.estado,
+      b.membresiaEstatus,
+      b.tipoCuota
+    ]);
+
+    const escapeCsv = (val: string) => {
+      if (!val) return '';
+      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+        return '"' + val.replace(/"/g, '""') + '"';
+      }
+      return val;
+    };
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => escapeCsv(cell || '')).join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'beneficiarios_' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ──────────── Pagination ────────────
 
   get beneficiariosStart(): number {
     return (this.beneficiariosPage - 1) * this.pageSize;

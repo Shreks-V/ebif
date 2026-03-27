@@ -27,6 +27,22 @@ interface Recibo {
   metodosPago: MetodoPagoItem[];
 }
 
+interface MetodoPagoCatalogo {
+  id: number;
+  nombre: string;
+}
+
+interface BeneficiarioOption {
+  id: number;
+  folio: string;
+  nombre: string;
+}
+
+interface MetodoPagoRow {
+  id_metodo_pago: number;
+  monto: number;
+}
+
 @Component({
   selector: 'app-recibos',
   standalone: true,
@@ -349,6 +365,124 @@ interface Recibo {
       </div>
     </div>
 
+    <!-- Nuevo Cobro Modal -->
+    <div *ngIf="showNuevoCobro" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeNuevoCobro()">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+              </svg>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900">Nuevo Cobro</h2>
+          </div>
+          <button (click)="closeNuevoCobro()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Error message -->
+        <div *ngIf="nuevoCobroError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+          {{ nuevoCobroError }}
+        </div>
+
+        <!-- Form -->
+        <div class="space-y-5">
+          <!-- Paciente -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Paciente</label>
+            <select [(ngModel)]="nuevoCobro.id_paciente"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
+              <option [ngValue]="0" disabled>Seleccionar paciente...</option>
+              <option *ngFor="let b of beneficiariosList" [ngValue]="b.id">{{ b.folio }} - {{ b.nombre }}</option>
+            </select>
+          </div>
+
+          <!-- Monto Total -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Monto Total</label>
+            <input type="number" [(ngModel)]="nuevoCobro.monto_total" (ngModelChange)="calcularSaldoCobro()" min="0" step="0.01"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"
+              placeholder="0.00" />
+          </div>
+
+          <!-- Exento de Pago -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Exento de Pago</label>
+            <select [(ngModel)]="nuevoCobro.exento_pago"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
+              <option value="N">No</option>
+              <option value="S">S&iacute;</option>
+            </select>
+          </div>
+
+          <!-- Metodos de Pago -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-semibold text-slate-700">M&eacute;todos de Pago</label>
+              <button (click)="agregarMetodoPago()" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+                </svg>
+                Agregar
+              </button>
+            </div>
+            <div class="space-y-2">
+              <div *ngFor="let mp of nuevoCobro.metodos_pago; let i = index" class="flex items-center gap-3">
+                <select [(ngModel)]="mp.id_metodo_pago"
+                  class="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
+                  <option [ngValue]="0" disabled>Seleccionar...</option>
+                  <option *ngFor="let m of metodosPagoCatalogo" [ngValue]="m.id">{{ m.nombre }}</option>
+                </select>
+                <input type="number" [(ngModel)]="mp.monto" (ngModelChange)="calcularSaldoCobro()" min="0" step="0.01"
+                  class="w-32 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"
+                  placeholder="0.00" />
+                <button *ngIf="nuevoCobro.metodos_pago.length > 1" (click)="removerMetodoPago(i)"
+                  class="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-600 transition-all cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Totals summary -->
+          <div class="bg-slate-50 rounded-xl p-4 space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600 font-semibold">Monto Total</span>
+              <span class="font-bold text-slate-900">\${{ nuevoCobro.monto_total | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600 font-semibold">Monto Pagado</span>
+              <span class="font-bold text-emerald-600">\${{ nuevoCobroMontoPagado | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm pt-2 border-t border-slate-200">
+              <span class="font-bold" [ngClass]="nuevoCobroSaldoPendiente > 0 ? 'text-amber-600' : 'text-emerald-600'">Saldo Pendiente</span>
+              <span class="font-black text-lg" [ngClass]="nuevoCobroSaldoPendiente > 0 ? 'text-amber-600' : 'text-emerald-600'">\${{ nuevoCobroSaldoPendiente | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex gap-3 pt-2">
+            <button (click)="guardarCobro()" [disabled]="guardandoCobro"
+              class="flex-1 px-6 py-3 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ guardandoCobro ? 'Guardando...' : 'Guardar Cobro' }}
+            </button>
+            <button (click)="closeNuevoCobro()"
+              class="px-6 py-3 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all cursor-pointer">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <app-footer></app-footer>
   `,
   styles: []
@@ -367,6 +501,22 @@ export class RecibosComponent implements OnInit {
 
   showDetalle = false;
   reciboSeleccionado: Recibo | null = null;
+
+  // Nuevo Cobro modal state
+  showNuevoCobro = false;
+  guardandoCobro = false;
+  nuevoCobroError = '';
+  beneficiariosList: BeneficiarioOption[] = [];
+  metodosPagoCatalogo: MetodoPagoCatalogo[] = [];
+  nuevoCobroMontoPagado = 0;
+  nuevoCobroSaldoPendiente = 0;
+
+  nuevoCobro = {
+    id_paciente: 0,
+    monto_total: 0,
+    exento_pago: 'N',
+    metodos_pago: [{ id_metodo_pago: 0, monto: 0 }] as MetodoPagoRow[]
+  };
 
   constructor(private api: ApiService) {}
 
@@ -452,7 +602,107 @@ export class RecibosComponent implements OnInit {
   }
 
   openNuevoCobro(): void {
-    // Placeholder for new cobro functionality
+    this.nuevoCobroError = '';
+    this.guardandoCobro = false;
+    this.nuevoCobro = {
+      id_paciente: 0,
+      monto_total: 0,
+      exento_pago: 'N',
+      metodos_pago: [{ id_metodo_pago: 0, monto: 0 }]
+    };
+    this.nuevoCobroMontoPagado = 0;
+    this.nuevoCobroSaldoPendiente = 0;
+
+    // Load beneficiarios and metodos de pago
+    this.api.getBeneficiarios().subscribe({
+      next: (data: any[]) => {
+        this.beneficiariosList = data.map((b: any) => ({
+          id: b.id_paciente,
+          folio: b.folio_paciente || b.folio,
+          nombre: b.nombre_completo || ((b.nombre || '') + ' ' + (b.apellido_paterno || '') + ' ' + (b.apellido_materno || '')).trim()
+        }));
+      },
+      error: (err) => console.error('Error al cargar beneficiarios:', err)
+    });
+
+    this.api.getMetodosPago().subscribe({
+      next: (data: any[]) => {
+        this.metodosPagoCatalogo = data.map((m: any) => ({
+          id: m.id_metodo_pago || m.id,
+          nombre: m.nombre
+        }));
+      },
+      error: (err) => console.error('Error al cargar metodos de pago:', err)
+    });
+
+    this.showNuevoCobro = true;
+  }
+
+  closeNuevoCobro(): void {
+    this.showNuevoCobro = false;
+  }
+
+  agregarMetodoPago(): void {
+    this.nuevoCobro.metodos_pago.push({ id_metodo_pago: 0, monto: 0 });
+  }
+
+  removerMetodoPago(index: number): void {
+    this.nuevoCobro.metodos_pago.splice(index, 1);
+    this.calcularSaldoCobro();
+  }
+
+  calcularSaldoCobro(): void {
+    this.nuevoCobroMontoPagado = this.nuevoCobro.metodos_pago.reduce((sum, mp) => sum + (mp.monto || 0), 0);
+    this.nuevoCobroSaldoPendiente = (this.nuevoCobro.monto_total || 0) - this.nuevoCobroMontoPagado;
+    if (this.nuevoCobroSaldoPendiente < 0) {
+      this.nuevoCobroSaldoPendiente = 0;
+    }
+  }
+
+  guardarCobro(): void {
+    // Validation
+    if (!this.nuevoCobro.id_paciente) {
+      this.nuevoCobroError = 'Selecciona un paciente.';
+      return;
+    }
+    if (!this.nuevoCobro.monto_total || this.nuevoCobro.monto_total <= 0) {
+      this.nuevoCobroError = 'El monto total debe ser mayor a 0.';
+      return;
+    }
+    const metodosValidos = this.nuevoCobro.metodos_pago.filter(mp => mp.id_metodo_pago > 0 && mp.monto > 0);
+    if (metodosValidos.length === 0) {
+      this.nuevoCobroError = 'Agrega al menos un metodo de pago con monto.';
+      return;
+    }
+
+    this.nuevoCobroError = '';
+    this.guardandoCobro = true;
+
+    const payload = {
+      id_paciente: this.nuevoCobro.id_paciente,
+      monto_total: this.nuevoCobro.monto_total,
+      monto_pagado: this.nuevoCobroMontoPagado,
+      saldo_pendiente: this.nuevoCobroSaldoPendiente,
+      exento_pago: this.nuevoCobro.exento_pago,
+      metodos_pago: metodosValidos.map(mp => ({
+        id_metodo_pago: mp.id_metodo_pago,
+        monto: mp.monto
+      }))
+    };
+
+    this.api.createRecibo(payload).subscribe({
+      next: () => {
+        this.guardandoCobro = false;
+        this.showNuevoCobro = false;
+        this.cargarRecibos();
+        this.cargarStats();
+      },
+      error: (err) => {
+        this.guardandoCobro = false;
+        this.nuevoCobroError = err?.error?.detail || 'Error al crear el recibo. Intenta de nuevo.';
+        console.error('Error al crear recibo:', err);
+      }
+    });
   }
 
   verDetalle(recibo: Recibo): void {
