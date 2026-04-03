@@ -8,10 +8,13 @@ load_dotenv()
 class Settings(BaseModel):
     APP_NAME: str = "Sistema Espina Bífida API"
     APP_VERSION: str = "1.0.0"
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-in-production")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 hours
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))  # 2 hours
     CORS_ORIGINS: list[str] = os.getenv("CORS_ORIGINS", "http://localhost:4200").split(",")
+    MAX_UPLOAD_SIZE: int = int(os.getenv("MAX_UPLOAD_SIZE", str(5 * 1024 * 1024)))  # 5 MB
+    ALLOWED_UPLOAD_EXTENSIONS: list[str] = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"]
 
     # Oracle DB
     ORACLE_USER: str = os.getenv("ORACLE_USER", "")

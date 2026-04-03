@@ -1,12 +1,21 @@
 from datetime import datetime, date
-from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Optional
+import logging
+import os
+import uuid
+from fastapi import APIRouter, HTTPException, Query, Depends, UploadFile, File, Form
+from typing import Optional, List
+from app.core.config import settings
 from app.core.database import get_db, rows_to_dicts, row_to_dict
 from app.core.security import get_current_user
 from app.core.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS
 from app.schemas.schemas import PreRegistroCreate
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "documentos")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 # ──────────────────────────── HELPERS ────────────────────────────
@@ -129,6 +138,15 @@ def crear_preregistro(data: PreRegistroCreate):
             },
         )
         new_id = id_var.getvalue()[0]
+
+        # Insert tipos de espina bifida
+        if data.tipos_espina:
+            for tid in data.tipos_espina:
+                cursor.execute(
+                    "INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO) VALUES (:id_pac, :id_tipo, SYSDATE)",
+                    {"id_pac": new_id, "id_tipo": tid},
+                )
+
         conn.commit()
 
     return _fetch_preregistro(new_id)
@@ -143,6 +161,33 @@ def _fetch_preregistro(id_paciente: int) -> dict:
     if not row:
         raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
     return _serialize(decrypt_row(row, PACIENTE_ENCRYPTED_FIELDS))
+
+
+# ──── PUBLIC ENDPOINTS (must come before /{id_paciente} to avoid path collision) ────
+
+
+@router.get("/tipos-espina")
+def listar_tipos_espina_publico():
+    """Listar tipos de espina bífida (endpoint público para pre-registro)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT ID_TIPO_ESPINA, NOMBRE, DESCRIPCION FROM TIPO_ESPINA_BIFIDA WHERE ACTIVO = 'S' ORDER BY ID_TIPO_ESPINA"
+        )
+        rows = rows_to_dicts(cursor)
+    return [_serialize(r) for r in rows]
+
+
+@router.get("/tipos-documento")
+def listar_tipos_documento_publico():
+    """Listar tipos de documento (endpoint público para pre-registro)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT ID_TIPO_DOCUMENTO, NOMBRE, DESCRIPCION FROM TIPO_DOCUMENTO WHERE ACTIVO = 'S' ORDER BY ID_TIPO_DOCUMENTO"
+        )
+        rows = rows_to_dicts(cursor)
+    return [_serialize(r) for r in rows]
 
 
 @router.get("/{id_paciente}")
@@ -209,6 +254,16 @@ def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
                 "id": id_paciente,
             },
         )
+
+        # Update tipos de espina bifida
+        if data.tipos_espina is not None:
+            cursor.execute("DELETE FROM PACIENTE_TIPO_ESPINA WHERE ID_PACIENTE = :id", {"id": id_paciente})
+            for tid in data.tipos_espina:
+                cursor.execute(
+                    "INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO) VALUES (:id_pac, :id_tipo, SYSDATE)",
+                    {"id_pac": id_paciente, "id_tipo": tid},
+                )
+
         conn.commit()
 
     return _fetch_preregistro(id_paciente)
@@ -255,6 +310,124 @@ def aprobar_preregistro(
 
     preregistro = _fetch_preregistro(id_paciente)
     return {"message": "Pre-registro aprobado exitosamente", "preregistro": preregistro}
+
+
+@router.post("/{id_paciente}/documentos")
+async def subir_documento(
+    id_paciente: int,
+    id_tipo_documento: int = Form(...),
+    archivo: UploadFile = File(...),
+):
+    """Subir un documento para un pre-registro."""
+    # Verify paciente exists
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT ID_PACIENTE FROM PACIENTE WHERE ID_PACIENTE = :id",
+            {"id": id_paciente},
+        )
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+
+    # Validate file extension
+    original_name = archivo.filename or ""
+    ext = os.path.splitext(original_name)[1].lower()
+    if ext not in settings.ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tipo de archivo no permitido. Extensiones válidas: {', '.join(settings.ALLOWED_UPLOAD_EXTENSIONS)}",
+        )
+
+    # Read and validate file size
+    content = await archivo.read()
+    if len(content) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"El archivo excede el tamaño máximo permitido ({settings.MAX_UPLOAD_SIZE // (1024 * 1024)} MB)",
+        )
+
+    # Validate content-type matches extension
+    allowed_content_types = {
+        ".pdf": ["application/pdf"],
+        ".jpg": ["image/jpeg"],
+        ".jpeg": ["image/jpeg"],
+        ".png": ["image/png"],
+        ".doc": ["application/msword"],
+        ".docx": ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    }
+    if archivo.content_type and ext in allowed_content_types:
+        if archivo.content_type not in allowed_content_types[ext]:
+            raise HTTPException(
+                status_code=400,
+                detail="El tipo de contenido del archivo no coincide con la extensión",
+            )
+
+    # Sanitize filename — use only UUID, never the original name in the path
+    unique_name = f"{id_paciente}_{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, unique_name)
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    # Insert DB record
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_var = cursor.var(int)
+        cursor.execute(
+            """INSERT INTO DOCUMENTO_PACIENTE
+               (ID_PACIENTE, ID_TIPO_DOCUMENTO, NOMBRE_ARCHIVO, RUTA_ARCHIVO, FORMATO_ARCHIVO, ACTIVO, FECHA_CARGA)
+               VALUES (:id_pac, :id_tipo, :nombre, :ruta, :formato, 'S', SYSDATE)
+               RETURNING ID_DOCUMENTO INTO :id_out""",
+            {
+                "id_pac": id_paciente,
+                "id_tipo": id_tipo_documento,
+                "nombre": archivo.filename,
+                "ruta": unique_name,
+                "formato": ext.lstrip(".").upper() if ext else "OTRO",
+                "id_out": id_var,
+            },
+        )
+        new_id = id_var.getvalue()[0]
+        conn.commit()
+
+    return {
+        "id_documento": new_id,
+        "nombre_archivo": archivo.filename,
+        "formato": ext.lstrip(".").upper() if ext else "OTRO",
+    }
+
+
+@router.get("/{id_paciente}/documentos")
+def listar_documentos(id_paciente: int):
+    """Listar documentos de un pre-registro."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT dp.ID_DOCUMENTO, dp.ID_TIPO_DOCUMENTO, td.NOMBRE AS TIPO_NOMBRE,
+                      dp.NOMBRE_ARCHIVO, dp.FORMATO_ARCHIVO, dp.FECHA_CARGA
+               FROM DOCUMENTO_PACIENTE dp
+               LEFT JOIN TIPO_DOCUMENTO td ON td.ID_TIPO_DOCUMENTO = dp.ID_TIPO_DOCUMENTO
+               WHERE dp.ID_PACIENTE = :id AND dp.ACTIVO = 'S'
+               ORDER BY dp.FECHA_CARGA DESC""",
+            {"id": id_paciente},
+        )
+        rows = rows_to_dicts(cursor)
+    return [_serialize(r) for r in rows]
+
+
+@router.delete("/{id_paciente}/documentos/{id_documento}")
+def eliminar_documento(id_paciente: int, id_documento: int):
+    """Eliminar (soft delete) un documento."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE DOCUMENTO_PACIENTE SET ACTIVO = 'N' WHERE ID_DOCUMENTO = :id_doc AND ID_PACIENTE = :id_pac",
+            {"id_doc": id_documento, "id_pac": id_paciente},
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Documento no encontrado")
+        conn.commit()
+    return {"message": "Documento eliminado correctamente"}
 
 
 @router.post("/{id_paciente}/rechazar")

@@ -1,9 +1,12 @@
 from datetime import datetime
+import logging
 from fastapi import APIRouter, Query, Depends, HTTPException
 from typing import Optional, List
 from app.core.security import get_current_user
 from app.core.database import get_db, rows_to_dicts, row_to_dict
 from app.schemas.schemas import ReporteFilter, ReporteResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -92,7 +95,8 @@ def reporte_por_genero(
                 "total": sum(values),
             }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en reporte por genero: {str(e)}")
+        logger.exception("Error en reporte por genero")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/por-etapa-vida")
@@ -167,7 +171,8 @@ def reporte_por_etapa_vida(
                 "total": sum(values),
             }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en reporte por etapa de vida: {str(e)}")
+        logger.exception("Error en reporte por etapa de vida")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/por-tipo-espina")
@@ -209,7 +214,8 @@ def reporte_por_tipo_espina(
                 "total": sum(values),
             }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en reporte por tipo espina: {str(e)}")
+        logger.exception("Error en reporte por tipo espina")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/por-estado")
@@ -248,7 +254,8 @@ def reporte_por_estado(
                 "total": sum(values),
             }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en reporte por estado: {str(e)}")
+        logger.exception("Error en reporte por estado")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/resumen")
@@ -341,7 +348,8 @@ def reporte_resumen(
                 "fecha_generacion": datetime.now().isoformat(),
             }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en reporte resumen: {str(e)}")
+        logger.exception("Error en reporte resumen")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/historial", response_model=List[ReporteResponse])
@@ -380,4 +388,5 @@ def historial_reportes(
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar historial: {str(e)}")
+        logger.exception("Error al consultar historial de reportes")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

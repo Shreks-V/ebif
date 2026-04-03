@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-module-card',
@@ -7,7 +8,7 @@ import { RouterModule } from '@angular/router';
   imports: [RouterModule],
   template: `
     <a [routerLink]="route" class="module-card" [style.--accent]="accentColor">
-      <div class="module-icon" [innerHTML]="iconSvg"></div>
+      <div class="module-icon" [innerHTML]="safeIcon"></div>
       <div class="module-info">
         <h3>{{ title }}</h3>
         <p>{{ description }}</p>
@@ -74,4 +75,12 @@ export class ModuleCardComponent {
   @Input() route = '';
   @Input() iconSvg = '';
   @Input() accentColor = 'var(--azul-oscuro)';
+
+  safeIcon: SafeHtml = '';
+
+  constructor(private sanitizer: DomSanitizer) {}
+
+  ngOnChanges() {
+    this.safeIcon = this.sanitizer.bypassSecurityTrustHtml(this.iconSvg);
+  }
 }

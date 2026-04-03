@@ -161,12 +161,33 @@ import { ApiService } from '../../services/api.service';
                       </span>
                     </td>
                     <td class="px-6 py-4">
-                      <button (click)="verDetalleCita(cita)" class="p-1.5 text-slate-400 hover:text-[#00328b] hover:bg-slate-100 rounded-lg transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      </button>
+                      <div class="flex items-center gap-1">
+                        <button (click)="verDetalleCita(cita)" class="p-1.5 text-slate-400 hover:text-[#00328b] hover:bg-slate-100 rounded-lg transition-colors" title="Ver detalle">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button (click)="editarCita(cita)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
+                          </svg>
+                        </button>
+                        <button *ngIf="cita.estatus !== 'COMPLETADA'" (click)="completarCitaInline(cita)" class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Completar">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        </button>
+                        <button *ngIf="cita.estatus !== 'CANCELADA'" (click)="cancelarCitaInline(cita)" class="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Cancelar">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                          </svg>
+                        </button>
+                        <button (click)="confirmarEliminarCita(cita)" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   <tr *ngIf="citasFiltradas.length === 0">
@@ -274,12 +295,28 @@ import { ApiService } from '../../services/api.service';
                       </span>
                     </td>
                     <td class="px-6 py-4">
-                      <button (click)="verDetalleMedico(medico)" class="p-1.5 text-slate-400 hover:text-[#00328b] hover:bg-slate-100 rounded-lg transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      </button>
+                      <div class="flex items-center gap-1">
+                        <button (click)="verDetalleMedico(medico)" class="p-1.5 text-slate-400 hover:text-[#00328b] hover:bg-slate-100 rounded-lg transition-colors" title="Ver detalle">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </button>
+                        <button (click)="editarMedico(medico)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
+                          </svg>
+                        </button>
+                        <button (click)="abrirDisponibilidad(medico)" class="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Disponibilidad">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+                          </svg>
+                        </button>
+                        <button (click)="toggleActivoMedico(medico)" class="p-1.5 rounded-lg transition-colors" [ngClass]="medico.activo === 'S' ? 'text-slate-400 hover:text-red-600 hover:bg-red-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'" [title]="medico.activo === 'S' ? 'Desactivar' : 'Activar'">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   <tr *ngIf="medicosFiltrados.length === 0">
@@ -681,6 +718,252 @@ import { ApiService } from '../../services/api.service';
         </div>
       </div>
     </div>
+
+    <!-- ==================== MODAL: Editar Cita ==================== -->
+    <div *ngIf="showEditCitaModal && editCita" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditCitaModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-black text-slate-900">Editar Cita</h2>
+          <button (click)="showEditCitaModal = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <form (ngSubmit)="guardarEdicionCita()" class="space-y-5">
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Paciente</p>
+            <p class="font-bold text-slate-900">{{ editCita.nombrePaciente }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Fecha y Hora</label>
+            <input type="datetime-local" [(ngModel)]="editCitaFechaHora" name="editFechaHora" required
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Estatus</label>
+            <select [(ngModel)]="editCita.estatus" name="editEstatus"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors">
+              <option value="PROGRAMADA">PROGRAMADA</option>
+              <option value="EN_CURSO">EN_CURSO</option>
+              <option value="COMPLETADA">COMPLETADA</option>
+              <option value="CANCELADA">CANCELADA</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Notas</label>
+            <textarea [(ngModel)]="editCita.notas" name="editNotas" rows="3" placeholder="Notas adicionales..."
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors resize-none"></textarea>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-sm font-semibold text-slate-700">Servicios</label>
+              <button type="button" (click)="agregarServicioEditCita()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+                </svg>
+                Agregar
+              </button>
+            </div>
+            <div *ngFor="let srv of editCita.servicios; let i = index" class="flex items-center gap-3 mb-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div class="flex-1">
+                <select [(ngModel)]="srv.idServicio" [name]="'editServicio_' + i"
+                  class="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-[#00328b] focus:outline-none text-sm transition-colors">
+                  <option [ngValue]="null" disabled>Seleccionar servicio...</option>
+                  <option *ngFor="let s of serviciosList" [ngValue]="s.id_servicio">{{ s.nombre }}</option>
+                </select>
+              </div>
+              <div class="w-20">
+                <input type="number" [(ngModel)]="srv.cantidad" [name]="'editCantidad_' + i" min="1" placeholder="Cant."
+                  class="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
+              </div>
+              <div class="w-28">
+                <input type="number" [(ngModel)]="srv.montoPagado" [name]="'editMonto_' + i" min="0" step="0.01" placeholder="Monto"
+                  class="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
+              </div>
+              <button type="button" (click)="editCita.servicios.splice(i, 1)" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+            <button type="button" (click)="showEditCitaModal = false" class="px-6 py-3 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button>
+            <button type="submit" [disabled]="guardandoEdicionCita" class="px-6 py-3 text-sm font-semibold text-white bg-[#00328b] rounded-xl hover:bg-[#002a75] transition-colors disabled:opacity-50">
+              {{ guardandoEdicionCita ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Confirmar Eliminar Cita ==================== -->
+    <div *ngIf="showConfirmDeleteCita" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
+        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 mb-2">Eliminar Cita</h3>
+        <p class="text-sm text-slate-600 mb-6">Esta acci&oacute;n no se puede deshacer. &iquest;Est&aacute;s seguro?</p>
+        <div class="flex gap-3 justify-center">
+          <button (click)="showConfirmDeleteCita = false" class="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button>
+          <button (click)="eliminarCita()" class="px-5 py-2.5 text-sm font-semibold text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors">Eliminar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Editar M&eacute;dico ==================== -->
+    <div *ngIf="showEditMedicoModal && editMedico" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditMedicoModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-black text-slate-900">Editar M&eacute;dico</h2>
+          <button (click)="showEditMedicoModal = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <form (ngSubmit)="guardarEdicionMedico()" class="space-y-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nombre</label>
+              <input type="text" [(ngModel)]="editMedico.nombre" name="editNombre" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Apellido Paterno</label>
+              <input type="text" [(ngModel)]="editMedico.apellido_paterno" name="editApPaterno" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Apellido Materno</label>
+              <input type="text" [(ngModel)]="editMedico.apellido_materno" name="editApMaterno"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Especialidad</label>
+              <input type="text" [(ngModel)]="editMedico.especialidad" name="editEspecialidad" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tel&eacute;fono</label>
+              <input type="text" [(ngModel)]="editMedico.telefono" name="editTelefono"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1.5">Correo</label>
+              <input type="email" [(ngModel)]="editMedico.correo" name="editCorreo"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Estado</label>
+            <select [(ngModel)]="editMedico.activo" name="editActivo"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors">
+              <option value="S">Activo</option>
+              <option value="N">Inactivo</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-2">Servicios</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <label *ngFor="let s of serviciosList" class="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-white transition-colors">
+                <input type="checkbox" [checked]="editMedicoServiciosSeleccionados.includes(s.id_servicio)" (change)="toggleEditServicioMedico(s.id_servicio)"
+                  class="w-4 h-4 rounded border-slate-300 text-[#00328b] focus:ring-[#00328b]"/>
+                <span class="text-sm text-slate-700">{{ s.nombre }}</span>
+              </label>
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+            <button type="button" (click)="showEditMedicoModal = false" class="px-6 py-3 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button>
+            <button type="submit" [disabled]="guardandoEdicionMedico" class="px-6 py-3 text-sm font-semibold text-white bg-[#00328b] rounded-xl hover:bg-[#002a75] transition-colors disabled:opacity-50">
+              {{ guardandoEdicionMedico ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Disponibilidad Doctor ==================== -->
+    <div *ngIf="showDisponibilidadModal && disponibilidadDoctor" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showDisponibilidadModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-black text-slate-900">Disponibilidad - Dr. {{ disponibilidadDoctor.nombre }} {{ disponibilidadDoctor.apellidoPaterno }}</h2>
+          <button (click)="showDisponibilidadModal = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Existing slots -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3">Horarios Registrados</h3>
+          <div *ngIf="disponibilidadSlots.length === 0" class="text-sm text-slate-400 italic p-4 bg-slate-50 rounded-xl">Sin horarios registrados.</div>
+          <div class="overflow-x-auto" *ngIf="disponibilidadSlots.length > 0">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Fecha</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Hora Inicio</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Hora Fin</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Disponible</th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let slot of disponibilidadSlots" class="hover:bg-slate-50">
+                  <td class="px-4 py-3 text-slate-900">{{ formatDispFecha(slot.fecha) }}</td>
+                  <td class="px-4 py-3 text-slate-700">{{ formatDispHora(slot.hora_inicio) }}</td>
+                  <td class="px-4 py-3 text-slate-700">{{ formatDispHora(slot.hora_fin) }}</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold" [ngClass]="slot.disponible === 'S' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                      {{ slot.disponible === 'S' ? 'S&iacute;' : 'No' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <button (click)="eliminarSlotDisponibilidad(slot)" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors" title="Eliminar slot">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Add new slot -->
+        <div class="border-t border-slate-200 pt-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3">Agregar Horario</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">Fecha</label>
+              <input type="date" [(ngModel)]="nuevoSlot.fecha" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
+              <input type="time" [(ngModel)]="nuevoSlot.hora_inicio" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
+              <input type="time" [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
+            </div>
+          </div>
+          <button (click)="agregarSlotDisponibilidad()" [disabled]="guardandoSlot || !nuevoSlot.fecha || !nuevoSlot.hora_inicio || !nuevoSlot.hora_fin"
+            class="px-5 py-2.5 text-sm font-semibold text-white bg-[#00328b] rounded-xl hover:bg-[#002a75] transition-colors disabled:opacity-50 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+            </svg>
+            {{ guardandoSlot ? 'Guardando...' : 'Agregar' }}
+          </button>
+        </div>
+      </div>
+    </div>
   `
 })
 export class CitasComponent implements OnInit {
@@ -727,6 +1010,27 @@ export class CitasComponent implements OnInit {
   // Nuevo Medico form
   nuevoMedico: any = { nombre: '', apellido_paterno: '', apellido_materno: '', especialidad: '', telefono: '', correo: '', activo: 'S' };
   medicoServiciosSeleccionados: number[] = [];
+
+  // Edit Cita
+  showEditCitaModal = false;
+  editCita: any = null;
+  editCitaFechaHora = '';
+  guardandoEdicionCita = false;
+  showConfirmDeleteCita = false;
+  citaAEliminar: any = null;
+
+  // Edit Medico
+  showEditMedicoModal = false;
+  editMedico: any = null;
+  editMedicoServiciosSeleccionados: number[] = [];
+  guardandoEdicionMedico = false;
+
+  // Disponibilidad
+  showDisponibilidadModal = false;
+  disponibilidadDoctor: any = null;
+  disponibilidadSlots: any[] = [];
+  nuevoSlot: any = { fecha: '', hora_inicio: '', hora_fin: '' };
+  guardandoSlot = false;
   guardandoMedico = false;
 
   constructor(private api: ApiService) {}
@@ -1000,5 +1304,220 @@ export class CitasComponent implements OnInit {
   verDetalleMedico(medico: any): void {
     this.medicoSeleccionado = medico;
     this.showDetalleMedicoModal = true;
+  }
+
+  // ──────────────── Editar Cita ────────────────
+
+  editarCita(cita: any): void {
+    this.editCita = {
+      idCita: cita.idCita,
+      idPaciente: cita.idPaciente,
+      nombrePaciente: cita.nombrePaciente,
+      estatus: cita.estatus,
+      notas: cita.notas || '',
+      servicios: cita.servicios.map((s: any) => ({ ...s })),
+    };
+    this.editCitaFechaHora = cita.fechaHora ? cita.fechaHora.substring(0, 16) : '';
+    this.showEditCitaModal = true;
+  }
+
+  agregarServicioEditCita(): void {
+    this.editCita.servicios.push({ idServicio: null, cantidad: 1, montoPagado: 0 });
+  }
+
+  guardarEdicionCita(): void {
+    if (!this.editCitaFechaHora) return;
+    this.guardandoEdicionCita = true;
+    const payload = {
+      id_paciente: this.editCita.idPaciente,
+      fecha_hora: this.editCitaFechaHora.length === 16 ? this.editCitaFechaHora + ':00' : this.editCitaFechaHora,
+      estatus: this.editCita.estatus,
+      notas: this.editCita.notas,
+      servicios: this.editCita.servicios
+        .filter((s: any) => s.idServicio !== null)
+        .map((s: any) => ({
+          id_servicio: s.idServicio,
+          cantidad: s.cantidad,
+          monto_pagado: s.montoPagado,
+        })),
+    };
+    this.api.updateCita(this.editCita.idCita, payload).subscribe({
+      next: () => {
+        this.showEditCitaModal = false;
+        this.guardandoEdicionCita = false;
+        this.cargarCitas();
+      },
+      error: (err) => {
+        console.error('Error al actualizar cita:', err);
+        this.guardandoEdicionCita = false;
+      },
+    });
+  }
+
+  completarCitaInline(cita: any): void {
+    this.api.completarCita(cita.idCita).subscribe({
+      next: () => this.cargarCitas(),
+      error: (err) => console.error('Error al completar cita:', err),
+    });
+  }
+
+  cancelarCitaInline(cita: any): void {
+    this.api.cancelarCita(cita.idCita).subscribe({
+      next: () => this.cargarCitas(),
+      error: (err) => console.error('Error al cancelar cita:', err),
+    });
+  }
+
+  confirmarEliminarCita(cita: any): void {
+    this.citaAEliminar = cita;
+    this.showConfirmDeleteCita = true;
+  }
+
+  eliminarCita(): void {
+    if (!this.citaAEliminar) return;
+    this.api.deleteCita(this.citaAEliminar.idCita).subscribe({
+      next: () => {
+        this.showConfirmDeleteCita = false;
+        this.citaAEliminar = null;
+        this.cargarCitas();
+      },
+      error: (err) => {
+        console.error('Error al eliminar cita:', err);
+        this.showConfirmDeleteCita = false;
+      },
+    });
+  }
+
+  // ──────────────── Editar Médico ────────────────
+
+  editarMedico(medico: any): void {
+    this.editMedico = {
+      idDoctor: medico.idDoctor,
+      nombre: medico.nombre,
+      apellido_paterno: medico.apellidoPaterno,
+      apellido_materno: medico.apellidoMaterno || '',
+      especialidad: medico.especialidad,
+      telefono: medico.telefono || '',
+      correo: medico.correo || '',
+      activo: medico.activo,
+    };
+    this.editMedicoServiciosSeleccionados = medico.servicios.map((s: any) => s.idServicio);
+    this.showEditMedicoModal = true;
+  }
+
+  toggleEditServicioMedico(idServicio: number): void {
+    const idx = this.editMedicoServiciosSeleccionados.indexOf(idServicio);
+    if (idx >= 0) {
+      this.editMedicoServiciosSeleccionados.splice(idx, 1);
+    } else {
+      this.editMedicoServiciosSeleccionados.push(idServicio);
+    }
+  }
+
+  guardarEdicionMedico(): void {
+    if (!this.editMedico.nombre || !this.editMedico.apellido_paterno) return;
+    this.guardandoEdicionMedico = true;
+    const payload = {
+      nombre: this.editMedico.nombre,
+      apellido_paterno: this.editMedico.apellido_paterno,
+      apellido_materno: this.editMedico.apellido_materno,
+      especialidad: this.editMedico.especialidad,
+      telefono: this.editMedico.telefono,
+      correo: this.editMedico.correo,
+      activo: this.editMedico.activo,
+      servicios: [...this.editMedicoServiciosSeleccionados],
+    };
+    this.api.updateDoctor(this.editMedico.idDoctor, payload).subscribe({
+      next: () => {
+        this.showEditMedicoModal = false;
+        this.guardandoEdicionMedico = false;
+        this.cargarDoctores();
+      },
+      error: (err) => {
+        console.error('Error al actualizar médico:', err);
+        this.guardandoEdicionMedico = false;
+      },
+    });
+  }
+
+  toggleActivoMedico(medico: any): void {
+    // Use updateDoctor to toggle active status
+    const payload = {
+      nombre: medico.nombre,
+      apellido_paterno: medico.apellidoPaterno,
+      apellido_materno: medico.apellidoMaterno || '',
+      especialidad: medico.especialidad,
+      telefono: medico.telefono || '',
+      correo: medico.correo || '',
+      activo: medico.activo === 'S' ? 'N' : 'S',
+      servicios: medico.servicios.map((s: any) => s.idServicio),
+    };
+    this.api.updateDoctor(medico.idDoctor, payload).subscribe({
+      next: () => this.cargarDoctores(),
+      error: (err) => console.error('Error al cambiar estado del médico:', err),
+    });
+  }
+
+  // ──────────────── Disponibilidad ────────────────
+
+  abrirDisponibilidad(medico: any): void {
+    this.disponibilidadDoctor = medico;
+    this.disponibilidadSlots = [];
+    this.nuevoSlot = { fecha: '', hora_inicio: '', hora_fin: '' };
+    this.showDisponibilidadModal = true;
+    this.cargarDisponibilidad(medico.idDoctor);
+  }
+
+  cargarDisponibilidad(idDoctor: number): void {
+    this.api.getDoctorDisponibilidad(idDoctor).subscribe({
+      next: (data) => { this.disponibilidadSlots = data; },
+      error: (err) => console.error('Error al cargar disponibilidad:', err),
+    });
+  }
+
+  agregarSlotDisponibilidad(): void {
+    if (!this.nuevoSlot.fecha || !this.nuevoSlot.hora_inicio || !this.nuevoSlot.hora_fin) return;
+    this.guardandoSlot = true;
+    const payload = {
+      fecha: this.nuevoSlot.fecha,
+      hora_inicio: `${this.nuevoSlot.fecha}T${this.nuevoSlot.hora_inicio}:00`,
+      hora_fin: `${this.nuevoSlot.fecha}T${this.nuevoSlot.hora_fin}:00`,
+      disponible: 'S',
+    };
+    this.api.createDoctorDisponibilidad(this.disponibilidadDoctor.idDoctor, payload).subscribe({
+      next: () => {
+        this.guardandoSlot = false;
+        this.nuevoSlot = { fecha: '', hora_inicio: '', hora_fin: '' };
+        this.cargarDisponibilidad(this.disponibilidadDoctor.idDoctor);
+      },
+      error: (err) => {
+        console.error('Error al crear disponibilidad:', err);
+        this.guardandoSlot = false;
+      },
+    });
+  }
+
+  eliminarSlotDisponibilidad(slot: any): void {
+    if (!this.disponibilidadDoctor) return;
+    this.api.deleteDoctorDisponibilidad(this.disponibilidadDoctor.idDoctor, slot.id_disponibilidad).subscribe({
+      next: () => {
+        this.cargarDisponibilidad(this.disponibilidadDoctor.idDoctor);
+      },
+      error: (err) => {
+        console.error('Error al eliminar disponibilidad:', err);
+      },
+    });
+  }
+
+  formatDispFecha(fecha: string): string {
+    if (!fecha) return '';
+    const d = new Date(fecha);
+    return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  formatDispHora(timestamp: string): string {
+    if (!timestamp) return '';
+    const d = new Date(timestamp);
+    return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
   }
 }

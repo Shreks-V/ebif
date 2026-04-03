@@ -180,6 +180,13 @@ interface Preregistro {
                           <circle cx="12" cy="12" r="3"/>
                         </svg>
                       </button>
+                      <!-- Editar -->
+                      <button (click)="editarBeneficiario(b)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-colors" title="Editar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m15 5 4 4"/>
+                        </svg>
+                      </button>
                       <!-- History -->
                       <button class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Historial">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -187,11 +194,11 @@ interface Preregistro {
                           <polyline points="12 6 12 12 16 14"/>
                         </svg>
                       </button>
-                      <!-- CreditCard -->
-                      <button class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Pagos">
+                      <!-- Desactivar -->
+                      <button (click)="confirmarDesactivar(b)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors" title="Desactivar">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                          <line x1="1" y1="10" x2="23" y2="10"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                          <line x1="12" y1="2" x2="12" y2="12"/>
                         </svg>
                       </button>
                     </div>
@@ -599,6 +606,161 @@ interface Preregistro {
         </div>
       </div>
     </div>
+
+    <!-- ==================== MODAL: Editar Beneficiario ==================== -->
+    <div *ngIf="showEditModal && editFormData" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-black text-slate-900">Editar Beneficiario</h2>
+          <button (click)="showEditModal = false" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <form (ngSubmit)="guardarEdicionBeneficiario()">
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Datos Personales</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
+              <input type="text" [(ngModel)]="editFormData.nombre" name="editNombre" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Paterno *</label>
+              <input type="text" [(ngModel)]="editFormData.apellido_paterno" name="editApPaterno" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Materno</label>
+              <input type="text" [(ngModel)]="editFormData.apellido_materno" name="editApMaterno" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Genero *</label>
+              <select [(ngModel)]="editFormData.genero" name="editGenero" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento *</label>
+              <input type="date" [(ngModel)]="editFormData.fecha_nacimiento" name="editFechaNac" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">CURP *</label>
+              <input type="text" [(ngModel)]="editFormData.curp" name="editCurp" required maxlength="18" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all uppercase" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del Padre/Madre</label>
+              <input type="text" [(ngModel)]="editFormData.nombre_padre_madre" name="editPadreMadre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+          </div>
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Direccion</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Direccion</label>
+              <input type="text" [(ngModel)]="editFormData.direccion" name="editDireccion" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Colonia</label>
+              <input type="text" [(ngModel)]="editFormData.colonia" name="editColonia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Ciudad</label>
+              <input type="text" [(ngModel)]="editFormData.ciudad" name="editCiudad" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+              <select [(ngModel)]="editFormData.estado" name="editEstado" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option *ngFor="let e of estadosMexicanos" [value]="e">{{ e }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Codigo Postal</label>
+              <input type="text" [(ngModel)]="editFormData.codigo_postal" name="editCP" maxlength="5" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+          </div>
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Contacto</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Casa</label>
+              <input type="tel" [(ngModel)]="editFormData.telefono_casa" name="editTelCasa" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Celular</label>
+              <input type="tel" [(ngModel)]="editFormData.telefono_celular" name="editTelCel" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electronico</label>
+              <input type="email" [(ngModel)]="editFormData.correo_electronico" name="editCorreo" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">En emergencia avisar a</label>
+              <input type="text" [(ngModel)]="editFormData.en_emergencia_avisar_a" name="editEmergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Emergencia</label>
+              <input type="tel" [(ngModel)]="editFormData.telefono_emergencia" name="editTelEmergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+          </div>
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Informacion Medica</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Sangre</label>
+              <select [(ngModel)]="editFormData.tipo_sangre" name="editTipoSangre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option *ngFor="let ts of tiposSangre" [value]="ts">{{ ts }}</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-3 pt-7">
+              <input type="checkbox" [(ngModel)]="editFormDataUsaValvula" name="editUsaValvula" id="editUsaValvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+              <label for="editUsaValvula" class="text-sm font-semibold text-slate-700">Usa Valvula</label>
+            </div>
+          </div>
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Membresia</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota *</label>
+              <select [(ngModel)]="editFormData.tipo_cuota" name="editTipoCuota" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="A">A</option>
+                <option value="B">B</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus de Membresia *</label>
+              <select [(ngModel)]="editFormData.membresia_estatus" name="editMembresiaEstatus" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
+            </div>
+          </div>
+          <div *ngIf="editError" class="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-sm font-semibold">{{ editError }}</div>
+          <div class="flex items-center justify-end gap-3">
+            <button type="button" (click)="showEditModal = false" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">Cancelar</button>
+            <button type="submit" [disabled]="submittingEdit" class="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-[#00328b] to-[#0052cc] text-white hover:shadow-lg transition-all disabled:opacity-50">
+              {{ submittingEdit ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Confirmar Desactivar ==================== -->
+    <div *ngIf="showConfirmDesactivar" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
+        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+            <line x1="12" y1="2" x2="12" y2="12"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 mb-2">Desactivar Beneficiario</h3>
+        <p class="text-sm text-slate-600 mb-6">Se desactivara al beneficiario {{ beneficiarioADesactivar?.nombre }} {{ beneficiarioADesactivar?.apellidoPaterno }}. &iquest;Continuar?</p>
+        <div class="flex gap-3 justify-center">
+          <button (click)="showConfirmDesactivar = false" class="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button>
+          <button (click)="desactivarBeneficiario()" class="px-5 py-2.5 text-sm font-semibold text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors">Desactivar</button>
+        </div>
+      </div>
+    </div>
   `
 })
 export class BeneficiariosComponent implements OnInit {
@@ -619,6 +781,18 @@ export class BeneficiariosComponent implements OnInit {
   submittingNuevo = false;
   nuevoError = '';
   formDataUsaValvula = false;
+
+  // Edit modal
+  showEditModal = false;
+  editFormData: any = null;
+  editFormDataUsaValvula = false;
+  editFolio = '';
+  submittingEdit = false;
+  editError = '';
+
+  // Confirm desactivar
+  showConfirmDesactivar = false;
+  beneficiarioADesactivar: any = null;
 
   // Form data for new beneficiario
   formData: any = {};
@@ -957,6 +1131,85 @@ export class BeneficiariosComponent implements OnInit {
         this.filterData();
       },
       error: (err) => console.error('Error al rechazar:', err)
+    });
+  }
+
+  // ──────────── Editar Beneficiario ────────────
+
+  editarBeneficiario(b: Beneficiario): void {
+    this.editFolio = b.folio;
+    this.editFormData = {
+      nombre: b.nombre,
+      apellido_paterno: b.apellidoPaterno,
+      apellido_materno: b.apellidoMaterno || '',
+      genero: b.genero,
+      fecha_nacimiento: b.fechaNacimiento ? b.fechaNacimiento.split('T')[0] : '',
+      curp: b.curp,
+      nombre_padre_madre: b.nombrePadreMadre || '',
+      direccion: b.direccion || '',
+      colonia: b.colonia || '',
+      ciudad: b.ciudad || '',
+      estado: b.estado || '',
+      codigo_postal: b.codigoPostal || '',
+      telefono_casa: b.telefonoCasa || '',
+      telefono_celular: b.telefonoCelular || '',
+      correo_electronico: b.correoElectronico || '',
+      en_emergencia_avisar_a: b.enEmergenciaAvisarA || '',
+      telefono_emergencia: b.telefonoEmergencia || '',
+      tipo_sangre: b.tipoSangre || '',
+      notas_adicionales: b.notasAdicionales || '',
+      membresia_estatus: b.membresiaEstatus || 'ACTIVO',
+      tipo_cuota: b.tipoCuota || 'A',
+    };
+    this.editFormDataUsaValvula = b.usaValvula === 'S';
+    this.editError = '';
+    this.showEditModal = true;
+  }
+
+  guardarEdicionBeneficiario(): void {
+    if (!this.editFormData.nombre || !this.editFormData.apellido_paterno || !this.editFormData.genero ||
+        !this.editFormData.fecha_nacimiento || !this.editFormData.curp) {
+      this.editError = 'Por favor completa todos los campos obligatorios.';
+      return;
+    }
+    this.submittingEdit = true;
+    this.editError = '';
+    const payload = { ...this.editFormData };
+    payload.usa_valvula = this.editFormDataUsaValvula ? 'S' : 'N';
+
+    this.api.updateBeneficiario(this.editFolio, payload).subscribe({
+      next: () => {
+        this.submittingEdit = false;
+        this.showEditModal = false;
+        this.loadBeneficiarios();
+      },
+      error: (err) => {
+        this.submittingEdit = false;
+        this.editError = err?.error?.detail || 'Error al actualizar el beneficiario.';
+        console.error('Error updating beneficiario:', err);
+      }
+    });
+  }
+
+  // ──────────── Desactivar Beneficiario ────────────
+
+  confirmarDesactivar(b: Beneficiario): void {
+    this.beneficiarioADesactivar = b;
+    this.showConfirmDesactivar = true;
+  }
+
+  desactivarBeneficiario(): void {
+    if (!this.beneficiarioADesactivar) return;
+    this.api.deleteBeneficiario(this.beneficiarioADesactivar.folio).subscribe({
+      next: () => {
+        this.showConfirmDesactivar = false;
+        this.beneficiarioADesactivar = null;
+        this.loadBeneficiarios();
+      },
+      error: (err) => {
+        console.error('Error al desactivar beneficiario:', err);
+        this.showConfirmDesactivar = false;
+      }
     });
   }
 }

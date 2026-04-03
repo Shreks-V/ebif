@@ -127,6 +127,14 @@ export class ApiService {
     return this.http.get<any[]>(`${this.apiUrl}/doctores/${id}/disponibilidad`);
   }
 
+  createDoctorDisponibilidad(idDoctor: number, data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/doctores/${idDoctor}/disponibilidad`, data);
+  }
+
+  deleteDoctorDisponibilidad(idDoctor: number, idDisponibilidad: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/doctores/${idDoctor}/disponibilidad/${idDisponibilidad}`);
+  }
+
   getDoctorServicios(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/doctores/${id}/servicios`);
   }
@@ -167,6 +175,14 @@ export class ApiService {
 
   createServicio(data: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/almacen/servicios`, data);
+  }
+
+  updateServicio(id: number, data: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/almacen/servicios/${id}`, data);
+  }
+
+  deleteServicio(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/almacen/servicios/${id}`);
   }
 
   getComodatos(filters?: any): Observable<any[]> {
@@ -221,8 +237,9 @@ export class ApiService {
     return this.http.get<any>(`${this.apiUrl}/recibos/${id}`);
   }
 
-  cancelarRecibo(id: number): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/recibos/${id}/cancelar`, {});
+  cancelarRecibo(id: number, motivo?: string): Observable<any> {
+    const params = motivo ? `?motivo=${encodeURIComponent(motivo)}` : '';
+    return this.http.put<any>(`${this.apiUrl}/recibos/${id}/cancelar${params}`, {});
   }
 
   getRecibosStats(): Observable<any> {
@@ -319,6 +336,29 @@ export class ApiService {
 
   rechazarPreRegistro(id: number): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/preregistro/${id}/rechazar`, {});
+  }
+
+  getTiposEspinaPublic(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/preregistro/tipos-espina`);
+  }
+
+  getTiposDocumentoPublic(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/preregistro/tipos-documento`);
+  }
+
+  uploadDocumento(idPaciente: number, idTipoDocumento: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('id_tipo_documento', idTipoDocumento.toString());
+    formData.append('archivo', file);
+    return this.http.post<any>(`${this.apiUrl}/preregistro/${idPaciente}/documentos`, formData);
+  }
+
+  getDocumentos(idPaciente: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/preregistro/${idPaciente}/documentos`);
+  }
+
+  deleteDocumento(idPaciente: number, idDocumento: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/preregistro/${idPaciente}/documentos/${idDocumento}`);
   }
 
   // ──────────────── Auth (seed) ────────────────

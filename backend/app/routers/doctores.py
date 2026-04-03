@@ -1,4 +1,5 @@
 from datetime import datetime, date
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from app.core.security import get_current_user
 from app.core.database import get_db, rows_to_dicts, row_to_dict
@@ -9,6 +10,8 @@ from app.schemas.schemas import (
     DisponibilidadCreate,
     DisponibilidadResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -96,7 +99,8 @@ def doctor_del_dia(current_user: dict = Depends(get_current_user)):
             doctor["hora_fin"] = hora_fin.isoformat() if isinstance(hora_fin, datetime) else str(hora_fin) if hora_fin else None
             return {"doctor": doctor, "hora_inicio": doctor["hora_inicio"], "hora_fin": doctor["hora_fin"]}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar doctor del día: {str(e)}")
+        logger.exception("Error al consultar doctor del día")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("")
@@ -113,7 +117,8 @@ def listar_doctores(current_user: dict = Depends(get_current_user)):
             rows = rows_to_dicts(cursor)
             return [_doctor_with_servicios(conn, r) for r in rows]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar doctores: {str(e)}")
+        logger.exception("Error al consultar doctores")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.get("/{id_doctor}")
@@ -135,7 +140,8 @@ def obtener_doctor(id_doctor: int, current_user: dict = Depends(get_current_user
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar doctor: {str(e)}")
+        logger.exception("Error al consultar doctor")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("", status_code=201)
@@ -178,7 +184,8 @@ def crear_doctor(data: DoctorCreate, current_user: dict = Depends(get_current_us
             row = row_to_dict(cursor)
             return _doctor_with_servicios(conn, row)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al crear doctor: {str(e)}")
+        logger.exception("Error al crear doctor")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.put("/{id_doctor}")
@@ -234,7 +241,8 @@ def actualizar_doctor(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al actualizar doctor: {str(e)}")
+        logger.exception("Error al actualizar doctor")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.delete("/{id_doctor}")
@@ -259,7 +267,8 @@ def desactivar_doctor(id_doctor: int, current_user: dict = Depends(get_current_u
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al desactivar doctor: {str(e)}")
+        logger.exception("Error al desactivar doctor")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ──────────────────────── DISPONIBILIDAD ─────────────────────────
@@ -292,7 +301,8 @@ def obtener_disponibilidad(id_doctor: int, current_user: dict = Depends(get_curr
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar disponibilidad: {str(e)}")
+        logger.exception("Error al consultar disponibilidad")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 @router.post("/{id_doctor}/disponibilidad", status_code=201)
@@ -344,7 +354,34 @@ def crear_disponibilidad(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al crear disponibilidad: {str(e)}")
+        logger.exception("Error al crear disponibilidad")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.delete("/{id_doctor}/disponibilidad/{id_disponibilidad}")
+def eliminar_disponibilidad(
+    id_doctor: int,
+    id_disponibilidad: int,
+    current_user: dict = Depends(get_current_user),
+):
+    """Eliminar un slot de disponibilidad de un doctor."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM DISPONIBILIDAD_DOCTOR "
+                "WHERE ID_DISPONIBILIDAD = :id_disp AND ID_DOCTOR = :id_doctor",
+                {"id_disp": id_disponibilidad, "id_doctor": id_doctor},
+            )
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Slot de disponibilidad no encontrado")
+            conn.commit()
+            return {"message": "Disponibilidad eliminada correctamente"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error al eliminar disponibilidad")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
 # ──────────────────────── SERVICIOS POR DOCTOR ─────────────────────────
@@ -369,4 +406,5 @@ def obtener_servicios_doctor(id_doctor: int, current_user: dict = Depends(get_cu
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar servicios: {str(e)}")
+        logger.exception("Error al consultar servicios del doctor")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")

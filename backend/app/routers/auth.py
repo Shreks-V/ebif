@@ -1,5 +1,7 @@
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.core.security import (
     get_current_user,
     create_access_token,
@@ -10,6 +12,7 @@ from app.core.database import get_db, rows_to_dicts, row_to_dict
 from app.schemas.schemas import UserLogin, Token, UserResponse
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 # ──────────────────────────── MOCK FALLBACK DATA ────────────────────────────
 
@@ -85,8 +88,11 @@ def _db_has_users() -> bool:
 
 
 @router.post("/seed")
-def seed_users():
-    """Insert default admin and operativo users into the DB if they don't exist."""
+def seed_users(current_user: dict = Depends(get_current_user)):
+    """Insert default admin and operativo users into the DB (requires auth)."""
+    if current_user.get("rol") != "ADMINISTRADOR":
+        raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar el seed")
+
     default_users = [
         {
             "nombre": "Administrador",
@@ -111,7 +117,6 @@ def seed_users():
         with get_db() as conn:
             cursor = conn.cursor()
             for u in default_users:
-                # Check if user already exists
                 cursor.execute(
                     "SELECT ID_USUARIO FROM USUARIO_SISTEMA WHERE CORREO = :1",
                     [u["correo"]],
@@ -136,10 +141,10 @@ def seed_users():
                 )
                 inserted.append(u["correo"])
             conn.commit()
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al insertar usuarios en la BD: {str(e)}",
+            detail="Error al insertar usuarios en la BD",
         )
 
     if not inserted:
@@ -148,20 +153,28 @@ def seed_users():
 
 
 @router.post("/login", response_model=Token)
-def login(form_data: UserLogin):
-    """Iniciar sesión y obtener token JWT."""
+@limiter.limit("10/minute")
+def login(request: Request, form_data: UserLogin):
+    """Iniciar sesión y obtener token JWT. Rate limited: 10 intentos/min."""
+
+    # Generic error to avoid user enumeration
+    auth_error = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Correo o contraseña incorrectos",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
     # 1. Try to find user in the real DB
     db_user = _find_user_in_db(form_data.correo)
 
     if db_user is not None:
-        # Verify password against DB hash
+        # Check account is active
+        estatus = (db_user.get("estatus") or "").strip().upper()
+        if estatus != "ACTIVO":
+            raise auth_error
+
         if not verify_password(form_data.password, db_user["contrasena_hash"]):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Correo o contraseña incorrectos",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise auth_error
         access_token = create_access_token(
             data={
                 "sub": db_user["correo"],
@@ -172,18 +185,17 @@ def login(form_data: UserLogin):
         )
         return {"access_token": access_token, "token_type": "bearer"}
 
-    # 2. Fallback to mock users when DB is empty or user not found
+    # 2. Fallback to mock users ONLY when DB has no users
+    if _db_has_users():
+        raise auth_error
+
     mock_user = next(
         (u for u in mock_users if u["correo"] == form_data.correo), None
     )
     if mock_user is None or not verify_password(
         form_data.password, mock_user["hashed_password"]
     ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Correo o contraseña incorrectos",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise auth_error
 
     access_token = create_access_token(
         data={

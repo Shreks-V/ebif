@@ -63,7 +63,12 @@
       "Bash(find /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif -type f \\\\\\(-name *.sql -o -name init*.py -o -name *create* \\\\\\))",
       "Bash(python -c \"from cryptography.hazmat.primitives.ciphers.aead import AESGCM; print\\(''cryptography ya instalada''\\)\")",
       "Bash(python seed_data.py)",
-      "Bash(find /Users/maantora/Desktop/Tec -name *.py -path */routers/*)"
+      "Bash(find /Users/maantora/Desktop/Tec -name *.py -path */routers/*)",
+      "Bash(grep -n \"openEditModal\\\\|openEdit\\\\|editRow\\\\|edit\\(\" /Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/*/*.component.ts)",
+      "Bash(python -c \"from app.routers import preregistro; print\\('OK'\\)\")",
+      "Bash(./venv/bin/python -c \"from app.routers import preregistro; print\\('OK'\\)\")",
+      "Bash(./venv/bin/python -c \"from app.schemas.schemas import PreRegistroCreate; p = PreRegistroCreate\\(nombre='test', apellido_paterno='test', curp='ABCD123456HDFXYZ01', tipos_espina=[1,2]\\); print\\(p.tipos_espina\\)\")",
+      "Bash(./venv/bin/pip list:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

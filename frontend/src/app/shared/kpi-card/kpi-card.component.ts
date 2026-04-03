@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-kpi-card',
@@ -8,7 +9,7 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="kpi-card" [style.border-left-color]="color">
       <div class="kpi-header">
-        <div class="kpi-icon" [style.background]="iconBg" [innerHTML]="iconSvg"></div>
+        <div class="kpi-icon" [style.background]="iconBg" [innerHTML]="safeIcon"></div>
         <span class="kpi-trend" *ngIf="trend" [class.up]="trendUp" [class.down]="!trendUp">
           {{ trend }}
         </span>
@@ -86,4 +87,12 @@ export class KpiCardComponent {
   @Input() iconSvg = '';
   @Input() trend = '';
   @Input() trendUp = true;
+
+  safeIcon: SafeHtml = '';
+
+  constructor(private sanitizer: DomSanitizer) {}
+
+  ngOnChanges() {
+    this.safeIcon = this.sanitizer.bypassSecurityTrustHtml(this.iconSvg);
+  }
 }

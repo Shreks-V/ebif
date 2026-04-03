@@ -420,3 +420,4 @@ class PreRegistroCreate(BaseModel):
     tipo_cuota: Optional[str] = None
     notas_adicionales: Optional[str] = None
     paso_actual: int = 1
+    tipos_espina: Optional[List[int]] = None  # IDs de TIPO_ESPINA_BIFIDA

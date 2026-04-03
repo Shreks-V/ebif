@@ -374,12 +374,24 @@ interface ComodatoItem {
                         </span>
                       </td>
                       <td class="px-5 py-4">
-                        <button (click)="printComodato(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1 text-xs" title="Imprimir">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/>
-                          </svg>
-                          Imprimir
-                        </button>
+                        <div class="flex items-center gap-1">
+                          <button (click)="openEditComodatoModal(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                          </button>
+                          <button *ngIf="com.estatus === 'PRESTADO'" (click)="marcarDevuelto(com)" class="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-colors" title="Marcar como devuelto">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                          </button>
+                          <button (click)="printComodato(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Imprimir">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/>
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -714,6 +726,137 @@ interface ComodatoItem {
       </div>
     </div>
 
+    <!-- ==================== MODAL: Editar Servicio ==================== -->
+    <div *ngIf="showEditServicioModal && editServicioForm" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditServicioModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">Editar Servicio</h2>
+          <button (click)="showEditServicioModal = false" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <form (ngSubmit)="guardarEdicionServicio()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
+            <input type="text" [(ngModel)]="editServicioForm.nombre" name="editSrvNombre" required
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Descripci&oacute;n</label>
+            <textarea [(ngModel)]="editServicioForm.descripcion" name="editSrvDesc" rows="3"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota A</label>
+              <input type="number" [(ngModel)]="editServicioForm.precio_cuota_a" name="editSrvPrecioA" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota B</label>
+              <input type="number" [(ngModel)]="editServicioForm.precio_cuota_b" name="editSrvPrecioB" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+            <select [(ngModel)]="editServicioForm.activo" name="editSrvActivo"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm">
+              <option value="S">Activo</option>
+              <option value="N">Inactivo</option>
+            </select>
+          </div>
+          <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+            <button type="button" (click)="showEditServicioModal = false" class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">Cancelar</button>
+            <button type="submit" [disabled]="submittingEditServicio" class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors disabled:opacity-50">
+              {{ submittingEditServicio ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Editar Comodato ==================== -->
+    <div *ngIf="showEditComodatoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditComodatoModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-slate-800">Editar Comodato</h2>
+          <button (click)="showEditComodatoModal = false" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <form (ngSubmit)="guardarEdicionComodato()" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
+              <input type="date" [(ngModel)]="editComodatoForm.fecha_prestamo" name="ecFechaPrest" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
+              <input type="date" [(ngModel)]="editComodatoForm.fecha_devolucion" name="ecFechaDev"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
+              <select [(ngModel)]="editComodatoForm.estatus" name="ecEstatus"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                <option value="PRESTADO">Prestado</option>
+                <option value="DEVUELTO">Devuelto</option>
+                <option value="CANCELADO">Cancelado</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
+              <select [(ngModel)]="editComodatoForm.exento_pago" name="ecExento"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                <option value="N">No</option>
+                <option value="S">S&iacute;</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
+              <input type="number" [(ngModel)]="editComodatoForm.monto_total" name="ecMontoTotal" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
+              <input type="number" [(ngModel)]="editComodatoForm.monto_pagado" name="ecMontoPagado" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
+              <input type="number" [(ngModel)]="editComodatoForm.saldo_pendiente" name="ecSaldo" step="0.01" min="0"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
+            <textarea [(ngModel)]="editComodatoForm.notas" name="ecNotas" rows="3"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none"></textarea>
+          </div>
+          <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
+            <button type="button" (click)="showEditComodatoModal = false"
+              class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="submittingEditComodato"
+              class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ submittingEditComodato ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- ==================== PRINT CONTAINER (hidden, used by window.print) ==================== -->
     <div id="print-comodato" class="hidden print:block print:p-8" *ngIf="printingComodato">
       <h1 class="text-2xl font-bold mb-4">Comodato {{ printingComodato.folioComodato }}</h1>
@@ -903,6 +1046,12 @@ export class AlmacenComponent implements OnInit {
   }
 
   openEditProductoModal(item: { id: number; categoria: string; nombre: string }): void {
+    // Handle servicio edit
+    if (item.categoria === 'SERVICIO') {
+      this.editarServicio(item);
+      return;
+    }
+
     // Find the actual product from the productos array
     const producto = this.productos.find(p => p.idProducto === item.id);
     if (!producto) return;
@@ -998,14 +1147,23 @@ export class AlmacenComponent implements OnInit {
     if (!this.productoToDelete) return;
 
     this.submittingDelete = true;
-    this.api.deleteProducto(this.productoToDelete.id).subscribe({
+    const isServicio = this.productoToDelete.categoria === 'SERVICIO';
+    const deleteObs = isServicio
+      ? this.api.deleteServicio(this.productoToDelete.id)
+      : this.api.deleteProducto(this.productoToDelete.id);
+
+    deleteObs.subscribe({
       next: () => {
-        this.loadProductos();
+        if (isServicio) {
+          this.loadServicios();
+        } else {
+          this.loadProductos();
+        }
         this.closeConfirmDeleteModal();
         this.submittingDelete = false;
       },
       error: (err) => {
-        console.error('Error deleting producto:', err);
+        console.error('Error deleting item:', err);
         this.submittingDelete = false;
       },
     });
@@ -1188,5 +1346,102 @@ export class AlmacenComponent implements OnInit {
       case 'CANCELADO': return 'bg-red-100 text-red-700';
       default: return 'bg-slate-100 text-slate-500';
     }
+  }
+
+  // ──────────────── Editar Servicio ────────────────
+
+  showEditServicioModal = false;
+  editServicioForm: any = null;
+  editServicioId = 0;
+  submittingEditServicio = false;
+
+  editarServicio(item: { id: number }): void {
+    const servicio = this.servicios.find(s => s.idServicio === item.id);
+    if (!servicio) return;
+    this.editServicioId = servicio.idServicio;
+    this.editServicioForm = {
+      nombre: servicio.nombre,
+      descripcion: servicio.descripcion || '',
+      precio_cuota_a: servicio.precioA,
+      precio_cuota_b: servicio.precioB,
+      activo: servicio.activo,
+    };
+    this.showEditServicioModal = true;
+  }
+
+  guardarEdicionServicio(): void {
+    if (!this.editServicioForm.nombre) return;
+    this.submittingEditServicio = true;
+    this.api.updateServicio(this.editServicioId, this.editServicioForm).subscribe({
+      next: () => {
+        this.showEditServicioModal = false;
+        this.submittingEditServicio = false;
+        this.loadServicios();
+      },
+      error: (err) => {
+        console.error('Error al actualizar servicio:', err);
+        this.submittingEditServicio = false;
+      },
+    });
+  }
+
+  // ──────────────── Editar Comodato ────────────────
+
+  showEditComodatoModal = false;
+  editComodatoId = 0;
+  editComodatoForm: any = {};
+  submittingEditComodato = false;
+  private editComodatoOriginal: ComodatoItem | null = null;
+
+  openEditComodatoModal(com: ComodatoItem): void {
+    this.editComodatoOriginal = com;
+    this.editComodatoId = com.idComodato;
+    this.editComodatoForm = {
+      id_paciente: com.idPaciente,
+      id_equipo: com.idEquipo,
+      fecha_prestamo: com.fechaPrestamo ? com.fechaPrestamo.substring(0, 10) : '',
+      fecha_devolucion: com.fechaDevolucion ? com.fechaDevolucion.substring(0, 10) : '',
+      estatus: com.estatus,
+      monto_total: com.montoTotal,
+      monto_pagado: com.montoPagado,
+      saldo_pendiente: com.saldoPendiente,
+      exento_pago: com.exentoPago,
+      notas: com.notas || '',
+    };
+    this.showEditComodatoModal = true;
+  }
+
+  guardarEdicionComodato(): void {
+    this.submittingEditComodato = true;
+    const payload = { ...this.editComodatoForm };
+    if (!payload.fecha_devolucion) payload.fecha_devolucion = null;
+
+    this.api.updateComodato(this.editComodatoId, payload).subscribe({
+      next: () => {
+        this.showEditComodatoModal = false;
+        this.submittingEditComodato = false;
+        this.loadComodatos();
+      },
+      error: (err) => {
+        console.error('Error al actualizar comodato:', err);
+        this.submittingEditComodato = false;
+      },
+    });
+  }
+
+  // ──────────────── Marcar Devuelto ────────────────
+
+  marcarDevuelto(com: ComodatoItem): void {
+    const today = new Date().toISOString().split('T')[0];
+    this.api.updateComodato(com.idComodato, {
+      id_paciente: com.idPaciente,
+      id_equipo: com.idEquipo,
+      fecha_prestamo: com.fechaPrestamo,
+      fecha_devolucion: today,
+      estatus: 'DEVUELTO',
+    }).subscribe({
+      next: () => this.loadComodatos(),
+      error: (err) => console.error('Error al marcar devuelto:', err),
+    });
   }
 }

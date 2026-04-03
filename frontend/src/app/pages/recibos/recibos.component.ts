@@ -249,11 +249,18 @@ interface MetodoPagoRow {
                   </span>
                 </td>
                 <td class="px-5 py-4">
-                  <button (click)="verDetalle(recibo)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-500 hover:text-emerald-600 transition-all cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  </button>
+                  <div class="flex items-center gap-1">
+                    <button (click)="verDetalle(recibo)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-500 hover:text-emerald-600 transition-all cursor-pointer" title="Ver detalle">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    </button>
+                    <button *ngIf="recibo.cancelada !== 'S'" (click)="confirmarCancelarRecibo(recibo)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition-all cursor-pointer" title="Cancelar recibo">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                      </svg>
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr *ngIf="recibosFiltrados.length === 0">
@@ -483,6 +490,39 @@ interface MetodoPagoRow {
       </div>
     </div>
 
+    <!-- Cancel Confirmation Modal -->
+    <div *ngIf="showConfirmCancelarRecibo && reciboACancelar" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" (click)="showConfirmCancelarRecibo = false">
+      <div class="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl p-6" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-slate-900">Cancelar Recibo</h2>
+          <button (click)="showConfirmCancelarRecibo = false" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+        </div>
+        <p class="text-center text-slate-700 text-lg font-semibold mb-1">&iquest;Cancelar este recibo?</p>
+        <p class="text-center text-slate-500 text-sm mb-4">Recibo <span class="font-mono font-bold text-emerald-600">{{ reciboACancelar.folioVenta }}</span> por <span class="font-bold">\${{ reciboACancelar.montoTotal | number:'1.2-2' }}</span></p>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Motivo de cancelaci&oacute;n</label>
+          <textarea [(ngModel)]="motivoCancelacion" rows="3" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100 transition-all text-sm resize-none" placeholder="Describe el motivo de la cancelaci&oacute;n..."></textarea>
+        </div>
+        <div class="flex gap-3 mt-4">
+          <button (click)="cancelarRecibo()" [disabled]="cancelandoRecibo"
+            class="flex-1 px-6 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg hover:bg-red-700 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ cancelandoRecibo ? 'Cancelando...' : 'Confirmar Cancelaci\u00f3n' }}
+          </button>
+          <button (click)="showConfirmCancelarRecibo = false"
+            class="px-6 py-3 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all cursor-pointer">
+            Volver
+          </button>
+        </div>
+      </div>
+    </div>
+
     <app-footer></app-footer>
   `,
   styles: []
@@ -501,6 +541,12 @@ export class RecibosComponent implements OnInit {
 
   showDetalle = false;
   reciboSeleccionado: Recibo | null = null;
+
+  // Cancel recibo state
+  showConfirmCancelarRecibo = false;
+  reciboACancelar: Recibo | null = null;
+  motivoCancelacion = '';
+  cancelandoRecibo = false;
 
   // Nuevo Cobro modal state
   showNuevoCobro = false;
@@ -713,5 +759,30 @@ export class RecibosComponent implements OnInit {
   closeDetalle(): void {
     this.showDetalle = false;
     this.reciboSeleccionado = null;
+  }
+
+  confirmarCancelarRecibo(recibo: Recibo): void {
+    this.reciboACancelar = recibo;
+    this.motivoCancelacion = '';
+    this.cancelandoRecibo = false;
+    this.showConfirmCancelarRecibo = true;
+  }
+
+  cancelarRecibo(): void {
+    if (!this.reciboACancelar) return;
+    this.cancelandoRecibo = true;
+    this.api.cancelarRecibo(this.reciboACancelar.idVenta, this.motivoCancelacion || undefined).subscribe({
+      next: () => {
+        this.cancelandoRecibo = false;
+        this.showConfirmCancelarRecibo = false;
+        this.reciboACancelar = null;
+        this.cargarRecibos();
+        this.cargarStats();
+      },
+      error: (err) => {
+        this.cancelandoRecibo = false;
+        console.error('Error al cancelar recibo:', err);
+      }
+    });
   }
 }
