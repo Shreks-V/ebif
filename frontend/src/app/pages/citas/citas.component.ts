@@ -122,8 +122,22 @@ import { ApiService } from '../../services/api.service';
               </div>
             </div>
 
+            <!-- Loading Skeleton -->
+            <div *ngIf="loading" class="p-6">
+              <div class="animate-pulse space-y-4">
+                <div *ngFor="let _ of [1,2,3,4,5]" class="flex items-center gap-4 py-3">
+                  <div class="w-10 h-10 bg-slate-200 rounded-full"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+                    <div class="h-3 bg-slate-100 rounded w-1/4"></div>
+                  </div>
+                  <div class="h-6 bg-slate-200 rounded-full w-20"></div>
+                </div>
+              </div>
+            </div>
+
             <!-- Table -->
-            <div class="overflow-x-auto">
+            <div *ngIf="!loading" class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="border-t border-slate-200 bg-slate-50">
@@ -983,6 +997,7 @@ export class CitasComponent implements OnInit {
   estadoFilters = ['Todas', 'PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
   tipoFilters = ['Todas', 'Consulta Neurocirugía', 'Consulta Ortopédica', 'Consulta Urológica', 'Fisioterapia', 'Terapia Ocupacional'];
 
+  loading = true;
   citas: any[] = [];
   citasFiltradas: any[] = [];
   medicos: any[] = [];
@@ -1054,6 +1069,7 @@ export class CitasComponent implements OnInit {
   }
 
   cargarCitas(): void {
+    this.loading = true;
     this.api.getCitas().subscribe({
       next: (data) => {
         this.citas = data.map((c: any) => ({
@@ -1072,8 +1088,12 @@ export class CitasComponent implements OnInit {
           })),
         }));
         this.citasFiltradas = [...this.citas];
+        this.loading = false;
       },
-      error: (err) => console.error('Error al cargar citas:', err),
+      error: (err) => {
+        console.error('Error al cargar citas:', err);
+        this.loading = false;
+      },
     });
   }
 

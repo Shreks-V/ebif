@@ -46,11 +46,41 @@ def _fetch_servicios(conn, id_cita: int) -> list[dict]:
     return rows_to_dicts(cursor)
 
 
-def _enrich_cita(conn, cita: dict) -> dict:
+def _enrich_cita(conn, cita: dict, svc_map: dict | None = None) -> dict:
     """Add servicios list and serialize datetimes."""
     cita = _serialize_row(cita)
-    cita["servicios"] = _fetch_servicios(conn, cita["id_cita"])
+    if svc_map is not None:
+        cita["servicios"] = svc_map.get(cita["id_cita"], [])
+    else:
+        cita["servicios"] = _fetch_servicios(conn, cita["id_cita"])
     return cita
+
+
+def _batch_fetch_servicios(conn, cita_ids: list[int]) -> dict[int, list[dict]]:
+    """Fetch servicios for many citas in one query."""
+    if not cita_ids:
+        return {}
+    cur = conn.cursor()
+    result: dict[int, list[dict]] = {cid: [] for cid in cita_ids}
+    for i in range(0, len(cita_ids), 900):
+        chunk = cita_ids[i : i + 900]
+        placeholders = ", ".join(f":c{j}" for j in range(len(chunk)))
+        params = {f"c{j}": cid for j, cid in enumerate(chunk)}
+        cur.execute(
+            f"""
+            SELECT d.ID_CITA, d.ID_SERVICIO, s.NOMBRE, d.CANTIDAD, d.MONTO_PAGADO
+              FROM DETALLE_CITA_SERVICIO d
+              JOIN SERVICIO s ON d.ID_SERVICIO = s.ID_SERVICIO
+             WHERE d.CANCELADO = 'N' AND d.ID_CITA IN ({placeholders})
+            """,
+            params,
+        )
+        cols = [c[0].lower() for c in cur.description]
+        for row in cur.fetchall():
+            d = dict(zip(cols, row))
+            cid = d.pop("id_cita")
+            result[cid].append(d)
+    return result
 
 
 # ──────────────────────────── ENDPOINTS ────────────────────────────
@@ -114,7 +144,8 @@ def citas_hoy(current_user: dict = Depends(get_current_user)):
             {"fecha": hoy.isoformat()},
         )
         citas = rows_to_dicts(cursor)
-        citas = [_enrich_cita(conn, c) for c in citas]
+        svc_map = _batch_fetch_servicios(conn, [c["id_cita"] for c in citas])
+        citas = [_enrich_cita(conn, c, svc_map=svc_map) for c in citas]
 
     programadas = sum(1 for c in citas if c["estatus"] == "PROGRAMADA")
     completadas = sum(1 for c in citas if c["estatus"] == "COMPLETADA")
@@ -168,7 +199,8 @@ def listar_citas(
         cursor = conn.cursor()
         cursor.execute(sql, params)
         citas = rows_to_dicts(cursor)
-        citas = [_enrich_cita(conn, c) for c in citas]
+        svc_map = _batch_fetch_servicios(conn, [c["id_cita"] for c in citas])
+        citas = [_enrich_cita(conn, c, svc_map=svc_map) for c in citas]
 
     return citas
 

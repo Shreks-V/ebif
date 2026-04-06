@@ -138,8 +138,24 @@ interface Preregistro {
             </button>
           </div>
 
+          <!-- Loading Skeleton -->
+          <div *ngIf="loading" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-hidden p-6">
+            <div class="animate-pulse space-y-4">
+              <div class="h-4 bg-slate-200 rounded w-1/3"></div>
+              <div *ngFor="let _ of [1,2,3,4,5,6]" class="flex items-center gap-4 py-3">
+                <div class="w-12 h-12 bg-slate-200 rounded-full"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-4 bg-slate-200 rounded w-2/3"></div>
+                  <div class="h-3 bg-slate-100 rounded w-1/3"></div>
+                </div>
+                <div class="h-4 bg-slate-200 rounded w-20"></div>
+                <div class="h-6 bg-slate-200 rounded-full w-16"></div>
+              </div>
+            </div>
+          </div>
+
           <!-- Tab Content: Beneficiarios Activos -->
-          <div *ngIf="currentTab === 'activos'" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-hidden">
+          <div *ngIf="currentTab === 'activos' && !loading" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-hidden">
             <table class="w-full">
               <thead>
                 <tr class="bg-slate-50 border-b border-slate-200">
@@ -826,6 +842,7 @@ export class BeneficiariosComponent implements OnInit {
     'bg-cyan-400', 'bg-amber-400'
   ];
 
+  loading = true;
   beneficiarios: Beneficiario[] = [];
   preregistros: Preregistro[] = [];
   filteredBeneficiarios: Beneficiario[] = [];
@@ -867,6 +884,7 @@ export class BeneficiariosComponent implements OnInit {
   }
 
   private loadBeneficiarios(): void {
+    this.loading = true;
     this.api.getBeneficiarios().subscribe({
       next: (data) => {
         this.beneficiarios = data.map((item: any, index: number) => ({
@@ -907,9 +925,11 @@ export class BeneficiariosComponent implements OnInit {
           color: this.avatarColors[index % this.avatarColors.length]
         } as Beneficiario));
         this.filterData();
+        this.loading = false;
       },
       error: (err) => {
         console.error('Error loading beneficiarios:', err);
+        this.loading = false;
       }
     });
   }

@@ -40,11 +40,44 @@ def _fetch_metodos_pago(conn, id_venta: int) -> list[dict]:
     return rows_to_dicts(cur)
 
 
-def _enrich_venta(conn, venta: dict) -> dict:
+def _enrich_venta(conn, venta: dict, mp_map: dict | None = None) -> dict:
     """Add metodos_pago list and serialise dates."""
     venta = _serialize(venta)
-    venta["metodos_pago"] = _fetch_metodos_pago(conn, venta["id_venta"])
+    if mp_map is not None:
+        venta["metodos_pago"] = mp_map.get(venta["id_venta"], [])
+    else:
+        venta["metodos_pago"] = _fetch_metodos_pago(conn, venta["id_venta"])
     return venta
+
+
+def _batch_fetch_metodos_pago(conn, venta_ids: list[int]) -> dict[int, list[dict]]:
+    """Fetch payment methods for many ventas in one query."""
+    if not venta_ids:
+        return {}
+    cur = conn.cursor()
+    result: dict[int, list[dict]] = {vid: [] for vid in venta_ids}
+    for i in range(0, len(venta_ids), 900):
+        chunk = venta_ids[i : i + 900]
+        placeholders = ", ".join(f":v{j}" for j in range(len(chunk)))
+        params = {f"v{j}": vid for j, vid in enumerate(chunk)}
+        cur.execute(
+            f"""
+            SELECT vmp.ID_VENTA,
+                   vmp.ID_METODO_PAGO  AS id_metodo_pago,
+                   mp.NOMBRE           AS nombre,
+                   vmp.MONTO           AS monto
+              FROM VENTA_METODO_PAGO vmp
+              JOIN METODO_PAGO mp ON mp.ID_METODO_PAGO = vmp.ID_METODO_PAGO
+             WHERE vmp.ID_VENTA IN ({placeholders})
+            """,
+            params,
+        )
+        cols = [c[0].lower() for c in cur.description]
+        for row in cur.fetchall():
+            d = dict(zip(cols, row))
+            vid = d.pop("id_venta")
+            result[vid].append(d)
+    return result
 
 
 def _generate_folio(conn) -> str:
@@ -217,7 +250,11 @@ def listar_ventas(
         cur.execute(sql, params)
         ventas = rows_to_dicts(cur)
 
-        results = [_enrich_venta(conn, v) for v in ventas]
+        # Batch fetch metodos_pago to avoid N+1 queries
+        venta_ids = [v["id_venta"] for v in ventas]
+        mp_map = _batch_fetch_metodos_pago(conn, venta_ids)
+
+        results = [_enrich_venta(conn, v, mp_map=mp_map) for v in ventas]
     return results
 
 

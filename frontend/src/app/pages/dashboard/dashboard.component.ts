@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -29,8 +30,24 @@ import { ApiService } from '../../services/api.service';
             </p>
           </div>
 
+          <!-- Loading Skeleton -->
+          <div *ngIf="loading" class="space-y-6">
+            <div class="animate-pulse">
+              <div class="h-36 bg-slate-200 rounded-2xl"></div>
+            </div>
+            <div class="animate-pulse grid grid-cols-3 gap-6">
+              <div class="col-span-1 space-y-3">
+                <div *ngFor="let _ of [1,2,3]" class="h-20 bg-slate-200 rounded-2xl"></div>
+              </div>
+              <div class="col-span-2 space-y-3">
+                <div class="h-44 bg-slate-200 rounded-2xl"></div>
+                <div class="h-44 bg-slate-200 rounded-2xl"></div>
+              </div>
+            </div>
+          </div>
+
           <!-- 2. Doctor del Día -->
-          <div class="bg-gradient-to-br from-[#007BFF] to-[#0056b3] rounded-2xl shadow-2xl overflow-hidden">
+          <div *ngIf="!loading" class="bg-gradient-to-br from-[#007BFF] to-[#0056b3] rounded-2xl shadow-2xl overflow-hidden">
             <div class="p-6">
               <div class="flex items-start justify-between mb-6">
                 <div class="flex items-center gap-4">
@@ -78,7 +95,7 @@ import { ApiService } from '../../services/api.service';
           </div>
 
           <!-- 3. Grid Principal -->
-          <div class="grid grid-cols-3 gap-6">
+          <div *ngIf="!loading" class="grid grid-cols-3 gap-6">
 
             <!-- Left Column: Acciones Rápidas -->
             <div class="col-span-1 space-y-3">
@@ -265,7 +282,7 @@ import { ApiService } from '../../services/api.service';
           </div>
 
           <!-- 4. Panorama General — fusiona KPIs + Actividad + Resumen (RF-D-01..06) -->
-          <div class="grid grid-cols-3 gap-6">
+          <div *ngIf="!loading" class="grid grid-cols-3 gap-6">
 
             <!-- Panel Izquierdo: Pulso del Día -->
             <div class="col-span-2 bg-white rounded-2xl shadow-lg border-2 border-slate-100 p-6">
@@ -417,6 +434,7 @@ import { ApiService } from '../../services/api.service';
   `,
 })
 export class DashboardComponent implements OnInit {
+  loading = true;
   todayFormatted = '';
   pacientes: any[] = [];
 
@@ -466,158 +484,121 @@ export class DashboardComponent implements OnInit {
     });
     this.todayFormatted = this.todayFormatted.charAt(0).toUpperCase() + this.todayFormatted.slice(1);
 
-    this.loadCitasHoy();
-    this.loadRecibosStats();
-    this.loadCitasStats();
-    this.loadAlmacenStats();
-    this.loadDoctor();
-    this.loadBeneficiariosStats();
-    this.loadResumenSemanal();
-  }
-
-  private loadCitasHoy(): void {
-    this.api.getCitasHoy().subscribe({
-      next: (resp: any) => {
-        // Backend returns {fecha, total, programadas, completadas, ..., citas: [...]}
-        const citas = resp.citas || resp || [];
-        this.doctorTotalHoy = resp.total || citas.length || 0;
-        this.doctorAtendidos = resp.completadas || 0;
-
-        this.pacientes = citas
-          .filter((c: any) => c.estatus === 'PROGRAMADA')
-          .map((cita: any, i: number) => {
-            const fullName = cita.nombre_paciente || '';
-            const parts = fullName.trim().split(/\s+/);
-            const nombre = parts[0] || '';
-            const apellido = parts.slice(1).join(' ') || '';
-            const iniciales = (nombre.charAt(0) + (apellido.charAt(0) || '')).toUpperCase();
-            let hora = '';
-            if (cita.fecha_hora) {
-              const date = new Date(cita.fecha_hora);
-              hora = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
-            }
-            const servicio = cita.servicios?.[0]?.nombre || 'Consulta';
-            return {
-              idCita: cita.id_cita,
-              nombre,
-              apellido,
-              folio: cita.folio_paciente || '',
-              hora,
-              iniciales,
-              servicio,
-              color: this.colors[i % this.colors.length],
-              atendiendo: false,
-            };
-          });
+    // Fire all API calls in parallel; mark loading=false when all complete
+    forkJoin({
+      citasHoy: this.api.getCitasHoy(),
+      recibosStats: this.api.getRecibosStats(),
+      citasStats: this.api.getCitasStats(),
+      almacenStats: this.api.getAlmacenStats(),
+      doctor: this.api.getDoctorHoy(),
+      benefStats: this.api.getDashboardStats(),
+      resumen: this.api.getReporteConsolidadoMensual(today.getMonth() + 1, today.getFullYear()),
+    }).subscribe({
+      next: (res) => {
+        this.processCitasHoy(res.citasHoy);
+        this.processRecibosStats(res.recibosStats);
+        this.processCitasStats(res.citasStats);
+        this.processAlmacenStats(res.almacenStats);
+        this.processDoctor(res.doctor);
+        this.processBenefStats(res.benefStats);
+        this.processResumen(res.resumen);
+        this.loading = false;
       },
       error: () => {
-        this.pacientes = [];
+        // Even if some fail, show what we have
+        this.loading = false;
       },
     });
-  }
 
-  private loadRecibosStats(): void {
-    this.api.getRecibosStats().subscribe({
-      next: (stats: any) => {
-        this.statCobros = stats.total_hoy ?? stats.total ?? 0;
-        this.statPendientes = stats.pendientes ?? 0;
-        const ayer = stats.total_ayer ?? 0;
-        this.deltaRecibos = this.statCobros - ayer;
-      },
-      error: () => {
-        this.statCobros = 0;
-        this.statPendientes = 0;
-        this.deltaRecibos = 0;
-      },
-    });
-  }
-
-  private loadCitasStats(): void {
-    this.api.getCitasStats().subscribe({
-      next: (stats: any) => {
-        this.statCitas = stats.total_hoy ?? stats.total ?? 0;
-        const ayer = stats.total_ayer ?? 0;
-        this.deltaCitas = this.statCitas - ayer;
-      },
-      error: () => {
-        this.statCitas = 0;
-        this.deltaCitas = 0;
-      },
-    });
-  }
-
-  private loadAlmacenStats(): void {
-    this.api.getAlmacenStats().subscribe({
-      next: (stats: any) => {
-        this.statBajoStock = (stats.alertas_stock_bajo ?? 0) + (stats.alertas_caducidad ?? 0);
-        this.statComodatosActivos = stats.comodatos_activos ?? 0;
-      },
-      error: () => {
-        this.statBajoStock = 0;
-        this.statComodatosActivos = 0;
-      },
-    });
-  }
-
-  private loadBeneficiariosStats(): void {
-    this.api.getDashboardStats().subscribe({
-      next: (stats: any) => {
-        this.statBeneficiariosActivos = stats.activos ?? stats.total ?? 0;
-        const estaSemana = stats.nuevos_esta_semana ?? 0;
-        const semanaAnt = stats.nuevos_semana_anterior ?? 0;
-        this.deltaBeneficiarios = estaSemana - semanaAnt;
-      },
-      error: () => {
-        this.statBeneficiariosActivos = 0;
-        this.deltaBeneficiarios = 0;
-      },
-    });
-  }
-
-  private loadResumenSemanal(): void {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
     this.resumenSemanaLabel = `${startOfWeek.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })} - ${endOfWeek.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}`;
-
-    this.api.getReporteConsolidadoMensual(now.getMonth() + 1, now.getFullYear()).subscribe({
-      next: (data: any) => {
-        this.resumenNuevosBeneficiarios = data.pacientes_atendidos ?? 0;
-        this.resumenCitasCompletadas = data.citas_por_estatus?.COMPLETADA ?? 0;
-        this.resumenRecibosGenerados = data.total_ventas ?? 0;
-        this.resumenMontoRecaudado = data.monto_ventas ?? 0;
-      },
-      error: () => {},
-    });
   }
 
-  private loadDoctor(): void {
-    this.api.getDoctorHoy().subscribe({
-      next: (resp: any) => {
-        const doctor = resp.doctor;
-        if (doctor) {
-          const nombre = doctor.nombre || '';
-          const apellido = doctor.apellido_paterno || '';
-          this.doctorNombre = `Dr. ${nombre} ${apellido}`.trim();
-          this.doctorEspecialidad = doctor.especialidad || '';
-          this.doctorIniciales = (nombre.charAt(0) + apellido.charAt(0)).toUpperCase();
-          // Parse horario from timestamps
-          const formatTime = (ts: string) => {
-            if (!ts) return '';
-            const d = new Date(ts);
-            return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
-          };
-          const inicio = formatTime(resp.hora_inicio);
-          const fin = formatTime(resp.hora_fin);
-          this.doctorHorario = inicio && fin ? `${inicio} - ${fin}` : '—';
+  private processCitasHoy(resp: any): void {
+    const citas = resp.citas || resp || [];
+    this.doctorTotalHoy = resp.total || citas.length || 0;
+    this.doctorAtendidos = resp.completadas || 0;
+
+    this.pacientes = citas
+      .filter((c: any) => c.estatus === 'PROGRAMADA')
+      .map((cita: any, i: number) => {
+        const fullName = cita.nombre_paciente || '';
+        const parts = fullName.trim().split(/\s+/);
+        const nombre = parts[0] || '';
+        const apellido = parts.slice(1).join(' ') || '';
+        const iniciales = (nombre.charAt(0) + (apellido.charAt(0) || '')).toUpperCase();
+        let hora = '';
+        if (cita.fecha_hora) {
+          const date = new Date(cita.fecha_hora);
+          hora = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
-      },
-      error: () => {
-        // Keep defaults
-      },
-    });
+        const servicio = cita.servicios?.[0]?.nombre || 'Consulta';
+        return {
+          idCita: cita.id_cita,
+          nombre,
+          apellido,
+          folio: cita.folio_paciente || '',
+          hora,
+          iniciales,
+          servicio,
+          color: this.colors[i % this.colors.length],
+          atendiendo: false,
+        };
+      });
+  }
+
+  private processRecibosStats(stats: any): void {
+    this.statCobros = stats.total_hoy ?? stats.total ?? 0;
+    this.statPendientes = stats.pendientes ?? 0;
+    const ayer = stats.total_ayer ?? 0;
+    this.deltaRecibos = this.statCobros - ayer;
+  }
+
+  private processCitasStats(stats: any): void {
+    this.statCitas = stats.total_hoy ?? stats.total ?? 0;
+    const ayer = stats.total_ayer ?? 0;
+    this.deltaCitas = this.statCitas - ayer;
+  }
+
+  private processAlmacenStats(stats: any): void {
+    this.statBajoStock = (stats.alertas_stock_bajo ?? 0) + (stats.alertas_caducidad ?? 0);
+    this.statComodatosActivos = stats.comodatos_activos ?? 0;
+  }
+
+  private processBenefStats(stats: any): void {
+    this.statBeneficiariosActivos = stats.activos ?? stats.total ?? 0;
+    const estaSemana = stats.nuevos_esta_semana ?? 0;
+    const semanaAnt = stats.nuevos_semana_anterior ?? 0;
+    this.deltaBeneficiarios = estaSemana - semanaAnt;
+  }
+
+  private processResumen(data: any): void {
+    this.resumenNuevosBeneficiarios = data.pacientes_atendidos ?? 0;
+    this.resumenCitasCompletadas = data.citas_por_estatus?.COMPLETADA ?? 0;
+    this.resumenRecibosGenerados = data.total_ventas ?? 0;
+    this.resumenMontoRecaudado = data.monto_ventas ?? 0;
+  }
+
+  private processDoctor(resp: any): void {
+    const doctor = resp.doctor;
+    if (doctor) {
+      const nombre = doctor.nombre || '';
+      const apellido = doctor.apellido_paterno || '';
+      this.doctorNombre = `Dr. ${nombre} ${apellido}`.trim();
+      this.doctorEspecialidad = doctor.especialidad || '';
+      this.doctorIniciales = (nombre.charAt(0) + apellido.charAt(0)).toUpperCase();
+      const formatTime = (ts: string) => {
+        if (!ts) return '';
+        const d = new Date(ts);
+        return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+      };
+      const inicio = formatTime(resp.hora_inicio);
+      const fin = formatTime(resp.hora_fin);
+      this.doctorHorario = inicio && fin ? `${inicio} - ${fin}` : '—';
+    }
   }
 
   atenderAhora(paciente: any): void {

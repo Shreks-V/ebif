@@ -174,8 +174,22 @@ interface MetodoPagoRow {
           </div>
         </div>
 
+        <!-- Loading Skeleton -->
+        <div *ngIf="loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100 p-6">
+          <div class="animate-pulse space-y-4">
+            <div *ngFor="let _ of [1,2,3,4,5]" class="flex items-center gap-4 py-3">
+              <div class="h-4 bg-slate-200 rounded w-24"></div>
+              <div class="flex-1 space-y-2">
+                <div class="h-4 bg-slate-200 rounded w-1/3"></div>
+              </div>
+              <div class="h-4 bg-slate-200 rounded w-20"></div>
+              <div class="h-6 bg-slate-200 rounded-full w-16"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Table -->
-        <div class="bg-white rounded-xl shadow-lg border-2 border-slate-100 overflow-hidden">
+        <div *ngIf="!loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100 overflow-hidden">
           <table class="w-full">
             <thead class="bg-slate-50 border-b-2 border-slate-200">
               <tr>
@@ -539,6 +553,7 @@ export class RecibosComponent implements OnInit {
   filtroFechaInicio = '';
   filtroFechaFin = '';
 
+  loading = true;
   recibos: Recibo[] = [];
   recibosFiltrados: Recibo[] = [];
 
@@ -580,6 +595,7 @@ export class RecibosComponent implements OnInit {
   }
 
   private cargarRecibos(): void {
+    this.loading = true;
     this.api.getRecibos().subscribe({
       next: (data: any[]) => {
         this.recibos = data.map((r: any) => ({
@@ -603,9 +619,11 @@ export class RecibosComponent implements OnInit {
         }));
         this.recibosFiltrados = [...this.recibos];
         this.calcularEstadisticas();
+        this.loading = false;
       },
       error: (err) => {
         console.error('Error al cargar recibos:', err);
+        this.loading = false;
       }
     });
   }

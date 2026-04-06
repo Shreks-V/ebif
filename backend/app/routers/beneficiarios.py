@@ -47,7 +47,7 @@ def _fetch_tipos_espina(conn, id_paciente: int) -> list[dict]:
     return [{"id_tipo_espina": r["id_tipo_espina"], "nombre": _strip_char(r["nombre"])} for r in rows]
 
 
-def _patient_row_to_response(row: dict, conn) -> dict:
+def _patient_row_to_response(row: dict, conn=None, tipos_map: dict | None = None) -> dict:
     """Convert a raw patient row dict to the API response format."""
     # Descifrar campos sensibles (LFPDPPP)
     row = decrypt_row(row, PACIENTE_ENCRYPTED_FIELDS)
@@ -58,9 +58,40 @@ def _patient_row_to_response(row: dict, conn) -> dict:
     for field in ("activo", "usa_valvula", "genero", "membresia_estatus", "tipo_cuota"):
         if field in row and row[field] is not None:
             row[field] = _strip_char(row[field])
-    # Fetch tipos_espina
-    row["tipos_espina"] = _fetch_tipos_espina(conn, row["id_paciente"])
+    # Use pre-fetched map when available (avoids N+1)
+    if tipos_map is not None:
+        row["tipos_espina"] = tipos_map.get(row["id_paciente"], [])
+    elif conn is not None:
+        row["tipos_espina"] = _fetch_tipos_espina(conn, row["id_paciente"])
+    else:
+        row["tipos_espina"] = []
     return row
+
+
+def _batch_fetch_tipos_espina(conn, patient_ids: list[int]) -> dict[int, list[dict]]:
+    """Fetch tipos_espina for many patients in a single query."""
+    if not patient_ids:
+        return {}
+    cur = conn.cursor()
+    # Oracle IN clause limit is 1000; chunk if needed
+    result: dict[int, list[dict]] = {pid: [] for pid in patient_ids}
+    for i in range(0, len(patient_ids), 900):
+        chunk = patient_ids[i : i + 900]
+        placeholders = ", ".join(f":p{j}" for j in range(len(chunk)))
+        params = {f"p{j}": pid for j, pid in enumerate(chunk)}
+        cur.execute(
+            f"""
+            SELECT pte.ID_PACIENTE, te.ID_TIPO_ESPINA, te.NOMBRE
+              FROM PACIENTE_TIPO_ESPINA pte
+              JOIN TIPO_ESPINA_BIFIDA te ON te.ID_TIPO_ESPINA = pte.ID_TIPO_ESPINA
+             WHERE pte.ID_PACIENTE IN ({placeholders})
+            """,
+            params,
+        )
+        for row in cur.fetchall():
+            pid = row[0]
+            result[pid].append({"id_tipo_espina": row[1], "nombre": _strip_char(row[2])})
+    return result
 
 
 def _calculate_age(fecha_nac) -> int:
@@ -244,7 +275,11 @@ def listar_beneficiarios(
         cur.execute(sql, params)
         rows = rows_to_dicts(cur)
 
-        return [_patient_row_to_response(row, conn) for row in rows]
+        # Batch fetch tipos_espina to avoid N+1 queries
+        patient_ids = [r["id_paciente"] for r in rows]
+        tipos_map = _batch_fetch_tipos_espina(conn, patient_ids)
+
+        return [_patient_row_to_response(row, tipos_map=tipos_map) for row in rows]
 
 
 @router.get("/{folio}", response_model=BeneficiarioResponse)

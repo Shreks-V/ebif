@@ -150,8 +150,27 @@ interface ComodatoItem {
             </div>
           </div>
 
+          <!-- Loading Skeleton -->
+          <div *ngIf="loading" class="bg-white rounded-2xl shadow-lg border-2 border-slate-100 p-6">
+            <div class="animate-pulse space-y-4">
+              <div class="grid grid-cols-3 gap-6">
+                <div *ngFor="let _ of [1,2,3]" class="h-28 bg-slate-200 rounded-2xl"></div>
+              </div>
+              <div class="space-y-3 mt-6">
+                <div *ngFor="let _ of [1,2,3,4,5]" class="flex items-center gap-4 py-3">
+                  <div class="w-12 h-12 bg-slate-200 rounded-xl"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+                    <div class="h-3 bg-slate-100 rounded w-1/4"></div>
+                  </div>
+                  <div class="h-4 bg-slate-200 rounded w-16"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- TAB: Inventario -->
-          <ng-container *ngIf="activeTab === 'inventario'">
+          <ng-container *ngIf="activeTab === 'inventario' && !loading">
 
             <!-- Category Filter Cards -->
             <div class="flex items-center justify-between mb-0">
@@ -907,6 +926,7 @@ export class AlmacenComponent implements OnInit {
   searchInventario = '';
   searchComodatos = '';
 
+  loading = true;
   productos: ProductoItem[] = [];
   servicios: ServicioItem[] = [];
   comodatos: ComodatoItem[] = [];
@@ -949,6 +969,7 @@ export class AlmacenComponent implements OnInit {
   // ──────────────── Data Loading ────────────────
 
   loadProductos(): void {
+    this.loading = true;
     this.api.getProductos().subscribe({
       next: (data) => {
         this.productos = data.map((p: any) => ({
@@ -973,8 +994,12 @@ export class AlmacenComponent implements OnInit {
           unidadMedida: p.unidad_medida,
           fechaCaducidad: p.fecha_caducidad,
         }));
+        this.loading = false;
       },
-      error: (err) => console.error('Error loading productos:', err),
+      error: (err) => {
+        console.error('Error loading productos:', err);
+        this.loading = false;
+      },
     });
   }
 
