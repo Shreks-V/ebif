@@ -127,6 +127,10 @@ export class ApiService {
     return this.http.get<any[]>(`${this.apiUrl}/doctores/${id}/disponibilidad`);
   }
 
+  getDisponibilidadSemana(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/doctores/disponibilidad/semana`);
+  }
+
   createDoctorDisponibilidad(idDoctor: number, data: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/doctores/${idDoctor}/disponibilidad`, data);
   }

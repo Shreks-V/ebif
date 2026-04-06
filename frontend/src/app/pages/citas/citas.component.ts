@@ -85,17 +85,22 @@ import { ApiService } from '../../services/api.service';
               <div class="flex items-center gap-4 flex-wrap">
                 <div class="flex items-center gap-2">
                   <label class="text-xs font-semibold text-slate-500">Fecha:</label>
+                  <button (click)="filtroFecha = todayStr; filtrarCitas()"
+                    class="px-3 py-2 text-xs font-semibold rounded-lg transition-all"
+                    [ngClass]="filtroFecha === todayStr ? 'bg-[#00328b] text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+                    Hoy
+                  </button>
+                  <button (click)="filtroFecha = ''; filtrarCitas()"
+                    class="px-3 py-2 text-xs font-semibold rounded-lg transition-all"
+                    [ngClass]="!filtroFecha ? 'bg-[#00328b] text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+                    Todas
+                  </button>
                   <input
                     type="date"
                     [(ngModel)]="filtroFecha"
                     (change)="filtrarCitas()"
                     class="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00328b]/20 focus:border-[#00328b] transition-all"
                   />
-                  <button *ngIf="filtroFecha" (click)="filtroFecha = ''; filtrarCitas()" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Limpiar fecha">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <button
@@ -910,7 +915,7 @@ import { ApiService } from '../../services/api.service';
     <div *ngIf="showDisponibilidadModal && disponibilidadDoctor" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showDisponibilidadModal = false">
       <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-black text-slate-900">Disponibilidad - Dr. {{ disponibilidadDoctor.nombre }} {{ disponibilidadDoctor.apellidoPaterno }}</h2>
+          <h2 class="text-2xl font-black text-slate-900">Disponibilidad Semanal - Dr. {{ disponibilidadDoctor.nombre }} {{ disponibilidadDoctor.apellidoPaterno }}</h2>
           <button (click)="showDisponibilidadModal = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -918,42 +923,37 @@ import { ApiService } from '../../services/api.service';
           </button>
         </div>
 
-        <!-- Existing slots -->
-        <div class="mb-6">
-          <h3 class="text-sm font-bold text-slate-700 mb-3">Horarios Registrados</h3>
-          <div *ngIf="disponibilidadSlots.length === 0" class="text-sm text-slate-400 italic p-4 bg-slate-50 rounded-xl">Sin horarios registrados.</div>
-          <div class="overflow-x-auto" *ngIf="disponibilidadSlots.length > 0">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="bg-slate-50 border-b border-slate-200">
-                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Fecha</th>
-                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Hora Inicio</th>
-                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Hora Fin</th>
-                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Disponible</th>
-                  <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Acciones</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <tr *ngFor="let slot of disponibilidadSlots" class="hover:bg-slate-50">
-                  <td class="px-4 py-3 text-slate-900">{{ formatDispFecha(slot.fecha) }}</td>
-                  <td class="px-4 py-3 text-slate-700">{{ formatDispHora(slot.hora_inicio) }}</td>
-                  <td class="px-4 py-3 text-slate-700">{{ formatDispHora(slot.hora_fin) }}</td>
-                  <td class="px-4 py-3">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold" [ngClass]="slot.disponible === 'S' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                      {{ slot.disponible === 'S' ? 'S&iacute;' : 'No' }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3">
-                    <button (click)="eliminarSlotDisponibilidad(slot)" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors" title="Eliminar slot">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- Weekly grid -->
+        <div class="mb-6 space-y-3">
+          <div *ngFor="let dia of diasSemana" class="bg-slate-50 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-bold text-slate-800">{{ dia.nombre }}</h4>
+            </div>
+            <!-- Slots for this day -->
+            <div *ngIf="getSlotsForDay(dia.num).length === 0" class="text-xs text-slate-400 italic">Sin horario asignado</div>
+            <div *ngFor="let slot of getSlotsForDay(dia.num)" class="flex items-center gap-3 mb-1.5">
+              <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span class="text-sm font-semibold text-slate-700">{{ slot.hora_inicio }} - {{ slot.hora_fin }}</span>
+              </div>
+              <!-- Show conflict badge if another doctor occupies this day -->
+              <span *ngIf="getConflictDoctor(dia.num, slot)" class="text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-semibold">
+                Tambien: {{ getConflictDoctor(dia.num, slot) }}
+              </span>
+              <button (click)="eliminarSlotDisponibilidad(slot)" class="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors ml-auto" title="Eliminar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
           </div>
+        </div>
+
+        <!-- Error message -->
+        <div *ngIf="disponibilidadError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
+          {{ disponibilidadError }}
         </div>
 
         <!-- Add new slot -->
@@ -961,8 +961,11 @@ import { ApiService } from '../../services/api.service';
           <h3 class="text-sm font-bold text-slate-700 mb-3">Agregar Horario</h3>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <label class="block text-xs font-semibold text-slate-500 mb-1">Fecha</label>
-              <input type="date" [(ngModel)]="nuevoSlot.fecha" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">D&iacute;a de la Semana</label>
+              <select [(ngModel)]="nuevoSlot.dia_semana" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors">
+                <option [ngValue]="0" disabled>Seleccionar...</option>
+                <option *ngFor="let dia of diasSemana" [ngValue]="dia.num">{{ dia.nombre }}</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
@@ -973,7 +976,7 @@ import { ApiService } from '../../services/api.service';
               <input type="time" [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
             </div>
           </div>
-          <button (click)="agregarSlotDisponibilidad()" [disabled]="guardandoSlot || !nuevoSlot.fecha || !nuevoSlot.hora_inicio || !nuevoSlot.hora_fin"
+          <button (click)="agregarSlotDisponibilidad()" [disabled]="guardandoSlot || !nuevoSlot.dia_semana || !nuevoSlot.hora_inicio || !nuevoSlot.hora_fin"
             class="px-5 py-2.5 text-sm font-semibold text-white bg-[#00328b] rounded-xl hover:bg-[#002a75] transition-colors disabled:opacity-50 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
@@ -992,7 +995,8 @@ export class CitasComponent implements OnInit {
   searchMedicos = '';
   filtroEstado = 'Todas';
   filtroTipo = 'Todas';
-  filtroFecha = '';
+  todayStr = new Date().toISOString().split('T')[0];
+  filtroFecha = this.todayStr; // default: hoy
 
   estadoFilters = ['Todas', 'PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
   tipoFilters = ['Todas', 'Consulta Neurocirugía', 'Consulta Ortopédica', 'Consulta Urológica', 'Fisioterapia', 'Terapia Ocupacional'];
@@ -1049,9 +1053,20 @@ export class CitasComponent implements OnInit {
   showDisponibilidadModal = false;
   disponibilidadDoctor: any = null;
   disponibilidadSlots: any[] = [];
-  nuevoSlot: any = { fecha: '', hora_inicio: '', hora_fin: '' };
+  disponibilidadSemana: any[] = []; // all doctors' slots for conflict check
+  disponibilidadError = '';
+  nuevoSlot: any = { dia_semana: 0, hora_inicio: '', hora_fin: '' };
   guardandoSlot = false;
   guardandoMedico = false;
+  diasSemana = [
+    { num: 1, nombre: 'Lunes' },
+    { num: 2, nombre: 'Martes' },
+    { num: 3, nombre: 'Miercoles' },
+    { num: 4, nombre: 'Jueves' },
+    { num: 5, nombre: 'Viernes' },
+    { num: 6, nombre: 'Sabado' },
+    { num: 7, nombre: 'Domingo' },
+  ];
 
   constructor(private api: ApiService) {}
 
@@ -1087,7 +1102,7 @@ export class CitasComponent implements OnInit {
             montoPagado: s.monto_pagado,
           })),
         }));
-        this.citasFiltradas = [...this.citas];
+        this.filtrarCitas();
         this.loading = false;
       },
       error: (err) => {
@@ -1502,9 +1517,15 @@ export class CitasComponent implements OnInit {
   abrirDisponibilidad(medico: any): void {
     this.disponibilidadDoctor = medico;
     this.disponibilidadSlots = [];
-    this.nuevoSlot = { fecha: '', hora_inicio: '', hora_fin: '' };
+    this.disponibilidadError = '';
+    this.nuevoSlot = { dia_semana: 0, hora_inicio: '', hora_fin: '' };
     this.showDisponibilidadModal = true;
     this.cargarDisponibilidad(medico.idDoctor);
+    // Load all doctors' availability for conflict checking
+    this.api.getDisponibilidadSemana().subscribe({
+      next: (data) => { this.disponibilidadSemana = data; },
+      error: () => { this.disponibilidadSemana = []; },
+    });
   }
 
   cargarDisponibilidad(idDoctor: number): void {
@@ -1514,24 +1535,46 @@ export class CitasComponent implements OnInit {
     });
   }
 
+  getSlotsForDay(dia: number): any[] {
+    return this.disponibilidadSlots.filter(s => s.dia_semana === dia);
+  }
+
+  getConflictDoctor(dia: number, slot: any): string | null {
+    const conflict = this.disponibilidadSemana.find(s =>
+      s.dia_semana === dia &&
+      s.id_doctor !== this.disponibilidadDoctor?.idDoctor &&
+      s.hora_inicio < slot.hora_fin &&
+      s.hora_fin > slot.hora_inicio
+    );
+    return conflict ? conflict.nombre_doctor : null;
+  }
+
   agregarSlotDisponibilidad(): void {
-    if (!this.nuevoSlot.fecha || !this.nuevoSlot.hora_inicio || !this.nuevoSlot.hora_fin) return;
+    if (!this.nuevoSlot.dia_semana || !this.nuevoSlot.hora_inicio || !this.nuevoSlot.hora_fin) return;
+    this.disponibilidadError = '';
+    if (this.nuevoSlot.hora_inicio >= this.nuevoSlot.hora_fin) {
+      this.disponibilidadError = 'La hora de inicio debe ser anterior a la hora de fin.';
+      return;
+    }
     this.guardandoSlot = true;
     const payload = {
-      fecha: this.nuevoSlot.fecha,
-      hora_inicio: `${this.nuevoSlot.fecha}T${this.nuevoSlot.hora_inicio}:00`,
-      hora_fin: `${this.nuevoSlot.fecha}T${this.nuevoSlot.hora_fin}:00`,
-      disponible: 'S',
+      dia_semana: this.nuevoSlot.dia_semana,
+      hora_inicio: this.nuevoSlot.hora_inicio,
+      hora_fin: this.nuevoSlot.hora_fin,
     };
     this.api.createDoctorDisponibilidad(this.disponibilidadDoctor.idDoctor, payload).subscribe({
       next: () => {
         this.guardandoSlot = false;
-        this.nuevoSlot = { fecha: '', hora_inicio: '', hora_fin: '' };
+        this.nuevoSlot = { dia_semana: 0, hora_inicio: '', hora_fin: '' };
         this.cargarDisponibilidad(this.disponibilidadDoctor.idDoctor);
+        // Refresh global availability for conflict check
+        this.api.getDisponibilidadSemana().subscribe({
+          next: (data) => { this.disponibilidadSemana = data; },
+        });
       },
       error: (err) => {
-        console.error('Error al crear disponibilidad:', err);
         this.guardandoSlot = false;
+        this.disponibilidadError = err.error?.detail || 'Error al crear disponibilidad';
       },
     });
   }
@@ -1541,6 +1584,9 @@ export class CitasComponent implements OnInit {
     this.api.deleteDoctorDisponibilidad(this.disponibilidadDoctor.idDoctor, slot.id_disponibilidad).subscribe({
       next: () => {
         this.cargarDisponibilidad(this.disponibilidadDoctor.idDoctor);
+        this.api.getDisponibilidadSemana().subscribe({
+          next: (data) => { this.disponibilidadSemana = data; },
+        });
       },
       error: (err) => {
         console.error('Error al eliminar disponibilidad:', err);

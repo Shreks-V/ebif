@@ -72,8 +72,9 @@ def _sync_doctor_servicios(conn, id_doctor: int, servicio_ids: list[int]):
 
 @router.get("/hoy")
 def doctor_del_dia(current_user: dict = Depends(get_current_user)):
-    """Obtener el doctor asignado para hoy según DISPONIBILIDAD_DOCTOR."""
-    hoy = date.today().isoformat()
+    """Obtener el doctor asignado para hoy según DIA_SEMANA en DISPONIBILIDAD_DOCTOR."""
+    # Python weekday: Mon=0..Sun=6  →  DB dia_semana: Lun=1..Dom=7
+    dia_semana = date.today().weekday() + 1
     try:
         with get_db() as conn:
             cursor = conn.cursor()
@@ -83,11 +84,11 @@ def doctor_del_dia(current_user: dict = Depends(get_current_user)):
                 "dd.HORA_INICIO, dd.HORA_FIN "
                 "FROM DISPONIBILIDAD_DOCTOR dd "
                 "JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR "
-                "WHERE TRUNC(dd.FECHA) = TO_DATE(:fecha, 'YYYY-MM-DD') "
+                "WHERE dd.DIA_SEMANA = :dia "
                 "AND dd.DISPONIBLE = 'S' AND d.ACTIVO = 'S' "
                 "ORDER BY dd.HORA_INICIO "
                 "FETCH FIRST 1 ROWS ONLY",
-                {"fecha": hoy},
+                {"dia": dia_semana},
             )
             row = row_to_dict(cursor)
             if row is None:
@@ -118,6 +119,30 @@ def listar_doctores(current_user: dict = Depends(get_current_user)):
             return [_doctor_with_servicios(conn, r) for r in rows]
     except Exception as e:
         logger.exception("Error al consultar doctores")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+@router.get("/disponibilidad/semana")
+def obtener_disponibilidad_semana(current_user: dict = Depends(get_current_user)):
+    """Obtener toda la disponibilidad de todos los doctores (para validar conflictos)."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT dd.ID_DISPONIBILIDAD, dd.ID_DOCTOR, dd.DIA_SEMANA, "
+                "TO_CHAR(dd.HORA_INICIO, 'HH24:MI') AS HORA_INICIO, "
+                "TO_CHAR(dd.HORA_FIN, 'HH24:MI') AS HORA_FIN, "
+                "dd.DISPONIBLE, "
+                "d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS NOMBRE_DOCTOR "
+                "FROM DISPONIBILIDAD_DOCTOR dd "
+                "JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR "
+                "WHERE d.ACTIVO = 'S' AND dd.DISPONIBLE = 'S' "
+                "ORDER BY dd.DIA_SEMANA, dd.HORA_INICIO"
+            )
+            rows = rows_to_dicts(cursor)
+            return [_serialize(r) for r in rows]
+    except Exception as e:
+        logger.exception("Error al consultar disponibilidad semanal")
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
@@ -276,12 +301,11 @@ def desactivar_doctor(id_doctor: int, current_user: dict = Depends(require_role(
 
 @router.get("/{id_doctor}/disponibilidad")
 def obtener_disponibilidad(id_doctor: int, current_user: dict = Depends(get_current_user)):
-    """Obtener disponibilidad de un doctor."""
+    """Obtener disponibilidad semanal de un doctor."""
     try:
         with get_db() as conn:
             cursor = conn.cursor()
 
-            # Check doctor exists
             cursor.execute(
                 "SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor",
                 {"id_doctor": id_doctor},
@@ -290,10 +314,12 @@ def obtener_disponibilidad(id_doctor: int, current_user: dict = Depends(get_curr
                 raise HTTPException(status_code=404, detail="Doctor no encontrado")
 
             cursor.execute(
-                "SELECT ID_DISPONIBILIDAD, ID_DOCTOR, FECHA, HORA_INICIO, HORA_FIN, "
+                "SELECT ID_DISPONIBILIDAD, ID_DOCTOR, DIA_SEMANA, "
+                "TO_CHAR(HORA_INICIO, 'HH24:MI') AS HORA_INICIO, "
+                "TO_CHAR(HORA_FIN, 'HH24:MI') AS HORA_FIN, "
                 "DISPONIBLE, FECHA_REGISTRO "
                 "FROM DISPONIBILIDAD_DOCTOR "
-                "WHERE ID_DOCTOR = :id_doctor ORDER BY FECHA, HORA_INICIO",
+                "WHERE ID_DOCTOR = :id_doctor ORDER BY DIA_SEMANA, HORA_INICIO",
                 {"id_doctor": id_doctor},
             )
             rows = rows_to_dicts(cursor)
@@ -311,12 +337,15 @@ def crear_disponibilidad(
     data: DisponibilidadCreate,
     current_user: dict = Depends(get_current_user),
 ):
-    """Crear un slot de disponibilidad para un doctor."""
+    """Crear un slot de disponibilidad semanal para un doctor (por día de la semana)."""
+    if data.dia_semana < 1 or data.dia_semana > 7:
+        raise HTTPException(status_code=400, detail="dia_semana debe ser entre 1 (Lunes) y 7 (Domingo)")
+    if data.hora_inicio >= data.hora_fin:
+        raise HTTPException(status_code=400, detail="hora_inicio debe ser anterior a hora_fin")
     try:
         with get_db() as conn:
             cursor = conn.cursor()
 
-            # Check doctor exists
             cursor.execute(
                 "SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor",
                 {"id_doctor": id_doctor},
@@ -324,27 +353,71 @@ def crear_disponibilidad(
             if cursor.fetchone() is None:
                 raise HTTPException(status_code=404, detail="Doctor no encontrado")
 
+            # Validar conflicto: no puede haber otro doctor en el mismo día y horario solapado
+            cursor.execute(
+                "SELECT dd.ID_DOCTOR, d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS NOMBRE_DOCTOR "
+                "FROM DISPONIBILIDAD_DOCTOR dd "
+                "JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR "
+                "WHERE dd.DIA_SEMANA = :dia "
+                "AND dd.DISPONIBLE = 'S' "
+                "AND dd.ID_DOCTOR != :id_doctor "
+                "AND TO_CHAR(dd.HORA_INICIO, 'HH24:MI') < :hora_fin "
+                "AND TO_CHAR(dd.HORA_FIN, 'HH24:MI') > :hora_inicio",
+                {
+                    "dia": data.dia_semana,
+                    "id_doctor": id_doctor,
+                    "hora_fin": data.hora_fin,
+                    "hora_inicio": data.hora_inicio,
+                },
+            )
+            conflicto = row_to_dict(cursor)
+            if conflicto:
+                nombre = conflicto["nombre_doctor"]
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Conflicto de horario: Dr. {nombre} ya tiene asignado ese horario este dia",
+                )
+
+            # Validar duplicado del mismo doctor
+            cursor.execute(
+                "SELECT COUNT(*) AS cnt FROM DISPONIBILIDAD_DOCTOR "
+                "WHERE ID_DOCTOR = :id_doctor AND DIA_SEMANA = :dia "
+                "AND TO_CHAR(HORA_INICIO, 'HH24:MI') = :hora_inicio "
+                "AND TO_CHAR(HORA_FIN, 'HH24:MI') = :hora_fin",
+                {
+                    "id_doctor": id_doctor,
+                    "dia": data.dia_semana,
+                    "hora_inicio": data.hora_inicio,
+                    "hora_fin": data.hora_fin,
+                },
+            )
+            dup = row_to_dict(cursor)
+            if dup and dup["cnt"] > 0:
+                raise HTTPException(status_code=400, detail="Este horario ya esta registrado para este doctor")
+
             id_var = cursor.var(int)
             cursor.execute(
                 "INSERT INTO DISPONIBILIDAD_DOCTOR "
-                "(ID_DOCTOR, FECHA, HORA_INICIO, HORA_FIN, DISPONIBLE) "
-                "VALUES (:id_doctor, :fecha, :hora_inicio, :hora_fin, :disponible) "
+                "(ID_DOCTOR, DIA_SEMANA, FECHA, HORA_INICIO, HORA_FIN, DISPONIBLE) "
+                "VALUES (:id_doctor, :dia, SYSDATE, "
+                "TO_TIMESTAMP(:hora_inicio, 'HH24:MI'), "
+                "TO_TIMESTAMP(:hora_fin, 'HH24:MI'), 'S') "
                 "RETURNING ID_DISPONIBILIDAD INTO :id_out",
                 {
                     "id_doctor": id_doctor,
-                    "fecha": data.fecha,
+                    "dia": data.dia_semana,
                     "hora_inicio": data.hora_inicio,
                     "hora_fin": data.hora_fin,
-                    "disponible": data.disponible,
                     "id_out": id_var,
                 },
             )
             new_id = id_var.getvalue()[0]
             conn.commit()
 
-            # Return the created slot
             cursor.execute(
-                "SELECT ID_DISPONIBILIDAD, ID_DOCTOR, FECHA, HORA_INICIO, HORA_FIN, "
+                "SELECT ID_DISPONIBILIDAD, ID_DOCTOR, DIA_SEMANA, "
+                "TO_CHAR(HORA_INICIO, 'HH24:MI') AS HORA_INICIO, "
+                "TO_CHAR(HORA_FIN, 'HH24:MI') AS HORA_FIN, "
                 "DISPONIBLE, FECHA_REGISTRO "
                 "FROM DISPONIBILIDAD_DOCTOR WHERE ID_DISPONIBILIDAD = :id_disp",
                 {"id_disp": new_id},

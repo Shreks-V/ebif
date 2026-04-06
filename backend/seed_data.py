@@ -219,39 +219,46 @@ def seed_doctores(conn):
 
 
 def seed_disponibilidad(conn):
-    """Insertar slots de disponibilidad para doctores."""
+    """Insertar slots de disponibilidad semanal para doctores (por dia de la semana)."""
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM DISPONIBILIDAD_DOCTOR")
+
+    # Migrate: add DIA_SEMANA column if not exists
+    try:
+        cursor.execute("ALTER TABLE DISPONIBILIDAD_DOCTOR ADD (DIA_SEMANA NUMBER(1))")
+    except Exception:
+        pass  # Column already exists
+
+    # Clear old date-based data to avoid mixing schemas
+    cursor.execute("DELETE FROM DISPONIBILIDAD_DOCTOR WHERE DIA_SEMANA IS NULL")
+    conn.commit()
+
+    cursor.execute("SELECT COUNT(*) FROM DISPONIBILIDAD_DOCTOR WHERE DIA_SEMANA IS NOT NULL")
     if cursor.fetchone()[0] > 0:
-        print("  Disponibilidad ya existe, saltando...")
+        print("  Disponibilidad semanal ya existe, saltando...")
         return
 
-    cursor.execute("SELECT ID_DOCTOR FROM DOCTOR")
+    cursor.execute("SELECT ID_DOCTOR FROM DOCTOR WHERE ACTIVO = 'S'")
     doc_ids = [r[0] for r in cursor.fetchall()]
 
-    horas = [("09:00", "10:00"), ("10:00", "11:00"), ("11:00", "12:00"),
-             ("12:00", "13:00"), ("16:00", "17:00"), ("17:00", "18:00")]
-
+    # Asignar un doctor por dia (Lun-Vie), sin conflictos
+    # dia_semana: 1=Lunes .. 5=Viernes
     count = 0
-    today = date.today()
-    for doc_id in doc_ids:
-        # Disponibilidad para las proximas 4 semanas
-        for day_offset in range(0, 28):
-            d = today + timedelta(days=day_offset)
-            if d.weekday() >= 5:  # Skip weekends
-                continue
-            # Each doctor has 2-4 slots per day
-            day_slots = random.sample(horas, k=random.randint(2, 4))
-            for h_inicio, h_fin in day_slots:
-                cursor.execute(
-                    "INSERT INTO DISPONIBILIDAD_DOCTOR (ID_DOCTOR, FECHA, HORA_INICIO, HORA_FIN, DISPONIBLE) "
-                    "VALUES (:1, :2, TO_TIMESTAMP(:3, 'HH24:MI'), TO_TIMESTAMP(:4, 'HH24:MI'), 'S')",
-                    [doc_id, d, h_inicio, h_fin],
-                )
-                count += 1
+    for i, doc_id in enumerate(doc_ids):
+        # Each doctor gets 1-2 weekdays
+        dias = [(i % 5) + 1]
+        if len(doc_ids) <= 5:
+            # Also assign a secondary day if few doctors
+            dias.append(((i + 2) % 5) + 1)
+        for dia in dias:
+            cursor.execute(
+                "INSERT INTO DISPONIBILIDAD_DOCTOR (ID_DOCTOR, DIA_SEMANA, HORA_INICIO, HORA_FIN, DISPONIBLE) "
+                "VALUES (:1, :2, TO_TIMESTAMP(:3, 'HH24:MI'), TO_TIMESTAMP(:4, 'HH24:MI'), 'S')",
+                [doc_id, dia, "09:00", "14:00"],
+            )
+            count += 1
 
     conn.commit()
-    print(f"  +{count} slots de disponibilidad")
+    print(f"  +{count} slots de disponibilidad semanal")
 
 
 def seed_productos(conn):

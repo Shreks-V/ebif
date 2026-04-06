@@ -72,7 +72,10 @@
       "Bash(grep -E \"\\\\.\\(md|pdf|txt\\)$\")",
       "Bash(ls:*)",
       "Bash(python -c \"from app.core.bitacora import log_insert, log_delete, log_cancelacion; print\\('bitacora OK'\\)\")",
-      "Bash(python -c \"from app.routers.exportaciones import router; print\\('exportaciones OK'\\)\")"
+      "Bash(python -c \"from app.routers.exportaciones import router; print\\('exportaciones OK'\\)\")",
+      "Bash(grep -n \"^\\\\s*}\\\\s*$\" src/app/pages/beneficiarios/beneficiarios.component.ts)",
+      "Bash(grep -h '\\\\\\(click\\\\\\)=' src/app/pages/*/\\\\*.component.ts)",
+      "Bash(find src/app/pages -name \"*.component.ts\" -exec grep -h '\\\\\\(click\\\\\\)=' {} \\\\;)"
     ]
   },
   "enableAllProjectMcpServers": true,

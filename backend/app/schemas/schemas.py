@@ -130,20 +130,19 @@ class DoctorResponse(DoctorBase):
 
 # ──────────────────────────── DISPONIBILIDAD DOCTOR ────────────────────────────
 
-class DisponibilidadBase(BaseModel):
+class DisponibilidadCreate(BaseModel):
+    dia_semana: int  # 1=Lunes .. 7=Domingo
+    hora_inicio: str  # "HH:MM"
+    hora_fin: str     # "HH:MM"
+
+
+class DisponibilidadResponse(BaseModel):
+    id_disponibilidad: int
     id_doctor: int
-    fecha: str
+    dia_semana: int
     hora_inicio: str
     hora_fin: str
-    disponible: str = "S"  # S / N
-
-
-class DisponibilidadCreate(DisponibilidadBase):
-    pass
-
-
-class DisponibilidadResponse(DisponibilidadBase):
-    id_disponibilidad: int
+    disponible: str = "S"
     fecha_registro: Optional[str] = None
 
 

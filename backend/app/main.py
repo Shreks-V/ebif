@@ -14,9 +14,30 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
 
 # ──────────────── Lifespan (pool init/close) ────────────────
+def _run_migrations():
+    """Run lightweight DDL migrations on startup (idempotent)."""
+    import logging
+    logger = logging.getLogger(__name__)
+    from app.core.database import get_db
+    migrations = [
+        "ALTER TABLE DISPONIBILIDAD_DOCTOR ADD (DIA_SEMANA NUMBER(1))",
+        "ALTER TABLE EXISTENCIA_PRODUCTO ADD (FECHA_CADUCIDAD DATE)",
+    ]
+    with get_db() as conn:
+        cur = conn.cursor()
+        for ddl in migrations:
+            try:
+                cur.execute(ddl)
+                conn.commit()
+                logger.info("Migration OK: %s", ddl[:60])
+            except Exception:
+                pass  # Column already exists
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_pool()
+    _run_migrations()
     yield
     close_pool()
 
