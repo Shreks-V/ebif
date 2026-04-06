@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List
 from datetime import date, datetime
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.core.bitacora import log_insert, log_delete, log_cancelacion
 from app.schemas.schemas import (
     ProductoCreate,
     ProductoResponse,
@@ -59,7 +60,7 @@ _PRODUCTOS_BASE_SQL = """
            p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,
            m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,
            eq.NUMERO_SERIE, eq.MARCA, eq.MODELO, eq.ESTATUS_EQUIPO, eq.OBSERVACIONES,
-           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA
+           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA, ex.FECHA_CADUCIDAD
     FROM PRODUCTO p
     LEFT JOIN MEDICAMENTO m        ON m.ID_PRODUCTO  = p.ID_PRODUCTO
     LEFT JOIN EQUIPO_MEDICO eq     ON eq.ID_PRODUCTO = p.ID_PRODUCTO
@@ -130,7 +131,7 @@ def obtener_producto(
 @router.post("/productos", status_code=201, response_model=ProductoResponse)
 def crear_producto(
     data: ProductoCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR", "ENCARGADO_ALMACEN")),
 ):
     """Crear un nuevo producto con su subtipo y existencia."""
     with get_db() as conn:
@@ -205,16 +206,20 @@ def crear_producto(
         # Insert EXISTENCIA_PRODUCTO
         cursor.execute(
             """INSERT INTO EXISTENCIA_PRODUCTO
-               (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO)
-               VALUES (:id, :cant, :nmin, :unidad, 'S')""",
+               (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD)
+               VALUES (:id, :cant, :nmin, :unidad, 'S',
+                       CASE WHEN :fecha_cad IS NOT NULL THEN TO_DATE(:fecha_cad2, 'YYYY-MM-DD') ELSE NULL END)""",
             {
                 "id": id_producto,
                 "cant": data.cantidad_disponible,
                 "nmin": data.nivel_minimo,
                 "unidad": data.unidad_medida,
+                "fecha_cad": data.fecha_caducidad,
+                "fecha_cad2": data.fecha_caducidad,
             },
         )
 
+        log_insert(conn, "PRODUCTO", id_producto, id_usuario, f"Producto {clave_interna} creado")
         conn.commit()
 
     # Return the freshly-created product
@@ -237,7 +242,7 @@ def _fetch_producto(id_producto: int) -> dict:
 def actualizar_producto(
     id_producto: int,
     data: ProductoCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR", "ENCARGADO_ALMACEN")),
 ):
     """Actualizar un producto existente."""
     with get_db() as conn:
@@ -317,15 +322,21 @@ def actualizar_producto(
                ON (ex.ID_PRODUCTO = src.ID_PRODUCTO AND ex.ACTIVO = 'S')
                WHEN MATCHED THEN UPDATE SET
                    CANTIDAD_DISPONIBLE = :cant, NIVEL_MINIMO = :nmin,
-                   UNIDAD_MEDIDA = :unidad
+                   UNIDAD_MEDIDA = :unidad,
+                   FECHA_CADUCIDAD = CASE WHEN :fecha_cad IS NOT NULL THEN TO_DATE(:fecha_cad2, 'YYYY-MM-DD') ELSE NULL END
                WHEN NOT MATCHED THEN INSERT
-                   (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO)
-                   VALUES (:id, :cant, :nmin, :unidad, 'S')""",
+                   (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD)
+                   VALUES (:id, :cant, :nmin, :unidad, 'S',
+                           CASE WHEN :fecha_cad3 IS NOT NULL THEN TO_DATE(:fecha_cad4, 'YYYY-MM-DD') ELSE NULL END)""",
             {
                 "id": id_producto,
                 "cant": data.cantidad_disponible,
                 "nmin": data.nivel_minimo,
                 "unidad": data.unidad_medida,
+                "fecha_cad": data.fecha_caducidad,
+                "fecha_cad2": data.fecha_caducidad,
+                "fecha_cad3": data.fecha_caducidad,
+                "fecha_cad4": data.fecha_caducidad,
             },
         )
 
@@ -337,7 +348,7 @@ def actualizar_producto(
 @router.delete("/productos/{id_producto}")
 def desactivar_producto(
     id_producto: int,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR")),
 ):
     """Desactivar un producto (soft delete)."""
     with get_db() as conn:
@@ -418,7 +429,7 @@ def obtener_servicio(
 @router.post("/servicios", status_code=201, response_model=ServicioResponse)
 def crear_servicio(
     data: ServicioCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR")),
 ):
     """Crear un nuevo servicio."""
     with get_db() as conn:
@@ -472,7 +483,7 @@ def _fetch_servicio(id_servicio: int) -> dict:
 def actualizar_servicio(
     id_servicio: int,
     data: ServicioCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR")),
 ):
     """Actualizar un servicio existente."""
     with get_db() as conn:
@@ -503,7 +514,7 @@ def actualizar_servicio(
 @router.delete("/servicios/{id_servicio}")
 def desactivar_servicio(
     id_servicio: int,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR")),
 ):
     """Desactivar un servicio (soft delete)."""
     with get_db() as conn:
@@ -590,12 +601,25 @@ def obtener_comodato(
 @router.post("/comodatos", status_code=201, response_model=ComodatoResponse)
 def crear_comodato(
     data: ComodatoCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR", "ENCARGADO_ALMACEN")),
 ):
-    """Registrar un nuevo comodato."""
+    """Registrar un nuevo comodato con validación de inventario (RF-PS-06)."""
     with get_db() as conn:
         cursor = conn.cursor()
         id_usuario = current_user.get("id_usuario", 1)
+
+        # RF-PS-06: Validar existencia en inventario antes de prestar
+        cursor.execute(
+            """SELECT ex.CANTIDAD_DISPONIBLE
+               FROM EXISTENCIA_PRODUCTO ex
+               WHERE ex.ID_PRODUCTO = :id_equipo AND ex.ACTIVO = 'S'""",
+            {"id_equipo": data.id_equipo},
+        )
+        stock_row = cursor.fetchone()
+        if stock_row is None:
+            raise HTTPException(status_code=400, detail="El equipo no tiene registro de existencia en inventario")
+        if stock_row[0] <= 0:
+            raise HTTPException(status_code=400, detail="No hay existencia disponible del equipo seleccionado")
 
         # Generate FOLIO_COMODATO as COM-XXXXXX
         cursor.execute("SELECT NVL(MAX(ID_COMODATO), 0) + 1 FROM COMODATO")
@@ -634,6 +658,30 @@ def crear_comodato(
             },
         )
         id_comodato = id_var.getvalue()[0]
+
+        # RF-PS-07: Actualizar stock automáticamente (SALIDA)
+        cursor.execute(
+            """UPDATE EXISTENCIA_PRODUCTO
+               SET CANTIDAD_DISPONIBLE = CANTIDAD_DISPONIBLE - 1
+               WHERE ID_PRODUCTO = :id_equipo AND ACTIVO = 'S'""",
+            {"id_equipo": data.id_equipo},
+        )
+        # Registrar movimiento de inventario
+        cursor.execute(
+            """INSERT INTO MOVIMIENTO_INVENTARIO
+               (ID_PRODUCTO, ID_USUARIO_REGISTRO, ID_COMODATO,
+                FECHA_MOVIMIENTO, TIPO_MOVIMIENTO, CANTIDAD, OBSERVACIONES)
+               VALUES (:id_prod, :id_usr, :id_com,
+                       SYSTIMESTAMP, 'SALIDA', 1, :obs)""",
+            {
+                "id_prod": data.id_equipo,
+                "id_usr": id_usuario,
+                "id_com": id_comodato,
+                "obs": f"Préstamo comodato {folio}",
+            },
+        )
+
+        log_insert(conn, "COMODATO", id_comodato, id_usuario, f"Comodato {folio} creado para paciente {data.id_paciente}")
         conn.commit()
 
     return _fetch_comodato(id_comodato)
@@ -655,11 +703,24 @@ def _fetch_comodato(id_comodato: int) -> dict:
 def actualizar_comodato(
     id_comodato: int,
     data: ComodatoCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR", "ENCARGADO_ALMACEN")),
 ):
-    """Actualizar un comodato existente."""
+    """Actualizar un comodato existente (RF-PS-07: auto-update stock on return)."""
     with get_db() as conn:
         cursor = conn.cursor()
+        id_usuario = current_user.get("id_usuario", 1)
+
+        # Check previous status to detect returns
+        cursor.execute(
+            "SELECT ESTATUS, ID_EQUIPO FROM COMODATO WHERE ID_COMODATO = :id",
+            {"id": id_comodato},
+        )
+        prev = cursor.fetchone()
+        if prev is None:
+            raise HTTPException(status_code=404, detail="Comodato no encontrado")
+        prev_estatus = prev[0].strip() if prev[0] else ""
+        id_equipo_prev = prev[1]
+
         cursor.execute(
             """UPDATE COMODATO SET
                 ID_EQUIPO = :id_equipo, ID_PACIENTE = :id_paciente,
@@ -685,8 +746,30 @@ def actualizar_comodato(
                 "id": id_comodato,
             },
         )
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Comodato no encontrado")
+
+        # RF-PS-07: Si se devuelve equipo, restaurar stock
+        new_estatus = data.estatus.strip() if data.estatus else ""
+        if prev_estatus == "PRESTADO" and new_estatus == "DEVUELTO":
+            cursor.execute(
+                """UPDATE EXISTENCIA_PRODUCTO
+                   SET CANTIDAD_DISPONIBLE = CANTIDAD_DISPONIBLE + 1
+                   WHERE ID_PRODUCTO = :id_equipo AND ACTIVO = 'S'""",
+                {"id_equipo": id_equipo_prev},
+            )
+            cursor.execute(
+                """INSERT INTO MOVIMIENTO_INVENTARIO
+                   (ID_PRODUCTO, ID_USUARIO_REGISTRO, ID_COMODATO,
+                    FECHA_MOVIMIENTO, TIPO_MOVIMIENTO, CANTIDAD, OBSERVACIONES)
+                   VALUES (:id_prod, :id_usr, :id_com,
+                           SYSTIMESTAMP, 'ENTRADA', 1, :obs)""",
+                {
+                    "id_prod": id_equipo_prev,
+                    "id_usr": id_usuario,
+                    "id_com": id_comodato,
+                    "obs": "Devolución de comodato",
+                },
+            )
+
         conn.commit()
 
     return _fetch_comodato(id_comodato)
@@ -791,6 +874,27 @@ def almacen_stats(current_user: dict = Depends(get_current_user)):
         cursor.execute("SELECT COUNT(*) FROM MOVIMIENTO_INVENTARIO")
         total_movimientos = cursor.fetchone()[0]
 
+        # RF-I-06: Productos próximos a vencer (30 días) o ya vencidos
+        try:
+            cursor.execute(
+                """SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE,
+                          ex.FECHA_CADUCIDAD, ex.CANTIDAD_DISPONIBLE,
+                          CASE WHEN ex.FECHA_CADUCIDAD < TRUNC(SYSDATE)
+                               THEN 'VENCIDO' ELSE 'PROXIMO' END AS ESTATUS_CADUCIDAD
+                   FROM PRODUCTO p
+                   JOIN EXISTENCIA_PRODUCTO ex
+                       ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'
+                   JOIN MEDICAMENTO m ON m.ID_PRODUCTO = p.ID_PRODUCTO
+                   WHERE p.ACTIVO = 'S'
+                     AND m.REQUIERE_CADUCIDAD = 'S'
+                     AND ex.FECHA_CADUCIDAD IS NOT NULL
+                     AND ex.FECHA_CADUCIDAD <= TRUNC(SYSDATE) + 30
+                   ORDER BY ex.FECHA_CADUCIDAD"""
+            )
+            proximos_vencer = [_serialize(r) for r in rows_to_dicts(cursor)]
+        except Exception:
+            proximos_vencer = []
+
     return {
         "total_productos": total_productos,
         "total_unidades": total_unidades,
@@ -800,4 +904,6 @@ def almacen_stats(current_user: dict = Depends(get_current_user)):
         "comodatos_activos": comodatos_activos,
         "servicios_activos": servicios_activos,
         "total_movimientos": total_movimientos,
+        "proximos_vencer": proximos_vencer,
+        "alertas_caducidad": len(proximos_vencer),
     }

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List
-from datetime import date, datetime
-from app.core.security import get_current_user
+from datetime import date, datetime, timedelta
+from app.core.security import get_current_user, require_role
 from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.core.bitacora import log_insert, log_cancelacion
 from app.schemas.schemas import VentaCreate, VentaResponse
 
 router = APIRouter()
@@ -117,6 +118,18 @@ def stats_ventas(current_user: dict = Depends(get_current_user)):
         )
         by_method = row_to_dict(cur)
 
+        # RF-D-06: Cobros de ayer para comparación
+        ayer_str = (date.today() - timedelta(days=1)).isoformat()
+        cur.execute(
+            """
+            SELECT COUNT(*) AS total_ayer
+              FROM VENTA v
+             WHERE v.CANCELADA = 'N' AND TRUNC(v.FECHA_VENTA) = TO_DATE(:fecha, 'YYYY-MM-DD')
+            """,
+            {"fecha": ayer_str},
+        )
+        ayer = row_to_dict(cur)
+
     return {
         "monto_total_sum": float(totals["monto_total_sum"]),
         "monto_efectivo": float(by_method["monto_efectivo"]),
@@ -124,6 +137,7 @@ def stats_ventas(current_user: dict = Depends(get_current_user)):
         "monto_transferencia": float(by_method["monto_transferencia"]),
         "count": int(totals["count"]),
         "total_hoy": int(hoy["total_hoy"]),
+        "total_ayer": int(ayer["total_ayer"]) if ayer else 0,
         "pendientes": int(pend["pendientes"]),
     }
 
@@ -209,7 +223,7 @@ def listar_ventas(
 
 @router.post("", status_code=201)
 def crear_venta(
-    data: VentaCreate, current_user: dict = Depends(get_current_user)
+    data: VentaCreate, current_user: dict = Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA"))
 ):
     """Crear nueva venta."""
     with get_db() as conn:
@@ -260,6 +274,9 @@ def crear_venta(
                         "monto": mp["monto"],
                     },
                 )
+
+        # Bitácora
+        log_insert(conn, "VENTA", new_id, id_usuario, f"Venta {folio} creada para paciente {data.id_paciente}")
 
         conn.commit()
 
@@ -334,7 +351,7 @@ def obtener_venta(
 def cancelar_venta(
     id_venta: int,
     motivo: Optional[str] = Query(None),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA")),
 ):
     """Cancelar una venta."""
     with get_db() as conn:
@@ -361,6 +378,9 @@ def cancelar_venta(
             """,
             {"motivo": motivo_final, "id_venta": id_venta},
         )
+
+        log_cancelacion(conn, "VENTA", id_venta, current_user.get("id_usuario", 1), motivo_final)
+
         conn.commit()
 
         # Return updated venta

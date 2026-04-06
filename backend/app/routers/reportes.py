@@ -352,6 +352,240 @@ def reporte_resumen(
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
+# ──────────────── RF-ER-08: Servicios por tipo ────────────────
+
+
+@router.get("/servicios-por-tipo")
+def reporte_servicios_por_tipo(
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    """Total de servicios brindados por tipo de servicio (RF-ER-08)."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            clauses = ["d.CANCELADO = 'N'"]
+            params: dict = {}
+
+            if fecha_inicio:
+                clauses.append("c.FECHA_HORA >= TO_TIMESTAMP(:fi, 'YYYY-MM-DD')")
+                params["fi"] = fecha_inicio
+            if fecha_fin:
+                clauses.append("c.FECHA_HORA < TO_TIMESTAMP(:ff, 'YYYY-MM-DD') + 1")
+                params["ff"] = fecha_fin
+
+            where = " AND ".join(clauses)
+            cursor.execute(
+                f"""SELECT s.NOMBRE AS label, SUM(d.CANTIDAD) AS cnt,
+                           SUM(d.MONTO_PAGADO) AS monto
+                    FROM DETALLE_CITA_SERVICIO d
+                    JOIN SERVICIO s ON s.ID_SERVICIO = d.ID_SERVICIO
+                    JOIN CITA c ON c.ID_CITA = d.ID_CITA
+                    WHERE {where}
+                    GROUP BY s.NOMBRE ORDER BY cnt DESC""",
+                params,
+            )
+            rows = rows_to_dicts(cursor)
+            labels = [r["label"].strip() for r in rows]
+            values = [int(r["cnt"]) for r in rows]
+            montos = [float(r["monto"] or 0) for r in rows]
+            return {"labels": labels, "values": values, "montos": montos, "total": sum(values)}
+    except Exception:
+        logger.exception("Error en reporte servicios por tipo")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+# ──────────────── RF-ER-09: Estudios por tipo ────────────────
+
+
+@router.get("/estudios-por-tipo")
+def reporte_estudios_por_tipo(
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    """Número de estudios (servicios de tipo estudio) realizados (RF-ER-09)."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            clauses = ["d.CANCELADO = 'N'"]
+            params: dict = {}
+
+            if fecha_inicio:
+                clauses.append("c.FECHA_HORA >= TO_TIMESTAMP(:fi, 'YYYY-MM-DD')")
+                params["fi"] = fecha_inicio
+            if fecha_fin:
+                clauses.append("c.FECHA_HORA < TO_TIMESTAMP(:ff, 'YYYY-MM-DD') + 1")
+                params["ff"] = fecha_fin
+
+            where = " AND ".join(clauses)
+            cursor.execute(
+                f"""SELECT s.NOMBRE AS label, COUNT(*) AS cnt
+                    FROM DETALLE_CITA_SERVICIO d
+                    JOIN SERVICIO s ON s.ID_SERVICIO = d.ID_SERVICIO
+                    JOIN CITA c ON c.ID_CITA = d.ID_CITA
+                    WHERE {where}
+                    GROUP BY s.NOMBRE ORDER BY cnt DESC""",
+                params,
+            )
+            rows = rows_to_dicts(cursor)
+            labels = [r["label"].strip() for r in rows]
+            values = [int(r["cnt"]) for r in rows]
+            return {"labels": labels, "values": values, "total": sum(values)}
+    except Exception:
+        logger.exception("Error en reporte estudios por tipo")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+# ──────────────── RF-ER-10: Pagos exentos vs cuotas ────────────────
+
+
+@router.get("/pagos-exentos")
+def reporte_pagos_exentos(
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    """Total de pagos exentos y cuotas de recuperación (RF-ER-10)."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            clauses = ["v.CANCELADA = 'N'"]
+            params: dict = {}
+
+            if fecha_inicio:
+                clauses.append("v.FECHA_VENTA >= TO_TIMESTAMP(:fi, 'YYYY-MM-DD')")
+                params["fi"] = fecha_inicio
+            if fecha_fin:
+                clauses.append("v.FECHA_VENTA < TO_TIMESTAMP(:ff, 'YYYY-MM-DD') + 1")
+                params["ff"] = fecha_fin
+
+            where = " AND ".join(clauses)
+            cursor.execute(
+                f"""SELECT
+                        COUNT(CASE WHEN v.EXENTO_PAGO = 'S' THEN 1 END) AS total_exentos,
+                        COUNT(CASE WHEN v.EXENTO_PAGO = 'N' THEN 1 END) AS total_cuotas,
+                        NVL(SUM(CASE WHEN v.EXENTO_PAGO = 'S' THEN v.MONTO_TOTAL ELSE 0 END), 0) AS monto_exentos,
+                        NVL(SUM(CASE WHEN v.EXENTO_PAGO = 'N' THEN v.MONTO_TOTAL ELSE 0 END), 0) AS monto_cuotas,
+                        NVL(SUM(v.MONTO_TOTAL), 0) AS monto_total
+                    FROM VENTA v
+                    WHERE {where}""",
+                params,
+            )
+            row = row_to_dict(cursor)
+            return {
+                "total_exentos": int(row["total_exentos"] or 0),
+                "total_cuotas": int(row["total_cuotas"] or 0),
+                "monto_exentos": float(row["monto_exentos"] or 0),
+                "monto_cuotas": float(row["monto_cuotas"] or 0),
+                "monto_total": float(row["monto_total"] or 0),
+            }
+    except Exception:
+        logger.exception("Error en reporte pagos exentos")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
+# ──────────────── RF-ER-07: Consolidado mensual ────────────────
+
+
+@router.get("/consolidado-mensual")
+def reporte_consolidado_mensual(
+    mes: Optional[int] = Query(None, description="Mes (1-12)"),
+    anio: Optional[int] = Query(None, description="Año"),
+    current_user: dict = Depends(get_current_user),
+):
+    """Reporte mensual consolidado con resumen de servicios y demografía (RF-ER-07)."""
+    from datetime import date as date_type
+    hoy = date_type.today()
+    m = mes or hoy.month
+    a = anio or hoy.year
+
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            params = {"mes": m, "anio": a}
+
+            # Pacientes atendidos en el mes (tuvieron cita completada)
+            cursor.execute(
+                """SELECT COUNT(DISTINCT c.ID_PACIENTE) AS pacientes_atendidos
+                   FROM CITA c
+                   WHERE c.ESTATUS = 'COMPLETADA'
+                     AND EXTRACT(MONTH FROM c.FECHA_HORA) = :mes
+                     AND EXTRACT(YEAR FROM c.FECHA_HORA) = :anio""",
+                params,
+            )
+            r1 = row_to_dict(cursor)
+
+            # Servicios brindados
+            cursor.execute(
+                """SELECT COUNT(*) AS total_servicios,
+                          NVL(SUM(d.MONTO_PAGADO), 0) AS monto_servicios
+                   FROM DETALLE_CITA_SERVICIO d
+                   JOIN CITA c ON c.ID_CITA = d.ID_CITA
+                   WHERE d.CANCELADO = 'N'
+                     AND EXTRACT(MONTH FROM c.FECHA_HORA) = :mes
+                     AND EXTRACT(YEAR FROM c.FECHA_HORA) = :anio""",
+                params,
+            )
+            r2 = row_to_dict(cursor)
+
+            # Ventas del mes
+            cursor.execute(
+                """SELECT COUNT(*) AS total_ventas,
+                          NVL(SUM(v.MONTO_TOTAL), 0) AS monto_ventas
+                   FROM VENTA v
+                   WHERE v.CANCELADA = 'N'
+                     AND EXTRACT(MONTH FROM v.FECHA_VENTA) = :mes
+                     AND EXTRACT(YEAR FROM v.FECHA_VENTA) = :anio""",
+                params,
+            )
+            r3 = row_to_dict(cursor)
+
+            # Citas por estatus
+            cursor.execute(
+                """SELECT ESTATUS, COUNT(*) AS cnt
+                   FROM CITA
+                   WHERE EXTRACT(MONTH FROM FECHA_HORA) = :mes
+                     AND EXTRACT(YEAR FROM FECHA_HORA) = :anio
+                   GROUP BY ESTATUS""",
+                params,
+            )
+            citas_status = {r["estatus"].strip(): int(r["cnt"]) for r in rows_to_dicts(cursor)}
+
+            # Género de pacientes atendidos
+            cursor.execute(
+                """SELECT p.GENERO, COUNT(DISTINCT c.ID_PACIENTE) AS cnt
+                   FROM CITA c
+                   JOIN PACIENTE p ON p.ID_PACIENTE = c.ID_PACIENTE
+                   WHERE c.ESTATUS = 'COMPLETADA'
+                     AND EXTRACT(MONTH FROM c.FECHA_HORA) = :mes
+                     AND EXTRACT(YEAR FROM c.FECHA_HORA) = :anio
+                   GROUP BY p.GENERO""",
+                params,
+            )
+            por_genero = {
+                (r["genero"].strip() if r["genero"] else "SIN DATO"): int(r["cnt"])
+                for r in rows_to_dicts(cursor)
+            }
+
+            return {
+                "mes": m,
+                "anio": a,
+                "pacientes_atendidos": int(r1["pacientes_atendidos"] or 0),
+                "total_servicios": int(r2["total_servicios"] or 0),
+                "monto_servicios": float(r2["monto_servicios"] or 0),
+                "total_ventas": int(r3["total_ventas"] or 0),
+                "monto_ventas": float(r3["monto_ventas"] or 0),
+                "citas_por_estatus": citas_status,
+                "por_genero": por_genero,
+                "fecha_generacion": datetime.now().isoformat(),
+            }
+    except Exception:
+        logger.exception("Error en reporte consolidado mensual")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+
 @router.get("/historial", response_model=List[ReporteResponse])
 def historial_reportes(
     tipo_reporte: Optional[str] = Query(None),

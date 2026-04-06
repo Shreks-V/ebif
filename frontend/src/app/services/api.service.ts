@@ -250,6 +250,71 @@ export class ApiService {
     return this.http.get<any[]>(`${this.apiUrl}/recibos/metodos-pago`);
   }
 
+  // ──────────────── Exportaciones (PDF / Excel) ────────────────
+
+  exportarReportePdf(tipo: string, filters?: any): Observable<Blob> {
+    let params = new HttpParams().set('tipo', tipo);
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get(`${this.apiUrl}/exportaciones/reportes/pdf`, {
+      params,
+      responseType: 'blob',
+    });
+  }
+
+  exportarBeneficiarioPdf(folio: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/exportaciones/beneficiario/${folio}/pdf`, {
+      responseType: 'blob',
+    });
+  }
+
+  exportarCredencialPdf(folio: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/exportaciones/beneficiario/${folio}/credencial`, {
+      responseType: 'blob',
+    });
+  }
+
+  exportarComprobanteCitaPdf(idCita: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/exportaciones/cita/${idCita}/comprobante`, {
+      responseType: 'blob',
+    });
+  }
+
+  exportarContratoComodatoPdf(idComodato: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/exportaciones/comodato/${idComodato}/contrato`, {
+      responseType: 'blob',
+    });
+  }
+
+  exportarBeneficiariosExcel(filters?: any): Observable<Blob> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get(`${this.apiUrl}/exportaciones/beneficiarios/excel`, {
+      params,
+      responseType: 'blob',
+    });
+  }
+
+  exportarReporteExcel(tipo: string, filters?: any): Observable<Blob> {
+    let params = new HttpParams().set('tipo', tipo);
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get(`${this.apiUrl}/exportaciones/reportes/excel`, {
+      params,
+      responseType: 'blob',
+    });
+  }
+
   // ──────────────── Reportes ────────────────
 
   getReportePorGenero(filters?: any): Observable<any> {
@@ -300,6 +365,43 @@ export class ApiService {
       });
     }
     return this.http.get<any>(`${this.apiUrl}/reportes/resumen`, { params });
+  }
+
+  getReporteServiciosPorTipo(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/reportes/servicios-por-tipo`, { params });
+  }
+
+  getReporteEstudiosPorTipo(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/reportes/estudios-por-tipo`, { params });
+  }
+
+  getReportePagosExentos(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/reportes/pagos-exentos`, { params });
+  }
+
+  getReporteConsolidadoMensual(mes?: number, anio?: number): Observable<any> {
+    let params = new HttpParams();
+    if (mes) params = params.set('mes', mes.toString());
+    if (anio) params = params.set('anio', anio.toString());
+    return this.http.get<any>(`${this.apiUrl}/reportes/consolidado-mensual`, { params });
   }
 
   getHistorialReportes(filters?: any): Observable<any[]> {

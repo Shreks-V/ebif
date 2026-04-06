@@ -264,84 +264,149 @@ import { ApiService } from '../../services/api.service';
 
           </div>
 
-          <!-- 4. Actividad del Día -->
-          <div class="bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-2xl p-6 text-white shadow-xl">
-            <h4 class="text-sm text-[#b9e5fb] font-bold mb-4 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
-                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
-                <path d="M12 17.5v-11"/>
-              </svg>
-              Actividad del Día
-            </h4>
-            <div class="grid grid-cols-4 gap-4">
-              <!-- Cobros -->
-              <div class="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="p-2 bg-emerald-500/20 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                      stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect width="20" height="14" x="2" y="5" rx="2"/>
-                      <line x1="2" x2="22" y1="10" y2="10"/>
+          <!-- 4. Panorama General — fusiona KPIs + Actividad + Resumen (RF-D-01..06) -->
+          <div class="grid grid-cols-3 gap-6">
+
+            <!-- Panel Izquierdo: Pulso del Día -->
+            <div class="col-span-2 bg-white rounded-2xl shadow-lg border-2 border-slate-100 p-6">
+              <h4 class="text-sm font-bold text-slate-700 flex items-center gap-2 mb-5">
+                <div class="w-1 h-4 bg-[#00328b] rounded-full"></div>
+                Pulso del D&iacute;a
+              </h4>
+              <div class="grid grid-cols-3 gap-4">
+                <!-- Beneficiarios Activos -->
+                <div class="flex items-center gap-4 p-4 bg-blue-50/60 rounded-xl">
+                  <div class="p-2.5 bg-blue-100 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
                   </div>
-                  <span class="text-xs text-blue-200 font-semibold">Cobros</span>
+                  <div>
+                    <p class="text-2xl font-black text-slate-900">{{ statBeneficiariosActivos }}</p>
+                    <p class="text-xs text-slate-500 font-semibold">Beneficiarios</p>
+                    <p class="text-[11px] mt-0.5" [ngClass]="deltaBeneficiarios >= 0 ? 'text-emerald-600' : 'text-red-500'">
+                      <span *ngIf="deltaBeneficiarios > 0">+{{ deltaBeneficiarios }}</span><span *ngIf="deltaBeneficiarios === 0">=</span><span *ngIf="deltaBeneficiarios < 0">{{ deltaBeneficiarios }}</span>
+                      <span class="text-slate-400 ml-0.5">vs sem. ant.</span>
+                    </p>
+                  </div>
                 </div>
-                <p class="text-2xl font-black">{{ statCobros }}</p>
-                <p class="text-xs text-blue-200">recibos</p>
-              </div>
-              <!-- Citas -->
-              <div class="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="p-2 bg-amber-500/20 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                      stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-                      <line x1="16" x2="16" y1="2" y2="6"/>
-                      <line x1="8" x2="8" y1="2" y2="6"/>
-                      <line x1="3" x2="21" y1="10" y2="10"/>
+                <!-- Citas Hoy -->
+                <div class="flex items-center gap-4 p-4 bg-amber-50/60 rounded-xl">
+                  <div class="p-2.5 bg-amber-100 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
                     </svg>
                   </div>
-                  <span class="text-xs text-blue-200 font-semibold">Citas</span>
+                  <div>
+                    <p class="text-2xl font-black text-slate-900">{{ statCitas }}</p>
+                    <p class="text-xs text-slate-500 font-semibold">Citas Hoy</p>
+                    <p class="text-[11px] mt-0.5" [ngClass]="deltaCitas >= 0 ? 'text-emerald-600' : 'text-red-500'">
+                      <span *ngIf="deltaCitas > 0">+{{ deltaCitas }}</span><span *ngIf="deltaCitas === 0">=</span><span *ngIf="deltaCitas < 0">{{ deltaCitas }}</span>
+                      <span class="text-slate-400 ml-0.5">vs ayer</span>
+                    </p>
+                  </div>
                 </div>
-                <p class="text-2xl font-black">{{ statCitas }}</p>
-                <p class="text-xs text-blue-200">programadas</p>
-              </div>
-              <!-- Pendientes -->
-              <div class="bg-red-500/20 backdrop-blur rounded-xl p-4 border-2 border-red-400">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="p-2 bg-red-500/20 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                      stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-                      <line x1="12" x2="12" y1="9" y2="13"/>
-                      <line x1="12" x2="12.01" y1="17" y2="17"/>
+                <!-- Cobros Hoy -->
+                <div class="flex items-center gap-4 p-4 bg-emerald-50/60 rounded-xl">
+                  <div class="p-2.5 bg-emerald-100 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
                     </svg>
                   </div>
-                  <span class="text-xs text-red-200 font-semibold">Pendientes</span>
+                  <div>
+                    <p class="text-2xl font-black text-slate-900">{{ statCobros }}</p>
+                    <p class="text-xs text-slate-500 font-semibold">Cobros Hoy</p>
+                    <p class="text-[11px] mt-0.5" [ngClass]="deltaRecibos >= 0 ? 'text-emerald-600' : 'text-red-500'">
+                      <span *ngIf="deltaRecibos > 0">+{{ deltaRecibos }}</span><span *ngIf="deltaRecibos === 0">=</span><span *ngIf="deltaRecibos < 0">{{ deltaRecibos }}</span>
+                      <span class="text-slate-400 ml-0.5">vs ayer</span>
+                    </p>
+                  </div>
                 </div>
-                <p class="text-2xl font-black">{{ statPendientes }}</p>
-                <p class="text-xs text-red-200">cobros pendientes</p>
-              </div>
-              <!-- Bajo Stock -->
-              <div class="bg-amber-500/20 backdrop-blur rounded-xl p-4 border-2 border-amber-400">
-                <div class="flex items-center gap-3 mb-2">
-                  <div class="p-2 bg-amber-500/20 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                      stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="m7.5 4.27 9 5.15"/>
-                      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-                      <path d="m3.3 7 8.7 5 8.7-5"/>
-                      <path d="M12 22V12"/>
+                <!-- Pendientes -->
+                <div class="flex items-center gap-4 p-4 rounded-xl" [ngClass]="statPendientes > 0 ? 'bg-red-50 border border-red-200' : 'bg-slate-50'">
+                  <div class="p-2.5 rounded-xl" [ngClass]="statPendientes > 0 ? 'bg-red-100' : 'bg-slate-200'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" [attr.stroke]="statPendientes > 0 ? '#ef4444' : '#94a3b8'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
                     </svg>
                   </div>
-                  <span class="text-xs text-amber-200 font-semibold">Bajo Stock</span>
+                  <div>
+                    <p class="text-2xl font-black" [ngClass]="statPendientes > 0 ? 'text-red-600' : 'text-slate-900'">{{ statPendientes }}</p>
+                    <p class="text-xs font-semibold" [ngClass]="statPendientes > 0 ? 'text-red-500' : 'text-slate-500'">Pendientes</p>
+                  </div>
                 </div>
-                <p class="text-2xl font-black">{{ statBajoStock }}</p>
-                <p class="text-xs text-amber-200">productos</p>
+                <!-- Comodatos Activos -->
+                <div class="flex items-center gap-4 p-4 bg-cyan-50/60 rounded-xl">
+                  <div class="p-2.5 bg-cyan-100 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-2xl font-black text-slate-900">{{ statComodatosActivos }}</p>
+                    <p class="text-xs text-slate-500 font-semibold">Comodatos</p>
+                  </div>
+                </div>
+                <!-- Alertas Inventario -->
+                <div class="flex items-center gap-4 p-4 rounded-xl" [ngClass]="statBajoStock > 0 ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50'">
+                  <div class="p-2.5 rounded-xl" [ngClass]="statBajoStock > 0 ? 'bg-amber-100' : 'bg-slate-200'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" [attr.stroke]="statBajoStock > 0 ? '#f59e0b' : '#94a3b8'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-2xl font-black" [ngClass]="statBajoStock > 0 ? 'text-amber-600' : 'text-slate-900'">{{ statBajoStock }}</p>
+                    <p class="text-xs font-semibold" [ngClass]="statBajoStock > 0 ? 'text-amber-500' : 'text-slate-500'">Alertas Inv.</p>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- Panel Derecho: Tendencia Semanal -->
+            <div class="col-span-1 bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-2xl shadow-xl p-6 text-white">
+              <div class="flex items-center justify-between mb-5">
+                <h4 class="text-sm font-bold text-blue-200 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+                  </svg>
+                  Semana
+                </h4>
+                <span class="text-[11px] text-blue-300">{{ resumenSemanaLabel }}</span>
+              </div>
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-blue-300"></div>
+                    <span class="text-sm text-blue-100">Nuevos Benef.</span>
+                  </div>
+                  <span class="text-lg font-black">{{ resumenNuevosBeneficiarios }}</span>
+                </div>
+                <div class="border-t border-white/10"></div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                    <span class="text-sm text-blue-100">Citas Completadas</span>
+                  </div>
+                  <span class="text-lg font-black">{{ resumenCitasCompletadas }}</span>
+                </div>
+                <div class="border-t border-white/10"></div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-purple-400"></div>
+                    <span class="text-sm text-blue-100">Recibos</span>
+                  </div>
+                  <span class="text-lg font-black">{{ resumenRecibosGenerados }}</span>
+                </div>
+                <div class="border-t border-white/10"></div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+                    <span class="text-sm text-blue-100">Recaudado</span>
+                  </div>
+                  <span class="text-lg font-black">\${{ resumenMontoRecaudado | number:'1.0-0' }}</span>
+                </div>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -360,6 +425,20 @@ export class DashboardComponent implements OnInit {
   statPendientes = 0;
   statCitas = 0;
   statBajoStock = 0;
+  statBeneficiariosActivos = 0;
+  statComodatosActivos = 0;
+
+  // RF-D-06: Deltas de comparación
+  deltaBeneficiarios = 0;
+  deltaCitas = 0;
+  deltaRecibos = 0;
+
+  // Resumen semanal (RF-D-05)
+  resumenSemanaLabel = '';
+  resumenNuevosBeneficiarios = 0;
+  resumenCitasCompletadas = 0;
+  resumenRecibosGenerados = 0;
+  resumenMontoRecaudado = 0;
 
   // Doctor del día
   doctorNombre = 'Sin doctor asignado';
@@ -392,6 +471,8 @@ export class DashboardComponent implements OnInit {
     this.loadCitasStats();
     this.loadAlmacenStats();
     this.loadDoctor();
+    this.loadBeneficiariosStats();
+    this.loadResumenSemanal();
   }
 
   private loadCitasHoy(): void {
@@ -440,10 +521,13 @@ export class DashboardComponent implements OnInit {
       next: (stats: any) => {
         this.statCobros = stats.total_hoy ?? stats.total ?? 0;
         this.statPendientes = stats.pendientes ?? 0;
+        const ayer = stats.total_ayer ?? 0;
+        this.deltaRecibos = this.statCobros - ayer;
       },
       error: () => {
         this.statCobros = 0;
         this.statPendientes = 0;
+        this.deltaRecibos = 0;
       },
     });
   }
@@ -452,9 +536,12 @@ export class DashboardComponent implements OnInit {
     this.api.getCitasStats().subscribe({
       next: (stats: any) => {
         this.statCitas = stats.total_hoy ?? stats.total ?? 0;
+        const ayer = stats.total_ayer ?? 0;
+        this.deltaCitas = this.statCitas - ayer;
       },
       error: () => {
         this.statCitas = 0;
+        this.deltaCitas = 0;
       },
     });
   }
@@ -462,11 +549,47 @@ export class DashboardComponent implements OnInit {
   private loadAlmacenStats(): void {
     this.api.getAlmacenStats().subscribe({
       next: (stats: any) => {
-        this.statBajoStock = stats.bajo_stock ?? stats.productos_bajo_stock ?? 0;
+        this.statBajoStock = (stats.alertas_stock_bajo ?? 0) + (stats.alertas_caducidad ?? 0);
+        this.statComodatosActivos = stats.comodatos_activos ?? 0;
       },
       error: () => {
         this.statBajoStock = 0;
+        this.statComodatosActivos = 0;
       },
+    });
+  }
+
+  private loadBeneficiariosStats(): void {
+    this.api.getDashboardStats().subscribe({
+      next: (stats: any) => {
+        this.statBeneficiariosActivos = stats.activos ?? stats.total ?? 0;
+        const estaSemana = stats.nuevos_esta_semana ?? 0;
+        const semanaAnt = stats.nuevos_semana_anterior ?? 0;
+        this.deltaBeneficiarios = estaSemana - semanaAnt;
+      },
+      error: () => {
+        this.statBeneficiariosActivos = 0;
+        this.deltaBeneficiarios = 0;
+      },
+    });
+  }
+
+  private loadResumenSemanal(): void {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    this.resumenSemanaLabel = `${startOfWeek.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })} - ${endOfWeek.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}`;
+
+    this.api.getReporteConsolidadoMensual(now.getMonth() + 1, now.getFullYear()).subscribe({
+      next: (data: any) => {
+        this.resumenNuevosBeneficiarios = data.pacientes_atendidos ?? 0;
+        this.resumenCitasCompletadas = data.citas_por_estatus?.COMPLETADA ?? 0;
+        this.resumenRecibosGenerados = data.total_ventas ?? 0;
+        this.resumenMontoRecaudado = data.monto_ventas ?? 0;
+      },
+      error: () => {},
     });
   }
 

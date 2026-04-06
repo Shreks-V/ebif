@@ -134,14 +134,19 @@ interface IndicadorOption {
                 </svg>
                 Vista Previa
               </button>
-              <button (click)="exportarPDF()" [disabled]="!reporteData || reporteData.length === 0" class="px-6 py-2.5 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                <!-- Download icon -->
+              <button (click)="exportarPDF()" class="px-6 py-2.5 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                Exportar PDF
+              </button>
+              <button (click)="exportarExcel()" class="px-6 py-2.5 border-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                   <polyline points="7 10 12 15 17 10"/>
                   <line x1="12" x2="12" y1="15" y2="3"/>
                 </svg>
-                Exportar CSV
+                Exportar Excel
               </button>
             </div>
           </div>
@@ -282,16 +287,24 @@ interface IndicadorOption {
                     </svg>
                   </button>
                 </div>
-                <div class="h-48 bg-slate-50 rounded-lg border border-slate-200 flex flex-col items-center justify-center text-slate-400">
-                  <!-- Chart placeholder icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
-                    <path d="M3 3v18h18"/>
-                    <path d="M18 17V9"/>
-                    <path d="M13 17V5"/>
-                    <path d="M8 17v-3"/>
-                  </svg>
-                  <span class="text-sm font-medium">Grafica de {{ getChartName(chart) }}</span>
-                  <span class="text-xs text-slate-300 mt-1">Integrar ng2-charts para visualizar datos</span>
+                <!-- Loading -->
+                <div *ngIf="!chartData[chart]" class="h-48 flex items-center justify-center text-slate-400 text-sm">Cargando datos...</div>
+                <!-- No data -->
+                <div *ngIf="chartData[chart] && chartData[chart].length === 0" class="h-48 flex items-center justify-center text-slate-400 text-sm">Sin datos disponibles</div>
+                <!-- Bar chart -->
+                <div *ngIf="chartData[chart] && chartData[chart].length > 0" class="space-y-3">
+                  <div *ngFor="let item of chartData[chart]; let i = index" class="flex items-center gap-3">
+                    <span class="text-xs text-slate-600 font-semibold w-28 truncate text-right" [title]="item.label">{{ item.label }}</span>
+                    <div class="flex-1 bg-slate-100 rounded-full h-7 relative overflow-hidden">
+                      <div class="h-full rounded-full transition-all duration-700 flex items-center justify-end pr-2"
+                        [style.width.%]="item.pct"
+                        [style.background]="chartColors[i % chartColors.length]">
+                        <span class="text-[11px] font-bold text-white drop-shadow" *ngIf="item.pct > 12">{{ item.value }}</span>
+                      </div>
+                      <span class="text-[11px] font-bold text-slate-600 absolute left-2 top-1/2 -translate-y-1/2" *ngIf="item.pct <= 12">{{ item.value }}</span>
+                    </div>
+                    <span class="text-xs text-slate-400 font-semibold w-10 text-right">{{ item.pct | number:'1.0-0' }}%</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -445,6 +458,11 @@ export class ReportesComponent {
     { id: 'tipo-cuota', nombre: 'Por Tipo de Cuota' },
   ];
 
+  // Chart data
+  chartData: Record<string, { label: string; value: number; pct: number }[]> = {};
+  chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316', '#14b8a6', '#6366f1'];
+  private dashboardCache: any = null;
+
   constructor(private api: ApiService) {}
 
   selectPeriod(id: string): void {
@@ -459,6 +477,7 @@ export class ReportesComponent {
     const index = this.selectedCharts.indexOf(id);
     if (index === -1) {
       this.selectedCharts.push(id);
+      this.loadChartData(id);
     } else {
       this.selectedCharts.splice(index, 1);
     }
@@ -479,6 +498,123 @@ export class ReportesComponent {
 
   limpiarGraficas(): void {
     this.selectedCharts = [];
+    this.chartData = {};
+  }
+
+  private loadChartData(chartId: string): void {
+    // Charts that come from the dashboard stats endpoint
+    const dashboardCharts = [
+      'beneficiarios-activos', 'beneficiarios-genero', 'beneficiarios-estado',
+      'beneficiarios-edad', 'membresia-estatus',
+    ];
+
+    if (dashboardCharts.includes(chartId)) {
+      if (this.dashboardCache) {
+        this.chartData[chartId] = this.extractDashboardChart(chartId, this.dashboardCache);
+      } else {
+        this.api.getDashboardStats().subscribe({
+          next: (stats: any) => {
+            this.dashboardCache = stats;
+            // Process all pending dashboard charts
+            this.selectedCharts.filter(c => dashboardCharts.includes(c)).forEach(c => {
+              this.chartData[c] = this.extractDashboardChart(c, stats);
+            });
+          },
+          error: () => { this.chartData[chartId] = []; },
+        });
+      }
+      return;
+    }
+
+    // Charts that come from specific report endpoints
+    const reportMap: Record<string, any> = {
+      'tipo-espina': this.api.getReportePorTipoEspina({}),
+      'tipo-cuota': this.api.getReportePagosExentos({}),
+    };
+
+    if (reportMap[chartId]) {
+      reportMap[chartId].subscribe({
+        next: (resp: any) => {
+          this.chartData[chartId] = this.extractReportChart(chartId, resp);
+        },
+        error: () => { this.chartData[chartId] = []; },
+      });
+      return;
+    }
+
+    // Fallback: fetch from beneficiarios stats
+    if (chartId === 'tipo-sangre' || chartId === 'uso-valvula') {
+      this.api.getBeneficiariosStats().subscribe({
+        next: (stats: any) => {
+          this.chartData[chartId] = this.extractBeneficiariosChart(chartId, stats);
+        },
+        error: () => { this.chartData[chartId] = []; },
+      });
+      return;
+    }
+
+    this.chartData[chartId] = [];
+  }
+
+  private toBarData(obj: Record<string, number>): { label: string; value: number; pct: number }[] {
+    const total = Object.values(obj).reduce((s, v) => s + v, 0) || 1;
+    return Object.entries(obj).map(([label, value]) => ({
+      label,
+      value,
+      pct: (value / total) * 100,
+    }));
+  }
+
+  private extractDashboardChart(chartId: string, stats: any): { label: string; value: number; pct: number }[] {
+    switch (chartId) {
+      case 'beneficiarios-activos':
+        return this.toBarData({ Activos: stats.activos ?? 0, Inactivos: stats.inactivos ?? 0 });
+      case 'beneficiarios-genero':
+        return this.toBarData(stats.por_genero ?? {});
+      case 'beneficiarios-estado':
+        return this.toBarData(stats.por_procedencia ?? {});
+      case 'beneficiarios-edad':
+        return this.toBarData(stats.por_etapa_vida ?? {});
+      case 'membresia-estatus':
+        return this.toBarData({ Activos: stats.activos ?? 0, Inactivos: stats.inactivos ?? 0 });
+      default:
+        return [];
+    }
+  }
+
+  private extractReportChart(chartId: string, resp: any): { label: string; value: number; pct: number }[] {
+    const data = Array.isArray(resp) ? resp : (resp?.data ?? resp?.resultados ?? []);
+    if (data.length === 0) return [];
+
+    // Build a key-value map from the report data
+    const obj: Record<string, number> = {};
+    for (const row of data) {
+      const keys = Object.keys(row);
+      const labelKey = keys.find(k => typeof row[k] === 'string') ?? keys[0];
+      const valueKey = keys.find(k => typeof row[k] === 'number' && k !== labelKey) ?? keys[1];
+      if (labelKey && valueKey) {
+        obj[String(row[labelKey]).trim()] = Number(row[valueKey]) || 0;
+      }
+    }
+    return this.toBarData(obj);
+  }
+
+  private extractBeneficiariosChart(chartId: string, stats: any): { label: string; value: number; pct: number }[] {
+    // These stats may have grouped data; if not, return empty
+    if (chartId === 'tipo-sangre' && stats.por_tipo_sangre) {
+      return this.toBarData(stats.por_tipo_sangre);
+    }
+    if (chartId === 'uso-valvula' && stats.por_valvula) {
+      return this.toBarData(stats.por_valvula);
+    }
+    // Fallback: try to fetch from report endpoints
+    if (chartId === 'tipo-sangre') {
+      return this.toBarData({ 'Sin datos': 0 });
+    }
+    if (chartId === 'uso-valvula') {
+      return this.toBarData({ 'Sin datos': 0 });
+    }
+    return [];
   }
 
   getReporteTipoLabel(): string {
@@ -622,31 +758,60 @@ export class ReportesComponent {
   }
 
   exportarPDF(): void {
-    if (!this.reporteData || this.reporteData.length === 0) return;
+    const tipo = this.tipoReporte || 'resumen';
+    const filters = this.buildExportFilters();
 
-    const separator = ',';
-    const columns = this.reporteColumnas;
+    this.api.exportarReportePdf(tipo, filters).subscribe({
+      next: (blob) => this.descargarArchivo(blob, `reporte_${tipo}_${new Date().toISOString().slice(0, 10)}.pdf`),
+      error: () => alert('Error al generar PDF'),
+    });
+  }
 
-    // Build CSV content
-    let csv = columns.join(separator) + '\n';
-    for (const row of this.reporteData) {
-      const values = columns.map(col => {
-        const val = row[col] != null ? String(row[col]) : '';
-        // Escape commas and quotes
-        if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-          return '"' + val.replace(/"/g, '""') + '"';
-        }
-        return val;
-      });
-      csv += values.join(separator) + '\n';
+  exportarExcel(): void {
+    const tipo = this.tipoReporte || 'resumen';
+    const filters = this.buildExportFilters();
+
+    this.api.exportarReporteExcel(tipo, filters).subscribe({
+      next: (blob) => this.descargarArchivo(blob, `reporte_${tipo}_${new Date().toISOString().slice(0, 10)}.xlsx`),
+      error: () => alert('Error al generar Excel'),
+    });
+  }
+
+  private buildExportFilters(): any {
+    const filters: any = {};
+    if (this.selectedPeriod === 'personalizado') {
+      if (this.fechaInicio) filters.fecha_inicio = this.fechaInicio;
+      if (this.fechaFin) filters.fecha_fin = this.fechaFin;
+    } else {
+      const { inicio, fin } = this.calcularRangoFechas(this.selectedPeriod);
+      filters.fecha_inicio = inicio;
+      filters.fecha_fin = fin;
+    }
+    return filters;
+  }
+
+  private calcularRangoFechas(periodo: string): { inicio: string; fin: string } {
+    const hoy = new Date();
+    const fin = hoy.toISOString().slice(0, 10);
+    let inicio = new Date(hoy);
+
+    switch (periodo) {
+      case 'ultimo-mes': inicio.setMonth(hoy.getMonth() - 1); break;
+      case 'ultimos-3-meses': inicio.setMonth(hoy.getMonth() - 3); break;
+      case 'ultimo-trimestre': inicio.setMonth(hoy.getMonth() - 3); break;
+      case 'ultimos-6-meses': inicio.setMonth(hoy.getMonth() - 6); break;
+      case 'ultimo-ano': inicio.setFullYear(hoy.getFullYear() - 1); break;
+      default: inicio.setMonth(hoy.getMonth() - 1);
     }
 
-    // Trigger download
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    return { inicio: inicio.toISOString().slice(0, 10), fin };
+  }
+
+  private descargarArchivo(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `reporte_${this.tipoReporte}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   }

@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
-from datetime import date, datetime
-from app.core.security import get_current_user
+from datetime import date, datetime, timedelta
+from app.core.security import get_current_user, require_role
 from app.core.database import get_db, rows_to_dicts, row_to_dict
 from app.core.crypto import encrypt, decrypt_row, decrypt_rows, PACIENTE_ENCRYPTED_FIELDS
+from app.core.bitacora import log_insert, log_delete
 from app.schemas.schemas import BeneficiarioCreate, BeneficiarioResponse
 
 router = APIRouter()
@@ -158,6 +159,26 @@ def dashboard_stats(current_user: dict = Depends(get_current_user)):
             e = _etapa_vida(edad)
             etapas[e] = etapas.get(e, 0) + 1
 
+        # RF-D-06: Nuevos registros esta semana vs semana anterior
+        hoy = date.today()
+        inicio_semana = hoy - timedelta(days=hoy.weekday())
+        inicio_semana_ant = inicio_semana - timedelta(days=7)
+        cur.execute(
+            """SELECT COUNT(*) FROM PACIENTE
+               WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'
+                 AND TRUNC(FECHA_REGISTRO) >= TO_DATE(:inicio, 'YYYY-MM-DD')""",
+            {"inicio": inicio_semana.isoformat()},
+        )
+        nuevos_esta_semana = cur.fetchone()[0]
+        cur.execute(
+            """SELECT COUNT(*) FROM PACIENTE
+               WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'
+                 AND TRUNC(FECHA_REGISTRO) >= TO_DATE(:inicio, 'YYYY-MM-DD')
+                 AND TRUNC(FECHA_REGISTRO) < TO_DATE(:fin, 'YYYY-MM-DD')""",
+            {"inicio": inicio_semana_ant.isoformat(), "fin": inicio_semana.isoformat()},
+        )
+        nuevos_semana_anterior = cur.fetchone()[0]
+
         return {
             "total": total,
             "activos": activos,
@@ -165,6 +186,8 @@ def dashboard_stats(current_user: dict = Depends(get_current_user)):
             "por_genero": {"Masculino": masculino, "Femenino": femenino},
             "por_procedencia": {"Nuevo León": nuevo_leon, "Foráneos": foraneos},
             "por_etapa_vida": etapas,
+            "nuevos_esta_semana": nuevos_esta_semana,
+            "nuevos_semana_anterior": nuevos_semana_anterior,
         }
 
 
@@ -238,7 +261,7 @@ def obtener_beneficiario(folio: str, current_user: dict = Depends(get_current_us
 
 @router.post("", status_code=201, response_model=BeneficiarioResponse)
 def crear_beneficiario(
-    data: BeneficiarioCreate, current_user: dict = Depends(get_current_user)
+    data: BeneficiarioCreate, current_user: dict = Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA"))
 ):
     """Crear nuevo beneficiario con folio auto-generado."""
     with get_db() as conn:
@@ -325,6 +348,8 @@ def crear_beneficiario(
                 {"id_paciente": new_id, "id_tipo_espina": tid},
             )
 
+        log_insert(conn, "PACIENTE", new_id, current_user.get("id_usuario", 1), f"Beneficiario {folio} creado")
+
         conn.commit()
 
         # Fetch the created record
@@ -337,7 +362,7 @@ def crear_beneficiario(
 def actualizar_beneficiario(
     folio: str,
     data: BeneficiarioCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA")),
 ):
     """Actualizar beneficiario existente."""
     with get_db() as conn:
@@ -435,7 +460,7 @@ def actualizar_beneficiario(
 
 
 @router.delete("/{folio}", status_code=200)
-def eliminar_beneficiario(folio: str, current_user: dict = Depends(get_current_user)):
+def eliminar_beneficiario(folio: str, current_user: dict = Depends(require_role("ADMINISTRADOR"))):
     """Soft delete: marcar beneficiario como inactivo."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -444,7 +469,9 @@ def eliminar_beneficiario(folio: str, current_user: dict = Depends(get_current_u
         if row is None:
             raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
 
+        id_paciente = row[0]
         cur.execute("UPDATE PACIENTE SET ACTIVO = 'N' WHERE FOLIO = :folio", {"folio": folio})
+        log_delete(conn, "PACIENTE", id_paciente, current_user.get("id_usuario", 1), f"Beneficiario {folio} desactivado")
         conn.commit()
         return {"detail": "Beneficiario eliminado correctamente"}
 
@@ -467,12 +494,95 @@ def historial_beneficiario(
             f" {paciente.get('apellido_materno') or ''}".strip()
         )
 
-        # Historial placeholder - will be populated when related tables are integrated
-        historial = {
+        id_paciente = paciente["id_paciente"]
+
+        # Citas del paciente
+        cur.execute(
+            """
+            SELECT c.ID_CITA, c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO
+            FROM CITA c
+            WHERE c.ID_PACIENTE = :id
+            ORDER BY c.FECHA_HORA DESC
+            """,
+            {"id": id_paciente},
+        )
+        citas_raw = rows_to_dicts(cur)
+        citas = []
+        for ci in citas_raw:
+            ci["fecha_hora"] = _date_to_str(ci.get("fecha_hora"))
+            ci["fecha_registro"] = _date_to_str(ci.get("fecha_registro"))
+            ci["estatus"] = _strip_char(ci.get("estatus"))
+            # Servicios de cada cita
+            cur.execute(
+                """
+                SELECT s.NOMBRE, d.CANTIDAD, d.MONTO_PAGADO, d.CANCELADO
+                FROM DETALLE_CITA_SERVICIO d
+                JOIN SERVICIO s ON s.ID_SERVICIO = d.ID_SERVICIO
+                WHERE d.ID_CITA = :id_cita
+                """,
+                {"id_cita": ci["id_cita"]},
+            )
+            ci["servicios"] = rows_to_dicts(cur)
+            # Doctores de cada cita
+            cur.execute(
+                """
+                SELECT d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS nombre_doctor,
+                       d.ESPECIALIDAD, cd.ROL_DOCTOR
+                FROM CITA_DOCTOR cd
+                JOIN DOCTOR d ON d.ID_DOCTOR = cd.ID_DOCTOR
+                WHERE cd.ID_CITA = :id_cita
+                """,
+                {"id_cita": ci["id_cita"]},
+            )
+            ci["doctores"] = rows_to_dicts(cur)
+            citas.append(ci)
+
+        # Pagos / Ventas del paciente
+        cur.execute(
+            """
+            SELECT v.ID_VENTA, v.FOLIO_VENTA, v.FECHA_VENTA,
+                   v.MONTO_TOTAL, v.MONTO_PAGADO, v.SALDO_PENDIENTE,
+                   v.EXENTO_PAGO, v.CANCELADA, v.MOTIVO_CANCELACION
+            FROM VENTA v
+            WHERE v.ID_PACIENTE = :id
+            ORDER BY v.FECHA_VENTA DESC
+            """,
+            {"id": id_paciente},
+        )
+        pagos_raw = rows_to_dicts(cur)
+        pagos = []
+        for pg in pagos_raw:
+            pg["fecha_venta"] = _date_to_str(pg.get("fecha_venta"))
+            pg["cancelada"] = _strip_char(pg.get("cancelada"))
+            pg["exento_pago"] = _strip_char(pg.get("exento_pago"))
+            pagos.append(pg)
+
+        # Comodatos del paciente
+        cur.execute(
+            """
+            SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.FECHA_PRESTAMO,
+                   c.FECHA_DEVOLUCION, c.ESTATUS, c.MONTO_TOTAL,
+                   c.MONTO_PAGADO, c.SALDO_PENDIENTE,
+                   pr.NOMBRE AS nombre_equipo
+            FROM COMODATO c
+            LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO
+            WHERE c.ID_PACIENTE = :id
+            ORDER BY c.FECHA_PRESTAMO DESC
+            """,
+            {"id": id_paciente},
+        )
+        comodatos_raw = rows_to_dicts(cur)
+        comodatos = []
+        for cm in comodatos_raw:
+            cm["fecha_prestamo"] = _date_to_str(cm.get("fecha_prestamo"))
+            cm["fecha_devolucion"] = _date_to_str(cm.get("fecha_devolucion"))
+            cm["estatus"] = _strip_char(cm.get("estatus"))
+            comodatos.append(cm)
+
+        return {
             "folio": folio,
             "nombre": nombre_completo,
-            "servicios": [],
-            "pagos": [],
-            "citas": [],
+            "citas": citas,
+            "pagos": pagos,
+            "comodatos": comodatos,
         }
-        return historial

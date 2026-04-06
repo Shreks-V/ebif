@@ -148,7 +148,7 @@ interface MetodoPagoRow {
 
         <!-- Filters -->
         <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-slate-100">
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-5 gap-4">
             <div class="relative">
               <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
@@ -160,6 +160,12 @@ interface MetodoPagoRow {
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
               </svg>
               <input type="text" placeholder="Buscar por beneficiario..." [(ngModel)]="filtroBeneficiario" (input)="filtrarRecibos()" class="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" />
+            </div>
+            <div>
+              <input type="date" [(ngModel)]="filtroFechaInicio" (change)="filtrarRecibos()" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" placeholder="Fecha inicio" />
+            </div>
+            <div>
+              <input type="date" [(ngModel)]="filtroFechaFin" (change)="filtrarRecibos()" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" placeholder="Fecha fin" />
             </div>
             <button (click)="limpiarFiltros()" class="w-full py-2.5 px-4 border-2 border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all cursor-pointer flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -530,6 +536,8 @@ interface MetodoPagoRow {
 export class RecibosComponent implements OnInit {
   filtroFolio = '';
   filtroBeneficiario = '';
+  filtroFechaInicio = '';
+  filtroFechaFin = '';
 
   recibos: Recibo[] = [];
   recibosFiltrados: Recibo[] = [];
@@ -605,10 +613,10 @@ export class RecibosComponent implements OnInit {
   private cargarStats(): void {
     this.api.getRecibosStats().subscribe({
       next: (stats: any) => {
-        this.montoTotal = stats.monto_total ?? 0;
-        this.montoEfectivo = stats.efectivo ?? 0;
-        this.montoTarjeta = stats.tarjeta ?? 0;
-        this.montoTransferencia = stats.transferencia ?? 0;
+        this.montoTotal = stats.monto_total_sum ?? 0;
+        this.montoEfectivo = stats.monto_efectivo ?? 0;
+        this.montoTarjeta = stats.monto_tarjeta ?? 0;
+        this.montoTransferencia = stats.monto_transferencia ?? 0;
       },
       error: (err) => {
         console.error('Error al cargar estadísticas de recibos:', err);
@@ -622,13 +630,23 @@ export class RecibosComponent implements OnInit {
         r.folioVenta.toLowerCase().includes(this.filtroFolio.toLowerCase());
       const matchBeneficiario = !this.filtroBeneficiario ||
         r.nombrePaciente.toLowerCase().includes(this.filtroBeneficiario.toLowerCase());
-      return matchFolio && matchBeneficiario;
+      let matchFechaInicio = true;
+      let matchFechaFin = true;
+      if (this.filtroFechaInicio && r.fechaVenta) {
+        matchFechaInicio = r.fechaVenta.slice(0, 10) >= this.filtroFechaInicio;
+      }
+      if (this.filtroFechaFin && r.fechaVenta) {
+        matchFechaFin = r.fechaVenta.slice(0, 10) <= this.filtroFechaFin;
+      }
+      return matchFolio && matchBeneficiario && matchFechaInicio && matchFechaFin;
     });
   }
 
   limpiarFiltros(): void {
     this.filtroFolio = '';
     this.filtroBeneficiario = '';
+    this.filtroFechaInicio = '';
+    this.filtroFechaFin = '';
     this.recibosFiltrados = [...this.recibos];
   }
 

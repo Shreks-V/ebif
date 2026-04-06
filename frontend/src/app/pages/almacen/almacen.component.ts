@@ -27,6 +27,7 @@ interface ProductoItem {
   cantidadDisponible: number | null;
   nivelMinimo: number | null;
   unidadMedida: string;
+  fechaCaducidad?: string | null;
 }
 
 interface ServicioItem {
@@ -82,7 +83,7 @@ interface ComodatoItem {
           </div>
 
           <!-- KPI Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <!-- Total Items -->
             <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
@@ -100,6 +101,15 @@ interface ComodatoItem {
               </svg>
               <p class="text-4xl font-black text-slate-900">{{ getBajoStockCount() }}</p>
               <p class="text-sm text-slate-600 mt-1">Alertas de stock</p>
+            </div>
+            <!-- Pr&oacute;ximos a Vencer (RF-I-06) -->
+            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-red-200">
+              <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+              <svg class="w-8 h-8 text-red-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <p class="text-4xl font-black text-slate-900">{{ alertasCaducidad }}</p>
+              <p class="text-sm text-slate-600 mt-1">Pr&oacute;ximos a vencer</p>
             </div>
             <!-- Comodatos Activos -->
             <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
@@ -386,6 +396,11 @@ interface ComodatoItem {
                               <polyline points="20 6 9 17 4 12"/>
                             </svg>
                           </button>
+                          <button (click)="descargarContratoComodato(com)" class="p-1.5 rounded-lg hover:bg-blue-50 text-slate-500 hover:text-blue-600 transition-colors" title="Contrato PDF">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                          </button>
                           <button (click)="printComodato(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Imprimir">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/>
@@ -500,6 +515,11 @@ interface ComodatoItem {
                     <option value="N">No</option>
                   </select>
                 </div>
+              </div>
+              <div *ngIf="productoForm.requiere_caducidad === 'S'" class="mt-4">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Caducidad</label>
+                <input type="date" [(ngModel)]="productoForm.fecha_caducidad" name="fecha_caducidad"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
               </div>
             </div>
           </ng-container>
@@ -890,6 +910,7 @@ export class AlmacenComponent implements OnInit {
   productos: ProductoItem[] = [];
   servicios: ServicioItem[] = [];
   comodatos: ComodatoItem[] = [];
+  alertasCaducidad = 0;
 
   // Modal state
   showNuevoProductoModal = false;
@@ -922,6 +943,7 @@ export class AlmacenComponent implements OnInit {
     this.loadProductos();
     this.loadServicios();
     this.loadComodatos();
+    this.loadAlmacenStats();
   }
 
   // ──────────────── Data Loading ────────────────
@@ -949,9 +971,21 @@ export class AlmacenComponent implements OnInit {
           cantidadDisponible: p.cantidad_disponible,
           nivelMinimo: p.nivel_minimo,
           unidadMedida: p.unidad_medida,
+          fechaCaducidad: p.fecha_caducidad,
         }));
       },
       error: (err) => console.error('Error loading productos:', err),
+    });
+  }
+
+  loadAlmacenStats(): void {
+    this.api.getAlmacenStats().subscribe({
+      next: (stats: any) => {
+        this.alertasCaducidad = stats.alertas_caducidad ?? 0;
+      },
+      error: () => {
+        this.alertasCaducidad = 0;
+      },
     });
   }
 
@@ -1019,6 +1053,7 @@ export class AlmacenComponent implements OnInit {
       cantidad_disponible: 0,
       nivel_minimo: 5,
       unidad_medida: '',
+      fecha_caducidad: '',
     };
   }
 
@@ -1076,6 +1111,7 @@ export class AlmacenComponent implements OnInit {
       cantidad_disponible: producto.cantidadDisponible ?? 0,
       nivel_minimo: producto.nivelMinimo ?? 5,
       unidad_medida: producto.unidadMedida,
+      fecha_caducidad: producto.fechaCaducidad ? producto.fechaCaducidad.substring(0, 10) : '',
     };
     this.showNuevoProductoModal = true;
   }
@@ -1102,6 +1138,10 @@ export class AlmacenComponent implements OnInit {
       delete payload.presentacion;
       delete payload.dosis;
       delete payload.requiere_caducidad;
+      delete payload.fecha_caducidad;
+    }
+    if (payload.fecha_caducidad === '') {
+      payload.fecha_caducidad = null;
     }
 
     if (this.editingProduct) {
@@ -1223,6 +1263,20 @@ export class AlmacenComponent implements OnInit {
       window.print();
       this.printingComodato = null;
     }, 100);
+  }
+
+  descargarContratoComodato(com: ComodatoItem): void {
+    this.api.exportarContratoComodatoPdf(com.idComodato).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `contrato_${com.folioComodato}.pdf`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => alert('Error al generar contrato de comodato'),
+    });
   }
 
   // ──────────────── KPI Helpers ────────────────

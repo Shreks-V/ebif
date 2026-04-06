@@ -1,7 +1,7 @@
 from datetime import datetime, date
 import logging
 from fastapi import APIRouter, HTTPException, Depends
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 from app.core.database import get_db, rows_to_dicts, row_to_dict
 from app.core.crypto import encrypt, decrypt_row, DOCTOR_ENCRYPTED_FIELDS
 from app.schemas.schemas import (
@@ -145,7 +145,7 @@ def obtener_doctor(id_doctor: int, current_user: dict = Depends(get_current_user
 
 
 @router.post("", status_code=201)
-def crear_doctor(data: DoctorCreate, current_user: dict = Depends(get_current_user)):
+def crear_doctor(data: DoctorCreate, current_user: dict = Depends(require_role("ADMINISTRADOR"))):
     """Crear nuevo doctor con servicios asociados."""
     try:
         with get_db() as conn:
@@ -192,7 +192,7 @@ def crear_doctor(data: DoctorCreate, current_user: dict = Depends(get_current_us
 def actualizar_doctor(
     id_doctor: int,
     data: DoctorCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR")),
 ):
     """Actualizar doctor existente y sus servicios."""
     try:
@@ -246,7 +246,7 @@ def actualizar_doctor(
 
 
 @router.delete("/{id_doctor}")
-def desactivar_doctor(id_doctor: int, current_user: dict = Depends(get_current_user)):
+def desactivar_doctor(id_doctor: int, current_user: dict = Depends(require_role("ADMINISTRADOR"))):
     """Desactivar doctor (soft delete, ACTIVO = 'N')."""
     try:
         with get_db() as conn:

@@ -182,6 +182,11 @@ import { ApiService } from '../../services/api.service';
                             <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                           </svg>
                         </button>
+                        <button (click)="descargarComprobante(cita)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Comprobante PDF">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
                         <button (click)="confirmarEliminarCita(cita)" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
@@ -1365,6 +1370,20 @@ export class CitasComponent implements OnInit {
     this.api.cancelarCita(cita.idCita).subscribe({
       next: () => this.cargarCitas(),
       error: (err) => console.error('Error al cancelar cita:', err),
+    });
+  }
+
+  descargarComprobante(cita: any): void {
+    this.api.exportarComprobanteCitaPdf(cita.idCita).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `comprobante_cita_${cita.idCita}.pdf`;
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => alert('Error al generar comprobante'),
     });
   }
 

@@ -1,8 +1,9 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 from app.core.database import get_db, rows_to_dicts, row_to_dict
+from app.core.bitacora import log_insert, log_cancelacion
 from app.schemas.schemas import CitaCreate, CitaResponse
 
 router = APIRouter()
@@ -84,6 +85,20 @@ def citas_stats(current_user: dict = Depends(get_current_user)):
     stats = {r["estatus"]: r["total"] for r in rows}
     stats["total_hoy"] = int(hoy_row["total_hoy"]) if hoy_row else 0
     stats["total"] = sum(r["total"] for r in rows)
+
+    # RF-D-06: Comparación vs ayer
+    with get_db() as conn:
+        cursor = conn.cursor()
+        ayer = (hoy - timedelta(days=1)).isoformat()
+        cursor.execute(
+            """SELECT COUNT(*) AS TOTAL_AYER
+               FROM CITA
+               WHERE TRUNC(FECHA_HORA) = TO_DATE(:fecha, 'YYYY-MM-DD') AND ESTATUS = 'PROGRAMADA'""",
+            {"fecha": ayer},
+        )
+        ayer_row = row_to_dict(cursor)
+        stats["total_ayer"] = int(ayer_row["total_ayer"]) if ayer_row else 0
+
     return stats
 
 
@@ -175,10 +190,25 @@ def obtener_cita(id_cita: int, current_user: dict = Depends(get_current_user)):
 
 
 @router.post("", status_code=201)
-def crear_cita(data: CitaCreate, current_user: dict = Depends(get_current_user)):
+def crear_cita(data: CitaCreate, current_user: dict = Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA"))):
     """Crear nueva cita con sus servicios."""
     with get_db() as conn:
         cursor = conn.cursor()
+
+        # RF-SO-06: Validar membresía activa del beneficiario
+        cursor.execute(
+            "SELECT MEMBRESIA_ESTATUS, ACTIVO FROM PACIENTE WHERE ID_PACIENTE = :id_paciente",
+            {"id_paciente": data.id_paciente},
+        )
+        paciente_row = cursor.fetchone()
+        if paciente_row is None:
+            raise HTTPException(status_code=404, detail="Paciente no encontrado")
+        membresia_estatus = (paciente_row[0] or "").strip()
+        activo = (paciente_row[1] or "").strip()
+        if activo != "S":
+            raise HTTPException(status_code=400, detail="El paciente no se encuentra activo en el sistema")
+        if membresia_estatus != "ACTIVO":
+            raise HTTPException(status_code=400, detail="El paciente no tiene membresía activa. Actualice su estatus antes de agendar una cita")
 
         # Insert CITA and get generated ID
         out_id = cursor.var(int)
@@ -218,6 +248,10 @@ def crear_cita(data: CitaCreate, current_user: dict = Depends(get_current_user))
                     },
                 )
 
+        # Bitácora
+        id_usuario = data.id_usuario_registro or current_user.get("id_usuario", 1)
+        log_insert(conn, "CITA", id_cita, id_usuario, f"Cita creada para paciente {data.id_paciente}")
+
         conn.commit()
 
         # Fetch the created cita to return full response
@@ -235,7 +269,7 @@ def crear_cita(data: CitaCreate, current_user: dict = Depends(get_current_user))
 def actualizar_cita(
     id_cita: int,
     data: CitaCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA")),
 ):
     """Actualizar cita existente (estatus, notas, fecha, servicios)."""
     with get_db() as conn:
@@ -307,7 +341,7 @@ def actualizar_cita(
 
 
 @router.put("/{id_cita}/completar")
-def completar_cita(id_cita: int, current_user: dict = Depends(get_current_user)):
+def completar_cita(id_cita: int, current_user: dict = Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA"))):
     """Marcar una cita como COMPLETADA."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -337,7 +371,7 @@ def completar_cita(id_cita: int, current_user: dict = Depends(get_current_user))
 
 
 @router.put("/{id_cita}/cancelar")
-def cancelar_cita(id_cita: int, current_user: dict = Depends(get_current_user)):
+def cancelar_cita(id_cita: int, current_user: dict = Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA"))):
     """Cancelar una cita (cambiar estatus a CANCELADA)."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -354,6 +388,9 @@ def cancelar_cita(id_cita: int, current_user: dict = Depends(get_current_user)):
             "UPDATE CITA SET ESTATUS = 'CANCELADA' WHERE ID_CITA = :id_cita",
             {"id_cita": id_cita},
         )
+
+        log_cancelacion(conn, "CITA", id_cita, current_user.get("id_usuario", 1), "Cita cancelada")
+
         conn.commit()
 
         # Return updated cita
@@ -368,7 +405,7 @@ def cancelar_cita(id_cita: int, current_user: dict = Depends(get_current_user)):
 
 
 @router.delete("/{id_cita}")
-def eliminar_cita(id_cita: int, current_user: dict = Depends(get_current_user)):
+def eliminar_cita(id_cita: int, current_user: dict = Depends(require_role("ADMINISTRADOR"))):
     """Eliminar una cita y sus detalles de servicio."""
     with get_db() as conn:
         cursor = conn.cursor()

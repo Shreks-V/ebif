@@ -543,8 +543,18 @@ interface Preregistro {
           <div class="md:col-span-2"><span class="text-xs font-bold text-slate-400 uppercase">Notas Adicionales</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.notasAdicionales || '-' }}</p></div>
         </div>
 
-        <!-- Close -->
-        <div class="flex justify-end">
+        <!-- Actions -->
+        <div class="flex justify-between items-center">
+          <div class="flex gap-2">
+            <button (click)="descargarCredencial(beneficiarioSeleccionado.folio)" class="px-4 py-2 rounded-xl font-bold text-sm bg-[#00328b] text-white hover:bg-[#002266] transition-all flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
+              Credencial
+            </button>
+            <button (click)="descargarExpediente(beneficiarioSeleccionado.folio)" class="px-4 py-2 rounded-xl font-bold text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-all flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+              Expediente PDF
+            </button>
+          </div>
           <button (click)="closeDetalleModal()" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
             Cerrar
           </button>
@@ -994,41 +1004,40 @@ export class BeneficiariosComponent implements OnInit {
     this.preregistroSeleccionado = null;
   }
 
-  // ──────────── Exportar CSV ────────────
+  // ──────────── Exportar Excel (RF-RB-07) ────────────
 
   exportarCSV(): void {
-    const headers = ['Folio', 'Nombre', 'Apellido Paterno', 'Apellido Materno', 'CURP', 'Genero', 'Ciudad', 'Estado', 'Membresia', 'Cuota'];
-    const rows = this.filteredBeneficiarios.map(b => [
-      b.folio,
-      b.nombre,
-      b.apellidoPaterno,
-      b.apellidoMaterno,
-      b.curp,
-      b.genero,
-      b.ciudad,
-      b.estado,
-      b.membresiaEstatus,
-      b.tipoCuota
-    ]);
+    const filters: any = {};
+    if (this.searchTerm) filters.busqueda = this.searchTerm;
+    this.api.exportarBeneficiariosExcel(filters).subscribe({
+      next: (blob) => this.descargarArchivo(blob, `beneficiarios_${new Date().toISOString().slice(0, 10)}.xlsx`),
+      error: () => alert('Error al exportar'),
+    });
+  }
 
-    const escapeCsv = (val: string) => {
-      if (!val) return '';
-      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-        return '"' + val.replace(/"/g, '""') + '"';
-      }
-      return val;
-    };
+  // ──────────── Descargar credencial PDF (RF-RB-06) ────────────
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => escapeCsv(cell || '')).join(','))
-    ].join('\n');
+  descargarCredencial(folio: string): void {
+    this.api.exportarCredencialPdf(folio).subscribe({
+      next: (blob) => this.descargarArchivo(blob, `credencial_${folio}.pdf`),
+      error: () => alert('Error al generar credencial'),
+    });
+  }
 
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  // ──────────── Descargar expediente PDF (RF-ER-06) ────────────
+
+  descargarExpediente(folio: string): void {
+    this.api.exportarBeneficiarioPdf(folio).subscribe({
+      next: (blob) => this.descargarArchivo(blob, `expediente_${folio}.pdf`),
+      error: () => alert('Error al generar expediente'),
+    });
+  }
+
+  private descargarArchivo(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'beneficiarios_' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   }

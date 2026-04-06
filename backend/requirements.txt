@@ -9,3 +9,4 @@ openpyxl==3.1.5
 reportlab==4.4.10
 oracledb==3.4.2
 python-dotenv==1.1.0
+slowapi==0.1.9

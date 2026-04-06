@@ -194,6 +194,7 @@ class ProductoCreate(ProductoBase):
     cantidad_disponible: int = 0
     nivel_minimo: int = 5
     unidad_medida: Optional[str] = None
+    fecha_caducidad: Optional[str] = None
 
 
 class ProductoResponse(ProductoBase):
@@ -212,6 +213,7 @@ class ProductoResponse(ProductoBase):
     cantidad_disponible: Optional[int] = 0
     nivel_minimo: Optional[int] = 5
     unidad_medida: Optional[str] = None
+    fecha_caducidad: Optional[str] = None
 
 
 # ──────────────────────────── EXISTENCIA PRODUCTO ────────────────────────────

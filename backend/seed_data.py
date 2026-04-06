@@ -286,7 +286,17 @@ def seed_productos(conn):
         ("EQP-008", "Muletas Canadienses", "Par de muletas tipo canadiense", "MUL-001", "Ortopedia Nacional", "Estándar", "DISPONIBLE"),
     ]
 
-    for clave, nombre, desc, present, dosis, req_cad, pa, pb in medicamentos:
+    # RF-I-06: Ensure FECHA_CADUCIDAD column exists on EXISTENCIA_PRODUCTO
+    try:
+        cursor.execute("ALTER TABLE EXISTENCIA_PRODUCTO ADD (FECHA_CADUCIDAD DATE)")
+    except Exception:
+        pass  # Column already exists
+
+    # Caducidad dates: some near-expiry, some future, some None
+    today = date.today()
+    caducidad_offsets = [10, -5, 90, 20, None, None, 180, 365, 15, None]
+
+    for idx, (clave, nombre, desc, present, dosis, req_cad, pa, pb) in enumerate(medicamentos):
         id_var = cursor.var(int)
         cursor.execute(
             "INSERT INTO PRODUCTO (CLAVE_INTERNA, NOMBRE, DESCRIPCION, TIPO_PRODUCTO, ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO, PRECIO_CUOTA_A, PRECIO_CUOTA_B) "
@@ -298,10 +308,12 @@ def seed_productos(conn):
             "INSERT INTO MEDICAMENTO (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD) VALUES (:1, :2, :3, :4)",
             [pid, present, dosis, req_cad],
         )
+        offset = caducidad_offsets[idx % len(caducidad_offsets)]
+        fecha_cad = (today + timedelta(days=offset)) if (req_cad == "S" and offset is not None) else None
         cursor.execute(
-            "INSERT INTO EXISTENCIA_PRODUCTO (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO) "
-            "VALUES (:1, :2, :3, :4, 'S')",
-            [pid, random.randint(20, 200), random.randint(5, 20), present],
+            "INSERT INTO EXISTENCIA_PRODUCTO (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD) "
+            "VALUES (:1, :2, :3, :4, 'S', :5)",
+            [pid, random.randint(20, 200), random.randint(5, 20), present, fecha_cad],
         )
 
     for clave, nombre, desc, serie, marca, modelo, estatus in equipos:

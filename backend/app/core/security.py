@@ -54,3 +54,19 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         }
     except JWTError:
         raise credentials_exception
+
+
+def require_role(*allowed_roles: str):
+    """Dependency factory that restricts access to specific roles (RF-SEG-02).
+
+    Usage:
+        @router.post("", dependencies=[Depends(require_role("ADMINISTRADOR", "RECEPCIONISTA"))])
+    """
+    def _check(current_user: dict = Depends(get_current_user)):
+        if current_user.get("rol") not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tiene permisos para realizar esta acción",
+            )
+        return current_user
+    return _check

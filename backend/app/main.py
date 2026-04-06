@@ -5,7 +5,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.core.config import settings
-from app.routers import auth, beneficiarios, citas, almacen, recibos, reportes, preregistro, doctores
+from app.routers import auth, beneficiarios, citas, almacen, recibos, reportes, preregistro, doctores, exportaciones
 
 # ──────────────── Rate Limiter ────────────────
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
@@ -88,6 +88,7 @@ app.include_router(recibos.router, prefix="/api/recibos", tags=["Recibos"])
 app.include_router(reportes.router, prefix="/api/reportes", tags=["Reportes"])
 app.include_router(preregistro.router, prefix="/api/preregistro", tags=["Pre-Registro"])
 app.include_router(doctores.router, prefix="/api/doctores", tags=["Doctores"])
+app.include_router(exportaciones.router, prefix="/api/exportaciones", tags=["Exportaciones"])
 
 
 @app.get("/api/health")

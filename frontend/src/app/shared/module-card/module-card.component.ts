@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -69,7 +69,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     }
   `],
 })
-export class ModuleCardComponent {
+export class ModuleCardComponent implements OnChanges {
   @Input() title = '';
   @Input() description = '';
   @Input() route = '';

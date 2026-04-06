@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
@@ -79,7 +79,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
     }
   `],
 })
-export class KpiCardComponent {
+export class KpiCardComponent implements OnChanges {
   @Input() value: string | number = '0';
   @Input() label = '';
   @Input() color = 'var(--azul-oscuro)';

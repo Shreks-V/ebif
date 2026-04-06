@@ -68,7 +68,11 @@
       "Bash(python -c \"from app.routers import preregistro; print\\('OK'\\)\")",
       "Bash(./venv/bin/python -c \"from app.routers import preregistro; print\\('OK'\\)\")",
       "Bash(./venv/bin/python -c \"from app.schemas.schemas import PreRegistroCreate; p = PreRegistroCreate\\(nombre='test', apellido_paterno='test', curp='ABCD123456HDFXYZ01', tipos_espina=[1,2]\\); print\\(p.tipos_espina\\)\")",
-      "Bash(./venv/bin/pip list:*)"
+      "Bash(./venv/bin/pip list:*)",
+      "Bash(grep -E \"\\\\.\\(md|pdf|txt\\)$\")",
+      "Bash(ls:*)",
+      "Bash(python -c \"from app.core.bitacora import log_insert, log_delete, log_cancelacion; print\\('bitacora OK'\\)\")",
+      "Bash(python -c \"from app.routers.exportaciones import router; print\\('exportaciones OK'\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,
