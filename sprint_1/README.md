@@ -1,8 +1,50 @@
-# Sprint 1 - Evidencia de Entregables
+# Sprint 1 - Proyecto Ejecutable + Evidencia
 
 ## Sistema de Gestion - Asociacion Espina Bifida de Leon A.C.
 
-Esta carpeta contiene copias de los archivos del proyecto que evidencian el cumplimiento de cada tarea del Sprint 1. **Los archivos originales no fueron modificados.**
+Esta carpeta contiene una **copia ejecutable** del proyecto mostrando unicamente los modulos del Sprint 1, mas la evidencia documental de cada tarea SCRUM. **Los archivos originales no fueron modificados.**
+
+---
+
+## Como ejecutar el Sprint 1
+
+### Backend
+```bash
+cd sprint_1/backend
+python -m venv venv
+source venv/bin/activate    # En Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python run.py
+# Backend en http://localhost:8000
+```
+
+### Frontend
+```bash
+cd sprint_1/frontend
+npm install --legacy-peer-deps
+ng serve
+# Frontend en http://localhost:4200
+```
+
+### Credenciales de prueba
+| Usuario | Correo | Contrasena | Rol |
+|---------|--------|------------|-----|
+| Admin | admin@espinabifida.org | admin123 | ADMINISTRADOR |
+| Operativo | operativo@espinabifida.org | op123 | RECEPCIONISTA |
+
+### Modulos visibles en Sprint 1
+- **Login** - Pantalla de inicio de sesion
+- **Dashboard** - Panel con KPIs y accesos rapidos (solo a modulos Sprint 1)
+- **Pre-Registro** - Formulario publico multi-paso (accesible sin login en `/preregistro`)
+- **Almacen** - Gestion basica de productos, existencias y comodatos
+
+> Los demas modulos (Beneficiarios, Citas, Recibos, Reportes) estan disponibles en el proyecto completo.
+
+---
+
+## Evidencia documental
+
+La carpeta `evidencia/` contiene archivos organizados por tarea SCRUM:
 
 ---
 

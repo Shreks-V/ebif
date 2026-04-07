@@ -75,7 +75,11 @@
       "Bash(python -c \"from app.routers.exportaciones import router; print\\('exportaciones OK'\\)\")",
       "Bash(grep -n \"^\\\\s*}\\\\s*$\" src/app/pages/beneficiarios/beneficiarios.component.ts)",
       "Bash(grep -h '\\\\\\(click\\\\\\)=' src/app/pages/*/\\\\*.component.ts)",
-      "Bash(find src/app/pages -name \"*.component.ts\" -exec grep -h '\\\\\\(click\\\\\\)=' {} \\\\;)"
+      "Bash(find src/app/pages -name \"*.component.ts\" -exec grep -h '\\\\\\(click\\\\\\)=' {} \\\\;)",
+      "Bash(rsync -a --exclude=venv --exclude=__pycache__ --exclude=uploads '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/sprint_1/backend/')",
+      "Bash(rsync -a --exclude=node_modules --exclude=dist --exclude=.angular '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/sprint_1/frontend/')",
+      "Bash(cp -r '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/wallet' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/sprint_1/wallet')",
+      "Bash(npm install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
