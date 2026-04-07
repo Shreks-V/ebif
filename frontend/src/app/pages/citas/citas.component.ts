@@ -1504,7 +1504,7 @@ export class CitasComponent implements OnInit {
       telefono: medico.telefono || '',
       correo: medico.correo || '',
       activo: medico.activo === 'S' ? 'N' : 'S',
-      servicios: medico.servicios.map((s: any) => s.idServicio),
+      servicios: (medico.servicios || []).map((s: any) => s.idServicio),
     };
     this.api.updateDoctor(medico.idDoctor, payload).subscribe({
       next: () => this.cargarDoctores(),

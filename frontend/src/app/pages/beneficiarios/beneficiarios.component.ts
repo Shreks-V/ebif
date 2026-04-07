@@ -204,7 +204,7 @@ interface Preregistro {
                         </svg>
                       </button>
                       <!-- History -->
-                      <button class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Historial">
+                      <button (click)="verHistorialBeneficiario(b)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:text-purple-600 hover:bg-purple-50 hover:border-purple-200 transition-colors" title="Historial">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                           <circle cx="12" cy="12" r="10"/>
                           <polyline points="12 6 12 12 16 14"/>
@@ -770,6 +770,94 @@ interface Preregistro {
       </div>
     </div>
 
+    <!-- ==================== MODAL: Historial ==================== -->
+    <div *ngIf="showHistorialModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showHistorialModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-black text-slate-900">Historial - {{ historialData?.nombre }}</h2>
+          <button (click)="showHistorialModal = false" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="historialLoading" class="space-y-4">
+          <div class="h-8 bg-slate-200 rounded-lg animate-pulse w-1/3"></div>
+          <div class="h-20 bg-slate-200 rounded-lg animate-pulse"></div>
+          <div class="h-20 bg-slate-200 rounded-lg animate-pulse"></div>
+        </div>
+
+        <!-- Content -->
+        <div *ngIf="!historialLoading && historialData">
+          <!-- Tabs -->
+          <div class="flex gap-2 mb-6 border-b border-slate-200 pb-3">
+            <button (click)="historialTab = 'citas'" [class]="historialTab === 'citas' ? 'px-4 py-2 rounded-lg text-sm font-bold bg-[#00328b] text-white' : 'px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100'">
+              Citas ({{ historialData.citas?.length || 0 }})
+            </button>
+            <button (click)="historialTab = 'pagos'" [class]="historialTab === 'pagos' ? 'px-4 py-2 rounded-lg text-sm font-bold bg-[#00328b] text-white' : 'px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100'">
+              Pagos ({{ historialData.pagos?.length || 0 }})
+            </button>
+            <button (click)="historialTab = 'comodatos'" [class]="historialTab === 'comodatos' ? 'px-4 py-2 rounded-lg text-sm font-bold bg-[#00328b] text-white' : 'px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100'">
+              Comodatos ({{ historialData.comodatos?.length || 0 }})
+            </button>
+          </div>
+
+          <!-- Tab: Citas -->
+          <div *ngIf="historialTab === 'citas'">
+            <div *ngIf="!historialData.citas?.length" class="text-center py-8 text-slate-400 text-sm">Sin citas registradas</div>
+            <div *ngFor="let c of historialData.citas" class="border border-slate-200 rounded-xl p-4 mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold text-slate-800">{{ c.fecha_hora }}</span>
+                <span [class]="c.estatus === 'COMPLETADA' ? 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700' : c.estatus === 'CANCELADA' ? 'px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700' : 'px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700'">{{ c.estatus }}</span>
+              </div>
+              <div *ngIf="c.servicios?.length" class="text-xs text-slate-500 mb-1">
+                <span class="font-semibold">Servicios:</span> {{ c.servicios | json }}
+              </div>
+              <div *ngIf="c.doctores?.length" class="text-xs text-slate-500">
+                <span class="font-semibold">Doctores:</span>
+                <span *ngFor="let d of c.doctores; let last = last">{{ d.nombre_doctor }}{{ !last ? ', ' : '' }}</span>
+              </div>
+              <div *ngIf="c.notas" class="text-xs text-slate-400 mt-1 italic">{{ c.notas }}</div>
+            </div>
+          </div>
+
+          <!-- Tab: Pagos -->
+          <div *ngIf="historialTab === 'pagos'">
+            <div *ngIf="!historialData.pagos?.length" class="text-center py-8 text-slate-400 text-sm">Sin pagos registrados</div>
+            <div *ngFor="let p of historialData.pagos" class="border border-slate-200 rounded-xl p-4 mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold text-slate-800">{{ p.folio_venta }}</span>
+                <span class="text-sm font-semibold" [class.text-red-500]="p.cancelada === 'S'" [class.text-emerald-600]="p.cancelada !== 'S'">
+                  {{ p.cancelada === 'S' ? 'Cancelado' : ('$' + p.monto_total) }}
+                </span>
+              </div>
+              <div class="text-xs text-slate-500">
+                <span class="font-semibold">Fecha:</span> {{ p.fecha_venta }}
+                <span *ngIf="p.saldo_pendiente > 0" class="ml-3 text-amber-600 font-semibold">Saldo pendiente: {{ '$' + p.saldo_pendiente }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Comodatos -->
+          <div *ngIf="historialTab === 'comodatos'">
+            <div *ngIf="!historialData.comodatos?.length" class="text-center py-8 text-slate-400 text-sm">Sin comodatos registrados</div>
+            <div *ngFor="let cm of historialData.comodatos" class="border border-slate-200 rounded-xl p-4 mb-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold text-slate-800">{{ cm.nombre_equipo || cm.folio_comodato }}</span>
+                <span [class]="cm.estatus === 'DEVUELTO' ? 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700' : 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700'">{{ cm.estatus }}</span>
+              </div>
+              <div class="text-xs text-slate-500">
+                <span class="font-semibold">Prestamo:</span> {{ cm.fecha_prestamo }}
+                <span *ngIf="cm.fecha_devolucion" class="ml-3"><span class="font-semibold">Devolucion:</span> {{ cm.fecha_devolucion }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ==================== MODAL: Confirmar Desactivar ==================== -->
     <div *ngIf="showConfirmDesactivar" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
@@ -815,6 +903,12 @@ export class BeneficiariosComponent implements OnInit {
   editFolio = '';
   submittingEdit = false;
   editError = '';
+
+  // Historial modal
+  showHistorialModal = false;
+  historialData: any = null;
+  historialLoading = false;
+  historialTab: 'citas' | 'pagos' | 'comodatos' = 'citas';
 
   // Confirm desactivar
   showConfirmDesactivar = false;
@@ -1160,6 +1254,26 @@ export class BeneficiariosComponent implements OnInit {
         this.filterData();
       },
       error: (err) => console.error('Error al rechazar:', err)
+    });
+  }
+
+  // ──────────── Historial Beneficiario ────────────
+
+  verHistorialBeneficiario(b: Beneficiario): void {
+    this.historialData = null;
+    this.historialLoading = true;
+    this.historialTab = 'citas';
+    this.showHistorialModal = true;
+    this.api.getBeneficiarioHistorial(b.folio).subscribe({
+      next: (data) => {
+        this.historialData = data;
+        this.historialLoading = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar historial:', err);
+        this.historialLoading = false;
+        this.historialData = { nombre: b.nombre + ' ' + b.apellidoPaterno, citas: [], pagos: [], comodatos: [] };
+      },
     });
   }
 

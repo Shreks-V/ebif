@@ -1,0 +1,20 @@
+services:
+  backend:
+    build: ./backend
+    container_name: ebif-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./wallet:/wallet:ro
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: ebif-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
