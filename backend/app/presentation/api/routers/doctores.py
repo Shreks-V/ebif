@@ -1,0 +1,49 @@
+from fastapi import APIRouter, Depends
+from app.schemas.schemas import DoctorCreate, DisponibilidadCreate
+from app.application.doctores import use_cases as service
+from app.presentation.api.security import get_current_user, require_role
+router = APIRouter()
+
+@router.get('/hoy')
+def doctor_del_dia(current_user: dict=Depends(get_current_user)):
+    return service.doctor_del_dia(current_user)
+
+@router.get('')
+def listar_doctores(current_user: dict=Depends(get_current_user)):
+    return service.listar_doctores(current_user)
+
+@router.get('/disponibilidad/semana')
+def obtener_disponibilidad_semana(current_user: dict=Depends(get_current_user)):
+    return service.obtener_disponibilidad_semana(current_user)
+
+@router.get('/{id_doctor}')
+def obtener_doctor(id_doctor: int, current_user: dict=Depends(get_current_user)):
+    return service.obtener_doctor(id_doctor, current_user)
+
+@router.post('', status_code=201)
+def crear_doctor(data: DoctorCreate, current_user: dict=Depends(require_role('ADMINISTRADOR'))):
+    return service.crear_doctor(data, current_user)
+
+@router.put('/{id_doctor}')
+def actualizar_doctor(id_doctor: int, data: DoctorCreate, current_user: dict=Depends(require_role('ADMINISTRADOR'))):
+    return service.actualizar_doctor(id_doctor, data, current_user)
+
+@router.delete('/{id_doctor}')
+def desactivar_doctor(id_doctor: int, current_user: dict=Depends(require_role('ADMINISTRADOR'))):
+    return service.desactivar_doctor(id_doctor, current_user)
+
+@router.get('/{id_doctor}/disponibilidad')
+def obtener_disponibilidad(id_doctor: int, current_user: dict=Depends(get_current_user)):
+    return service.obtener_disponibilidad(id_doctor, current_user)
+
+@router.post('/{id_doctor}/disponibilidad', status_code=201)
+def crear_disponibilidad(id_doctor: int, data: DisponibilidadCreate, current_user: dict=Depends(get_current_user)):
+    return service.crear_disponibilidad(id_doctor, data, current_user)
+
+@router.delete('/{id_doctor}/disponibilidad/{id_disponibilidad}')
+def eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_user: dict=Depends(get_current_user)):
+    return service.eliminar_disponibilidad(id_doctor, id_disponibilidad, current_user)
+
+@router.get('/{id_doctor}/servicios')
+def obtener_servicios_doctor(id_doctor: int, current_user: dict=Depends(get_current_user)):
+    return service.obtener_servicios_doctor(id_doctor, current_user)

@@ -1,0 +1,40 @@
+from typing import Optional
+from app.schemas.schemas import BeneficiarioCreate
+from app.domain.beneficiarios.ports import BeneficiariosRepository
+_repository: BeneficiariosRepository | None = None
+
+def configure_repository(repository: BeneficiariosRepository):
+    global _repository
+    _repository = repository
+
+def _get_repository() -> BeneficiariosRepository:
+    if _repository is None:
+        raise RuntimeError('beneficiarios repository is not configured')
+    return _repository
+
+def listar_tipos_espina(current_user: dict=None):
+    return _get_repository().listar_tipos_espina(current_user)
+
+def stats_beneficiarios(current_user: dict=None):
+    return _get_repository().stats_beneficiarios(current_user)
+
+def dashboard_stats(current_user: dict=None):
+    return _get_repository().dashboard_stats(current_user)
+
+def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: dict=None):
+    return _get_repository().listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user)
+
+def obtener_beneficiario(folio: str, current_user: dict=None):
+    return _get_repository().obtener_beneficiario(folio, current_user)
+
+def crear_beneficiario(data: BeneficiarioCreate, current_user: dict=None):
+    return _get_repository().crear_beneficiario(data, current_user)
+
+def actualizar_beneficiario(folio: str, data: BeneficiarioCreate, current_user: dict=None):
+    return _get_repository().actualizar_beneficiario(folio, data, current_user)
+
+def eliminar_beneficiario(folio: str, current_user: dict=None):
+    return _get_repository().eliminar_beneficiario(folio, current_user)
+
+def historial_beneficiario(folio: str, current_user: dict=None):
+    return _get_repository().historial_beneficiario(folio, current_user)

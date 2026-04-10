@@ -5,9 +5,9 @@ Ejecutar: python seed_data.py
 
 import random
 from datetime import date, datetime, timedelta
-from app.core.database import get_db
-from app.core.crypto import encrypt
-from app.core.security import get_password_hash
+from app.infrastructure.persistence.oracle import get_db
+from app.infrastructure.privacy.crypto import encrypt
+from app.infrastructure.security.auth import get_password_hash
 
 random.seed(42)
 

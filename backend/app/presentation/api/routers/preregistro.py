@@ -1,0 +1,50 @@
+from fastapi import APIRouter, Query, Depends, UploadFile, File, Form
+from typing import Optional
+from app.schemas.schemas import PreRegistroCreate
+from app.application.preregistro import use_cases as service
+from app.presentation.api.security import get_current_user
+router = APIRouter()
+
+@router.get('')
+def listar_preregistros(estatus: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
+    return service.listar_preregistros(estatus, current_user)
+
+@router.post('', status_code=201)
+def crear_preregistro(data: PreRegistroCreate):
+    return service.crear_preregistro(data)
+
+@router.get('/tipos-espina')
+def listar_tipos_espina_publico():
+    return service.listar_tipos_espina_publico()
+
+@router.get('/tipos-documento')
+def listar_tipos_documento_publico():
+    return service.listar_tipos_documento_publico()
+
+@router.get('/{id_paciente}')
+def obtener_preregistro(id_paciente: int):
+    return service.obtener_preregistro(id_paciente)
+
+@router.put('/{id_paciente}')
+def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
+    return service.actualizar_preregistro(id_paciente, data)
+
+@router.post('/{id_paciente}/aprobar')
+def aprobar_preregistro(id_paciente: int, current_user: dict=Depends(get_current_user)):
+    return service.aprobar_preregistro(id_paciente, current_user)
+
+@router.post('/{id_paciente}/documentos')
+async def subir_documento(id_paciente: int, id_tipo_documento: int=Form(...), archivo: UploadFile=File(...)):
+    return await service.subir_documento(id_paciente, id_tipo_documento, archivo)
+
+@router.get('/{id_paciente}/documentos')
+def listar_documentos(id_paciente: int):
+    return service.listar_documentos(id_paciente)
+
+@router.delete('/{id_paciente}/documentos/{id_documento}')
+def eliminar_documento(id_paciente: int, id_documento: int):
+    return service.eliminar_documento(id_paciente, id_documento)
+
+@router.post('/{id_paciente}/rechazar')
+def rechazar_preregistro(id_paciente: int, current_user: dict=Depends(get_current_user)):
+    return service.rechazar_preregistro(id_paciente, current_user)

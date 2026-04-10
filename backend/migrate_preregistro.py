@@ -5,7 +5,7 @@ Adds ESTATUS_REGISTRO and PASO_ACTUAL columns to PACIENTE, then drops PRE_REGIST
 import sys
 sys.path.insert(0, ".")
 
-from app.core.database import get_db
+from app.infrastructure.persistence.oracle import get_db
 
 STATEMENTS = [
     # Add ESTATUS_REGISTRO column (PENDIENTE / APROBADO / RECHAZADO)
