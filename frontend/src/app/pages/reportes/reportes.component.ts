@@ -167,9 +167,9 @@ interface IndicadorOption {
               </div>
               <button (click)="limpiarReporte()" class="text-sm font-semibold text-slate-500 hover:text-red-500 cursor-pointer">Limpiar</button>
             </div>
-            <div class="overflow-x-auto">
+            <div>
               <table class="w-full">
-                <thead class="bg-slate-50 border-b-2 border-slate-200">
+                <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
                   <tr>
                     <th *ngFor="let col of reporteColumnas" class="text-left px-5 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
                       {{ col }}
@@ -388,9 +388,9 @@ interface IndicadorOption {
           </div>
 
           <!-- Preview table -->
-          <div *ngIf="!generandoReporte && vistaPreviaData && vistaPreviaData.length > 0" class="overflow-x-auto">
+          <div *ngIf="!generandoReporte && vistaPreviaData && vistaPreviaData.length > 0">
             <table class="w-full">
-              <thead class="bg-slate-50 border-b-2 border-slate-200">
+              <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th *ngFor="let col of vistaPreviaColumnas" class="text-left px-4 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
                     {{ col }}

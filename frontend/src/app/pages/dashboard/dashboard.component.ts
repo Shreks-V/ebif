@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
@@ -9,7 +10,7 @@ import { ApiService } from '../../services/api.service';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, FooterComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
   template: `
     <div class="min-h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb]/30 via-white to-[#e0f2ff]/50">
       <app-navbar></app-navbar>
@@ -125,21 +126,20 @@ import { ApiService } from '../../services/api.service';
                   </svg>
                 </button>
 
-                <!-- Nuevo Paciente -->
-                <button (click)="navigateTo('/registro-usuarios', { action: 'nuevo' })"
+                <!-- Adeudos -->
+                <button (click)="navigateTo('/recibos', { filter: 'pendientes' })"
                   class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-[#007BFF] to-[#0056b3] text-white hover:shadow-xl transition-all cursor-pointer border-0">
                   <div class="p-3 bg-white/20 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                      <circle cx="9" cy="7" r="4"/>
-                      <line x1="19" x2="19" y1="8" y2="14"/>
-                      <line x1="22" x2="16" y1="11" y2="11"/>
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" x2="12" y1="8" y2="12"/>
+                      <line x1="12" x2="12.01" y1="16" y2="16"/>
                     </svg>
                   </div>
                   <div class="flex-1 text-left">
-                    <p class="font-bold">Nuevo Paciente</p>
-                    <p class="text-xs text-white/70">Registrar beneficiario</p>
+                    <p class="font-bold">Adeudos</p>
+                    <p class="text-xs text-white/70">Recibos con saldo pendiente</p>
                   </div>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -169,21 +169,20 @@ import { ApiService } from '../../services/api.service';
                   </svg>
                 </button>
 
-                <!-- Inventario -->
-                <button (click)="navigateTo('/almacen', { tab: 'inventario', action: 'nuevo' })"
+                <!-- Alertas de Inventario -->
+                <button (click)="navigateTo('/almacen', { tab: 'inventario', filter: 'alertas' })"
                   class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white hover:shadow-xl transition-all cursor-pointer border-0">
                   <div class="p-3 bg-white/20 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="m7.5 4.27 9 5.15"/>
-                      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-                      <path d="m3.3 7 8.7 5 8.7-5"/>
-                      <path d="M12 22V12"/>
+                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                      <line x1="12" x2="12" y1="9" y2="13"/>
+                      <line x1="12" x2="12.01" y1="17" y2="17"/>
                     </svg>
                   </div>
                   <div class="flex-1 text-left">
-                    <p class="font-bold">Inventario</p>
-                    <p class="text-xs text-white/70">Gestionar almacén</p>
+                    <p class="font-bold">Alertas de Inventario</p>
+                    <p class="text-xs text-white/70">Stock bajo y caducidad</p>
                   </div>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -241,10 +240,16 @@ import { ApiService } from '../../services/api.service';
                   <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
                   Siguiente en Cola
                 </h3>
-                <button (click)="navigateTo('/citas')" class="text-xs text-[#00328b] font-bold hover:underline cursor-pointer bg-transparent border-0 flex items-center gap-1">
-                  Ver todas
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
+                <div class="flex items-center gap-2">
+                  <button (click)="openWalkInModal()" class="text-xs text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-md font-bold cursor-pointer border-0 flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                    Walk-in
+                  </button>
+                  <button (click)="navigateTo('/citas')" class="text-xs text-[#00328b] font-bold hover:underline cursor-pointer bg-transparent border-0 flex items-center gap-1">
+                    Ver todas
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
               </div>
               <div class="bg-white rounded-2xl shadow-lg border-2 border-slate-100 overflow-hidden">
                 <div *ngFor="let paciente of pacientes; let i = index"
@@ -269,8 +274,6 @@ import { ApiService } from '../../services/api.service';
                     <p class="font-bold text-slate-900">{{ paciente.nombre + ' ' + paciente.apellido }}</p>
                     <p class="text-xs text-slate-400 font-mono">{{ paciente.folio }}</p>
                   </div>
-                  <!-- Type Badge -->
-                  <span class="px-3 py-1.5 bg-[#00328b]/10 rounded-lg text-[#00328b] text-xs font-semibold flex-shrink-0">{{ paciente.servicio }}</span>
                   <!-- Atender Button -->
                   <button (click)="atenderAhora(paciente)" [disabled]="paciente.atendiendo" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer border-0 flex-shrink-0 whitespace-nowrap disabled:opacity-50">
                     {{ paciente.atendiendo ? 'Atendiendo...' : 'Atender Ahora' }}
@@ -429,6 +432,49 @@ import { ApiService } from '../../services/api.service';
         </div>
       </main>
 
+      <!-- Walk-in Modal -->
+      <div *ngIf="showWalkInModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="closeWalkInModal()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" (click)="$event.stopPropagation()">
+          <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">Registrar Walk-in</h2>
+              <p class="text-xs text-slate-500">Agrega un beneficiario sin cita para hoy</p>
+            </div>
+            <button (click)="closeWalkInModal()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+          <div class="p-6 space-y-4">
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="text" [(ngModel)]="walkInSearchTerm" (input)="filtrarWalkIn()"
+                placeholder="Buscar por nombre o folio..."
+                class="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+            </div>
+            <div *ngIf="walkInResults.length > 0" class="max-h-60 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+              <button *ngFor="let b of walkInResults" (click)="selectWalkIn(b)"
+                [class.bg-emerald-50]="walkInSelected?.id_paciente === b.id_paciente"
+                class="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors cursor-pointer flex items-center justify-between bg-white">
+                <div>
+                  <p class="font-semibold text-slate-900 text-sm">{{ b.nombre }} {{ b.apellido_paterno }} {{ b.apellido_materno }}</p>
+                  <p class="text-xs text-slate-500 font-mono">{{ b.folio }}</p>
+                </div>
+                <svg *ngIf="walkInSelected?.id_paciente === b.id_paciente" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+            </div>
+            <p *ngIf="walkInSearchTerm && walkInResults.length === 0" class="text-xs text-slate-500 italic text-center py-4">Sin resultados</p>
+            <p *ngIf="walkInError" class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{{ walkInError }}</p>
+            <div class="flex gap-3 justify-end pt-2">
+              <button (click)="closeWalkInModal()" class="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer">Cancelar</button>
+              <button (click)="registrarWalkIn()" [disabled]="!walkInSelected || walkInSaving"
+                class="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                {{ walkInSaving ? 'Registrando...' : 'Registrar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <app-footer></app-footer>
     </div>
   `,
@@ -465,6 +511,15 @@ export class DashboardComponent implements OnInit {
   doctorAtendidos = 0;
   doctorTotalHoy = 0;
   doctorHorario = '—';
+
+  // Walk-in modal
+  showWalkInModal = false;
+  walkInSearchTerm = '';
+  walkInResults: any[] = [];
+  walkInAllBeneficiarios: any[] = [];
+  walkInSelected: any = null;
+  walkInSaving = false;
+  walkInError = '';
 
   private colors = [
     'bg-pink-400', 'bg-blue-400', 'bg-purple-400',
@@ -604,13 +659,14 @@ export class DashboardComponent implements OnInit {
   atenderAhora(paciente: any): void {
     if (!paciente.idCita) return;
     paciente.atendiendo = true;
+    const backup = [...this.pacientes];
+    this.pacientes = this.pacientes.filter(p => p.idCita !== paciente.idCita);
+    this.doctorAtendidos++;
     this.api.completarCita(paciente.idCita).subscribe({
-      next: () => {
-        // Remove from queue
-        this.pacientes = this.pacientes.filter(p => p.idCita !== paciente.idCita);
-        this.doctorAtendidos++;
-      },
+      next: () => {},
       error: () => {
+        this.pacientes = backup;
+        this.doctorAtendidos = Math.max(0, this.doctorAtendidos - 1);
         paciente.atendiendo = false;
       },
     });
@@ -622,5 +678,79 @@ export class DashboardComponent implements OnInit {
     } else {
       this.router.navigate([route]);
     }
+  }
+
+  openWalkInModal(): void {
+    this.showWalkInModal = true;
+    this.walkInSearchTerm = '';
+    this.walkInResults = [];
+    this.walkInSelected = null;
+    this.walkInError = '';
+    if (this.walkInAllBeneficiarios.length === 0) {
+      this.api.getBeneficiarios().subscribe({
+        next: (data) => {
+          this.walkInAllBeneficiarios = data || [];
+        },
+        error: () => {
+          this.walkInError = 'No se pudieron cargar los beneficiarios';
+        },
+      });
+    }
+  }
+
+  closeWalkInModal(): void {
+    this.showWalkInModal = false;
+    this.walkInSaving = false;
+  }
+
+  filtrarWalkIn(): void {
+    const term = this.walkInSearchTerm.trim().toLowerCase();
+    if (!term) {
+      this.walkInResults = [];
+      return;
+    }
+    this.walkInResults = this.walkInAllBeneficiarios
+      .filter((b: any) => {
+        const fullName = `${b.nombre || ''} ${b.apellido_paterno || ''} ${b.apellido_materno || ''}`.toLowerCase();
+        const folio = (b.folio || '').toLowerCase();
+        return fullName.includes(term) || folio.includes(term);
+      })
+      .slice(0, 20);
+  }
+
+  selectWalkIn(b: any): void {
+    this.walkInSelected = b;
+  }
+
+  registrarWalkIn(): void {
+    if (!this.walkInSelected || this.walkInSaving) return;
+    this.walkInSaving = true;
+    this.walkInError = '';
+
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const fechaHora = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
+
+    const payload = {
+      id_paciente: this.walkInSelected.id_paciente,
+      fecha_hora: fechaHora,
+      estatus: 'PROGRAMADA',
+      notas: 'Walk-in registrado desde Dashboard',
+      servicios: [],
+    };
+
+    this.api.createCita(payload).subscribe({
+      next: () => {
+        this.closeWalkInModal();
+        this.api.getCitasHoy().subscribe({
+          next: (resp) => this.processCitasHoy(resp),
+          error: () => {},
+        });
+      },
+      error: (err) => {
+        this.walkInSaving = false;
+        this.walkInError = err?.error?.detail || 'No se pudo registrar el walk-in';
+      },
+    });
   }
 }

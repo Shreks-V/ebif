@@ -156,9 +156,9 @@ interface Preregistro {
           </div>
 
           <!-- Tab Content: Beneficiarios Activos -->
-          <div *ngIf="currentTab === 'activos' && !loading" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-hidden">
+          <div *ngIf="currentTab === 'activos' && !loading" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100">
             <table class="w-full">
-              <thead>
+              <thead class="sticky top-0 z-10 shadow-sm">
                 <tr class="bg-slate-50 border-b border-slate-200">
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Folio</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo</th>
@@ -248,9 +248,9 @@ interface Preregistro {
           </div>
 
           <!-- Tab Content: Preregistros -->
-          <div *ngIf="currentTab === 'preregistros'" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-hidden">
+          <div *ngIf="currentTab === 'preregistros'" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100">
             <table class="w-full">
-              <thead>
+              <thead class="sticky top-0 z-10 shadow-sm">
                 <tr class="bg-amber-50 border-b border-amber-200">
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</th>

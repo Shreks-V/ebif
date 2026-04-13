@@ -271,10 +271,10 @@ interface ComodatoItem {
             </div>
 
             <!-- Inventory Table -->
-            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-              <div class="overflow-x-auto">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200">
+              <div>
                 <table class="w-full text-sm">
-                  <thead>
+                  <thead class="sticky top-0 z-10 shadow-sm">
                     <tr class="bg-slate-50 border-b border-slate-200">
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">ID</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Categor&iacute;a</th>
@@ -370,10 +370,10 @@ interface ComodatoItem {
             </div>
 
             <!-- Comodatos Table -->
-            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-              <div class="overflow-x-auto">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200">
+              <div>
                 <table class="w-full text-sm">
-                  <thead>
+                  <thead class="sticky top-0 z-10 shadow-sm">
                     <tr class="bg-slate-50 border-b border-slate-200">
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Folio</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Beneficiario</th>

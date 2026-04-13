@@ -79,74 +79,6 @@ interface MetodoPagoRow {
           </button>
         </div>
 
-        <!-- KPI Cards -->
-        <div class="grid grid-cols-4 gap-4">
-          <!-- Total Recibos -->
-          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-emerald-100">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="p-2 bg-emerald-100 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
-                  <path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>
-                </svg>
-              </div>
-              <p class="text-xs text-slate-600 font-semibold">Total Recibos</p>
-            </div>
-            <p class="text-2xl font-black text-slate-900">{{ recibos.length }}</p>
-          </div>
-          <!-- Monto Total -->
-          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-blue-100">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="p-2 bg-blue-100 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-              </div>
-              <p class="text-xs text-slate-600 font-semibold">Monto Total</p>
-            </div>
-            <p class="text-2xl font-black text-slate-900">\${{ montoTotal | number:'1.0-0' }}</p>
-          </div>
-          <!-- Efectivo -->
-          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-emerald-100">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="p-2 bg-emerald-100 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>
-                </svg>
-              </div>
-              <p class="text-xs text-slate-600 font-semibold">Efectivo</p>
-            </div>
-            <p class="text-2xl font-black text-slate-900">\${{ montoEfectivo | number:'1.0-0' }}</p>
-          </div>
-          <!-- Tarjeta -->
-          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-emerald-100">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="p-2 bg-blue-100 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>
-                </svg>
-              </div>
-              <p class="text-xs text-slate-600 font-semibold">Tarjeta</p>
-            </div>
-            <p class="text-2xl font-black text-slate-900">\${{ montoTarjeta | number:'1.0-0' }}</p>
-          </div>
-        </div>
-
-        <!-- Transferencia KPI -->
-        <div class="grid grid-cols-4 gap-4">
-          <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-purple-100">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="p-2 bg-purple-100 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 12h16"/><path d="m8 8-4 4 4 4"/><path d="M20 4v16"/>
-                </svg>
-              </div>
-              <p class="text-xs text-slate-600 font-semibold">Transferencia</p>
-            </div>
-            <p class="text-2xl font-black text-slate-900">\${{ montoTransferencia | number:'1.0-0' }}</p>
-          </div>
-        </div>
-
         <!-- Filters -->
         <div class="bg-white rounded-xl p-4 shadow-lg border-2 border-slate-100">
           <div class="grid grid-cols-5 gap-4">
@@ -190,9 +122,9 @@ interface MetodoPagoRow {
         </div>
 
         <!-- Table -->
-        <div *ngIf="!loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100 overflow-hidden">
+        <div *ngIf="!loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100">
           <table class="w-full">
-            <thead class="bg-slate-50 border-b-2 border-slate-200">
+            <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-16 z-10 shadow-sm">
               <tr>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">

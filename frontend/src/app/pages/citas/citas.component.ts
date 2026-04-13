@@ -52,7 +52,7 @@ import { ApiService } from '../../services/api.service';
           </div>
 
           <!-- Tab: Agenda de Citas -->
-          <div *ngIf="activeTab === 'citas'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div *ngIf="activeTab === 'citas'" class="bg-white rounded-xl shadow-sm border border-slate-200">
             <!-- Card Header -->
             <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <h2 class="text-lg font-bold text-slate-900 tracking-wide">CITAS</h2>
@@ -143,9 +143,9 @@ import { ApiService } from '../../services/api.service';
             </div>
 
             <!-- Table -->
-            <div *ngIf="!loading" class="overflow-x-auto">
+            <div *ngIf="!loading">
               <table class="w-full text-sm">
-                <thead>
+                <thead class="sticky top-0 z-10 shadow-sm">
                   <tr class="border-t border-slate-200 bg-slate-50">
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       <div class="flex items-center gap-1.5">
@@ -226,7 +226,7 @@ import { ApiService } from '../../services/api.service';
           </div>
 
           <!-- Tab: Medicos -->
-          <div *ngIf="activeTab === 'medicos'" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div *ngIf="activeTab === 'medicos'" class="bg-white rounded-xl shadow-sm border border-slate-200">
             <!-- Card Header -->
             <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <h2 class="text-lg font-bold text-slate-900 tracking-wide">M&Eacute;DICOS</h2>
@@ -257,9 +257,9 @@ import { ApiService } from '../../services/api.service';
             </div>
 
             <!-- Table -->
-            <div class="overflow-x-auto">
+            <div>
               <table class="w-full text-sm">
-                <thead>
+                <thead class="sticky top-0 z-10 shadow-sm">
                   <tr class="border-t border-slate-200 bg-slate-50">
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Especialidad</th>
@@ -1502,7 +1502,9 @@ export class CitasComponent implements OnInit {
   }
 
   toggleActivoMedico(medico: any): void {
-    // Use updateDoctor to toggle active status
+    const previo = medico.activo;
+    const nuevo = previo === 'S' ? 'N' : 'S';
+    medico.activo = nuevo;
     const payload = {
       nombre: medico.nombre,
       apellido_paterno: medico.apellidoPaterno,
@@ -1510,12 +1512,15 @@ export class CitasComponent implements OnInit {
       especialidad: medico.especialidad,
       telefono: medico.telefono || '',
       correo: medico.correo || '',
-      activo: medico.activo === 'S' ? 'N' : 'S',
+      activo: nuevo,
       servicios: (medico.servicios || []).map((s: any) => s.idServicio),
     };
     this.api.updateDoctor(medico.idDoctor, payload).subscribe({
       next: () => this.cargarDoctores(),
-      error: (err) => console.error('Error al cambiar estado del médico:', err),
+      error: (err) => {
+        medico.activo = previo;
+        console.error('Error al cambiar estado del médico:', err);
+      },
     });
   }
 
