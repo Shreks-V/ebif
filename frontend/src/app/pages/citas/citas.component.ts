@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -1068,7 +1069,7 @@ export class CitasComponent implements OnInit {
     { num: 7, nombre: 'Domingo' },
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.cargarCitas();
@@ -1080,6 +1081,12 @@ export class CitasComponent implements OnInit {
         this.serviciosList = data;
       },
       error: (err) => console.error('Error al cargar servicios:', err),
+    });
+
+    this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'nueva') {
+        setTimeout(() => this.abrirNuevaCita(), 0);
+      }
     });
   }
 

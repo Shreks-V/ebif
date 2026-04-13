@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -942,12 +943,18 @@ export class BeneficiariosComponent implements OnInit {
   filteredBeneficiarios: Beneficiario[] = [];
   filteredPreregistros: Preregistro[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.loadBeneficiarios();
     this.loadPreregistros();
     this.resetFormData();
+
+    this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'nuevo') {
+        this.openNuevoModal();
+      }
+    });
   }
 
   private resetFormData(): void {

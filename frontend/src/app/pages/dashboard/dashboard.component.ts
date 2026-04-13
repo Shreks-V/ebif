@@ -105,7 +105,7 @@ import { ApiService } from '../../services/api.service';
               </h3>
               <div class="space-y-3">
                 <!-- Nuevo Recibo -->
-                <button (click)="navigateTo('/recibos')"
+                <button (click)="navigateTo('/recibos', { action: 'nuevo' })"
                   class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white hover:shadow-xl transition-all cursor-pointer border-0">
                   <div class="p-3 bg-white/20 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -126,7 +126,7 @@ import { ApiService } from '../../services/api.service';
                 </button>
 
                 <!-- Nuevo Paciente -->
-                <button (click)="navigateTo('/registro-usuarios')"
+                <button (click)="navigateTo('/registro-usuarios', { action: 'nuevo' })"
                   class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-[#007BFF] to-[#0056b3] text-white hover:shadow-xl transition-all cursor-pointer border-0">
                   <div class="p-3 bg-white/20 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -148,7 +148,7 @@ import { ApiService } from '../../services/api.service';
                 </button>
 
                 <!-- Agendar Cita -->
-                <button (click)="navigateTo('/citas')"
+                <button (click)="navigateTo('/citas', { action: 'nueva' })"
                   class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-[#f3ad1c] to-[#ffb84d] text-white hover:shadow-xl transition-all cursor-pointer border-0">
                   <div class="p-3 bg-white/20 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -170,7 +170,7 @@ import { ApiService } from '../../services/api.service';
                 </button>
 
                 <!-- Inventario -->
-                <button (click)="navigateTo('/almacen')"
+                <button (click)="navigateTo('/almacen', { tab: 'inventario', action: 'nuevo' })"
                   class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white hover:shadow-xl transition-all cursor-pointer border-0">
                   <div class="p-3 bg-white/20 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -192,7 +192,7 @@ import { ApiService } from '../../services/api.service';
                 </button>
 
                 <!-- Comodato -->
-                <button (click)="navigateTo('/almacen')"
+                <button (click)="navigateTo('/almacen', { tab: 'comodatos', action: 'nuevo' })"
                   class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-cyan-500 to-cyan-600 text-white hover:shadow-xl transition-all cursor-pointer border-0">
                   <div class="p-3 bg-white/20 rounded-xl">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -616,7 +616,11 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  navigateTo(route: string): void {
-    this.router.navigate([route]);
+  navigateTo(route: string, queryParams?: { [key: string]: string }): void {
+    if (queryParams) {
+      this.router.navigate([route], { queryParams });
+    } else {
+      this.router.navigate([route]);
+    }
   }
 }

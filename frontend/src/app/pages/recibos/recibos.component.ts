@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -587,11 +588,17 @@ export class RecibosComponent implements OnInit {
     metodos_pago: [{ id_metodo_pago: 0, monto: 0 }] as MetodoPagoRow[]
   };
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.cargarRecibos();
     this.cargarStats();
+
+    this.route.queryParams.subscribe(params => {
+      if (params['action'] === 'nuevo') {
+        setTimeout(() => this.openNuevoCobro(), 0);
+      }
+    });
   }
 
   private cargarRecibos(): void {

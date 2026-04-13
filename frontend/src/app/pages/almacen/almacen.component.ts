@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -957,13 +958,29 @@ export class AlmacenComponent implements OnInit {
   beneficiariosList: { id: number; nombre: string }[] = [];
   equiposList: ProductoItem[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.loadProductos();
     this.loadServicios();
     this.loadComodatos();
     this.loadAlmacenStats();
+
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'];
+      if (tab === 'inventario' || tab === 'comodatos') {
+        this.activeTab = tab;
+      }
+      if (params['action'] === 'nuevo') {
+        setTimeout(() => {
+          if (this.activeTab === 'comodatos') {
+            this.openNuevoComodatoModal();
+          } else {
+            this.openNuevoProductoModal();
+          }
+        }, 0);
+      }
+    });
   }
 
   // ──────────────── Data Loading ────────────────
