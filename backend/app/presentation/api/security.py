@@ -2,14 +2,14 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 
-from app.core.session_context import reset_current_user_id, set_current_user_id
+from app.core.session_context import clear_current_user_id, set_current_user_id
 from app.domain.auth.roles import normalize_role
 from app.infrastructure.security.auth import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciales inválidas",
@@ -17,7 +17,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     )
     try:
         payload = decode_access_token(token)
-        correo: str = payload.get("sub")
+        correo = payload.get("sub")
         if correo is None:
             raise credentials_exception
         rol_normalizado = normalize_role(payload.get("rol", "OPERATIVO"))
@@ -31,11 +31,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
-    token_ctx = set_current_user_id(user.get("id_usuario"))
+    set_current_user_id(user.get("id_usuario"))
     try:
         yield user
     finally:
-        reset_current_user_id(token_ctx)
+        clear_current_user_id()
 
 
 def require_role(*allowed_roles: str):

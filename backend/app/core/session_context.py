@@ -28,4 +28,13 @@ def get_current_user_id() -> int | None:
 
 
 def reset_current_user_id(token: object) -> None:
-    _current_user_id.reset(token)  # type: ignore[arg-type]
+    try:
+        _current_user_id.reset(token)  # type: ignore[arg-type]
+    except ValueError:
+        # FastAPI may finalize sync generator dependencies in a different
+        # context/thread than the one that created the token.
+        _current_user_id.set(None)
+
+
+def clear_current_user_id() -> None:
+    _current_user_id.set(None)

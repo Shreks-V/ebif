@@ -1,15 +1,26 @@
-# Stage 1: Build Angular app
+# Stage 1: Development image with Angular dev server
+FROM node:20-alpine AS dev
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+CMD ["npm", "start", "--", "--host", "0.0.0.0", "--poll", "2000"]
+
+# Stage 2: Build Angular app
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 COPY . .
 RUN npx ng build --configuration production
 
-# Stage 2: Serve with nginx
+# Stage 3: Serve with nginx
 FROM nginx:alpine
 
 # Copy built Angular files

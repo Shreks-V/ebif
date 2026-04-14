@@ -20,6 +20,9 @@ _SP_VENTA_ERRORS = {
     20405: (400, None),
 }
 
+_VENTA_FOLIO_SEQUENCE = 'SEQ_VENTA_FOLIO'
+_VENTA_FOLIO_UNIQUE_HINT = 'UQ_VENTA_FOLIO'
+
 def _serialize(row: dict) -> dict:
     """Convert datetime values to ISO strings for JSON serialisation."""
     out = {}
@@ -85,6 +88,53 @@ def _generate_folio(conn) -> str:
     seq = int(row.get('max_seq') or 0) + 1
     return f'VTA-{year}-{seq:03d}'
 
+
+def _sync_venta_folio_sequence(conn) -> bool:
+    """Advance the Oracle sequence when imported/existing folios are ahead of it."""
+    year = date.today().year
+    cur = conn.cursor()
+    pattern = f'^VTA-{year}-[0-9]+$'
+    cur.execute(
+        """
+        SELECT NVL(MAX(
+            CASE
+                WHEN REGEXP_LIKE(FOLIO_VENTA, :pattern)
+                THEN TO_NUMBER(REGEXP_SUBSTR(FOLIO_VENTA, '[0-9]+$'))
+            END
+        ), 0) AS max_seq
+        FROM VENTA
+        WHERE FOLIO_VENTA LIKE :prefix
+        """,
+        {'pattern': pattern, 'prefix': f'VTA-{year}-%'},
+    )
+    row = row_to_dict(cur) or {}
+    max_seq = int(row.get('max_seq') or 0)
+
+    cur.execute(f'SELECT {_VENTA_FOLIO_SEQUENCE}.NEXTVAL AS next_seq FROM DUAL')
+    seq_row = row_to_dict(cur) or {}
+    current_seq = int(seq_row.get('next_seq') or 0)
+
+    if current_seq >= max_seq:
+        return False
+
+    delta = max_seq - current_seq
+    altered = False
+    try:
+        cur.execute(f'ALTER SEQUENCE {_VENTA_FOLIO_SEQUENCE} INCREMENT BY {delta}')
+        altered = True
+        cur.execute(f'SELECT {_VENTA_FOLIO_SEQUENCE}.NEXTVAL FROM DUAL')
+    finally:
+        if altered:
+            cur.execute(f'ALTER SEQUENCE {_VENTA_FOLIO_SEQUENCE} INCREMENT BY 1')
+
+    logger.warning(
+        'Secuencia %s resincronizada de %s a %s por colision de folio en VENTA',
+        _VENTA_FOLIO_SEQUENCE,
+        current_seq,
+        max_seq,
+    )
+    return True
+
 def _is_unique_constraint_error(exc: Exception, hint: str='') -> bool:
     message = str(exc).upper()
     if 'ORA-00001' not in message:
@@ -92,6 +142,32 @@ def _is_unique_constraint_error(exc: Exception, hint: str='') -> bool:
     if not hint:
         return True
     return hint.upper() in message
+
+
+def _call_registrar_venta_completa(
+    cur,
+    data: VentaCreate,
+    id_usuario: int,
+    productos_arr,
+    cantidades_arr,
+    metodos_arr,
+    montos_arr,
+) -> tuple[int, str]:
+    id_venta_out = cur.var(int)
+    folio_out = cur.var(str)
+    cur.callproc('SP_REGISTRAR_VENTA_COMPLETA', [
+        data.id_paciente,
+        id_usuario,
+        float(data.monto_total),
+        data.exento_pago or 'N',
+        productos_arr,
+        cantidades_arr,
+        metodos_arr,
+        montos_arr,
+        id_venta_out,
+        folio_out,
+    ])
+    return id_venta_out.getvalue(), folio_out.getvalue()
 
 def stats_ventas(current_user: dict=None):
     """Totales agregados de ventas (no canceladas)."""
@@ -159,27 +235,47 @@ def crear_venta(data: VentaCreate, current_user: dict=None):
             metodos_arr = make_number_list(conn, metodos_ids)
             montos_arr = make_number_list(conn, metodos_montos)
 
-            id_venta_out = cur.var(int)
-            folio_out = cur.var(str)
             try:
-                cur.callproc('SP_REGISTRAR_VENTA_COMPLETA', [
-                    data.id_paciente,
+                new_id, folio = _call_registrar_venta_completa(
+                    cur,
+                    data,
                     id_usuario,
-                    float(data.monto_total),
-                    data.exento_pago or 'N',
                     productos_arr,
                     cantidades_arr,
                     metodos_arr,
                     montos_arr,
-                    id_venta_out,
-                    folio_out,
-                ])
+                )
             except oracledb.DatabaseError as exc:
-                raise sp_error_to_http(exc, _SP_VENTA_ERRORS,
-                                       default_detail='No se pudo registrar la venta')
+                if not _is_unique_constraint_error(exc, _VENTA_FOLIO_UNIQUE_HINT):
+                    raise sp_error_to_http(
+                        exc,
+                        _SP_VENTA_ERRORS,
+                        default_detail='No se pudo registrar la venta',
+                    )
 
-            new_id = id_venta_out.getvalue()
-            folio = folio_out.getvalue()
+                logger.warning(
+                    'Colision detectada en %s al crear venta para paciente %s; intentando resincronizar secuencia',
+                    _VENTA_FOLIO_UNIQUE_HINT,
+                    data.id_paciente,
+                )
+                _sync_venta_folio_sequence(conn)
+                try:
+                    new_id, folio = _call_registrar_venta_completa(
+                        cur,
+                        data,
+                        id_usuario,
+                        productos_arr,
+                        cantidades_arr,
+                        metodos_arr,
+                        montos_arr,
+                    )
+                except oracledb.DatabaseError as retry_exc:
+                    raise sp_error_to_http(
+                        retry_exc,
+                        _SP_VENTA_ERRORS,
+                        default_detail='No se pudo registrar la venta',
+                    )
+
             log_insert(conn, 'VENTA', new_id, id_usuario, f'Venta {folio} creada para paciente {data.id_paciente}')
             conn.commit()
             cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': new_id})
