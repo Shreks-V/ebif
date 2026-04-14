@@ -1,9 +1,26 @@
 from datetime import datetime, date, timedelta
 from fastapi import HTTPException
 from typing import Optional
+
+import oracledb
+
 from app.infrastructure.audit.bitacora import log_insert, log_cancelacion
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
+from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
 from app.schemas.schemas import CitaCreate
+
+_SP_CREAR_CITA_ERRORS = {
+    20301: (400, None),
+    20302: (400, None),
+    20303: (409, None),
+    20304: (400, None),
+    20305: (400, None),
+}
+
+_SP_CANCELAR_CITA_ERRORS = {
+    20306: (404, None),
+    20307: (400, None),
+}
 CITA_BASE_QUERY = "\n    SELECT c.ID_CITA, c.ID_PACIENTE, c.ID_USUARIO_REGISTRO,\n           c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO,\n           p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           p.FOLIO AS FOLIO_PACIENTE\n    FROM CITA c\n    JOIN PACIENTE p ON c.ID_PACIENTE = p.ID_PACIENTE\n"
 
 def _serialize_row(row: dict) -> dict:
@@ -121,7 +138,7 @@ def obtener_cita(id_cita: int, current_user: dict=None):
     return cita
 
 def crear_cita(data: CitaCreate, current_user: dict=None):
-    """Crear nueva cita con sus servicios."""
+    """Crear nueva cita vía SP_CREAR_CITA_CON_SERVICIOS."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute('SELECT MEMBRESIA_ESTATUS, ACTIVO FROM PACIENTE WHERE ID_PACIENTE = :id_paciente', {'id_paciente': data.id_paciente})
@@ -134,13 +151,37 @@ def crear_cita(data: CitaCreate, current_user: dict=None):
             raise HTTPException(status_code=400, detail='El paciente no se encuentra activo en el sistema')
         if membresia_estatus != 'ACTIVO':
             raise HTTPException(status_code=400, detail='El paciente no tiene membresía activa. Actualice su estatus antes de agendar una cita')
-        out_id = cursor.var(int)
-        cursor.execute('\n            INSERT INTO CITA (ID_PACIENTE, ID_USUARIO_REGISTRO, FECHA_HORA, ESTATUS, NOTAS)\n            VALUES (:id_paciente, :id_usuario_registro,\n                    TO_TIMESTAMP(:fecha_hora, \'YYYY-MM-DD"T"HH24:MI:SS\'),\n                    :estatus, :notas)\n            RETURNING ID_CITA INTO :out_id\n            ', {'id_paciente': data.id_paciente, 'id_usuario_registro': data.id_usuario_registro or current_user.get('id_usuario'), 'fecha_hora': data.fecha_hora, 'estatus': data.estatus, 'notas': data.notas, 'out_id': out_id})
-        id_cita = out_id.getvalue()[0]
-        if data.servicios:
-            for s in data.servicios:
-                cursor.execute("\n                    INSERT INTO DETALLE_CITA_SERVICIO\n                        (ID_CITA, ID_SERVICIO, CANTIDAD, MONTO_PAGADO, CANCELADO)\n                    VALUES (:id_cita, :id_servicio, :cantidad, :monto_pagado, 'N')\n                    ", {'id_cita': id_cita, 'id_servicio': s['id_servicio'], 'cantidad': s.get('cantidad', 1), 'monto_pagado': s.get('monto_pagado', 0.0)})
+
         id_usuario = data.id_usuario_registro or current_user.get('id_usuario', 1)
+        servicios_list = list(data.servicios or [])
+        if not servicios_list:
+            raise HTTPException(status_code=400, detail='La cita requiere al menos un servicio')
+
+        servicios_ids = [int(s['id_servicio']) for s in servicios_list]
+        doctores_ids = [int(s['id_doctor']) if s.get('id_doctor') is not None else None for s in servicios_list]
+        cantidades = [int(s.get('cantidad', 1)) for s in servicios_list]
+
+        servicios_arr = make_number_list(conn, servicios_ids)
+        doctores_arr = make_number_list(conn, doctores_ids)
+        cantidades_arr = make_number_list(conn, cantidades)
+
+        fecha_ts = datetime.strptime(data.fecha_hora[:19], '%Y-%m-%dT%H:%M:%S') if isinstance(data.fecha_hora, str) else data.fecha_hora
+        id_cita_out = cursor.var(int)
+        try:
+            cursor.callproc('SP_CREAR_CITA_CON_SERVICIOS', [
+                data.id_paciente,
+                id_usuario,
+                fecha_ts,
+                data.notas,
+                servicios_arr,
+                doctores_arr,
+                cantidades_arr,
+                id_cita_out,
+            ])
+        except oracledb.DatabaseError as exc:
+            raise sp_error_to_http(exc, _SP_CREAR_CITA_ERRORS,
+                                   default_detail='No se pudo crear la cita')
+        id_cita = id_cita_out.getvalue()
         log_insert(conn, 'CITA', id_cita, id_usuario, f'Cita creada para paciente {data.id_paciente}')
         conn.commit()
         cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
@@ -182,15 +223,20 @@ def completar_cita(id_cita: int, current_user: dict=None):
     return cita
 
 def cancelar_cita(id_cita: int, current_user: dict=None):
-    """Cancelar una cita (cambiar estatus a CANCELADA)."""
+    """Cancelar una cita vía SP_CANCELAR_CITA."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
-        row = cursor.fetchone()
-        if row is None:
-            raise HTTPException(status_code=404, detail='Cita no encontrada')
-        cursor.execute("UPDATE CITA SET ESTATUS = 'CANCELADA' WHERE ID_CITA = :id_cita", {'id_cita': id_cita})
-        log_cancelacion(conn, 'CITA', id_cita, current_user.get('id_usuario', 1), 'Cita cancelada')
+        id_usuario = current_user.get('id_usuario', 1)
+        try:
+            cursor.callproc('SP_CANCELAR_CITA', [
+                id_cita,
+                'Cita cancelada',
+                id_usuario,
+            ])
+        except oracledb.DatabaseError as exc:
+            raise sp_error_to_http(exc, _SP_CANCELAR_CITA_ERRORS,
+                                   default_detail='No se pudo cancelar la cita')
+        log_cancelacion(conn, 'CITA', id_cita, id_usuario, 'Cita cancelada')
         conn.commit()
         cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
         cita = row_to_dict(cursor)

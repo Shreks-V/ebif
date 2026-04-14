@@ -1,10 +1,20 @@
 from datetime import datetime, date
 import logging
+
+import oracledb
 from fastapi import HTTPException
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
+from app.infrastructure.persistence.sp_helpers import (
+    make_number_list,
+    sp_error_to_http,
+)
 from app.infrastructure.privacy.crypto import encrypt, decrypt_row, DOCTOR_ENCRYPTED_FIELDS
 from app.schemas.schemas import DoctorCreate, DisponibilidadCreate
 logger = logging.getLogger(__name__)
+
+_SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS = {
+    20601: (404, None),  # Doctor no existe o inactivo
+}
 
 def _serialize(row: dict) -> dict:
     """Strip CHAR padding and convert datetimes to ISO strings."""
@@ -31,11 +41,16 @@ def _doctor_with_servicios(conn, doctor_row: dict) -> dict:
     return d
 
 def _sync_doctor_servicios(conn, id_doctor: int, servicio_ids: list[int]):
-    """Replace DOCTOR_SERVICIO rows for a doctor."""
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM DOCTOR_SERVICIO WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
-    for sid in servicio_ids:
-        cursor.execute('INSERT INTO DOCTOR_SERVICIO (ID_DOCTOR, ID_SERVICIO) VALUES (:id_doctor, :id_servicio)', {'id_doctor': id_doctor, 'id_servicio': sid})
+    """Replace DOCTOR_SERVICIO rows for a doctor via SP_ASIGNAR_SERVICIOS_DOCTOR."""
+    try:
+        with conn.cursor() as cursor:
+            servicios_arr = make_number_list(conn, servicio_ids or [])
+            cursor.callproc(
+                "SP_ASIGNAR_SERVICIOS_DOCTOR",
+                [id_doctor, servicios_arr],
+            )
+    except oracledb.DatabaseError as exc:
+        raise sp_error_to_http(exc, _SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS)
 
 def doctor_del_dia(current_user: dict=None):
     """Obtener el doctor asignado para hoy según DIA_SEMANA en DISPONIBILIDAD_DOCTOR."""

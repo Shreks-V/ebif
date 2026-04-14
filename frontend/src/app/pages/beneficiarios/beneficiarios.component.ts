@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -57,6 +58,11 @@ interface Preregistro {
   // UI helpers
   iniciales: string;
   color: string;
+}
+
+interface NuevoBeneficiarioDocumento {
+  id_tipo_documento: number;
+  archivo: File | null;
 }
 
 @Component({
@@ -285,6 +291,13 @@ interface Preregistro {
                           <circle cx="12" cy="12" r="3"/>
                         </svg>
                       </button>
+                      <!-- Editar -->
+                      <button
+                        (click)="editarPreregistro(p)"
+                        class="px-4 py-2 rounded-lg border-2 border-blue-300 text-blue-600 text-sm font-bold hover:bg-blue-50 transition-colors"
+                      >
+                        Editar
+                      </button>
                       <!-- Aprobar -->
                       <button
                         (click)="aprobarPreregistro(p)"
@@ -476,6 +489,38 @@ interface Preregistro {
             </div>
           </div>
 
+          <!-- Documentos opcionales -->
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Documentos (Opcional)</h3>
+          <div class="mb-8 p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 space-y-3">
+            <p class="text-xs text-slate-600 font-semibold">Los documentos se suben autom&aacute;ticamente despu&eacute;s de guardar al beneficiario.</p>
+
+            <div *ngFor="let doc of nuevoBeneficiarioDocumentos; let i = index" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+              <div class="md:col-span-5">
+                <select [(ngModel)]="doc.id_tipo_documento" [name]="'nuevoDocTipo' + i" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all text-sm bg-white">
+                  <option [ngValue]="0">Tipo de documento...</option>
+                  <option *ngFor="let td of tiposDocumentoCatalogo" [ngValue]="td.id_tipo_documento">{{ td.nombre }}</option>
+                </select>
+              </div>
+              <div class="md:col-span-5">
+                <input type="file" [name]="'nuevoDocArchivo' + i" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" (change)="onNuevoBeneficiarioDocSelected($event, i)" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm bg-white" />
+              </div>
+              <div class="md:col-span-2 flex justify-end">
+                <button type="button" (click)="eliminarDocumentoNuevoBeneficiario(i)" class="w-10 h-10 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors" title="Quitar documento">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <button type="button" (click)="agregarDocumentoNuevoBeneficiario()" class="px-4 py-2 rounded-xl text-sm font-bold border-2 border-slate-200 text-slate-700 hover:bg-white transition-all inline-flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+              </svg>
+              Agregar documento
+            </button>
+          </div>
+
           <!-- Error message -->
           <div *ngIf="nuevoError" class="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-sm font-semibold">
             {{ nuevoError }}
@@ -624,6 +669,9 @@ interface Preregistro {
           <button (click)="closeDetallePreregistroModal()" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
             Cerrar
           </button>
+          <button (click)="closeDetallePreregistroModal(); editarPreregistro(preregistroSeleccionado)" class="px-6 py-3 rounded-xl font-bold border-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-all">
+            Editar Datos
+          </button>
           <button (click)="closeDetallePreregistroModal(); aprobarPreregistro(preregistroSeleccionado)" class="px-6 py-3 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
             Aprobar
           </button>
@@ -631,6 +679,145 @@ interface Preregistro {
             Rechazar
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Editar Preregistro ==================== -->
+    <div *ngIf="showEditPreregistroModal && preregistroEditData" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditPreregistroModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-black text-slate-900">Editar Pre-registro</h2>
+          <button (click)="showEditPreregistroModal = false" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <form (ngSubmit)="guardarEdicionPreregistro()">
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Datos Personales</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
+              <input type="text" [(ngModel)]="preregistroEditData.nombre" name="preNombre" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Paterno *</label>
+              <input type="text" [(ngModel)]="preregistroEditData.apellido_paterno" name="preApellidoPaterno" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Materno</label>
+              <input type="text" [(ngModel)]="preregistroEditData.apellido_materno" name="preApellidoMaterno" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento</label>
+              <input type="date" [(ngModel)]="preregistroEditData.fecha_nacimiento" name="preFechaNacimiento" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Genero</label>
+              <select [(ngModel)]="preregistroEditData.genero" name="preGenero" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">CURP *</label>
+              <input type="text" [(ngModel)]="preregistroEditData.curp" name="preCurp" required maxlength="18" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all uppercase" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del Padre/Madre</label>
+              <input type="text" [(ngModel)]="preregistroEditData.nombre_padre_madre" name="prePadreMadre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+          </div>
+
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Direccion y Contacto</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Direccion</label>
+              <input type="text" [(ngModel)]="preregistroEditData.direccion" name="preDireccion" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Colonia</label>
+              <input type="text" [(ngModel)]="preregistroEditData.colonia" name="preColonia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Ciudad</label>
+              <input type="text" [(ngModel)]="preregistroEditData.ciudad" name="preCiudad" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+              <select [(ngModel)]="preregistroEditData.estado" name="preEstado" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option *ngFor="let e of estadosMexicanos" [value]="e">{{ e }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Codigo Postal</label>
+              <input type="text" [(ngModel)]="preregistroEditData.codigo_postal" name="preCP" maxlength="5" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Casa</label>
+              <input type="tel" [(ngModel)]="preregistroEditData.telefono_casa" name="preTelCasa" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Celular</label>
+              <input type="tel" [(ngModel)]="preregistroEditData.telefono_celular" name="preTelCel" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electronico</label>
+              <input type="email" [(ngModel)]="preregistroEditData.correo_electronico" name="preCorreo" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">En emergencia avisar a</label>
+              <input type="text" [(ngModel)]="preregistroEditData.en_emergencia_avisar_a" name="preEmergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Emergencia</label>
+              <input type="tel" [(ngModel)]="preregistroEditData.telefono_emergencia" name="preTelEmergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            </div>
+          </div>
+
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Informacion Medica</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Sangre</label>
+              <select [(ngModel)]="preregistroEditData.tipo_sangre" name="preTipoSangre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option *ngFor="let ts of tiposSangre" [value]="ts">{{ ts }}</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-3 pt-7">
+              <input type="checkbox" [(ngModel)]="preregistroEditUsaValvula" name="preUsaValvula" id="preUsaValvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+              <label for="preUsaValvula" class="text-sm font-semibold text-slate-700">Usa Valvula</label>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota</label>
+              <select [(ngModel)]="preregistroEditData.tipo_cuota" name="preTipoCuota" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                <option value="">Seleccionar</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Notas Adicionales</label>
+              <textarea [(ngModel)]="preregistroEditData.notas_adicionales" name="preNotas" rows="3" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all resize-none"></textarea>
+            </div>
+          </div>
+
+          <div *ngIf="preregistroEditError" class="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-sm font-semibold">
+            {{ preregistroEditError }}
+          </div>
+
+          <div class="flex items-center justify-end gap-3">
+            <button type="button" (click)="showEditPreregistroModal = false" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+              Cancelar
+            </button>
+            <button type="submit" [disabled]="submittingPreregistroEdit" class="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-[#f3ad1c] to-[#ffb84d] text-white hover:shadow-lg transition-all disabled:opacity-50">
+              {{ submittingPreregistroEdit ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -891,11 +1078,19 @@ export class BeneficiariosComponent implements OnInit {
   showNuevoModal = false;
   showDetalleModal = false;
   showDetallePreregistroModal = false;
+  showEditPreregistroModal = false;
   beneficiarioSeleccionado: Beneficiario | null = null;
   preregistroSeleccionado: Preregistro | null = null;
   submittingNuevo = false;
   nuevoError = '';
   formDataUsaValvula = false;
+
+  // Edit preregistro modal
+  preregistroEditData: any = null;
+  preregistroEditUsaValvula = false;
+  editingPreregistroId: number | null = null;
+  submittingPreregistroEdit = false;
+  preregistroEditError = '';
 
   // Edit modal
   showEditModal = false;
@@ -917,6 +1112,8 @@ export class BeneficiariosComponent implements OnInit {
 
   // Form data for new beneficiario
   formData: any = {};
+  tiposDocumentoCatalogo: any[] = [];
+  nuevoBeneficiarioDocumentos: NuevoBeneficiarioDocumento[] = [{ id_tipo_documento: 0, archivo: null }];
 
   // Select options
   estadosMexicanos = [
@@ -948,6 +1145,7 @@ export class BeneficiariosComponent implements OnInit {
   ngOnInit(): void {
     this.loadBeneficiarios();
     this.loadPreregistros();
+    this.loadTiposDocumentoCatalogo();
     this.resetFormData();
 
     this.route.queryParams.subscribe(params => {
@@ -982,6 +1180,18 @@ export class BeneficiariosComponent implements OnInit {
       membresia_estatus: ''
     };
     this.formDataUsaValvula = false;
+    this.nuevoBeneficiarioDocumentos = [{ id_tipo_documento: 0, archivo: null }];
+  }
+
+  private loadTiposDocumentoCatalogo(): void {
+    this.api.getTiposDocumentoPublic().subscribe({
+      next: (data) => {
+        this.tiposDocumentoCatalogo = data || [];
+      },
+      error: (err) => {
+        console.error('Error al cargar tipos de documento:', err);
+      }
+    });
   }
 
   private loadBeneficiarios(): void {
@@ -1073,6 +1283,26 @@ export class BeneficiariosComponent implements OnInit {
     this.showNuevoModal = false;
   }
 
+  agregarDocumentoNuevoBeneficiario(): void {
+    this.nuevoBeneficiarioDocumentos.push({ id_tipo_documento: 0, archivo: null });
+  }
+
+  eliminarDocumentoNuevoBeneficiario(index: number): void {
+    if (this.nuevoBeneficiarioDocumentos.length === 1) {
+      this.nuevoBeneficiarioDocumentos[0] = { id_tipo_documento: 0, archivo: null };
+      return;
+    }
+    this.nuevoBeneficiarioDocumentos.splice(index, 1);
+  }
+
+  onNuevoBeneficiarioDocSelected(event: Event, index: number): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length ? input.files[0] : null;
+    if (this.nuevoBeneficiarioDocumentos[index]) {
+      this.nuevoBeneficiarioDocumentos[index].archivo = file;
+    }
+  }
+
   submitNuevoBeneficiario(): void {
     if (!this.formData.nombre || !this.formData.apellido_paterno || !this.formData.genero ||
         !this.formData.fecha_nacimiento || !this.formData.curp || !this.formData.tipo_cuota ||
@@ -1087,11 +1317,31 @@ export class BeneficiariosComponent implements OnInit {
     const payload = { ...this.formData };
     payload.usa_valvula = this.formDataUsaValvula ? 'S' : 'N';
 
+    const documentosValidos = this.nuevoBeneficiarioDocumentos
+      .filter((doc) => doc.id_tipo_documento > 0 && !!doc.archivo);
+
     this.api.createBeneficiario(payload).subscribe({
-      next: () => {
-        this.submittingNuevo = false;
-        this.showNuevoModal = false;
-        this.loadBeneficiarios();
+      next: (created: any) => {
+        const idPacienteCreado = created?.id_paciente;
+        if (documentosValidos.length > 0 && idPacienteCreado) {
+          const uploads = documentosValidos.map((doc) =>
+            this.api.uploadDocumento(idPacienteCreado, doc.id_tipo_documento, doc.archivo as File)
+          );
+
+          forkJoin(uploads).subscribe({
+            next: () => {
+              this.finalizarAltaBeneficiario();
+            },
+            error: (err) => {
+              console.error('Beneficiario creado, pero hubo error al subir documentos:', err);
+              this.finalizarAltaBeneficiario();
+              alert('El beneficiario se creo correctamente, pero algunos documentos no se pudieron subir.');
+            }
+          });
+          return;
+        }
+
+        this.finalizarAltaBeneficiario();
       },
       error: (err) => {
         this.submittingNuevo = false;
@@ -1099,6 +1349,13 @@ export class BeneficiariosComponent implements OnInit {
         console.error('Error creating beneficiario:', err);
       }
     });
+  }
+
+  private finalizarAltaBeneficiario(): void {
+    this.submittingNuevo = false;
+    this.showNuevoModal = false;
+    this.resetFormData();
+    this.loadBeneficiarios();
   }
 
   // ──────────── Modal: Detalle Beneficiario ────────────
@@ -1123,6 +1380,107 @@ export class BeneficiariosComponent implements OnInit {
   closeDetallePreregistroModal(): void {
     this.showDetallePreregistroModal = false;
     this.preregistroSeleccionado = null;
+  }
+
+  editarPreregistro(p: Preregistro): void {
+    this.editingPreregistroId = p.id;
+    this.preregistroEditError = '';
+    this.submittingPreregistroEdit = false;
+
+    this.api.getPreRegistro(p.id).subscribe({
+      next: (data: any) => {
+        this.preregistroEditData = {
+          nombre: data?.nombre || p.nombre,
+          apellido_paterno: data?.apellido_paterno || p.apellidoPaterno,
+          apellido_materno: data?.apellido_materno || p.apellidoMaterno || '',
+          fecha_nacimiento: this.toInputDate(data?.fecha_nacimiento || p.fechaNacimiento),
+          genero: data?.genero || '',
+          curp: data?.curp || p.curp,
+          estado_nacimiento: data?.estado_nacimiento || data?.estado || '',
+          hospital_nacimiento: data?.hospital_nacimiento || '',
+          nombre_padre_madre: data?.nombre_padre_madre || p.nombrePadreMadre || '',
+          direccion: data?.direccion || '',
+          colonia: data?.colonia || '',
+          ciudad: data?.ciudad || '',
+          estado: data?.estado || '',
+          codigo_postal: data?.codigo_postal || '',
+          telefono_casa: data?.telefono_casa || '',
+          telefono_celular: data?.telefono_celular || '',
+          correo_electronico: data?.correo_electronico || '',
+          en_emergencia_avisar_a: data?.en_emergencia_avisar_a || '',
+          telefono_emergencia: data?.telefono_emergencia || '',
+          tipo_sangre: data?.tipo_sangre || '',
+          tipo_cuota: data?.tipo_cuota || p.tipoCuota || 'A',
+          notas_adicionales: data?.notas_adicionales || '',
+          paso_actual: data?.paso_actual || 5,
+        };
+        this.preregistroEditUsaValvula = data?.usa_valvula === 'S';
+        this.showEditPreregistroModal = true;
+      },
+      error: (err) => {
+        console.error('Error al cargar detalle de preregistro:', err);
+      }
+    });
+  }
+
+  guardarEdicionPreregistro(): void {
+    if (!this.editingPreregistroId || !this.preregistroEditData) return;
+
+    if (!this.preregistroEditData.nombre || !this.preregistroEditData.apellido_paterno || !this.preregistroEditData.curp) {
+      this.preregistroEditError = 'Nombre, apellido paterno y CURP son obligatorios.';
+      return;
+    }
+
+    this.submittingPreregistroEdit = true;
+    this.preregistroEditError = '';
+
+    const payload = {
+      nombre: this.preregistroEditData.nombre,
+      apellido_paterno: this.preregistroEditData.apellido_paterno,
+      apellido_materno: this.preregistroEditData.apellido_materno || null,
+      fecha_nacimiento: this.preregistroEditData.fecha_nacimiento || null,
+      genero: this.preregistroEditData.genero || null,
+      curp: this.preregistroEditData.curp,
+      estado_nacimiento: this.preregistroEditData.estado_nacimiento || this.preregistroEditData.estado || null,
+      hospital_nacimiento: this.preregistroEditData.hospital_nacimiento || null,
+      nombre_padre_madre: this.preregistroEditData.nombre_padre_madre || null,
+      direccion: this.preregistroEditData.direccion || null,
+      colonia: this.preregistroEditData.colonia || null,
+      ciudad: this.preregistroEditData.ciudad || null,
+      estado: this.preregistroEditData.estado || null,
+      codigo_postal: this.preregistroEditData.codigo_postal || null,
+      telefono_casa: this.preregistroEditData.telefono_casa || null,
+      telefono_celular: this.preregistroEditData.telefono_celular || null,
+      correo_electronico: this.preregistroEditData.correo_electronico || null,
+      en_emergencia_avisar_a: this.preregistroEditData.en_emergencia_avisar_a || null,
+      telefono_emergencia: this.preregistroEditData.telefono_emergencia || null,
+      tipo_sangre: this.preregistroEditData.tipo_sangre || null,
+      usa_valvula: this.preregistroEditUsaValvula ? 'S' : 'N',
+      tipo_cuota: this.preregistroEditData.tipo_cuota || null,
+      notas_adicionales: this.preregistroEditData.notas_adicionales || null,
+      paso_actual: this.preregistroEditData.paso_actual || 5,
+      tipos_espina: null,
+    };
+
+    this.api.updatePreRegistro(this.editingPreregistroId, payload).subscribe({
+      next: () => {
+        this.submittingPreregistroEdit = false;
+        this.showEditPreregistroModal = false;
+        this.preregistroEditData = null;
+        this.editingPreregistroId = null;
+        this.loadPreregistros();
+      },
+      error: (err) => {
+        this.submittingPreregistroEdit = false;
+        this.preregistroEditError = err?.error?.detail || 'Error al actualizar pre-registro.';
+        console.error('Error al actualizar pre-registro:', err);
+      }
+    });
+  }
+
+  private toInputDate(value: string | null | undefined): string {
+    if (!value) return '';
+    return value.includes('T') ? value.split('T')[0] : value;
   }
 
   // ──────────── Exportar Excel (RF-RB-07) ────────────

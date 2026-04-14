@@ -1,9 +1,24 @@
+import logging
 from fastapi import HTTPException
 from typing import Optional
 from datetime import date, datetime, timedelta
+
+import oracledb
+
 from app.infrastructure.audit.bitacora import log_insert, log_cancelacion
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
+from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
 from app.schemas.schemas import VentaCreate
+
+logger = logging.getLogger(__name__)
+
+_SP_VENTA_ERRORS = {
+    20401: (400, None),
+    20402: (400, None),
+    20403: (400, None),
+    20404: (400, None),
+    20405: (400, None),
+}
 
 def _serialize(row: dict) -> dict:
     """Convert datetime values to ISO strings for JSON serialisation."""
@@ -52,10 +67,31 @@ def _generate_folio(conn) -> str:
     """Generate the next folio in the format VTA-YYYY-XXX."""
     year = date.today().year
     cur = conn.cursor()
-    cur.execute('\n        SELECT COUNT(*) AS cnt\n          FROM VENTA\n         WHERE FOLIO_VENTA LIKE :prefix\n        ', {'prefix': f'VTA-{year}-%'})
-    row = row_to_dict(cur)
-    seq = (row['cnt'] if row else 0) + 1
+    pattern = f'^VTA-{year}-[0-9]+$'
+    cur.execute(
+        """
+        SELECT NVL(MAX(
+            CASE
+                WHEN REGEXP_LIKE(FOLIO_VENTA, :pattern)
+                THEN TO_NUMBER(REGEXP_SUBSTR(FOLIO_VENTA, '[0-9]+$'))
+            END
+        ), 0) AS max_seq
+        FROM VENTA
+        WHERE FOLIO_VENTA LIKE :prefix
+        """,
+        {'pattern': pattern, 'prefix': f'VTA-{year}-%'},
+    )
+    row = row_to_dict(cur) or {}
+    seq = int(row.get('max_seq') or 0) + 1
     return f'VTA-{year}-{seq:03d}'
+
+def _is_unique_constraint_error(exc: Exception, hint: str='') -> bool:
+    message = str(exc).upper()
+    if 'ORA-00001' not in message:
+        return False
+    if not hint:
+        return True
+    return hint.upper() in message
 
 def stats_ventas(current_user: dict=None):
     """Totales agregados de ventas (no canceladas)."""
@@ -110,24 +146,52 @@ def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=Non
     return results
 
 def crear_venta(data: VentaCreate, current_user: dict=None):
-    """Crear nueva venta."""
-    with get_db() as conn:
-        folio = _generate_folio(conn)
-        id_usuario = current_user.get('id_usuario', 1)
-        cur = conn.cursor()
-        id_venta_var = cur.var(int)
-        cur.execute("\n            INSERT INTO VENTA (\n                ID_PACIENTE, ID_USUARIO_REGISTRO, FOLIO_VENTA,\n                FECHA_VENTA, MONTO_TOTAL, MONTO_PAGADO,\n                SALDO_PENDIENTE, EXENTO_PAGO, CANCELADA\n            ) VALUES (\n                :id_paciente, :id_usuario, :folio,\n                SYSTIMESTAMP, :monto_total, :monto_pagado,\n                :saldo_pendiente, :exento_pago, 'N'\n            ) RETURNING ID_VENTA INTO :id_venta\n            ", {'id_paciente': data.id_paciente, 'id_usuario': id_usuario, 'folio': folio, 'monto_total': data.monto_total, 'monto_pagado': data.monto_pagado, 'saldo_pendiente': data.saldo_pendiente, 'exento_pago': data.exento_pago, 'id_venta': id_venta_var})
-        new_id = id_venta_var.getvalue()[0]
-        if data.metodos_pago:
-            for mp in data.metodos_pago:
-                cur.execute('\n                    INSERT INTO VENTA_METODO_PAGO (\n                        ID_VENTA, ID_METODO_PAGO, MONTO, FECHA_REGISTRO\n                    ) VALUES (\n                        :id_venta, :id_metodo_pago, :monto, SYSTIMESTAMP\n                    )\n                    ', {'id_venta': new_id, 'id_metodo_pago': mp['id_metodo_pago'], 'monto': mp['monto']})
-        log_insert(conn, 'VENTA', new_id, id_usuario, f'Venta {folio} creada para paciente {data.id_paciente}')
-        conn.commit()
-        cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': new_id})
-        venta = row_to_dict(cur)
-        if venta is None:
-            raise HTTPException(status_code=500, detail='Error al recuperar la venta creada')
-        return _enrich_venta(conn, venta)
+    """Crear nueva venta vía SP_REGISTRAR_VENTA_COMPLETA."""
+    try:
+        with get_db() as conn:
+            id_usuario = current_user.get('id_usuario', 1)
+            cur = conn.cursor()
+
+            metodos_ids = [int(mp['id_metodo_pago']) for mp in (data.metodos_pago or [])]
+            metodos_montos = [float(mp['monto']) for mp in (data.metodos_pago or [])]
+            productos_arr = make_number_list(conn, [])
+            cantidades_arr = make_number_list(conn, [])
+            metodos_arr = make_number_list(conn, metodos_ids)
+            montos_arr = make_number_list(conn, metodos_montos)
+
+            id_venta_out = cur.var(int)
+            folio_out = cur.var(str)
+            try:
+                cur.callproc('SP_REGISTRAR_VENTA_COMPLETA', [
+                    data.id_paciente,
+                    id_usuario,
+                    float(data.monto_total),
+                    data.exento_pago or 'N',
+                    productos_arr,
+                    cantidades_arr,
+                    metodos_arr,
+                    montos_arr,
+                    id_venta_out,
+                    folio_out,
+                ])
+            except oracledb.DatabaseError as exc:
+                raise sp_error_to_http(exc, _SP_VENTA_ERRORS,
+                                       default_detail='No se pudo registrar la venta')
+
+            new_id = id_venta_out.getvalue()
+            folio = folio_out.getvalue()
+            log_insert(conn, 'VENTA', new_id, id_usuario, f'Venta {folio} creada para paciente {data.id_paciente}')
+            conn.commit()
+            cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': new_id})
+            venta = row_to_dict(cur)
+            if venta is None:
+                raise HTTPException(status_code=500, detail='Error al recuperar la venta creada')
+            return _enrich_venta(conn, venta)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception('Error al crear venta para paciente %s: %s', data.id_paciente, exc)
+        raise HTTPException(status_code=500, detail='Error interno al crear la venta')
 
 def obtener_venta(id_venta: int, current_user: dict=None):
     """Obtener detalle de una venta."""

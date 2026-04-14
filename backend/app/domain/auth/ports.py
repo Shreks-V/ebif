@@ -16,6 +16,11 @@ class UserRepository(Protocol):
     def seed_users(self, users: list[SeedUser]) -> list[str]:
         ...
 
+    def log_login_attempt(
+        self, id_usuario: int | None, success: bool, ip: str | None = None
+    ) -> None:
+        ...
+
 
 class PasswordHasher(Protocol):
     def verify(self, plain_password: str, hashed_password: str) -> bool:

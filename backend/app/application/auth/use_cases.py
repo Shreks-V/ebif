@@ -1,6 +1,7 @@
 from app.domain.auth.entities import AuthenticatedUser, SeedUser, User
 from app.domain.auth.exceptions import AuthError, ForbiddenActionError, UserNotFoundError
 from app.domain.auth.ports import AccessTokenIssuer, PasswordHasher, UserRepository
+from app.domain.auth.roles import normalize_role
 
 
 DEFAULT_SEED_USERS = [
@@ -39,7 +40,13 @@ class AuthService:
     def login(self, correo: str, password: str) -> AuthenticatedUser:
         db_user = self._user_repository.find_by_email(correo)
         if db_user is not None:
-            return self._authenticate_user(db_user, password)
+            try:
+                return self._authenticate_user(db_user, password)
+            except AuthError:
+                self._user_repository.log_login_attempt(
+                    db_user.id_usuario, success=False
+                )
+                raise
 
         if self._user_repository.has_users():
             raise AuthError()
@@ -56,7 +63,7 @@ class AuthService:
         return self._to_user_response(user)
 
     def seed_default_users(self, current_user: dict) -> dict:
-        if current_user.get("rol") != "ADMINISTRADOR":
+        if normalize_role(current_user.get("rol")) != "ADMINISTRADOR":
             raise ForbiddenActionError()
 
         inserted = self._user_repository.seed_users(DEFAULT_SEED_USERS)
@@ -75,24 +82,27 @@ class AuthService:
         if not self._password_hasher.verify(password, user.hashed_password):
             raise AuthError()
 
+        rol = normalize_role(user.rol)
+
         access_token = self._token_issuer.issue(
             data={
-                "sub": user.correo,
-                "rol": user.rol,
-                "nombre": user.nombre,
+                "sub": (user.correo or "").strip(),
+                "rol": rol,
+                "nombre": (user.nombre or "").strip(),
                 "id_usuario": user.id_usuario,
             }
         )
+        self._user_repository.log_login_attempt(user.id_usuario, success=True)
         return AuthenticatedUser(access_token=access_token)
 
     @staticmethod
     def _to_user_response(user: User) -> dict:
         return {
             "id_usuario": user.id_usuario,
-            "nombre": user.nombre,
-            "apellido_paterno": user.apellido_paterno,
-            "apellido_materno": user.apellido_materno,
-            "correo": user.correo,
-            "rol": user.rol,
-            "estatus": user.estatus,
+            "nombre": (user.nombre or "").strip(),
+            "apellido_paterno": (user.apellido_paterno or "").strip() or None,
+            "apellido_materno": (user.apellido_materno or "").strip() or None,
+            "correo": (user.correo or "").strip(),
+            "rol": normalize_role(user.rol),
+            "estatus": (user.estatus or "").strip(),
         }

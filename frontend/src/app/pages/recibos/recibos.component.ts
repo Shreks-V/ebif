@@ -37,11 +37,21 @@ interface BeneficiarioOption {
   id: number;
   folio: string;
   nombre: string;
+  tipoCuota: string;
 }
 
 interface MetodoPagoRow {
   id_metodo_pago: number;
   monto: number;
+}
+
+interface ConceptoCobroOption {
+  id: number;
+  nombre: string;
+  tipo: 'SERVICIO' | 'PRODUCTO';
+  precioA: number;
+  precioB: number;
+  precioDefault: number;
 }
 
 @Component({
@@ -223,6 +233,26 @@ interface MetodoPagoRow {
           </table>
         </div>
 
+        <!-- Stats (below table) -->
+        <div *ngIf="!loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="bg-white rounded-xl border-2 border-slate-100 shadow-lg p-5">
+            <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1">Total Facturado</p>
+            <p class="text-2xl font-black text-slate-900">\${{ montoTotal | number:'1.2-2' }}</p>
+          </div>
+          <div class="bg-white rounded-xl border-2 border-slate-100 shadow-lg p-5">
+            <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1">Efectivo</p>
+            <p class="text-2xl font-black text-emerald-600">\${{ montoEfectivo | number:'1.2-2' }}</p>
+          </div>
+          <div class="bg-white rounded-xl border-2 border-slate-100 shadow-lg p-5">
+            <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1">Tarjeta</p>
+            <p class="text-2xl font-black text-blue-600">\${{ montoTarjeta | number:'1.2-2' }}</p>
+          </div>
+          <div class="bg-white rounded-xl border-2 border-slate-100 shadow-lg p-5">
+            <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1">Transferencia</p>
+            <p class="text-2xl font-black text-purple-600">\${{ montoTransferencia | number:'1.2-2' }}</p>
+          </div>
+        </div>
+
       </div>
     </main>
 
@@ -357,10 +387,41 @@ interface MetodoPagoRow {
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Paciente</label>
             <select [(ngModel)]="nuevoCobro.id_paciente"
+              (ngModelChange)="onPacienteCobroChange()"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
               <option [ngValue]="0" disabled>Seleccionar paciente...</option>
               <option *ngFor="let b of beneficiariosList" [ngValue]="b.id">{{ b.folio }} - {{ b.nombre }}</option>
             </select>
+          </div>
+
+          <!-- Producto / Servicio -->
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Producto o Servicio a Cobrar</label>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <select [(ngModel)]="nuevoConcepto.tipo" (ngModelChange)="onTipoConceptoChange()"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
+                <option value="SERVICIO">Servicio</option>
+                <option value="PRODUCTO">Producto</option>
+              </select>
+
+              <select [(ngModel)]="nuevoConcepto.id" (ngModelChange)="onConceptoSeleccionadoChange()"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
+                <option [ngValue]="0" disabled>
+                  {{ nuevoConcepto.tipo === 'SERVICIO' ? 'Seleccionar servicio...' : 'Seleccionar producto...' }}
+                </option>
+                <option *ngFor="let item of conceptosDisponibles" [ngValue]="item.id">{{ item.nombre }}</option>
+              </select>
+
+              <input type="number" [(ngModel)]="nuevoConcepto.cantidad" (ngModelChange)="onCantidadConceptoChange()" min="1" step="1"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"
+                placeholder="Cantidad" />
+            </div>
+            <p *ngIf="conceptoPrecioUnitario > 0" class="mt-2 text-xs font-semibold text-slate-600">
+              Precio unitario (cuota {{ tipoCuotaBeneficiarioSeleccionado }}):
+              <span class="text-emerald-700">\${{ conceptoPrecioUnitario | number:'1.2-2' }}</span>
+              &middot; Total sugerido:
+              <span class="text-emerald-700">\${{ (conceptoPrecioUnitario * nuevoConcepto.cantidad) | number:'1.2-2' }}</span>
+            </p>
           </div>
 
           <!-- Monto Total -->
@@ -510,8 +571,17 @@ export class RecibosComponent implements OnInit {
   nuevoCobroError = '';
   beneficiariosList: BeneficiarioOption[] = [];
   metodosPagoCatalogo: MetodoPagoCatalogo[] = [];
+  serviciosCatalogo: ConceptoCobroOption[] = [];
+  productosCatalogo: ConceptoCobroOption[] = [];
   nuevoCobroMontoPagado = 0;
   nuevoCobroSaldoPendiente = 0;
+  conceptoPrecioUnitario = 0;
+
+  nuevoConcepto = {
+    tipo: 'SERVICIO' as 'SERVICIO' | 'PRODUCTO',
+    id: 0,
+    cantidad: 1
+  };
 
   nuevoCobro = {
     id_paciente: 0,
@@ -633,6 +703,8 @@ export class RecibosComponent implements OnInit {
     };
     this.nuevoCobroMontoPagado = 0;
     this.nuevoCobroSaldoPendiente = 0;
+    this.conceptoPrecioUnitario = 0;
+    this.nuevoConcepto = { tipo: 'SERVICIO', id: 0, cantidad: 1 };
 
     // Load beneficiarios and metodos de pago
     this.api.getBeneficiarios().subscribe({
@@ -640,7 +712,8 @@ export class RecibosComponent implements OnInit {
         this.beneficiariosList = data.map((b: any) => ({
           id: b.id_paciente,
           folio: b.folio_paciente || b.folio,
-          nombre: b.nombre_completo || ((b.nombre || '') + ' ' + (b.apellido_paterno || '') + ' ' + (b.apellido_materno || '')).trim()
+          nombre: b.nombre_completo || ((b.nombre || '') + ' ' + (b.apellido_paterno || '') + ' ' + (b.apellido_materno || '')).trim(),
+          tipoCuota: b.tipo_cuota || 'A'
         }));
       },
       error: (err) => console.error('Error al cargar beneficiarios:', err)
@@ -656,7 +729,88 @@ export class RecibosComponent implements OnInit {
       error: (err) => console.error('Error al cargar metodos de pago:', err)
     });
 
+    this.cargarCatalogoCobros();
+
     this.showNuevoCobro = true;
+  }
+
+  private cargarCatalogoCobros(): void {
+    this.api.getServicios({ activo: 'S' }).subscribe({
+      next: (data: any[]) => {
+        this.serviciosCatalogo = data.map((s: any) => ({
+          id: s.id_servicio,
+          nombre: s.nombre,
+          tipo: 'SERVICIO',
+          precioA: Number(s.precio_cuota_a ?? s.cuota_recuperacion ?? 0),
+          precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
+          precioDefault: Number(s.cuota_recuperacion ?? s.precio_cuota_a ?? s.precio_cuota_b ?? 0),
+        }));
+      },
+      error: (err) => console.error('Error al cargar servicios para cobro:', err)
+    });
+
+    this.api.getProductos({ activo: 'S' }).subscribe({
+      next: (data: any[]) => {
+        this.productosCatalogo = data.map((p: any) => ({
+          id: p.id_producto,
+          nombre: p.nombre,
+          tipo: 'PRODUCTO',
+          precioA: Number(p.precio_cuota_a ?? 0),
+          precioB: Number(p.precio_cuota_b ?? 0),
+          precioDefault: Number(p.precio_cuota_a ?? p.precio_cuota_b ?? 0),
+        }));
+      },
+      error: (err) => console.error('Error al cargar productos para cobro:', err)
+    });
+  }
+
+  get conceptosDisponibles(): ConceptoCobroOption[] {
+    return this.nuevoConcepto.tipo === 'SERVICIO' ? this.serviciosCatalogo : this.productosCatalogo;
+  }
+
+  get tipoCuotaBeneficiarioSeleccionado(): string {
+    const b = this.beneficiariosList.find(item => item.id === this.nuevoCobro.id_paciente);
+    return b?.tipoCuota === 'B' ? 'B' : 'A';
+  }
+
+  onTipoConceptoChange(): void {
+    this.nuevoConcepto.id = 0;
+    this.nuevoConcepto.cantidad = 1;
+    this.conceptoPrecioUnitario = 0;
+  }
+
+  onConceptoSeleccionadoChange(): void {
+    this.recalcularMontoDesdeConcepto();
+  }
+
+  onCantidadConceptoChange(): void {
+    if (!this.nuevoConcepto.cantidad || this.nuevoConcepto.cantidad < 1) {
+      this.nuevoConcepto.cantidad = 1;
+    }
+    this.recalcularMontoDesdeConcepto();
+  }
+
+  onPacienteCobroChange(): void {
+    this.recalcularMontoDesdeConcepto();
+  }
+
+  private recalcularMontoDesdeConcepto(): void {
+    const selected = this.conceptosDisponibles.find(item => item.id === this.nuevoConcepto.id);
+    if (!selected) {
+      this.conceptoPrecioUnitario = 0;
+      return;
+    }
+
+    const cuota = this.tipoCuotaBeneficiarioSeleccionado;
+    let precio = cuota === 'B' ? selected.precioB : selected.precioA;
+    if (!precio || precio <= 0) {
+      precio = selected.precioDefault || 0;
+    }
+
+    this.conceptoPrecioUnitario = precio;
+    const cantidad = this.nuevoConcepto.cantidad || 1;
+    this.nuevoCobro.monto_total = Number((precio * cantidad).toFixed(2));
+    this.calcularSaldoCobro();
   }
 
   closeNuevoCobro(): void {

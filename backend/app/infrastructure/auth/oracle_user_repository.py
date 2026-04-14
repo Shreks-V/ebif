@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import logging
+
+import oracledb
+
 from app.domain.auth.entities import SeedUser, User
 from app.domain.auth.ports import PasswordHasher, UserRepository
 from app.infrastructure.persistence.oracle import get_db, row_to_dict
+from app.infrastructure.persistence.sp_helpers import parse_ora_error
+
+logger = logging.getLogger(__name__)
 
 
 class OracleUserRepository(UserRepository):
@@ -46,35 +53,57 @@ class OracleUserRepository(UserRepository):
                 if cursor.fetchone() is not None:
                     continue
 
-                cursor.execute(
-                    "INSERT INTO USUARIO_SISTEMA "
-                    "(NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, CORREO, "
-                    "CONTRASENA_HASH, ROL, ESTATUS) "
-                    "VALUES (:1, :2, :3, :4, :5, :6, :7)",
-                    [
-                        user.nombre,
-                        user.apellido_paterno,
-                        user.apellido_materno,
-                        user.correo,
-                        self._password_hasher.hash(user.contrasena),
-                        user.rol,
-                        "ACTIVO",
-                    ],
-                )
+                try:
+                    id_out = cursor.var(int)
+                    cursor.callproc(
+                        "SP_CREAR_USUARIO_SISTEMA",
+                        [
+                            user.nombre,
+                            user.apellido_paterno,
+                            user.apellido_materno,
+                            user.correo,
+                            self._password_hasher.hash(user.contrasena),
+                            user.rol,
+                            id_out,
+                        ],
+                    )
+                except oracledb.DatabaseError as exc:
+                    code, message = parse_ora_error(exc)
+                    logger.warning(
+                        "SP_CREAR_USUARIO_SISTEMA fallo para %s: ORA-%s %s",
+                        user.correo, code, message,
+                    )
+                    continue
                 inserted.append(user.correo)
             conn.commit()
         return inserted
+
+    def log_login_attempt(
+        self, id_usuario: int | None, success: bool, ip: str | None = None
+    ) -> None:
+        if id_usuario is None:
+            return
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.callproc(
+                    "SP_REGISTRAR_LOGIN_USUARIO",
+                    [id_usuario, "S" if success else "N", ip],
+                )
+                conn.commit()
+        except Exception:
+            logger.exception("No se pudo registrar intento de login")
 
     @staticmethod
     def _to_user(row: dict) -> User:
         return User(
             id_usuario=row["id_usuario"],
-            nombre=row["nombre"],
-            apellido_paterno=row.get("apellido_paterno"),
-            apellido_materno=row.get("apellido_materno"),
-            correo=row["correo"],
+            nombre=(row.get("nombre") or "").strip(),
+            apellido_paterno=(row.get("apellido_paterno") or "").strip() or None,
+            apellido_materno=(row.get("apellido_materno") or "").strip() or None,
+            correo=(row.get("correo") or "").strip(),
             hashed_password=row["contrasena_hash"],
-            rol=row["rol"],
-            estatus=row["estatus"],
+            rol=(row.get("rol") or "").strip(),
+            estatus=(row.get("estatus") or "").strip(),
             fecha_creacion=row.get("fecha_creacion"),
         )

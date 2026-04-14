@@ -1,3 +1,4 @@
+import logging
 from fastapi import HTTPException
 from typing import Optional
 from datetime import date, datetime, timedelta
@@ -5,6 +6,8 @@ from app.infrastructure.audit.bitacora import log_insert, log_delete
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.privacy.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS
 from app.schemas.schemas import BeneficiarioCreate
+
+logger = logging.getLogger(__name__)
 
 def _date_to_str(val) -> str | None:
     """Convert a datetime/date object to ISO string, or return None."""
@@ -16,11 +19,37 @@ def _date_to_str(val) -> str | None:
         return val.isoformat()
     return str(val)
 
+def _normalize_date_input(val) -> str | None:
+    """Normalize date-like values to YYYY-MM-DD for Oracle TO_DATE bindings."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val.date().isoformat()
+    if isinstance(val, date):
+        return val.isoformat()
+    text = str(val).strip()
+    if not text:
+        return None
+    if 'T' in text:
+        text = text.split('T', 1)[0]
+    if ' ' in text and len(text) > 10:
+        text = text.split(' ', 1)[0]
+    return text[:10]
+
 def _strip_char(val) -> str | None:
     """Strip trailing spaces from CHAR columns."""
     if val is None:
         return None
     return str(val).strip()
+
+def _safe_rows_query(cur, sql: str, params: dict, context: str) -> list[dict]:
+    """Execute a read query and return an empty list if it fails."""
+    try:
+        cur.execute(sql, params)
+        return rows_to_dicts(cur)
+    except Exception as exc:
+        logger.warning('No se pudo cargar %s: %s', context, exc)
+        return []
 
 def _fetch_tipos_espina(conn, id_paciente: int) -> list[dict]:
     """Fetch tipos_espina for a given patient."""
@@ -198,7 +227,7 @@ def crear_beneficiario(data: BeneficiarioCreate, current_user: dict=None):
         payload = data.model_dump()
         tipos_ids = payload.pop('tipos_espina', None) or []
         out_id = cur.var(int)
-        cur.execute("\n            INSERT INTO PACIENTE (\n                FOLIO, ACTIVO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n                GENERO, FECHA_NACIMIENTO, CURP, NOMBRE_PADRE_MADRE,\n                DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n                TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n                EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n                MUNICIPIO_NACIMIENTO, ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO,\n                TIPO_SANGRE, USA_VALVULA, NOTAS_ADICIONALES,\n                FECHA_ALTA, MEMBRESIA_ESTATUS, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                TIPO_CUOTA, ESTATUS_REGISTRO\n            ) VALUES (\n                :folio, :activo, :nombre, :apellido_paterno, :apellido_materno,\n                :genero, TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'), :curp, :nombre_padre_madre,\n                :direccion, :colonia, :ciudad, :estado, :codigo_postal,\n                :telefono_casa, :telefono_celular, :correo_electronico,\n                :en_emergencia_avisar_a, :telefono_emergencia,\n                :municipio_nacimiento, :estado_nacimiento, :hospital_nacimiento,\n                :tipo_sangre, :usa_valvula, :notas_adicionales,\n                SYSDATE, :membresia_estatus, :id_usuario_registro, SYSDATE,\n                :tipo_cuota, 'APROBADO'\n            )\n            RETURNING ID_PACIENTE INTO :out_id\n            ", {'folio': folio, 'activo': payload.get('activo', 'S'), 'nombre': payload['nombre'], 'apellido_paterno': payload['apellido_paterno'], 'apellido_materno': payload.get('apellido_materno'), 'genero': payload.get('genero'), 'fecha_nacimiento': payload.get('fecha_nacimiento'), 'curp': encrypt(payload.get('curp')), 'nombre_padre_madre': encrypt(payload.get('nombre_padre_madre')), 'direccion': encrypt(payload.get('direccion')), 'colonia': payload.get('colonia'), 'ciudad': payload.get('ciudad'), 'estado': payload.get('estado'), 'codigo_postal': payload.get('codigo_postal'), 'telefono_casa': encrypt(payload.get('telefono_casa')), 'telefono_celular': encrypt(payload.get('telefono_celular')), 'correo_electronico': encrypt(payload.get('correo_electronico')), 'en_emergencia_avisar_a': encrypt(payload.get('en_emergencia_avisar_a')), 'telefono_emergencia': encrypt(payload.get('telefono_emergencia')), 'municipio_nacimiento': payload.get('municipio_nacimiento'), 'estado_nacimiento': payload.get('estado_nacimiento'), 'hospital_nacimiento': encrypt(payload.get('hospital_nacimiento')), 'tipo_sangre': encrypt(payload.get('tipo_sangre')), 'usa_valvula': payload.get('usa_valvula', 'N'), 'notas_adicionales': encrypt(payload.get('notas_adicionales')), 'membresia_estatus': payload.get('membresia_estatus', 'ACTIVO'), 'id_usuario_registro': current_user.get('id_usuario'), 'tipo_cuota': payload.get('tipo_cuota'), 'out_id': out_id})
+        cur.execute("\n            INSERT INTO PACIENTE (\n                FOLIO, ACTIVO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n                GENERO, FECHA_NACIMIENTO, CURP, NOMBRE_PADRE_MADRE,\n                DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n                TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n                EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n                MUNICIPIO_NACIMIENTO, ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO,\n                TIPO_SANGRE, USA_VALVULA, NOTAS_ADICIONALES,\n                FECHA_ALTA, MEMBRESIA_ESTATUS, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                TIPO_CUOTA, ESTATUS_REGISTRO\n            ) VALUES (\n                :folio, :activo, :nombre, :apellido_paterno, :apellido_materno,\n                :genero, TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'), :curp, :nombre_padre_madre,\n                :direccion, :colonia, :ciudad, :estado, :codigo_postal,\n                :telefono_casa, :telefono_celular, :correo_electronico,\n                :en_emergencia_avisar_a, :telefono_emergencia,\n                :municipio_nacimiento, :estado_nacimiento, :hospital_nacimiento,\n                :tipo_sangre, :usa_valvula, :notas_adicionales,\n                SYSDATE, :membresia_estatus, :id_usuario_registro, SYSDATE,\n                :tipo_cuota, 'APROBADO'\n            )\n            RETURNING ID_PACIENTE INTO :out_id\n            ", {'folio': folio, 'activo': payload.get('activo', 'S'), 'nombre': payload['nombre'], 'apellido_paterno': payload['apellido_paterno'], 'apellido_materno': payload.get('apellido_materno'), 'genero': payload.get('genero'), 'fecha_nacimiento': _normalize_date_input(payload.get('fecha_nacimiento')), 'curp': encrypt(payload.get('curp')), 'nombre_padre_madre': encrypt(payload.get('nombre_padre_madre')), 'direccion': encrypt(payload.get('direccion')), 'colonia': payload.get('colonia'), 'ciudad': payload.get('ciudad'), 'estado': payload.get('estado'), 'codigo_postal': payload.get('codigo_postal'), 'telefono_casa': encrypt(payload.get('telefono_casa')), 'telefono_celular': encrypt(payload.get('telefono_celular')), 'correo_electronico': encrypt(payload.get('correo_electronico')), 'en_emergencia_avisar_a': encrypt(payload.get('en_emergencia_avisar_a')), 'telefono_emergencia': encrypt(payload.get('telefono_emergencia')), 'municipio_nacimiento': payload.get('municipio_nacimiento'), 'estado_nacimiento': payload.get('estado_nacimiento'), 'hospital_nacimiento': encrypt(payload.get('hospital_nacimiento')), 'tipo_sangre': encrypt(payload.get('tipo_sangre')), 'usa_valvula': payload.get('usa_valvula', 'N'), 'notas_adicionales': encrypt(payload.get('notas_adicionales')), 'membresia_estatus': payload.get('membresia_estatus', 'ACTIVO'), 'id_usuario_registro': current_user.get('id_usuario'), 'tipo_cuota': payload.get('tipo_cuota'), 'out_id': out_id})
         new_id = out_id.getvalue()[0]
         for tid in tipos_ids:
             cur.execute('\n                INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO)\n                VALUES (:id_paciente, :id_tipo_espina, SYSDATE)\n                ', {'id_paciente': new_id, 'id_tipo_espina': tid})
@@ -219,7 +248,7 @@ def actualizar_beneficiario(folio: str, data: BeneficiarioCreate, current_user: 
         id_paciente = row[0]
         payload = data.model_dump()
         tipos_ids = payload.pop('tipos_espina', None) or []
-        cur.execute("\n            UPDATE PACIENTE SET\n                NOMBRE = :nombre,\n                APELLIDO_PATERNO = :apellido_paterno,\n                APELLIDO_MATERNO = :apellido_materno,\n                GENERO = :genero,\n                FECHA_NACIMIENTO = TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'),\n                CURP = :curp,\n                NOMBRE_PADRE_MADRE = :nombre_padre_madre,\n                DIRECCION = :direccion,\n                COLONIA = :colonia,\n                CIUDAD = :ciudad,\n                ESTADO = :estado,\n                CODIGO_POSTAL = :codigo_postal,\n                TELEFONO_CASA = :telefono_casa,\n                TELEFONO_CELULAR = :telefono_celular,\n                CORREO_ELECTRONICO = :correo_electronico,\n                EN_EMERGENCIA_AVISAR_A = :en_emergencia_avisar_a,\n                TELEFONO_EMERGENCIA = :telefono_emergencia,\n                MUNICIPIO_NACIMIENTO = :municipio_nacimiento,\n                ESTADO_NACIMIENTO = :estado_nacimiento,\n                HOSPITAL_NACIMIENTO = :hospital_nacimiento,\n                TIPO_SANGRE = :tipo_sangre,\n                USA_VALVULA = :usa_valvula,\n                NOTAS_ADICIONALES = :notas_adicionales,\n                MEMBRESIA_ESTATUS = :membresia_estatus,\n                ACTIVO = :activo,\n                TIPO_CUOTA = :tipo_cuota\n            WHERE ID_PACIENTE = :id_paciente\n            ", {'nombre': payload['nombre'], 'apellido_paterno': payload['apellido_paterno'], 'apellido_materno': payload.get('apellido_materno'), 'genero': payload.get('genero'), 'fecha_nacimiento': payload.get('fecha_nacimiento'), 'curp': encrypt(payload.get('curp')), 'nombre_padre_madre': encrypt(payload.get('nombre_padre_madre')), 'direccion': encrypt(payload.get('direccion')), 'colonia': payload.get('colonia'), 'ciudad': payload.get('ciudad'), 'estado': payload.get('estado'), 'codigo_postal': payload.get('codigo_postal'), 'telefono_casa': encrypt(payload.get('telefono_casa')), 'telefono_celular': encrypt(payload.get('telefono_celular')), 'correo_electronico': encrypt(payload.get('correo_electronico')), 'en_emergencia_avisar_a': encrypt(payload.get('en_emergencia_avisar_a')), 'telefono_emergencia': encrypt(payload.get('telefono_emergencia')), 'municipio_nacimiento': payload.get('municipio_nacimiento'), 'estado_nacimiento': payload.get('estado_nacimiento'), 'hospital_nacimiento': encrypt(payload.get('hospital_nacimiento')), 'tipo_sangre': encrypt(payload.get('tipo_sangre')), 'usa_valvula': payload.get('usa_valvula', 'N'), 'notas_adicionales': encrypt(payload.get('notas_adicionales')), 'membresia_estatus': payload.get('membresia_estatus', 'ACTIVO'), 'activo': payload.get('activo', 'S'), 'tipo_cuota': payload.get('tipo_cuota'), 'id_paciente': id_paciente})
+        cur.execute("\n            UPDATE PACIENTE SET\n                NOMBRE = :nombre,\n                APELLIDO_PATERNO = :apellido_paterno,\n                APELLIDO_MATERNO = :apellido_materno,\n                GENERO = :genero,\n                FECHA_NACIMIENTO = TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'),\n                CURP = :curp,\n                NOMBRE_PADRE_MADRE = :nombre_padre_madre,\n                DIRECCION = :direccion,\n                COLONIA = :colonia,\n                CIUDAD = :ciudad,\n                ESTADO = :estado,\n                CODIGO_POSTAL = :codigo_postal,\n                TELEFONO_CASA = :telefono_casa,\n                TELEFONO_CELULAR = :telefono_celular,\n                CORREO_ELECTRONICO = :correo_electronico,\n                EN_EMERGENCIA_AVISAR_A = :en_emergencia_avisar_a,\n                TELEFONO_EMERGENCIA = :telefono_emergencia,\n                MUNICIPIO_NACIMIENTO = :municipio_nacimiento,\n                ESTADO_NACIMIENTO = :estado_nacimiento,\n                HOSPITAL_NACIMIENTO = :hospital_nacimiento,\n                TIPO_SANGRE = :tipo_sangre,\n                USA_VALVULA = :usa_valvula,\n                NOTAS_ADICIONALES = :notas_adicionales,\n                MEMBRESIA_ESTATUS = :membresia_estatus,\n                ACTIVO = :activo,\n                TIPO_CUOTA = :tipo_cuota\n            WHERE ID_PACIENTE = :id_paciente\n            ", {'nombre': payload['nombre'], 'apellido_paterno': payload['apellido_paterno'], 'apellido_materno': payload.get('apellido_materno'), 'genero': payload.get('genero'), 'fecha_nacimiento': _normalize_date_input(payload.get('fecha_nacimiento')), 'curp': encrypt(payload.get('curp')), 'nombre_padre_madre': encrypt(payload.get('nombre_padre_madre')), 'direccion': encrypt(payload.get('direccion')), 'colonia': payload.get('colonia'), 'ciudad': payload.get('ciudad'), 'estado': payload.get('estado'), 'codigo_postal': payload.get('codigo_postal'), 'telefono_casa': encrypt(payload.get('telefono_casa')), 'telefono_celular': encrypt(payload.get('telefono_celular')), 'correo_electronico': encrypt(payload.get('correo_electronico')), 'en_emergencia_avisar_a': encrypt(payload.get('en_emergencia_avisar_a')), 'telefono_emergencia': encrypt(payload.get('telefono_emergencia')), 'municipio_nacimiento': payload.get('municipio_nacimiento'), 'estado_nacimiento': payload.get('estado_nacimiento'), 'hospital_nacimiento': encrypt(payload.get('hospital_nacimiento')), 'tipo_sangre': encrypt(payload.get('tipo_sangre')), 'usa_valvula': payload.get('usa_valvula', 'N'), 'notas_adicionales': encrypt(payload.get('notas_adicionales')), 'membresia_estatus': payload.get('membresia_estatus', 'ACTIVO'), 'activo': payload.get('activo', 'S'), 'tipo_cuota': payload.get('tipo_cuota'), 'id_paciente': id_paciente})
         cur.execute('DELETE FROM PACIENTE_TIPO_ESPINA WHERE ID_PACIENTE = :id', {'id': id_paciente})
         for tid in tipos_ids:
             cur.execute('\n                INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO)\n                VALUES (:id_paciente, :id_tipo_espina, SYSDATE)\n                ', {'id_paciente': id_paciente, 'id_tipo_espina': tid})
@@ -251,35 +280,71 @@ def historial_beneficiario(folio: str, current_user: dict=None):
         if paciente is None:
             raise HTTPException(status_code=404, detail='Beneficiario no encontrado')
         paciente = decrypt_row(paciente, PACIENTE_ENCRYPTED_FIELDS)
-        nombre_completo = f'{paciente['nombre']} {paciente['apellido_paterno']} {paciente.get('apellido_materno') or ''}'.strip()
+        nombre_completo = ' '.join((
+            _strip_char(paciente.get('nombre')) or '',
+            _strip_char(paciente.get('apellido_paterno')) or '',
+            _strip_char(paciente.get('apellido_materno')) or '',
+        )).strip() or folio
         id_paciente = paciente['id_paciente']
-        cur.execute('\n            SELECT c.ID_CITA, c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO\n            FROM CITA c\n            WHERE c.ID_PACIENTE = :id\n            ORDER BY c.FECHA_HORA DESC\n            ', {'id': id_paciente})
-        citas_raw = rows_to_dicts(cur)
+        citas_raw = _safe_rows_query(
+            cur,
+            '\n            SELECT c.ID_CITA, c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO\n            FROM CITA c\n            WHERE c.ID_PACIENTE = :id\n            ORDER BY c.FECHA_HORA DESC\n            ',
+            {'id': id_paciente},
+            'citas del beneficiario',
+        )
         citas = []
         for ci in citas_raw:
             ci['fecha_hora'] = _date_to_str(ci.get('fecha_hora'))
             ci['fecha_registro'] = _date_to_str(ci.get('fecha_registro'))
             ci['estatus'] = _strip_char(ci.get('estatus'))
-            cur.execute('\n                SELECT s.NOMBRE, d.CANTIDAD, d.MONTO_PAGADO, d.CANCELADO\n                FROM DETALLE_CITA_SERVICIO d\n                JOIN SERVICIO s ON s.ID_SERVICIO = d.ID_SERVICIO\n                WHERE d.ID_CITA = :id_cita\n                ', {'id_cita': ci['id_cita']})
-            ci['servicios'] = rows_to_dicts(cur)
-            cur.execute("\n                SELECT d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS nombre_doctor,\n                       d.ESPECIALIDAD, cd.ROL_DOCTOR\n                FROM CITA_DOCTOR cd\n                JOIN DOCTOR d ON d.ID_DOCTOR = cd.ID_DOCTOR\n                WHERE cd.ID_CITA = :id_cita\n                ", {'id_cita': ci['id_cita']})
-            ci['doctores'] = rows_to_dicts(cur)
+            servicios = _safe_rows_query(
+                cur,
+                '\n                SELECT s.NOMBRE, d.CANTIDAD, d.MONTO_PAGADO, d.CANCELADO\n                FROM DETALLE_CITA_SERVICIO d\n                JOIN SERVICIO s ON s.ID_SERVICIO = d.ID_SERVICIO\n                WHERE d.ID_CITA = :id_cita\n                ',
+                {'id_cita': ci['id_cita']},
+                f"servicios de cita {ci['id_cita']}",
+            )
+            for sv in servicios:
+                sv['nombre'] = _strip_char(sv.get('nombre'))
+                sv['cancelado'] = _strip_char(sv.get('cancelado'))
+            ci['servicios'] = servicios
+            doctores = _safe_rows_query(
+                cur,
+                "\n                SELECT d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS nombre_doctor,\n                       d.ESPECIALIDAD, cd.ROL_DOCTOR\n                FROM CITA_DOCTOR cd\n                JOIN DOCTOR d ON d.ID_DOCTOR = cd.ID_DOCTOR\n                WHERE cd.ID_CITA = :id_cita\n                ",
+                {'id_cita': ci['id_cita']},
+                f"doctores de cita {ci['id_cita']}",
+            )
+            for doc in doctores:
+                doc['nombre_doctor'] = _strip_char(doc.get('nombre_doctor'))
+                doc['especialidad'] = _strip_char(doc.get('especialidad'))
+                doc['rol_doctor'] = _strip_char(doc.get('rol_doctor'))
+            ci['doctores'] = doctores
             citas.append(ci)
-        cur.execute('\n            SELECT v.ID_VENTA, v.FOLIO_VENTA, v.FECHA_VENTA,\n                   v.MONTO_TOTAL, v.MONTO_PAGADO, v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO, v.CANCELADA, v.MOTIVO_CANCELACION\n            FROM VENTA v\n            WHERE v.ID_PACIENTE = :id\n            ORDER BY v.FECHA_VENTA DESC\n            ', {'id': id_paciente})
-        pagos_raw = rows_to_dicts(cur)
+        pagos_raw = _safe_rows_query(
+            cur,
+            '\n            SELECT v.ID_VENTA, v.FOLIO_VENTA, v.FECHA_VENTA,\n                   v.MONTO_TOTAL, v.MONTO_PAGADO, v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO, v.CANCELADA, v.MOTIVO_CANCELACION\n            FROM VENTA v\n            WHERE v.ID_PACIENTE = :id\n            ORDER BY v.FECHA_VENTA DESC\n            ',
+            {'id': id_paciente},
+            'pagos del beneficiario',
+        )
         pagos = []
         for pg in pagos_raw:
             pg['fecha_venta'] = _date_to_str(pg.get('fecha_venta'))
             pg['cancelada'] = _strip_char(pg.get('cancelada'))
             pg['exento_pago'] = _strip_char(pg.get('exento_pago'))
+            pg['folio_venta'] = _strip_char(pg.get('folio_venta'))
             pagos.append(pg)
-        cur.execute('\n            SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.FECHA_PRESTAMO,\n                   c.FECHA_DEVOLUCION, c.ESTATUS, c.MONTO_TOTAL,\n                   c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n                   pr.NOMBRE AS nombre_equipo\n            FROM COMODATO c\n            LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n            WHERE c.ID_PACIENTE = :id\n            ORDER BY c.FECHA_PRESTAMO DESC\n            ', {'id': id_paciente})
-        comodatos_raw = rows_to_dicts(cur)
+        comodatos_raw = _safe_rows_query(
+            cur,
+            '\n            SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.FECHA_PRESTAMO,\n                   c.FECHA_DEVOLUCION, c.ESTATUS, c.MONTO_TOTAL,\n                   c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n                   pr.NOMBRE AS nombre_equipo\n            FROM COMODATO c\n            LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n            WHERE c.ID_PACIENTE = :id\n            ORDER BY c.FECHA_PRESTAMO DESC\n            ',
+            {'id': id_paciente},
+            'comodatos del beneficiario',
+        )
         comodatos = []
         for cm in comodatos_raw:
             cm['fecha_prestamo'] = _date_to_str(cm.get('fecha_prestamo'))
             cm['fecha_devolucion'] = _date_to_str(cm.get('fecha_devolucion'))
             cm['estatus'] = _strip_char(cm.get('estatus'))
+            cm['folio_comodato'] = _strip_char(cm.get('folio_comodato'))
+            cm['nombre_equipo'] = _strip_char(cm.get('nombre_equipo'))
             comodatos.append(cm)
         return {'folio': folio, 'nombre': nombre_completo, 'citas': citas, 'pagos': pagos, 'comodatos': comodatos}
 

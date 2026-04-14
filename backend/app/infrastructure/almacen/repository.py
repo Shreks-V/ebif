@@ -1,9 +1,30 @@
+import logging
 from fastapi import HTTPException
 from typing import Optional
 from datetime import date, datetime
+
+import oracledb
+
 from app.infrastructure.audit.bitacora import log_insert
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
+from app.infrastructure.persistence.sp_helpers import sp_error_to_http
 from app.schemas.schemas import ProductoCreate, ServicioCreate, ComodatoCreate
+
+logger = logging.getLogger(__name__)
+
+_SP_CREAR_PRODUCTO_ERRORS = {
+    20701: (400, None),
+    20702: (400, None),
+    20703: (409, None),
+}
+
+_SP_MOVIMIENTO_STOCK_ERRORS = {
+    20501: (400, None),
+    20502: (400, None),
+    20503: (400, None),
+    20504: (400, None),
+    20505: (409, None),
+}
 
 def _serialize(row: dict) -> dict:
     """Strip CHAR padding and convert dates to ISO strings."""
@@ -16,8 +37,33 @@ def _serialize(row: dict) -> dict:
         else:
             result[key] = value
     return result
-_PRODUCTOS_BASE_SQL = "\n    SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE, p.DESCRIPCION,\n           p.TIPO_PRODUCTO, p.ACTIVO, p.ID_USUARIO_REGISTRO, p.FECHA_REGISTRO,\n           p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,\n           m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,\n           e.NUMERO_SERIE, e2.MARCA, e2.MODELO, e2.ESTATUS_EQUIPO, e2.OBSERVACIONES,\n           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA\n    FROM PRODUCTO p\n    LEFT JOIN MEDICAMENTO m       ON m.ID_PRODUCTO  = p.ID_PRODUCTO\n    LEFT JOIN EQUIPO_MEDICO e2    ON e2.ID_PRODUCTO = p.ID_PRODUCTO\n    LEFT JOIN EXISTENCIA_PRODUCTO ex ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'\n"
+
 _PRODUCTOS_BASE_SQL = "\n    SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE, p.DESCRIPCION,\n           p.TIPO_PRODUCTO, p.ACTIVO, p.ID_USUARIO_REGISTRO, p.FECHA_REGISTRO,\n           p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,\n           m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,\n           eq.NUMERO_SERIE, eq.MARCA, eq.MODELO, eq.ESTATUS_EQUIPO, eq.OBSERVACIONES,\n           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA, ex.FECHA_CADUCIDAD\n    FROM PRODUCTO p\n    LEFT JOIN MEDICAMENTO m        ON m.ID_PRODUCTO  = p.ID_PRODUCTO\n    LEFT JOIN EQUIPO_MEDICO eq     ON eq.ID_PRODUCTO = p.ID_PRODUCTO\n    LEFT JOIN EXISTENCIA_PRODUCTO ex ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'\n"
+
+def _is_unique_key_error(exc: Exception, constraint_hint: str) -> bool:
+    message = str(exc).upper()
+    return 'ORA-00001' in message and constraint_hint.upper() in message
+
+def _generate_internal_key(conn, tipo_producto: str) -> str:
+    prefix = 'MED' if tipo_producto == 'MEDICAMENTO' else 'EQP'
+    cur = conn.cursor()
+    pattern = f'^{prefix}-[0-9]+$'
+    cur.execute(
+        """
+        SELECT NVL(MAX(
+            CASE
+                WHEN REGEXP_LIKE(CLAVE_INTERNA, :pattern)
+                THEN TO_NUMBER(REGEXP_SUBSTR(CLAVE_INTERNA, '[0-9]+$'))
+            END
+        ), 0) AS max_seq
+        FROM PRODUCTO
+        WHERE CLAVE_INTERNA LIKE :prefix
+        """,
+        {'pattern': pattern, 'prefix': f'{prefix}-%'},
+    )
+    row = row_to_dict(cur) or {}
+    next_seq = int(row.get('max_seq') or 0) + 1
+    return f'{prefix}-{next_seq:03d}'
 
 def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None):
     """Listar productos del almacen con filtros opcionales."""
@@ -51,28 +97,77 @@ def obtener_producto(id_producto: int, current_user: dict=None):
     return _serialize(row)
 
 def crear_producto(data: ProductoCreate, current_user: dict=None):
-    """Crear un nuevo producto con su subtipo y existencia."""
+    """Crear un nuevo producto vía SP_CREAR_PRODUCTO_CON_EXISTENCIA."""
     with get_db() as conn:
         cursor = conn.cursor()
         id_usuario = current_user.get('id_usuario', 1)
-        if data.tipo_producto == 'MEDICAMENTO':
-            prefix = 'MED'
-        else:
-            prefix = 'EQP'
-        cursor.execute('SELECT COUNT(*) FROM PRODUCTO WHERE TIPO_PRODUCTO = :tipo', {'tipo': data.tipo_producto})
-        count = cursor.fetchone()[0]
-        clave_interna = f'{prefix}-{count + 1:03d}'
-        id_var = cursor.var(int)
-        cursor.execute('INSERT INTO PRODUCTO\n               (CLAVE_INTERNA, NOMBRE, DESCRIPCION, TIPO_PRODUCTO, ACTIVO,\n                ID_USUARIO_REGISTRO, FECHA_REGISTRO, PRECIO_CUOTA_A, PRECIO_CUOTA_B)\n               VALUES (:clave, :nombre, :descripcion, :tipo, :activo,\n                       :id_usuario, SYSDATE, :precio_a, :precio_b)\n               RETURNING ID_PRODUCTO INTO :id_out', {'clave': clave_interna, 'nombre': data.nombre, 'descripcion': data.descripcion, 'tipo': data.tipo_producto, 'activo': data.activo, 'id_usuario': id_usuario, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id_out': id_var})
-        id_producto = id_var.getvalue()[0]
-        if data.tipo_producto == 'MEDICAMENTO':
-            cursor.execute('INSERT INTO MEDICAMENTO\n                   (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)\n                   VALUES (:id, :presentacion, :dosis, :requiere)', {'id': id_producto, 'presentacion': data.presentacion, 'dosis': data.dosis, 'requiere': data.requiere_caducidad or 'N'})
-        else:
-            cursor.execute('INSERT INTO EQUIPO_MEDICO\n                   (ID_PRODUCTO, NUMERO_SERIE, MARCA, MODELO,\n                    ESTATUS_EQUIPO, OBSERVACIONES)\n                   VALUES (:id, :serie, :marca, :modelo, :estatus, :obs)', {'id': id_producto, 'serie': data.numero_serie, 'marca': data.marca, 'modelo': data.modelo, 'estatus': data.estatus_equipo or 'DISPONIBLE', 'obs': data.observaciones})
-        cursor.execute("INSERT INTO EXISTENCIA_PRODUCTO\n               (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD)\n               VALUES (:id, :cant, :nmin, :unidad, 'S',\n                       CASE WHEN :fecha_cad IS NOT NULL THEN TO_DATE(:fecha_cad2, 'YYYY-MM-DD') ELSE NULL END)", {'id': id_producto, 'cant': data.cantidad_disponible, 'nmin': data.nivel_minimo, 'unidad': data.unidad_medida, 'fecha_cad': data.fecha_caducidad, 'fecha_cad2': data.fecha_caducidad})
+        id_producto = None
+        clave_interna = None
+
+        for _ in range(5):
+            clave_interna = _generate_internal_key(conn, data.tipo_producto)
+            id_out = cursor.var(int)
+            try:
+                cursor.callproc('SP_CREAR_PRODUCTO_CON_EXISTENCIA', [
+                    clave_interna,
+                    data.nombre,
+                    data.descripcion,
+                    data.tipo_producto,
+                    data.precio_cuota_a,
+                    data.precio_cuota_b,
+                    id_usuario,
+                    data.nivel_minimo or 0,
+                    data.unidad_medida,
+                    data.presentacion,
+                    data.dosis,
+                    data.requiere_caducidad or 'N',
+                    data.numero_serie,
+                    data.marca,
+                    data.modelo,
+                    data.observaciones,
+                    id_out,
+                ])
+                id_producto = id_out.getvalue()
+                break
+            except oracledb.DatabaseError as exc:
+                code = getattr(exc.args[0], 'code', None) if exc.args else None
+                if code == 20703:
+                    logger.warning('Colision de clave interna %s al crear producto; reintentando', clave_interna)
+                    continue
+                raise sp_error_to_http(exc, _SP_CREAR_PRODUCTO_ERRORS,
+                                       default_detail='No se pudo crear el producto')
+
+        if id_producto is None:
+            raise HTTPException(status_code=409, detail='No se pudo generar una clave interna unica para el producto')
+
+        # Stock inicial vía SP (si aplica)
+        cantidad_inicial = data.cantidad_disponible or 0
+        if cantidad_inicial > 0:
+            try:
+                cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
+                    id_producto,
+                    'ENTRADA',
+                    cantidad_inicial,
+                    id_usuario,
+                    None,
+                    None,
+                    f'Stock inicial alta producto {clave_interna}',
+                ])
+            except oracledb.DatabaseError as exc:
+                raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
+                                       default_detail='No se pudo registrar el stock inicial')
+
+        # FECHA_CADUCIDAD no la maneja el SP — update directo
+        if data.fecha_caducidad:
+            cursor.execute(
+                "UPDATE EXISTENCIA_PRODUCTO SET FECHA_CADUCIDAD = TO_DATE(:fc, 'YYYY-MM-DD') "
+                "WHERE ID_PRODUCTO = :id AND ACTIVO = 'S'",
+                {'fc': data.fecha_caducidad, 'id': id_producto},
+            )
+
         log_insert(conn, 'PRODUCTO', id_producto, id_usuario, f'Producto {clave_interna} creado')
         conn.commit()
-    return obtener_producto.__wrapped__(id_producto, current_user) if hasattr(obtener_producto, '__wrapped__') else _fetch_producto(id_producto)
+    return _fetch_producto(id_producto)
 
 def _fetch_producto(id_producto: int) -> dict:
     """Fetch a single product (internal helper, no auth)."""
@@ -210,24 +305,30 @@ def obtener_comodato(id_comodato: int, current_user: dict=None):
     return _serialize(row)
 
 def crear_comodato(data: ComodatoCreate, current_user: dict=None):
-    """Registrar un nuevo comodato con validación de inventario (RF-PS-06)."""
+    """Registrar un nuevo comodato (RF-PS-06). Stock vía SP_REGISTRAR_MOVIMIENTO_STOCK."""
     with get_db() as conn:
         cursor = conn.cursor()
         id_usuario = current_user.get('id_usuario', 1)
-        cursor.execute("SELECT ex.CANTIDAD_DISPONIBLE\n               FROM EXISTENCIA_PRODUCTO ex\n               WHERE ex.ID_PRODUCTO = :id_equipo AND ex.ACTIVO = 'S'", {'id_equipo': data.id_equipo})
-        stock_row = cursor.fetchone()
-        if stock_row is None:
-            raise HTTPException(status_code=400, detail='El equipo no tiene registro de existencia en inventario')
-        if stock_row[0] <= 0:
-            raise HTTPException(status_code=400, detail='No hay existencia disponible del equipo seleccionado')
         cursor.execute('SELECT NVL(MAX(ID_COMODATO), 0) + 1 FROM COMODATO')
         next_num = cursor.fetchone()[0]
         folio = f'COM-{next_num:06d}'
         id_var = cursor.var(int)
         cursor.execute("INSERT INTO COMODATO\n               (FOLIO_COMODATO, ID_EQUIPO, ID_PACIENTE, ID_USUARIO_REGISTRO,\n                FECHA_PRESTAMO, FECHA_DEVOLUCION, ESTATUS,\n                MONTO_TOTAL, MONTO_PAGADO, SALDO_PENDIENTE,\n                EXENTO_PAGO, NOTAS)\n               VALUES (:folio, :id_equipo, :id_paciente, :id_usuario,\n                       TO_DATE(:fecha_prest, 'YYYY-MM-DD'),\n                       CASE WHEN :fecha_dev IS NOT NULL\n                            THEN TO_DATE(:fecha_dev, 'YYYY-MM-DD')\n                            ELSE NULL END,\n                       :estatus, :monto_total, :monto_pagado, :saldo,\n                       :exento, :notas)\n               RETURNING ID_COMODATO INTO :id_out", {'folio': folio, 'id_equipo': data.id_equipo, 'id_paciente': data.id_paciente, 'id_usuario': id_usuario, 'fecha_prest': data.fecha_prestamo, 'fecha_dev': data.fecha_devolucion, 'estatus': data.estatus, 'monto_total': data.monto_total, 'monto_pagado': data.monto_pagado, 'saldo': data.saldo_pendiente, 'exento': data.exento_pago, 'notas': data.notas, 'id_out': id_var})
         id_comodato = id_var.getvalue()[0]
-        cursor.execute("UPDATE EXISTENCIA_PRODUCTO\n               SET CANTIDAD_DISPONIBLE = CANTIDAD_DISPONIBLE - 1\n               WHERE ID_PRODUCTO = :id_equipo AND ACTIVO = 'S'", {'id_equipo': data.id_equipo})
-        cursor.execute("INSERT INTO MOVIMIENTO_INVENTARIO\n               (ID_PRODUCTO, ID_USUARIO_REGISTRO, ID_COMODATO,\n                FECHA_MOVIMIENTO, TIPO_MOVIMIENTO, CANTIDAD, OBSERVACIONES)\n               VALUES (:id_prod, :id_usr, :id_com,\n                       SYSTIMESTAMP, 'SALIDA', 1, :obs)", {'id_prod': data.id_equipo, 'id_usr': id_usuario, 'id_com': id_comodato, 'obs': f'Préstamo comodato {folio}'})
+        try:
+            cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
+                data.id_equipo,
+                'SALIDA_MERMA',
+                1,
+                id_usuario,
+                None,
+                id_comodato,
+                f'Préstamo comodato {folio}',
+            ])
+        except oracledb.DatabaseError as exc:
+            conn.rollback()
+            raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
+                                   default_detail='No se pudo registrar el movimiento de stock')
         log_insert(conn, 'COMODATO', id_comodato, id_usuario, f'Comodato {folio} creado para paciente {data.id_paciente}')
         conn.commit()
     return _fetch_comodato(id_comodato)
@@ -257,8 +358,20 @@ def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: di
         cursor.execute("UPDATE COMODATO SET\n                ID_EQUIPO = :id_equipo, ID_PACIENTE = :id_paciente,\n                FECHA_PRESTAMO = TO_DATE(:fecha_prest, 'YYYY-MM-DD'),\n                FECHA_DEVOLUCION = CASE WHEN :fecha_dev IS NOT NULL\n                                        THEN TO_DATE(:fecha_dev, 'YYYY-MM-DD')\n                                        ELSE NULL END,\n                ESTATUS = :estatus, MONTO_TOTAL = :monto_total,\n                MONTO_PAGADO = :monto_pagado, SALDO_PENDIENTE = :saldo,\n                EXENTO_PAGO = :exento, NOTAS = :notas\n               WHERE ID_COMODATO = :id", {'id_equipo': data.id_equipo, 'id_paciente': data.id_paciente, 'fecha_prest': data.fecha_prestamo, 'fecha_dev': data.fecha_devolucion, 'estatus': data.estatus, 'monto_total': data.monto_total, 'monto_pagado': data.monto_pagado, 'saldo': data.saldo_pendiente, 'exento': data.exento_pago, 'notas': data.notas, 'id': id_comodato})
         new_estatus = data.estatus.strip() if data.estatus else ''
         if prev_estatus == 'PRESTADO' and new_estatus == 'DEVUELTO':
-            cursor.execute("UPDATE EXISTENCIA_PRODUCTO\n                   SET CANTIDAD_DISPONIBLE = CANTIDAD_DISPONIBLE + 1\n                   WHERE ID_PRODUCTO = :id_equipo AND ACTIVO = 'S'", {'id_equipo': id_equipo_prev})
-            cursor.execute("INSERT INTO MOVIMIENTO_INVENTARIO\n                   (ID_PRODUCTO, ID_USUARIO_REGISTRO, ID_COMODATO,\n                    FECHA_MOVIMIENTO, TIPO_MOVIMIENTO, CANTIDAD, OBSERVACIONES)\n                   VALUES (:id_prod, :id_usr, :id_com,\n                           SYSTIMESTAMP, 'ENTRADA', 1, :obs)", {'id_prod': id_equipo_prev, 'id_usr': id_usuario, 'id_com': id_comodato, 'obs': 'Devolución de comodato'})
+            try:
+                cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
+                    id_equipo_prev,
+                    'ENTRADA',
+                    1,
+                    id_usuario,
+                    None,
+                    id_comodato,
+                    'Devolución de comodato',
+                ])
+            except oracledb.DatabaseError as exc:
+                conn.rollback()
+                raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
+                                       default_detail='No se pudo registrar la devolución')
         conn.commit()
     return _fetch_comodato(id_comodato)
 

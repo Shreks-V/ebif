@@ -5,10 +5,21 @@ import uuid
 from pathlib import Path
 from fastapi import HTTPException, UploadFile
 from typing import Optional
+
+import oracledb
+
 from app.core.config import settings
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
+from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
 from app.infrastructure.privacy.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS
 from app.schemas.schemas import PreRegistroCreate
+
+_SP_PACIENTE_ERRORS = {
+    20201: (400, None),
+    20202: (400, None),
+    20203: (400, None),
+    20204: (409, None),
+}
 logger = logging.getLogger(__name__)
 UPLOAD_DIR = Path(__file__).resolve().parents[3] / 'uploads' / 'documentos'
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -40,18 +51,66 @@ def listar_preregistros(estatus: Optional[str]=None, current_user: dict=None):
     return [_serialize(decrypt_row(r, PACIENTE_ENCRYPTED_FIELDS)) for r in rows]
 
 def crear_preregistro(data: PreRegistroCreate):
-    """Enviar un nuevo pre-registro (endpoint público, sin autenticación)."""
+    """Enviar un nuevo pre-registro vía SP_REGISTRAR_PACIENTE_COMPLETO."""
+    if not data.tipos_espina:
+        raise HTTPException(status_code=400, detail='Debe especificar al menos un tipo de espina bífida')
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute('SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE')
         next_id = cursor.fetchone()[0]
         folio = f'PRE-{next_id:06d}'
-        id_var = cursor.var(int)
-        cursor.execute("INSERT INTO PACIENTE\n               (FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n                FECHA_NACIMIENTO, GENERO, CURP,\n                ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,\n                DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n                TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n                EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n                TIPO_SANGRE, USA_VALVULA,\n                TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL,\n                ESTATUS_REGISTRO, ACTIVO, FECHA_REGISTRO)\n               VALUES (:folio, :nombre, :ap, :am,\n                       TO_DATE(:fecha_nac, 'YYYY-MM-DD'), :genero, :curp,\n                       :estado_nac, :hospital, :padre_madre,\n                       :direccion, :colonia, :ciudad, :estado, :cp,\n                       :tel_casa, :tel_cel, :correo,\n                       :emergencia_avisar, :tel_emergencia,\n                       :tipo_sangre, :usa_valvula,\n                       :tipo_cuota, :notas, :paso,\n                       'PENDIENTE', 'S', SYSDATE)\n               RETURNING ID_PACIENTE INTO :id_out", {'folio': folio, 'nombre': data.nombre, 'ap': data.apellido_paterno, 'am': data.apellido_materno, 'fecha_nac': data.fecha_nacimiento, 'genero': data.genero, 'curp': encrypt(data.curp), 'estado_nac': data.estado_nacimiento, 'hospital': encrypt(data.hospital_nacimiento), 'padre_madre': encrypt(data.nombre_padre_madre), 'direccion': encrypt(data.direccion), 'colonia': data.colonia, 'ciudad': data.ciudad, 'estado': data.estado, 'cp': data.codigo_postal, 'tel_casa': encrypt(data.telefono_casa), 'tel_cel': encrypt(data.telefono_celular), 'correo': encrypt(data.correo_electronico), 'emergencia_avisar': encrypt(data.en_emergencia_avisar_a), 'tel_emergencia': encrypt(data.telefono_emergencia), 'tipo_sangre': encrypt(data.tipo_sangre), 'usa_valvula': data.usa_valvula or 'N', 'tipo_cuota': data.tipo_cuota, 'notas': encrypt(data.notas_adicionales), 'paso': data.paso_actual or 1, 'id_out': id_var})
-        new_id = id_var.getvalue()[0]
-        if data.tipos_espina:
-            for tid in data.tipos_espina:
-                cursor.execute('INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO) VALUES (:id_pac, :id_tipo, SYSDATE)', {'id_pac': new_id, 'id_tipo': tid})
+        fecha_nac = datetime.strptime(str(data.fecha_nacimiento)[:10], '%Y-%m-%d') if data.fecha_nacimiento else None
+        tipos_arr = make_number_list(conn, [int(t) for t in data.tipos_espina])
+        id_out = cursor.var(int)
+        try:
+            cursor.callproc('SP_REGISTRAR_PACIENTE_COMPLETO', [
+                folio,
+                data.nombre,
+                data.apellido_paterno,
+                data.apellido_materno,
+                encrypt(data.curp),
+                data.genero,
+                fecha_nac,
+                encrypt(data.nombre_padre_madre),
+                encrypt(data.direccion),
+                data.colonia,
+                data.ciudad,
+                data.estado,
+                data.codigo_postal,
+                encrypt(data.telefono_casa),
+                encrypt(data.telefono_celular),
+                encrypt(data.correo_electronico),
+                encrypt(data.en_emergencia_avisar_a),
+                encrypt(data.telefono_emergencia),
+                None,  # municipio_nacimiento
+                data.estado_nacimiento,
+                encrypt(data.hospital_nacimiento),
+                encrypt(data.tipo_sangre),
+                data.usa_valvula or 'N',
+                encrypt(data.notas_adicionales),
+                None,  # fecha_alta — no aplica a preregistro
+                data.tipo_cuota,
+                'PENDIENTE',
+                None,  # id_usuario_registro — endpoint público
+                tipos_arr,
+                id_out,
+            ])
+        except oracledb.DatabaseError as exc:
+            raise sp_error_to_http(exc, _SP_PACIENTE_ERRORS,
+                                   default_detail='No se pudo registrar el pre-registro')
+        new_id = id_out.getvalue()
+        # El SP fuerza MEMBRESIA_ESTATUS='ACTIVO'; un preregistro pendiente
+        # debe quedar INACTIVO hasta la aprobación.
+        cursor.execute(
+            "UPDATE PACIENTE SET MEMBRESIA_ESTATUS = 'INACTIVO' WHERE ID_PACIENTE = :id",
+            {'id': new_id},
+        )
+        # Ajustar PASO_ACTUAL que el SP fija a 1
+        if data.paso_actual and data.paso_actual != 1:
+            cursor.execute(
+                "UPDATE PACIENTE SET PASO_ACTUAL = :paso WHERE ID_PACIENTE = :id",
+                {'paso': data.paso_actual, 'id': new_id},
+            )
         conn.commit()
     return _fetch_preregistro(new_id)
 

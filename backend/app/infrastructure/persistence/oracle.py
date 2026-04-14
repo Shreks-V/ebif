@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import oracledb
 
 from app.core.config import settings
+from app.core.session_context import get_current_user_id
 
 _initialized = False
 _pool = None
@@ -62,9 +63,22 @@ def get_connection():
 @contextmanager
 def get_db():
     conn = get_connection()
+    user_id = get_current_user_id()
+    if user_id is not None:
+        try:
+            with conn.cursor() as cur:
+                cur.callproc("DBMS_SESSION.SET_IDENTIFIER", [str(user_id)])
+        except oracledb.DatabaseError:
+            pass
     try:
         yield conn
     finally:
+        if user_id is not None:
+            try:
+                with conn.cursor() as cur:
+                    cur.callproc("DBMS_SESSION.CLEAR_IDENTIFIER")
+            except oracledb.DatabaseError:
+                pass
         conn.close()
 
 

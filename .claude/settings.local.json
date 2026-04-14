@@ -79,7 +79,15 @@
       "Bash(rsync -a --exclude=venv --exclude=__pycache__ --exclude=uploads '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/sprint_1/backend/')",
       "Bash(rsync -a --exclude=node_modules --exclude=dist --exclude=.angular '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/sprint_1/frontend/')",
       "Bash(cp -r '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/wallet' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/sprint_1/wallet')",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(python -c \"from backend.app.presentation.api.security import normalize_role, get_current_user, require_role; print\\('security OK'\\)\")",
+      "Bash(./venv/bin/python -c ':*)",
+      "Bash(./venv/bin/python db/apply_migration.py db/migrations/003_sp_almacen.sql)",
+      "Bash(./venv/bin/python db/apply_migration.py db/migrations/004_sp_ventas.sql)",
+      "Bash(./venv/bin/python db/apply_migration.py db/migrations/005_sp_pacientes_citas.sql)",
+      "Bash(./venv/bin/python db/apply_migration.py db/migrations/006_sp_doctores_usuarios.sql)",
+      "Bash(./venv/bin/python db/apply_migration.py db/migrations/007_bitacora_tipo_login.sql)",
+      "Bash(python db/apply_migration.py db/migrations/008_venta_folio_vta.sql)"
     ]
   },
   "enableAllProjectMcpServers": true,
