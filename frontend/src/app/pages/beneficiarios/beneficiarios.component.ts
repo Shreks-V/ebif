@@ -162,9 +162,9 @@ interface NuevoBeneficiarioDocumento {
           </div>
 
           <!-- Tab Content: Beneficiarios Activos -->
-          <div *ngIf="currentTab === 'activos' && !loading" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100">
+          <div *ngIf="currentTab === 'activos' && !loading" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-auto max-h-[calc(100vh-320px)]">
             <table class="w-full">
-              <thead class="sticky top-0 z-10 shadow-sm">
+              <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
                 <tr class="bg-slate-50 border-b border-slate-200">
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Folio</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo</th>
@@ -188,7 +188,7 @@ interface NuevoBeneficiarioDocumento {
                   </td>
                   <td class="px-6 py-4 text-sm text-slate-600">{{ $any(b.tiposEspina[0])?.nombre || 'N/A' }}</td>
                   <td class="px-6 py-4">
-                    <span [class]="getCuotaBadgeClass(b.tipoCuota)">Cuota {{ b.tipoCuota }}</span>
+                    <span [class]="getCuotaBadgeClass(b.tipoCuota)">{{ b.tipoCuota }}</span>
                   </td>
                   <td class="px-6 py-4">
                     <span [class]="getMembresiaBadgeClass(b.membresiaEstatus)">{{ b.membresiaEstatus }}</span>

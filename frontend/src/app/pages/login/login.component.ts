@@ -173,20 +173,6 @@ import { AuthService } from '../../services/auth.service';
                 <p class="text-sm text-slate-700">Contraseña: <span class="font-semibold">admin123</span></p>
               </div>
 
-              <!-- Pre-registro button -->
-              <button
-                type="button"
-                routerLink="/preregistro"
-                class="mt-6 w-full h-12 bg-gradient-to-r from-[#f3ad1c] via-[#ffb84d] to-[#f3ad1c] text-white rounded-2xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-              >
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <line x1="19" x2="19" y1="8" y2="14"/>
-                  <line x1="22" x2="16" y1="11" y2="11"/>
-                </svg>
-                Pre-registro
-              </button>
             </div>
           </div>
 

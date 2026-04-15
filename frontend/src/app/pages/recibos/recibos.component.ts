@@ -132,9 +132,9 @@ interface ConceptoCobroOption {
         </div>
 
         <!-- Table -->
-        <div *ngIf="!loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100">
+        <div *ngIf="!loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100 overflow-auto max-h-[calc(100vh-320px)]">
           <table class="w-full">
-            <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-16 z-10 shadow-sm">
+            <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-20 shadow-sm">
               <tr>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   <div class="flex items-center gap-1.5">

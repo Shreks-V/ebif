@@ -274,14 +274,14 @@ interface ComodatoItem {
             <div class="bg-white rounded-2xl shadow-lg border border-slate-200">
               <div>
                 <table class="w-full text-sm">
-                  <thead class="sticky top-0 z-10 shadow-sm">
+                  <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
                     <tr class="bg-slate-50 border-b border-slate-200">
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">ID</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Categor&iacute;a</th>
+                      <th *ngIf="selectedCategory !== 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">Categor&iacute;a</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Nombre</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Unidad</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Stock Actual</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Stock M&iacute;nimo</th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">{{ unidadColumnLabel() }}</th>
+                      <th *ngIf="selectedCategory === 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">Horario</th>
+                      <th *ngIf="selectedCategory !== 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">Stock Actual</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Precio Cuota A</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Precio Cuota B</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Estado</th>
@@ -291,7 +291,7 @@ interface ComodatoItem {
                   <tbody>
                     <tr *ngFor="let item of filteredInventario()" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       <td class="px-5 py-4 text-slate-600 font-mono">{{ item.id }}</td>
-                      <td class="px-5 py-4">
+                      <td *ngIf="selectedCategory !== 'Servicios'" class="px-5 py-4">
                         <div class="flex items-center gap-2">
                           <div [ngClass]="getCategoryIconBg(item.categoria)" class="w-7 h-7 rounded-lg flex items-center justify-center">
                             <svg *ngIf="item.categoria === 'MEDICAMENTO'" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -308,9 +308,9 @@ interface ComodatoItem {
                         </div>
                       </td>
                       <td class="px-5 py-4 text-slate-800 font-medium">{{ item.nombre }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ item.unidadMedida }}</td>
-                      <td class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible !== null ? item.cantidadDisponible : '\u2014' }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ item.nivelMinimo !== null ? item.nivelMinimo : '\u2014' }}</td>
+                      <td class="px-5 py-4 text-slate-600">{{ unidadCellValue(item) }}</td>
+                      <td *ngIf="selectedCategory === 'Servicios'" class="px-5 py-4 text-slate-600">{{ item.horario || '\u2014' }}</td>
+                      <td *ngIf="selectedCategory !== 'Servicios'" class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible !== null ? item.cantidadDisponible : '\u2014' }}</td>
                       <td class="px-5 py-4">
                         <span class="text-green-700 font-semibold">{{ item.precioA !== null ? '$' + item.precioA.toFixed(2) : '\u2014' }}</span>
                       </td>
@@ -370,10 +370,10 @@ interface ComodatoItem {
             </div>
 
             <!-- Comodatos Table -->
-            <div class="bg-white rounded-2xl shadow-lg border border-slate-200">
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-auto max-h-[calc(100vh-320px)]">
               <div>
                 <table class="w-full text-sm">
-                  <thead class="sticky top-0 z-10 shadow-sm">
+                  <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
                     <tr class="bg-slate-50 border-b border-slate-200">
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Folio</th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Beneficiario</th>
@@ -409,11 +409,6 @@ interface ComodatoItem {
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                               <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                          </button>
-                          <button *ngIf="com.estatus === 'PRESTADO'" (click)="marcarDevuelto(com)" class="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-colors" title="Marcar como devuelto">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <polyline points="20 6 9 17 4 12"/>
                             </svg>
                           </button>
                           <button (click)="descargarContratoComodato(com)" class="p-1.5 rounded-lg hover:bg-blue-50 text-slate-500 hover:text-blue-600 transition-colors" title="Contrato PDF">
@@ -713,6 +708,7 @@ interface ComodatoItem {
                 <option value="PRESTADO">Prestado</option>
                 <option value="DEVUELTO">Devuelto</option>
                 <option value="CANCELADO">Cancelado</option>
+                <option value="DONADO">Donado</option>
               </select>
             </div>
             <div>
@@ -850,6 +846,7 @@ interface ComodatoItem {
                 <option value="PRESTADO">Prestado</option>
                 <option value="DEVUELTO">Devuelto</option>
                 <option value="CANCELADO">Cancelado</option>
+                <option value="DONADO">Donado</option>
               </select>
             </div>
             <div>
@@ -1351,8 +1348,8 @@ export class AlmacenComponent implements OnInit {
   }
 
   // Unified row type for the inventory table
-  filteredInventario(): { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string }[] {
-    let items: { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string }[] = [];
+  filteredInventario(): { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string }[] {
+    let items: { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string }[] = [];
 
     const showMedicamentos = !this.selectedCategory || this.selectedCategory === 'Medicamento';
     const showServicios = !this.selectedCategory || this.selectedCategory === 'Servicios';
@@ -1378,7 +1375,9 @@ export class AlmacenComponent implements OnInit {
         items.push({
           id: s.idServicio, categoria: 'SERVICIO', nombre: s.nombre, unidadMedida: 'Servicio',
           cantidadDisponible: null, nivelMinimo: null,
-          precioA: s.precioA, precioB: s.precioB, estado: 'N/A'
+          precioA: s.precioA, precioB: s.precioB, estado: 'N/A',
+          doctor: (s as any).doctor || '',
+          horario: (s as any).horario || ''
         });
       });
     }
@@ -1420,6 +1419,17 @@ export class AlmacenComponent implements OnInit {
       case 'EQUIPO': return 'bg-green-100';
       default: return 'bg-slate-100';
     }
+  }
+
+  unidadColumnLabel(): string {
+    if (this.selectedCategory === 'Servicios') return 'Doctor';
+    if (this.selectedCategory === 'Equipo') return 'Tamaño';
+    return 'Unidad';
+  }
+
+  unidadCellValue(item: { categoria: string; unidadMedida: string; doctor?: string }): string {
+    if (item.categoria === 'SERVICIO') return item.doctor || '\u2014';
+    return item.unidadMedida || '\u2014';
   }
 
   getEstadoBadgeClass(estado: string): string {

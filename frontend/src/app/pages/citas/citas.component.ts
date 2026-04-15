@@ -970,11 +970,17 @@ import { ApiService } from '../../services/api.service';
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
-              <input type="time" [(ngModel)]="nuevoSlot.hora_inicio" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
+              <select [(ngModel)]="nuevoSlot.hora_inicio" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors">
+                <option value="" disabled>Seleccionar...</option>
+                <option *ngFor="let h of horasDisponibles" [value]="h">{{ h }}</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
-              <input type="time" [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors"/>
+              <select [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors">
+                <option value="" disabled>Seleccionar...</option>
+                <option *ngFor="let h of horasDisponibles" [value]="h" [disabled]="nuevoSlot.hora_inicio && h <= nuevoSlot.hora_inicio">{{ h }}</option>
+              </select>
             </div>
           </div>
           <button (click)="agregarSlotDisponibilidad()" [disabled]="guardandoSlot || !nuevoSlot.dia_semana || !nuevoSlot.hora_inicio || !nuevoSlot.hora_fin"
@@ -1057,6 +1063,14 @@ export class CitasComponent implements OnInit {
   disponibilidadSemana: any[] = []; // all doctors' slots for conflict check
   disponibilidadError = '';
   nuevoSlot: any = { dia_semana: 0, hora_inicio: '', hora_fin: '' };
+  horasDisponibles: string[] = (() => {
+    const slots: string[] = [];
+    for (let h = 7; h <= 21; h++) {
+      slots.push(`${h.toString().padStart(2, '0')}:00`);
+      if (h < 21) slots.push(`${h.toString().padStart(2, '0')}:30`);
+    }
+    return slots;
+  })();
   guardandoSlot = false;
   guardandoMedico = false;
   diasSemana = [
