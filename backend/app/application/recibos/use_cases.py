@@ -29,3 +29,6 @@ def obtener_venta(id_venta: int, current_user: dict=None):
 
 def cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: dict=None):
     return _get_repository().cancelar_venta(id_venta, motivo, current_user)
+
+def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_user: dict=None):
+    return _get_repository().registrar_pago(id_venta, id_metodo_pago, monto, current_user)

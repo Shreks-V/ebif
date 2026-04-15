@@ -26,6 +26,11 @@ _SP_MOVIMIENTO_STOCK_ERRORS = {
     20505: (409, None),
 }
 
+_SP_AJUSTAR_EXISTENCIA_ERRORS = {
+    20504: (404, None),
+    20506: (400, None),
+}
+
 def _serialize(row: dict) -> dict:
     """Strip CHAR padding and convert dates to ISO strings."""
     result = {}
@@ -375,6 +380,25 @@ def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: di
         conn.commit()
     return _fetch_comodato(id_comodato)
 
+def ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current_user: dict=None):
+    """Ajustar stock objetivo de un producto vía SP_AJUSTAR_EXISTENCIA_PRODUCTO."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get('id_usuario', 1) if current_user else 1
+        try:
+            cursor.callproc('SP_AJUSTAR_EXISTENCIA_PRODUCTO', [
+                id_producto,
+                int(stock_nuevo),
+                motivo,
+                id_usuario,
+            ])
+        except oracledb.DatabaseError as exc:
+            raise sp_error_to_http(exc, _SP_AJUSTAR_EXISTENCIA_ERRORS,
+                                   default_detail='No se pudo ajustar la existencia')
+        conn.commit()
+    return _fetch_producto(id_producto)
+
+
 def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optional[str]=None, current_user: dict=None):
     """Listar movimientos de inventario con filtros opcionales."""
     sql = '\n        SELECT ID_MOVIMIENTO, ID_PRODUCTO, ID_USUARIO_REGISTRO,\n               ID_VENTA, ID_COMODATO, FECHA_MOVIMIENTO,\n               TIPO_MOVIMIENTO, CANTIDAD, OBSERVACIONES\n        FROM MOVIMIENTO_INVENTARIO WHERE 1=1\n    '
@@ -467,3 +491,6 @@ class OracleAlmacenRepository:
 
     def almacen_stats(self, *args, **kwargs):
         return almacen_stats(*args, **kwargs)
+
+    def ajustar_existencia(self, *args, **kwargs):
+        return ajustar_existencia(*args, **kwargs)

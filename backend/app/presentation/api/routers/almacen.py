@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional, List
-from app.schemas.schemas import ProductoCreate, ProductoResponse, ServicioCreate, ServicioResponse, ComodatoCreate, ComodatoResponse, MovimientoInventario
+from app.schemas.schemas import ProductoCreate, ProductoResponse, ServicioCreate, ServicioResponse, ComodatoCreate, ComodatoResponse, MovimientoInventario, AjusteExistenciaRequest
 from app.application.almacen import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()
@@ -24,6 +24,10 @@ def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: di
 @router.delete('/productos/{id_producto}')
 def desactivar_producto(id_producto: int, current_user: dict=Depends(require_role('ADMINISTRADOR'))):
     return service.desactivar_producto(id_producto, current_user)
+
+@router.patch('/productos/{id_producto}/existencia', response_model=ProductoResponse)
+def ajustar_existencia(id_producto: int, data: AjusteExistenciaRequest, current_user: dict=Depends(require_role('ADMINISTRADOR', 'ENCARGADO_ALMACEN'))):
+    return service.ajustar_existencia(id_producto, data.stock_nuevo, data.motivo, current_user)
 
 @router.get('/servicios', response_model=List[ServicioResponse])
 def listar_servicios(busqueda: Optional[str]=Query(None), activo: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):

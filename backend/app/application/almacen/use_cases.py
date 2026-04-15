@@ -59,3 +59,6 @@ def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optiona
 
 def almacen_stats(current_user: dict=None):
     return _get_repository().almacen_stats(current_user)
+
+def ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current_user: dict=None):
+    return _get_repository().ajustar_existencia(id_producto, stock_nuevo, motivo, current_user)

@@ -20,6 +20,14 @@ _SP_VENTA_ERRORS = {
     20405: (400, None),
 }
 
+_SP_PAGO_PARCIAL_ERRORS = {
+    20406: (400, None),
+    20407: (404, None),
+    20408: (400, None),
+    20409: (400, None),
+    20410: (400, None),
+}
+
 _VENTA_FOLIO_SEQUENCE = 'SEQ_VENTA_FOLIO'
 _VENTA_FOLIO_UNIQUE_HINT = 'UQ_VENTA_FOLIO'
 
@@ -299,6 +307,26 @@ def obtener_venta(id_venta: int, current_user: dict=None):
             raise HTTPException(status_code=404, detail='Venta no encontrada')
         return _enrich_venta(conn, venta)
 
+def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_user: dict=None):
+    """Agregar un pago parcial a una venta vía SP_REGISTRAR_PAGO_PARCIAL."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        try:
+            cur.callproc('SP_REGISTRAR_PAGO_PARCIAL', [
+                id_venta,
+                id_metodo_pago,
+                float(monto),
+            ])
+        except oracledb.DatabaseError as exc:
+            raise sp_error_to_http(exc, _SP_PAGO_PARCIAL_ERRORS,
+                                   default_detail='No se pudo registrar el pago')
+        id_usuario = current_user.get('id_usuario', 1) if current_user else 1
+        log_insert(conn, 'VENTA_METODO_PAGO', id_venta, id_usuario,
+                   f'Pago parcial {monto} metodo {id_metodo_pago}')
+        conn.commit()
+    return obtener_venta(id_venta, current_user)
+
+
 def cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: dict=None):
     """Cancelar una venta."""
     with get_db() as conn:
@@ -336,3 +364,6 @@ class OracleRecibosRepository:
 
     def cancelar_venta(self, *args, **kwargs):
         return cancelar_venta(*args, **kwargs)
+
+    def registrar_pago(self, *args, **kwargs):
+        return registrar_pago(*args, **kwargs)

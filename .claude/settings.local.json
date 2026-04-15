@@ -87,7 +87,12 @@
       "Bash(./venv/bin/python db/apply_migration.py db/migrations/005_sp_pacientes_citas.sql)",
       "Bash(./venv/bin/python db/apply_migration.py db/migrations/006_sp_doctores_usuarios.sql)",
       "Bash(./venv/bin/python db/apply_migration.py db/migrations/007_bitacora_tipo_login.sql)",
-      "Bash(python db/apply_migration.py db/migrations/008_venta_folio_vta.sql)"
+      "Bash(python db/apply_migration.py db/migrations/008_venta_folio_vta.sql)",
+      "Bash(python -c \"from app.main import app; print\\('OK routes:', len\\(app.routes\\)\\)\")",
+      "Bash(ls venv/bin/python)",
+      "Bash(ls .venv/bin/python)",
+      "Bash(./venv/bin/python -c \"from app.main import app; print\\('OK routes:', len\\(app.routes\\)\\)\")",
+      "Bash(./venv/bin/python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(sorted\\(d['paths'].keys\\(\\)\\)[:40]\\)\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,

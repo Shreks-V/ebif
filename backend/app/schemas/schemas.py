@@ -306,6 +306,16 @@ class VentaCreate(VentaBase):
     metodos_pago: Optional[List[dict]] = None  # [{id_metodo_pago, monto}]
 
 
+class PagoParcialCreate(BaseModel):
+    id_metodo_pago: int
+    monto: float
+
+
+class AjusteExistenciaRequest(BaseModel):
+    stock_nuevo: int
+    motivo: str
+
+
 class VentaResponse(VentaBase):
     id_venta: int
     folio_venta: str
