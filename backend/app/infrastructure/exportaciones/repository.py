@@ -345,7 +345,8 @@ def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None
     """Exportar datos de reportes a Excel (RF-ER-11)."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
-    from app.application.reportes.use_cases import reporte_resumen, reporte_por_genero, reporte_por_etapa_vida, reporte_por_estado, reporte_servicios_por_tipo, reporte_pagos_exentos, reporte_consolidado_mensual
+    from app.application.reportes.use_cases import (reporte_resumen, reporte_por_genero, reporte_por_etapa_vida,
+        reporte_por_estado, reporte_por_tipo_espina, reporte_servicios_por_tipo, reporte_pagos_exentos, reporte_consolidado_mensual)
     try:
         wb = Workbook()
         ws = wb.active
@@ -359,7 +360,64 @@ def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None
                 cell.font = header_font
                 cell.alignment = Alignment(horizontal='center')
         common_kwargs = {'current_user': current_user}
-        if tipo == 'servicios-por-tipo':
+        if tipo == 'all':
+            # Multi-sheet workbook: one sheet per report type
+            wb.remove(ws)
+            base_kw = {'genero': None, 'estado': None, 'tipo_espina': None,
+                       'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, **common_kwargs}
+            # Sheet 1: Resumen
+            ws1 = wb.create_sheet('Resumen')
+            d = reporte_resumen(**base_kw)
+            write_headers(ws1, ['Métrica', 'Valor'])
+            items = [('Total Pacientes', d['total_pacientes']), ('Activos', d['activos']),
+                     ('Inactivos', d['inactivos']), ('Edad Promedio', d['edad_promedio']),
+                     ('Estados Representados', d['estados_representados'])]
+            for k, v in d.get('por_genero', {}).items(): items.append((f'Género: {k}', v))
+            for k, v in d.get('por_tipo_espina', {}).items(): items.append((f'Tipo Espina: {k}', v))
+            for i, (lb, vl) in enumerate(items, 2):
+                ws1.cell(row=i, column=1, value=lb); ws1.cell(row=i, column=2, value=vl)
+            # Sheet 2: Por Género
+            ws2 = wb.create_sheet('Por Género')
+            d2 = reporte_por_genero(**base_kw)
+            write_headers(ws2, ['Género', 'Cantidad'])
+            for i, (lb, vl) in enumerate(zip(d2['labels'], d2['values']), 2):
+                ws2.cell(row=i, column=1, value=lb); ws2.cell(row=i, column=2, value=vl)
+            # Sheet 3: Por Etapa de Vida
+            ws3 = wb.create_sheet('Por Etapa de Vida')
+            d3 = reporte_por_etapa_vida(**base_kw)
+            write_headers(ws3, ['Etapa de Vida', 'Cantidad'])
+            for i, (lb, vl) in enumerate(zip(d3['labels'], d3['values']), 2):
+                ws3.cell(row=i, column=1, value=lb); ws3.cell(row=i, column=2, value=vl)
+            # Sheet 4: Por Estado
+            ws4 = wb.create_sheet('Por Estado')
+            d4 = reporte_por_estado(**base_kw)
+            write_headers(ws4, ['Estado', 'Cantidad'])
+            for i, (lb, vl) in enumerate(zip(d4['labels'], d4['values']), 2):
+                ws4.cell(row=i, column=1, value=lb); ws4.cell(row=i, column=2, value=vl)
+            # Sheet 5: Por Tipo de Espina
+            ws5 = wb.create_sheet('Por Tipo de Espina')
+            d5 = reporte_por_tipo_espina(**base_kw)
+            write_headers(ws5, ['Tipo de Espina', 'Cantidad'])
+            for i, (lb, vl) in enumerate(zip(d5['labels'], d5['values']), 2):
+                ws5.cell(row=i, column=1, value=lb); ws5.cell(row=i, column=2, value=vl)
+            # Sheet 6: Servicios por Tipo
+            ws6 = wb.create_sheet('Servicios por Tipo')
+            d6 = reporte_servicios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
+            write_headers(ws6, ['Servicio', 'Cantidad', 'Monto'])
+            for i, (lb, vl) in enumerate(zip(d6['labels'], d6['values']), 2):
+                ws6.cell(row=i, column=1, value=lb); ws6.cell(row=i, column=2, value=vl)
+                ws6.cell(row=i, column=3, value=d6['montos'][i - 2])
+            # Sheet 7: Pagos Exentos
+            ws7 = wb.create_sheet('Pagos Exentos')
+            d7 = reporte_pagos_exentos(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
+            write_headers(ws7, ['Concepto', 'Cantidad', 'Monto'])
+            ws7.cell(row=2, column=1, value='Exentos')
+            ws7.cell(row=2, column=2, value=d7['total_exentos'])
+            ws7.cell(row=2, column=3, value=d7['monto_exentos'])
+            ws7.cell(row=3, column=1, value='Cuotas')
+            ws7.cell(row=3, column=2, value=d7['total_cuotas'])
+            ws7.cell(row=3, column=3, value=d7['monto_cuotas'])
+        elif tipo == 'servicios-por-tipo':
             ws.title = 'Servicios por Tipo'
             data = reporte_servicios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
             write_headers(ws, ['Servicio', 'Cantidad', 'Monto'])
@@ -399,12 +457,14 @@ def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None
             for i, (label, val) in enumerate(metrics, 2):
                 ws.cell(row=i, column=1, value=label)
                 ws.cell(row=i, column=2, value=val)
-        for col in ws.columns:
-            max_len = max((len(str(cell.value or '')) for cell in col))
-            ws.column_dimensions[col[0].column_letter].width = min(max_len + 3, 40)
+        for sheet in wb.worksheets:
+            for col in sheet.columns:
+                max_len = max((len(str(cell.value or '')) for cell in col))
+                sheet.column_dimensions[col[0].column_letter].width = min(max_len + 3, 40)
         buf = io.BytesIO()
         wb.save(buf)
-        return _excel_response(buf, f'reporte_{tipo}_{datetime.now().strftime('%Y%m%d')}.xlsx')
+        filename = f'reportes_completo_{datetime.now().strftime("%Y%m%d")}.xlsx' if tipo == 'all' else f'reporte_{tipo}_{datetime.now().strftime("%Y%m%d")}.xlsx'
+        return _excel_response(buf, filename)
     except Exception:
         logger.exception('Error al generar Excel de reportes')
         raise HTTPException(status_code=500, detail='Error interno del servidor')

@@ -191,14 +191,8 @@ interface ConceptoCobroOption {
                 <td class="px-5 py-4 text-sm font-bold text-slate-900">\${{ recibo.montoPagado | number:'1.2-2' }}</td>
                 <td class="px-5 py-4 text-sm font-semibold" [ngClass]="recibo.saldoPendiente > 0 ? 'text-amber-600' : 'text-slate-500'">\${{ recibo.saldoPendiente | number:'1.2-2' }}</td>
                 <td class="px-5 py-4">
-                  <span class="text-sm font-semibold"
-                    [ngClass]="{
-                      'text-emerald-600': $any(recibo.metodosPago[0])?.nombre === 'EFECTIVO',
-                      'text-blue-600': $any(recibo.metodosPago[0])?.nombre === 'TARJETA',
-                      'text-purple-600': $any(recibo.metodosPago[0])?.nombre === 'TRANSFERENCIA',
-                      'text-slate-500': $any(recibo.metodosPago[0])?.nombre === 'EXENTO'
-                    }">
-                    {{ $any(recibo.metodosPago[0])?.nombre }}
+                  <span class="text-sm font-semibold" [ngClass]="getPagoLabelClass(recibo)">
+                    {{ getPagoLabel(recibo) }}
                   </span>
                 </td>
                 <td class="px-5 py-4">
@@ -320,7 +314,8 @@ interface ConceptoCobroOption {
                     'text-emerald-600': mp.nombre === 'EFECTIVO',
                     'text-blue-600': mp.nombre === 'TARJETA',
                     'text-purple-600': mp.nombre === 'TRANSFERENCIA',
-                    'text-slate-500': mp.nombre === 'EXENTO'
+                    'text-slate-500': mp.nombre === 'EXENTO',
+                    'text-amber-600': mp.nombre === 'PENDIENTE'
                   }">
                   {{ mp.nombre }}
                 </span>
@@ -435,7 +430,7 @@ interface ConceptoCobroOption {
           <!-- Exento de Pago -->
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Exento de Pago</label>
-            <select [(ngModel)]="nuevoCobro.exento_pago"
+            <select [(ngModel)]="nuevoCobro.exento_pago" (ngModelChange)="onExentoPagoChange()"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
               <option value="N">No</option>
               <option value="S">S&iacute;</option>
@@ -443,7 +438,7 @@ interface ConceptoCobroOption {
           </div>
 
           <!-- Metodos de Pago -->
-          <div>
+          <div *ngIf="nuevoCobro.exento_pago !== 'S'">
             <div class="flex items-center justify-between mb-2">
               <label class="text-sm font-semibold text-slate-700">M&eacute;todos de Pago</label>
               <button (click)="agregarMetodoPago()" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer">
@@ -845,7 +840,7 @@ export class RecibosComponent implements OnInit {
       return;
     }
     const metodosValidos = this.nuevoCobro.metodos_pago.filter(mp => mp.id_metodo_pago > 0 && mp.monto > 0);
-    if (metodosValidos.length === 0) {
+    if (this.nuevoCobro.exento_pago !== 'S' && metodosValidos.length === 0) {
       this.nuevoCobroError = 'Agrega al menos un metodo de pago con monto.';
       return;
     }
@@ -913,5 +908,43 @@ export class RecibosComponent implements OnInit {
         console.error('Error al cancelar recibo:', err);
       }
     });
+  }
+
+  onExentoPagoChange(): void {
+    if (this.nuevoCobro.exento_pago === 'S') {
+      // Auto-select EXENTO method covering the full amount
+      const exentoMethod = this.metodosPagoCatalogo.find(m => m.nombre === 'EXENTO');
+      if (exentoMethod) {
+        this.nuevoCobro.metodos_pago = [{ id_metodo_pago: exentoMethod.id, monto: this.nuevoCobro.monto_total || 0 }];
+      } else {
+        this.nuevoCobro.metodos_pago = [];
+      }
+    } else {
+      // Restore a blank payment slot
+      this.nuevoCobro.metodos_pago = [{ id_metodo_pago: 0, monto: 0 }];
+    }
+    this.calcularSaldoCobro();
+  }
+
+  getPagoLabel(recibo: Recibo): string {
+    if (!recibo.metodosPago || recibo.metodosPago.length === 0) return '\u2014';
+    if (recibo.metodosPago.length === 1) return recibo.metodosPago[0].nombre;
+    // Mixed payment: prefer EFECTIVO as the primary label, add "+" indicator
+    const primary = recibo.metodosPago.find(mp => mp.nombre === 'EFECTIVO')
+      || recibo.metodosPago.find(mp => mp.nombre !== 'EXENTO' && mp.nombre !== 'PENDIENTE')
+      || recibo.metodosPago[0];
+    return primary.nombre + ' +';
+  }
+
+  getPagoLabelClass(recibo: Recibo): string {
+    const label = this.getPagoLabel(recibo).replace(' +', '');
+    const map: Record<string, string> = {
+      'EFECTIVO': 'text-emerald-600',
+      'TARJETA': 'text-blue-600',
+      'TRANSFERENCIA': 'text-purple-600',
+      'EXENTO': 'text-slate-500',
+      'PENDIENTE': 'text-amber-600',
+    };
+    return map[label] || 'text-slate-700';
   }
 }

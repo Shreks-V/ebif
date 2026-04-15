@@ -59,8 +59,8 @@ interface IndicadorOption {
               </div>
             </div>
 
-            <!-- Report type selector -->
-            <div class="mb-6">
+            <!-- Report type selector (hidden — Excel exports all sheets, preview uses default 'resumen') -->
+            <div class="mb-6 hidden">
               <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Reporte</label>
               <select [(ngModel)]="tipoReporte"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
@@ -421,7 +421,7 @@ export class ReportesComponent {
   selectedPeriod = 'ultimo-mes';
   fechaInicio = '';
   fechaFin = '';
-  tipoReporte = '';
+  tipoReporte = 'resumen';
   selectedCharts: string[] = [];
   showModal = false;
 
@@ -768,11 +768,10 @@ export class ReportesComponent {
   }
 
   exportarExcel(): void {
-    const tipo = this.tipoReporte || 'resumen';
     const filters = this.buildExportFilters();
-
-    this.api.exportarReporteExcel(tipo, filters).subscribe({
-      next: (blob) => this.descargarArchivo(blob, `reporte_${tipo}_${new Date().toISOString().slice(0, 10)}.xlsx`),
+    // 'all' generates one workbook with every report type as a separate sheet
+    this.api.exportarReporteExcel('all', filters).subscribe({
+      next: (blob) => this.descargarArchivo(blob, `reportes_completo_${new Date().toISOString().slice(0, 10)}.xlsx`),
       error: () => alert('Error al generar Excel'),
     });
   }
