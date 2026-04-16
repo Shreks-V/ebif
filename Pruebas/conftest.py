@@ -14,8 +14,13 @@ from app.core.config import settings
 from app.infrastructure.security.adapters import JwtAccessTokenIssuer, SecurityPasswordHasher
 from app.presentation.api.dependencies import get_auth_service
 from app.presentation.api.routers import auth as auth_router
+from app.presentation.api.routers import beneficiarios as beneficiarios_router
 
-from Pruebas.support_auth import InMemoryUserRepository
+from Pruebas.support_auth import InMemoryUserRepository, build_user
+from Pruebas.support_beneficiarios import (
+    InMemoryBeneficiariosRepository,
+    default_seed_patients,
+)
 
 
 def build_minimal_auth_app(auth_service: AuthService) -> FastAPI:
@@ -24,6 +29,19 @@ def build_minimal_auth_app(auth_service: AuthService) -> FastAPI:
     app.add_middleware(SlowAPIMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.dependency_overrides[get_auth_service] = lambda: auth_service
+    return app
+
+
+def build_minimal_app_with_beneficiarios(auth_service: AuthService) -> FastAPI:
+    app = FastAPI()
+    app.state.limiter = auth_router.limiter
+    app.add_middleware(SlowAPIMiddleware)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.include_router(
+        beneficiarios_router.router, prefix="/api/beneficiarios", tags=["Beneficiarios"]
+    )
     app.dependency_overrides[get_auth_service] = lambda: auth_service
     return app
 
@@ -50,6 +68,60 @@ def auth_client_factory(
             fallback_users=[],
         )
         app = build_minimal_auth_app(auth_service)
+        return TestClient(app)
+
+    return _make
+
+
+def _default_beneficiarios_user_repo(
+    password_hasher: SecurityPasswordHasher,
+) -> InMemoryUserRepository:
+    admin = build_user(
+        correo="admin-ben@test.local",
+        password_plain="adm123",
+        password_hasher=password_hasher,
+        id_usuario=1,
+        nombre="Admin",
+        rol="ADMINISTRADOR",
+        estatus="ACTIVO",
+    )
+    recep = build_user(
+        correo="recep-ben@test.local",
+        password_plain="rec123",
+        password_hasher=password_hasher,
+        id_usuario=2,
+        nombre="Recepción",
+        rol="RECEPCIONISTA",
+        estatus="ACTIVO",
+    )
+    return InMemoryUserRepository(
+        {admin.correo.lower(): admin, recep.correo.lower(): recep},
+        has_users=True,
+    )
+
+
+@pytest.fixture
+def beneficiarios_client_factory(
+    password_hasher: SecurityPasswordHasher,
+) -> Callable[[InMemoryBeneficiariosRepository | None, InMemoryUserRepository | None], TestClient]:
+    """App con /api/auth + /api/beneficiarios y repo en memoria (semilla por defecto)."""
+
+    def _make(
+        repo: InMemoryBeneficiariosRepository | None = None,
+        user_repo: InMemoryUserRepository | None = None,
+    ) -> TestClient:
+        from app.application.beneficiarios import use_cases as ben_uc
+
+        ben_repo = repo or InMemoryBeneficiariosRepository(default_seed_patients())
+        ben_uc.configure_repository(ben_repo)
+        urepo = user_repo or _default_beneficiarios_user_repo(password_hasher)
+        auth_service = AuthService(
+            user_repository=urepo,
+            password_hasher=password_hasher,
+            token_issuer=JwtAccessTokenIssuer(),
+            fallback_users=[],
+        )
+        app = build_minimal_app_with_beneficiarios(auth_service)
         return TestClient(app)
 
     return _make
