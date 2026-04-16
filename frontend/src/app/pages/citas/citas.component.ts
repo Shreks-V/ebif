@@ -1098,10 +1098,10 @@ interface TableSortState {
                       </svg>
                       <span class="text-sm font-semibold text-slate-700">{{ slot.hora_inicio }} - {{ slot.hora_fin }}</span>
                     </div>
-                    <!-- Show conflict badge if another doctor occupies this day -->
+                    <!-- Mostrar aviso de conflicto si otro doctor ocupa este día -->
                     @if (getConflictDoctor(dia.num, slot)) {
                       <span class="text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-semibold">
-                        Tambien: {{ getConflictDoctor(dia.num, slot) }}
+                        También: {{ getConflictDoctor(dia.num, slot) }}
                       </span>
                     }
                     <button (click)="eliminarSlotDisponibilidad(slot)" class="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors ml-auto" title="Eliminar">

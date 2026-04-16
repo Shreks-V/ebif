@@ -90,42 +90,61 @@ interface TableSortState {
     
           <!-- KPI Cards -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <!-- Total Items -->
-            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
+            <!-- Total de elementos -->
+            <button
+              type="button"
+              (click)="mostrarInventarioCompleto()"
+              class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200 text-left cursor-pointer hover:shadow-xl transition-all"
+            >
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
               <svg class="w-8 h-8 text-blue-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
               </svg>
               <p class="text-4xl font-black text-slate-900">{{ productos.length + servicios.length }}</p>
-              <p class="text-sm text-slate-600 mt-1">Items en inventario</p>
-            </div>
-            <!-- Bajo Stock -->
-            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-amber-200">
+              <p class="text-sm text-slate-600 mt-1">Elementos en inventario</p>
+            </button>
+            <!-- Existencias bajas -->
+            <button
+              type="button"
+              (click)="mostrarExistenciasBajas()"
+              [disabled]="getBajoStockCount() === 0"
+              class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-amber-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl"
+            >
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
               <svg class="w-8 h-8 text-amber-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
               </svg>
               <p class="text-4xl font-black text-slate-900">{{ getBajoStockCount() }}</p>
-              <p class="text-sm text-slate-600 mt-1">Alertas de stock</p>
-            </div>
+              <p class="text-sm text-slate-600 mt-1">Alertas de existencias</p>
+            </button>
             <!-- Pr&oacute;ximos a Vencer (RF-I-06) -->
-            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-red-200">
+            <button
+              type="button"
+              (click)="mostrarProximosAVencer()"
+              [disabled]="getProximosAVencerCount() === 0"
+              class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-red-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl"
+            >
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-red-500 rounded-full"></div>
               <svg class="w-8 h-8 text-red-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
-              <p class="text-4xl font-black text-slate-900">{{ alertasCaducidad }}</p>
+              <p class="text-4xl font-black text-slate-900">{{ getProximosAVencerCount() }}</p>
               <p class="text-sm text-slate-600 mt-1">Pr&oacute;ximos a vencer</p>
-            </div>
+            </button>
             <!-- Comodatos Activos -->
-            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
+            <button
+              type="button"
+              (click)="mostrarComodatosActivos()"
+              [disabled]="getComodatosActivosCount() === 0"
+              class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl"
+            >
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
               <svg class="w-8 h-8 text-green-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
               <p class="text-4xl font-black text-slate-900">{{ getComodatosActivosCount() }}</p>
               <p class="text-sm text-slate-600 mt-1">Comodatos activos</p>
-            </div>
+            </button>
           </div>
     
           <!-- Tabs -->
@@ -185,9 +204,16 @@ interface TableSortState {
           @if (activeTab === 'inventario' && !loading) {
             <!-- Category Filter Cards -->
             <div class="flex items-center justify-between mb-0">
-              <h2 class="text-lg font-semibold text-slate-800">Filtrar por Categor&iacute;a</h2>
-              @if (selectedCategory) {
-                <button (click)="selectedCategory = null" class="text-sm text-slate-500 hover:text-slate-700 cursor-pointer bg-transparent border-0">Limpiar filtro</button>
+              <div class="flex items-center gap-3">
+                <h2 class="text-lg font-semibold text-slate-800">Filtrar por Categor&iacute;a</h2>
+                @if (quickInventoryFilter !== 'none') {
+                  <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                    {{ getQuickFilterLabel() }}
+                  </span>
+                }
+              </div>
+              @if (selectedCategory || quickInventoryFilter !== 'none') {
+                <button (click)="limpiarFiltrosInventarioRapidos()" class="text-sm text-slate-500 hover:text-slate-700 cursor-pointer bg-transparent border-0">Limpiar filtros</button>
               }
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -206,7 +232,7 @@ interface TableSortState {
                   </div>
                   <div>
                     <h3 class="text-lg font-bold text-slate-900">Medicamentos</h3>
-                    <p class="text-sm text-slate-600">{{ getCategoryCount('Medicamento') }} items</p>
+                    <p class="text-sm text-slate-600">{{ getCategoryCount('Medicamento') }} elementos</p>
                   </div>
                 </div>
                 <p class="text-sm font-semibold" [class]="selectedCategory === 'Medicamento' ? 'text-blue-700' : 'text-slate-500'">
@@ -228,7 +254,7 @@ interface TableSortState {
                   </div>
                   <div>
                     <h3 class="text-lg font-bold text-slate-900">Servicios</h3>
-                    <p class="text-sm text-slate-600">{{ getCategoryCount('Servicios') }} items</p>
+                    <p class="text-sm text-slate-600">{{ getCategoryCount('Servicios') }} elementos</p>
                   </div>
                 </div>
                 <p class="text-sm font-semibold" [class]="selectedCategory === 'Servicios' ? 'text-purple-700' : 'text-slate-500'">
@@ -250,7 +276,7 @@ interface TableSortState {
                   </div>
                   <div>
                     <h3 class="text-lg font-bold text-slate-900">Equipo</h3>
-                    <p class="text-sm text-slate-600">{{ getCategoryCount('Equipo') }} items</p>
+                    <p class="text-sm text-slate-600">{{ getCategoryCount('Equipo') }} elementos</p>
                   </div>
                 </div>
                 <p class="text-sm font-semibold" [class]="selectedCategory === 'Equipo' ? 'text-green-700' : 'text-slate-500'">
@@ -275,7 +301,7 @@ interface TableSortState {
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                 </svg>
-                Agregar Item
+                Agregar elemento
               </button>
             </div>
             <!-- Inventory Table -->
@@ -321,7 +347,7 @@ interface TableSortState {
                       @if (selectedCategory !== 'Servicios') {
                         <th class="text-left px-5 py-4 font-semibold text-slate-600">
                           <button type="button" (click)="toggleInventarioSort('stock')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
-                            <span>Stock Actual</span>
+                            <span>Existencias actuales</span>
                             <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'stock') }}</span>
                           </button>
                         </th>
@@ -348,7 +374,7 @@ interface TableSortState {
                     </tr>
                   </thead>
                   <tbody>
-                    @for (item of filteredInventario(); track item) {
+                    @for (item of filteredInventario(); track item.id + '-' + item.categoria) {
                       <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                         <td class="px-5 py-4 text-slate-600 font-mono">{{ item.id }}</td>
                         @if (selectedCategory !== 'Servicios') {
@@ -371,27 +397,27 @@ interface TableSortState {
                                   </svg>
                                 }
                               </div>
-                              <span class="text-slate-700">{{ item.categoria }}</span>
+                              <span class="text-slate-700">{{ item.categoria || '\u2014' }}</span>
                             </div>
                           </td>
                         }
-                        <td class="px-5 py-4 text-slate-800 font-medium">{{ item.nombre }}</td>
+                        <td class="px-5 py-4 text-slate-800 font-medium">{{ item.nombre || '\u2014' }}</td>
                         <td class="px-5 py-4 text-slate-600">{{ unidadCellValue(item) }}</td>
                         @if (selectedCategory === 'Servicios') {
                           <td class="px-5 py-4 text-slate-600">{{ item.horario || '\u2014' }}</td>
                         }
                         @if (selectedCategory !== 'Servicios') {
-                          <td class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible !== null ? item.cantidadDisponible : '\u2014' }}</td>
+                          <td class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible ?? '\u2014' }}</td>
                         }
                         <td class="px-5 py-4">
-                          <span class="text-green-700 font-semibold">{{ item.precioA !== null ? '$' + item.precioA.toFixed(2) : '\u2014' }}</span>
+                          <span class="text-green-700 font-semibold">{{ formatCurrency(item.precioA) }}</span>
                         </td>
                         <td class="px-5 py-4">
-                          <span class="text-blue-700 font-semibold">{{ item.precioB !== null ? '$' + item.precioB.toFixed(2) : '\u2014' }}</span>
+                          <span class="text-blue-700 font-semibold">{{ formatCurrency(item.precioB) }}</span>
                         </td>
                         <td class="px-5 py-4">
-                          <span [ngClass]="getEstadoBadgeClass(item.estado)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                            {{ item.estado }}
+                          <span [ngClass]="getEstadoBadgeClass(item.estado || 'N/A')" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                            {{ item.estado || 'N/A' }}
                           </span>
                         </td>
                         <td class="px-5 py-4">
@@ -544,7 +570,7 @@ interface TableSortState {
         <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
           <!-- Header -->
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-slate-800">{{ editingProduct ? 'Editar Producto' : 'Agregar Nuevo Item' }}</h2>
+            <h2 class="text-2xl font-bold text-slate-800">{{ editingProduct ? 'Editar Producto' : 'Agregar nuevo elemento' }}</h2>
             <button (click)="closeProductoModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -1052,6 +1078,7 @@ interface TableSortState {
 export class AlmacenComponent implements OnInit {
   activeTab: 'inventario' | 'comodatos' = 'inventario';
   selectedCategory: string | null = null;
+  quickInventoryFilter: 'none' | 'existencias-bajas' | 'proximos-vencer' = 'none';
   searchInventario = '';
   searchComodatos = '';
 
@@ -1060,6 +1087,8 @@ export class AlmacenComponent implements OnInit {
   servicios: ServicioItem[] = [];
   comodatos: ComodatoItem[] = [];
   alertasCaducidad = 0;
+  private stockBajoProductoIds = new Set<number>();
+  private proximosVencerProductoIds = new Set<number>();
   inventarioSort: TableSortState = { key: 'id', direction: 'asc' };
   comodatosSort: TableSortState = { key: 'fechaPrestamo', direction: 'desc' };
 
@@ -1101,6 +1130,15 @@ export class AlmacenComponent implements OnInit {
       if (tab === 'inventario' || tab === 'comodatos') {
         this.activeTab = tab;
       }
+      const filter = String(params['filter'] || '').toLowerCase();
+      if (filter === 'alertas') {
+        this.quickInventoryFilter = 'existencias-bajas';
+        this.activeTab = 'inventario';
+      }
+      if (filter === 'caducidad') {
+        this.quickInventoryFilter = 'proximos-vencer';
+        this.activeTab = 'inventario';
+      }
       if (params['action'] === 'nuevo') {
         setTimeout(() => {
           if (this.activeTab === 'comodatos') {
@@ -1120,27 +1158,27 @@ export class AlmacenComponent implements OnInit {
     this.api.getProductos({ activo: 'S' }).subscribe({
       next: (data) => {
         this.productos = data.map((p: any) => ({
-          idProducto: p.id_producto,
-          claveInterna: p.clave_interna,
-          nombre: p.nombre,
-          descripcion: p.descripcion,
-          tipoProducto: this.normalizeTipoProducto(p.tipo_producto),
-          precioA: p.precio_cuota_a,
-          precioB: p.precio_cuota_b,
-          activo: p.activo,
-          presentacion: p.presentacion,
-          dosis: p.dosis,
-          requiereCaducidad: p.requiere_caducidad,
-          numeroSerie: p.numero_serie,
-          marca: p.marca,
-          modelo: p.modelo,
-          estatusEquipo: p.estatus_equipo,
-          observaciones: p.observaciones,
-          cantidadDisponible: p.cantidad_disponible,
-          nivelMinimo: p.nivel_minimo,
-          unidadMedida: p.unidad_medida,
-          fechaCaducidad: p.fecha_caducidad,
-        }));
+          idProducto: Number(p?.id_producto ?? p?.idProducto ?? 0),
+          claveInterna: String(p?.clave_interna ?? p?.claveInterna ?? ''),
+          nombre: String(p?.nombre ?? ''),
+          descripcion: String(p?.descripcion ?? ''),
+          tipoProducto: this.normalizeTipoProducto(p?.tipo_producto ?? p?.tipoProducto),
+          precioA: this.toNumberOrNull(p?.precio_cuota_a ?? p?.precioA),
+          precioB: this.toNumberOrNull(p?.precio_cuota_b ?? p?.precioB),
+          activo: String(p?.activo ?? 'S'),
+          presentacion: p?.presentacion,
+          dosis: p?.dosis,
+          requiereCaducidad: p?.requiere_caducidad ?? p?.requiereCaducidad,
+          numeroSerie: p?.numero_serie ?? p?.numeroSerie,
+          marca: p?.marca,
+          modelo: p?.modelo,
+          estatusEquipo: p?.estatus_equipo ?? p?.estatusEquipo,
+          observaciones: p?.observaciones,
+          cantidadDisponible: this.toNumberOrNull(p?.cantidad_disponible ?? p?.cantidadDisponible),
+          nivelMinimo: this.toNumberOrNull(p?.nivel_minimo ?? p?.nivelMinimo),
+          unidadMedida: String(p?.unidad_medida ?? p?.unidadMedida ?? '\u2014'),
+          fechaCaducidad: p?.fecha_caducidad ?? p?.fechaCaducidad ?? null,
+        })).filter((p: ProductoItem) => p.idProducto > 0 && !!p.nombre);
         this.loading = false;
       },
       error: (err) => {
@@ -1154,9 +1192,24 @@ export class AlmacenComponent implements OnInit {
     this.api.getAlmacenStats().subscribe({
       next: (stats: any) => {
         this.alertasCaducidad = stats.alertas_caducidad ?? 0;
+        const stockBajo = Array.isArray(stats?.stock_bajo) ? stats.stock_bajo : [];
+        const proximosVencer = Array.isArray(stats?.proximos_vencer) ? stats.proximos_vencer : [];
+
+        this.stockBajoProductoIds = new Set(
+          stockBajo
+            .map((item: any) => Number(item?.id_producto))
+            .filter((id: number) => Number.isInteger(id) && id > 0)
+        );
+        this.proximosVencerProductoIds = new Set(
+          proximosVencer
+            .map((item: any) => Number(item?.id_producto))
+            .filter((id: number) => Number.isInteger(id) && id > 0)
+        );
       },
       error: () => {
         this.alertasCaducidad = 0;
+        this.stockBajoProductoIds.clear();
+        this.proximosVencerProductoIds.clear();
       },
     });
   }
@@ -1165,14 +1218,14 @@ export class AlmacenComponent implements OnInit {
     this.api.getServicios({ activo: 'S' }).subscribe({
       next: (data) => {
         this.servicios = data.map((s: any) => ({
-          idServicio: s.id_servicio,
-          nombre: s.nombre,
-          descripcion: s.descripcion,
-          cuotaRecuperacion: s.cuota_recuperacion,
-          precioA: s.precio_cuota_a,
-          precioB: s.precio_cuota_b,
-          activo: s.activo,
-        }));
+          idServicio: Number(s?.id_servicio ?? s?.idServicio ?? 0),
+          nombre: String(s?.nombre ?? ''),
+          descripcion: String(s?.descripcion ?? ''),
+          cuotaRecuperacion: Number(s?.cuota_recuperacion ?? s?.cuotaRecuperacion ?? 0),
+          precioA: this.toNumberOrNull(s?.precio_cuota_a ?? s?.precioA),
+          precioB: this.toNumberOrNull(s?.precio_cuota_b ?? s?.precioB),
+          activo: String(s?.activo ?? 'S'),
+        })).filter((s: ServicioItem) => s.idServicio > 0 && !!s.nombre);
       },
       error: (err) => console.error('Error loading servicios:', err),
     });
@@ -1501,8 +1554,49 @@ export class AlmacenComponent implements OnInit {
     ).length;
   }
 
+  getProximosAVencerCount(): number {
+    const calculado = this.productos.filter((p) => this.isCaducidadEnRiesgo(p.fechaCaducidad)).length;
+    return Math.max(this.alertasCaducidad, this.proximosVencerProductoIds.size, calculado);
+  }
+
   getComodatosActivosCount(): number {
     return this.comodatos.filter(c => c.estatus === 'PRESTADO').length;
+  }
+
+  mostrarInventarioCompleto(): void {
+    this.activeTab = 'inventario';
+    this.quickInventoryFilter = 'none';
+    this.selectedCategory = null;
+  }
+
+  mostrarExistenciasBajas(): void {
+    if (this.getBajoStockCount() === 0 && this.stockBajoProductoIds.size === 0) return;
+    this.activeTab = 'inventario';
+    this.quickInventoryFilter = 'existencias-bajas';
+    this.selectedCategory = null;
+  }
+
+  mostrarProximosAVencer(): void {
+    if (this.getProximosAVencerCount() === 0) return;
+    this.activeTab = 'inventario';
+    this.quickInventoryFilter = 'proximos-vencer';
+    this.selectedCategory = null;
+  }
+
+  mostrarComodatosActivos(): void {
+    if (this.getComodatosActivosCount() === 0) return;
+    this.activeTab = 'comodatos';
+  }
+
+  limpiarFiltrosInventarioRapidos(): void {
+    this.quickInventoryFilter = 'none';
+    this.selectedCategory = null;
+  }
+
+  getQuickFilterLabel(): string {
+    if (this.quickInventoryFilter === 'existencias-bajas') return 'Mostrando: existencias bajas';
+    if (this.quickInventoryFilter === 'proximos-vencer') return 'Mostrando: próximos a vencer';
+    return '';
   }
 
   getCategoryCount(categoria: string): number {
@@ -1523,8 +1617,8 @@ export class AlmacenComponent implements OnInit {
   }
 
   // Unified row type for the inventory table
-  filteredInventario(): { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string }[] {
-    let items: { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string }[] = [];
+  filteredInventario(): { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string; fechaCaducidad?: string | null }[] {
+    let items: { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string; fechaCaducidad?: string | null }[] = [];
 
     const showMedicamentos = !this.selectedCategory || this.selectedCategory === 'Medicamento';
     const showServicios = !this.selectedCategory || this.selectedCategory === 'Servicios';
@@ -1535,12 +1629,12 @@ export class AlmacenComponent implements OnInit {
         .filter(p => p.tipoProducto === 'MEDICAMENTO')
         .forEach(p => {
           const estado = (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo)
-            ? 'Bajo Stock'
+            ? 'Existencias bajas'
             : (p.cantidadDisponible === 0 ? 'Agotado' : 'Normal');
           items.push({
             id: p.idProducto, categoria: 'MEDICAMENTO', nombre: p.nombre, unidadMedida: p.unidadMedida,
             cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
-            precioA: p.precioA, precioB: p.precioB, estado
+            precioA: p.precioA, precioB: p.precioB, estado, fechaCaducidad: p.fechaCaducidad
           });
         });
     }
@@ -1550,7 +1644,7 @@ export class AlmacenComponent implements OnInit {
         items.push({
           id: s.idServicio, categoria: 'SERVICIO', nombre: s.nombre, unidadMedida: 'Servicio',
           cantidadDisponible: null, nivelMinimo: null,
-          precioA: s.precioA, precioB: s.precioB, estado: 'N/A',
+          precioA: s.precioA, precioB: s.precioB, estado: 'N/A', fechaCaducidad: null,
           doctor: (s as any).doctor || '',
           horario: (s as any).horario || ''
         });
@@ -1564,9 +1658,13 @@ export class AlmacenComponent implements OnInit {
           items.push({
             id: p.idProducto, categoria: 'EQUIPO', nombre: p.nombre, unidadMedida: p.unidadMedida,
             cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
-            precioA: p.precioA, precioB: p.precioB, estado: p.estatusEquipo ?? 'N/A'
+            precioA: p.precioA, precioB: p.precioB, estado: p.estatusEquipo ?? 'N/A', fechaCaducidad: p.fechaCaducidad
           });
         });
+    }
+
+    if (this.quickInventoryFilter !== 'none') {
+      items = items.filter((item) => this.matchesQuickInventoryFilter(item));
     }
 
     if (this.searchInventario.trim()) {
@@ -1598,6 +1696,66 @@ export class AlmacenComponent implements OnInit {
           return item.id;
       }
     });
+  }
+
+  private matchesQuickInventoryFilter(item: {
+    id: number;
+    categoria: string;
+    cantidadDisponible: number | null;
+    nivelMinimo: number | null;
+    fechaCaducidad?: string | null;
+  }): boolean {
+    if (item.categoria === 'SERVICIO') return false;
+
+    if (this.quickInventoryFilter === 'existencias-bajas') {
+      if (this.stockBajoProductoIds.size > 0) {
+        return this.stockBajoProductoIds.has(item.id);
+      }
+      return item.cantidadDisponible !== null
+        && item.nivelMinimo !== null
+        && item.cantidadDisponible < item.nivelMinimo;
+    }
+
+    if (this.quickInventoryFilter === 'proximos-vencer') {
+      if (this.proximosVencerProductoIds.size > 0) {
+        return this.proximosVencerProductoIds.has(item.id);
+      }
+      return this.isCaducidadEnRiesgo(item.fechaCaducidad);
+    }
+
+    return true;
+  }
+
+  private isCaducidadEnRiesgo(fechaCaducidad?: string | null): boolean {
+    if (!fechaCaducidad) return false;
+    const fecha = this.toDateOnly(fechaCaducidad);
+    if (!fecha) return false;
+
+    const hoy = new Date();
+    const base = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const limite = new Date(base);
+    limite.setDate(base.getDate() + 30);
+
+    return fecha <= limite;
+  }
+
+  private toDateOnly(value: string): Date | null {
+    const normalized = value.includes('T') ? value : `${value}T00:00:00`;
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return null;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  private toNumberOrNull(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+
+  formatCurrency(value: unknown): string {
+    const numeric = this.toNumberOrNull(value);
+    if (numeric === null) return '\u2014';
+    return `$${numeric.toFixed(2)}`;
   }
 
   filteredComodatos(): ComodatoItem[] {
@@ -1702,6 +1860,7 @@ export class AlmacenComponent implements OnInit {
     switch (estado) {
       case 'Normal': return 'bg-green-100 text-green-700';
       case 'DISPONIBLE': return 'bg-green-100 text-green-700';
+      case 'Existencias bajas': return 'bg-amber-100 text-amber-700';
       case 'Bajo Stock': return 'bg-amber-100 text-amber-700';
       case 'EN_PRESTAMO': return 'bg-blue-100 text-blue-700';
       case 'Agotado': return 'bg-red-100 text-red-700';

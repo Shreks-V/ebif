@@ -64,7 +64,7 @@ def get_notificaciones(current_user: dict = Depends(get_current_user)):
     except Exception:
         pass
 
-    # ── Almacén: stock bajo ───────────────────────────────────────────────────
+    # ── Almacén: existencias bajas ────────────────────────────────────────────
     try:
         stats = almacen_svc.almacen_stats(current_user)
         stock_bajo = int(stats.get('alertas_stock_bajo', 0))
@@ -76,7 +76,7 @@ def get_notificaciones(current_user: dict = Depends(get_current_user)):
                 'categoria': 'almacen',
                 'tipo': 'warning',
                 'titulo': 'Inventario en riesgo',
-                'detalle': f"{stock_bajo} producto{'s' if stock_bajo != 1 else ''} con stock bajo.",
+                'detalle': f"{stock_bajo} producto{'s' if stock_bajo != 1 else ''} con existencias bajas.",
                 'count': stock_bajo,
                 'link': '/almacen',
             })

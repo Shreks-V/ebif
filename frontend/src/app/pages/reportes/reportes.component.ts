@@ -40,7 +40,7 @@ interface TableSortState {
             </div>
             <div>
               <h1 class="text-3xl font-bold text-slate-800">Reportes e Indicadores</h1>
-              <p class="text-slate-500 text-sm mt-1">Genera reportes documentales y visualiza graficas en pantalla</p>
+              <p class="text-slate-500 text-sm mt-1">Genera reportes documentales y visualiza gráficas en pantalla</p>
             </div>
           </div>
     
@@ -64,13 +64,13 @@ interface TableSortState {
               </div>
             </div>
     
-            <!-- Report type selector (hidden — Excel exports all sheets, preview uses default 'resumen') -->
+            <!-- Selector de tipo de reporte (oculto: Excel exporta todas las hojas y la vista previa usa 'resumen') -->
             <div class="mb-6 hidden">
               <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Reporte</label>
               <select [(ngModel)]="tipoReporte"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
                 <option value="">Seleccionar tipo de reporte...</option>
-                <option value="genero">Reporte por Genero</option>
+                <option value="genero">Reporte por Género</option>
                 <option value="etapa-vida">Reporte por Etapa de Vida</option>
                 <option value="tipo-espina">Reporte por Tipo de Espina</option>
                 <option value="estado">Reporte por Estado</option>
@@ -208,7 +208,7 @@ interface TableSortState {
             </div>
           }
     
-          <!-- SECTION 2: Visualizacion de Graficas -->
+          <!-- SECTION 2: Visualización de Gráficas -->
           <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border-2 border-[#00328b] p-6">
             <!-- Header -->
             <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
@@ -223,7 +223,7 @@ interface TableSortState {
                   </svg>
                 </div>
                 <div>
-                  <h2 class="text-xl font-bold text-slate-800">Visualizacion de Graficas</h2>
+                  <h2 class="text-xl font-bold text-slate-800">Visualización de Gráficas</h2>
                   <p class="text-slate-500 text-sm">Selecciona indicadores para visualizar en pantalla</p>
                 </div>
               </div>
@@ -234,7 +234,7 @@ interface TableSortState {
                     <line x1="12" x2="12" y1="5" y2="19"/>
                     <line x1="5" x2="19" y1="12" y2="12"/>
                   </svg>
-                  Agregar Graficas
+                  Agregar gráficas
                 </button>
                 <button (click)="limpiarGraficas()" class="px-4 py-2 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
                   <!-- Trash icon -->
@@ -260,7 +260,7 @@ interface TableSortState {
             @if (selectedCharts.length > 0) {
               <div class="bg-white border-2 border-blue-300 rounded-lg p-4 mb-6">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-sm font-semibold text-slate-700">Graficas seleccionadas:</span>
+                  <span class="text-sm font-semibold text-slate-700">Gráficas seleccionadas:</span>
                   @for (chart of selectedCharts; track chart) {
                     <span
                       class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
@@ -289,15 +289,15 @@ interface TableSortState {
                     <path d="M8 17v-3"/>
                   </svg>
                 </div>
-                <h3 class="text-lg font-bold text-slate-700 mb-2">No hay graficas para visualizar</h3>
-                <p class="text-slate-500 text-sm mb-6">Agrega indicadores para generar graficas y visualizar los datos</p>
+                <h3 class="text-lg font-bold text-slate-700 mb-2">No hay gráficas para visualizar</h3>
+                <p class="text-slate-500 text-sm mb-6">Agrega indicadores para generar gráficas y visualizar los datos</p>
                 <button (click)="toggleModal()" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors inline-flex items-center gap-2 cursor-pointer">
                   <!-- Plus icon -->
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" x2="12" y1="5" y2="19"/>
                     <line x1="5" x2="19" y1="12" y2="12"/>
                   </svg>
-                  Agregar Graficas
+                  Agregar gráficas
                 </button>
               </div>
             }
@@ -358,12 +358,12 @@ interface TableSortState {
     
       <app-footer></app-footer>
     
-      <!-- Modal: Add Charts -->
+      <!-- Modal: Agregar gráficas -->
       @if (showModal) {
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" (click)="toggleModal()">
           <div class="bg-white rounded-xl shadow-2xl border-2 border-slate-200 w-full max-w-md mx-4 p-6" (click)="$event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-slate-800">Agregar Graficas</h3>
+              <h3 class="text-lg font-bold text-slate-800">Agregar gráficas</h3>
               <button (click)="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" x2="6" y1="6" y2="18"/>
@@ -432,13 +432,13 @@ interface TableSortState {
                 <p class="text-slate-500 text-sm">Cargando datos...</p>
               </div>
             }
-            <!-- Preview error -->
+            <!-- Error de vista previa -->
             @if (vistaPreviaError) {
               <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4">
                 {{ vistaPreviaError }}
               </div>
             }
-            <!-- Preview table -->
+            <!-- Tabla de vista previa -->
             @if (!generandoReporte && vistaPreviaData && vistaPreviaData.length > 0) {
               <div>
                 <table class="w-full">
@@ -508,7 +508,7 @@ export class ReportesComponent {
     { id: 'ultimos-3-meses', label: 'Ultimos 3 Meses' },
     { id: 'ultimo-trimestre', label: 'Ultimo Trimestre' },
     { id: 'ultimos-6-meses', label: 'Ultimos 6 Meses' },
-    { id: 'ultimo-ano', label: 'Ultimo Ano' },
+    { id: 'ultimo-ano', label: 'Último Año' },
     { id: 'personalizado', label: 'Personalizado' }
   ];
 
@@ -685,7 +685,7 @@ export class ReportesComponent {
 
   getReporteTipoLabel(): string {
     const labels: Record<string, string> = {
-      'genero': 'Reporte por Genero',
+      'genero': 'Reporte por Género',
       'etapa-vida': 'Reporte por Etapa de Vida',
       'tipo-espina': 'Reporte por Tipo de Espina',
       'estado': 'Reporte por Estado',

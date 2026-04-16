@@ -1632,7 +1632,7 @@ interface TableSortState {
       </div>
     }
     
-    <!-- ==================== MODAL: Preview Credencial ==================== -->
+    <!-- ==================== MODAL: Vista previa de credencial ==================== -->
     @if (showCredencialModal && credencialBeneficiario) {
       <div class="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4" (click)="showCredencialModal = false">
         <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden" (click)="$event.stopPropagation()">
@@ -1891,7 +1891,7 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
     this.repositionOpenActionMenu();
   };
 
-  // Credencial preview
+  // Vista previa de credencial
   showCredencialModal = false;
   credencialBeneficiario: Beneficiario | null = null;
 

@@ -59,13 +59,13 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
             try:
                 if int(content_length) > MAX_BODY_SIZE:
                     return Response(
-                        content='{"detail":"Payload too large"}',
+                        content='{"detail":"Carga útil demasiado grande"}',
                         status_code=413,
                         media_type="application/json",
                     )
             except ValueError:
                 return Response(
-                    content='{"detail":"Invalid content-length header"}',
+                    content='{"detail":"Encabezado content-length inválido"}',
                     status_code=400,
                     media_type="application/json",
                 )

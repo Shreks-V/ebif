@@ -58,7 +58,7 @@ import { AuthService } from '../../services/auth.service';
             </div>
           </div>
     
-          <!-- Right Panel - Login Form -->
+          <!-- Panel derecho: formulario de acceso -->
           <div class="bg-white rounded-3xl shadow-2xl border-2 border-slate-100 p-8 md:p-10 relative overflow-hidden">
             <!-- Decorative blurs inside card -->
             <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-full blur-3xl opacity-10"></div>

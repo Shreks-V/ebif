@@ -20,7 +20,7 @@ import { ApiService } from '../../services/api.service';
     
           <!-- 1. Header -->
           <div>
-            <h1 class="text-3xl font-black text-slate-900">Dashboard</h1>
+            <h1 class="text-3xl font-black text-slate-900">Panel principal</h1>
             <p class="text-sm text-slate-600 flex items-center gap-2 mt-1">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -185,7 +185,7 @@ import { ApiService } from '../../services/api.service';
                     </div>
                     <div class="flex-1 text-left">
                       <p class="font-bold">Alertas de Inventario</p>
-                      <p class="text-xs text-white/70">Stock bajo y caducidad</p>
+                      <p class="text-xs text-white/70">Existencias bajas y caducidad</p>
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -243,7 +243,7 @@ import { ApiService } from '../../services/api.service';
                   <div class="flex items-center gap-2">
                     <button (click)="openWalkInModal()" class="text-xs text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-md font-bold cursor-pointer border-0 flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all">
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
-                      Walk-in
+                      Atención sin cita
                     </button>
                     <button (click)="navigateTo('/citas')" class="text-xs text-[#00328b] font-bold hover:underline cursor-pointer bg-transparent border-0 flex items-center gap-1">
                       Ver todas
@@ -451,13 +451,13 @@ import { ApiService } from '../../services/api.service';
         </div>
       </main>
     
-      <!-- Walk-in Modal -->
+      <!-- Modal de atención sin cita -->
       @if (showWalkInModal) {
         <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="closeWalkInModal()">
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" (click)="$event.stopPropagation()">
             <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <div>
-                <h2 class="text-xl font-bold text-slate-900">Registrar Walk-in</h2>
+                <h2 class="text-xl font-bold text-slate-900">Registrar atención sin cita</h2>
                 <p class="text-xs text-slate-500">Agrega un beneficiario sin cita para hoy</p>
               </div>
               <button (click)="closeWalkInModal()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
@@ -491,12 +491,30 @@ import { ApiService } from '../../services/api.service';
               @if (walkInSearchTerm && walkInResults.length === 0) {
                 <p class="text-xs text-slate-500 italic text-center py-4">Sin resultados</p>
               }
+              <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-700">Servicio</label>
+                <select [(ngModel)]="walkInServicioSeleccionadoId"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                  <option [ngValue]="null" disabled>Selecciona un servicio...</option>
+                  @for (servicio of walkInServicios; track servicio.id_servicio) {
+                    <option [ngValue]="servicio.id_servicio">{{ servicio.nombre }}</option>
+                  }
+                </select>
+                @if (walkInServicios.length === 0) {
+                  <p class="text-xs text-slate-500 italic">No hay servicios disponibles para seleccionar.</p>
+                }
+              </div>
+              <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-700">Cantidad</label>
+                <input type="number" [(ngModel)]="walkInCantidad" min="1"
+                  class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+              </div>
               @if (walkInError) {
                 <p class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{{ walkInError }}</p>
               }
               <div class="flex gap-3 justify-end pt-2">
                 <button (click)="closeWalkInModal()" class="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer">Cancelar</button>
-                <button (click)="registrarWalkIn()" [disabled]="!walkInSelected || walkInSaving"
+                <button (click)="registrarWalkIn()" [disabled]="!walkInSelected || !walkInServicioSeleccionadoId || walkInCantidad < 1 || walkInSaving"
                   class="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                   {{ walkInSaving ? 'Registrando...' : 'Registrar' }}
                 </button>
@@ -543,12 +561,15 @@ export class DashboardComponent implements OnInit {
   doctorTotalHoy = 0;
   doctorHorario = '—';
 
-  // Walk-in modal
+  // Modal de atención sin cita
   showWalkInModal = false;
   walkInSearchTerm = '';
   walkInResults: any[] = [];
   walkInAllBeneficiarios: any[] = [];
+  walkInServicios: any[] = [];
   walkInSelected: any = null;
+  walkInServicioSeleccionadoId: number | null = null;
+  walkInCantidad = 1;
   walkInSaving = false;
   walkInError = '';
 
@@ -716,6 +737,8 @@ export class DashboardComponent implements OnInit {
     this.walkInSearchTerm = '';
     this.walkInResults = [];
     this.walkInSelected = null;
+    this.walkInServicioSeleccionadoId = null;
+    this.walkInCantidad = 1;
     this.walkInError = '';
     if (this.walkInAllBeneficiarios.length === 0) {
       this.api.getBeneficiarios().subscribe({
@@ -727,10 +750,28 @@ export class DashboardComponent implements OnInit {
         },
       });
     }
+    if (this.walkInServicios.length === 0) {
+      this.api.getServicios().subscribe({
+        next: (data) => {
+          this.walkInServicios = (data || []).filter((servicio: any) =>
+            String(servicio?.activo ?? 'S').toUpperCase() === 'S'
+          );
+        },
+        error: () => {
+          this.walkInError = 'No se pudieron cargar los servicios';
+        },
+      });
+    }
   }
 
   closeWalkInModal(): void {
     this.showWalkInModal = false;
+    this.walkInSearchTerm = '';
+    this.walkInResults = [];
+    this.walkInSelected = null;
+    this.walkInServicioSeleccionadoId = null;
+    this.walkInCantidad = 1;
+    this.walkInError = '';
     this.walkInSaving = false;
   }
 
@@ -755,6 +796,18 @@ export class DashboardComponent implements OnInit {
 
   registrarWalkIn(): void {
     if (!this.walkInSelected || this.walkInSaving) return;
+    if (!this.walkInServicioSeleccionadoId) {
+      this.walkInError = 'Selecciona un servicio para registrar la atención sin cita';
+      return;
+    }
+
+    const servicioId = Number(this.walkInServicioSeleccionadoId);
+    if (!Number.isInteger(servicioId) || servicioId <= 0) {
+      this.walkInError = 'Selecciona un servicio válido';
+      return;
+    }
+
+    const cantidad = Math.max(1, Number(this.walkInCantidad) || 1);
     this.walkInSaving = true;
     this.walkInError = '';
 
@@ -766,8 +819,13 @@ export class DashboardComponent implements OnInit {
       id_paciente: this.walkInSelected.id_paciente,
       fecha_hora: fechaHora,
       estatus: 'PROGRAMADA',
-      notas: 'Walk-in registrado desde Dashboard',
-      servicios: [],
+      notas: 'Atención sin cita registrada desde panel principal',
+      servicios: [
+        {
+          id_servicio: servicioId,
+          cantidad,
+        },
+      ],
     };
 
     this.api.createCita(payload).subscribe({
@@ -780,7 +838,7 @@ export class DashboardComponent implements OnInit {
       },
       error: (err) => {
         this.walkInSaving = false;
-        this.walkInError = err?.error?.detail || 'No se pudo registrar el walk-in';
+        this.walkInError = err?.error?.detail || 'No se pudo registrar la atención sin cita';
       },
     });
   }

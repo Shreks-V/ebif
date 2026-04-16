@@ -23,12 +23,12 @@ _SP_MOVIMIENTO_STOCK_ERRORS = {
     20502: (400, 'Cantidad inválida para el movimiento'),
     20503: (400, 'Referencia de usuario inválida'),
     20504: (400, 'Producto no encontrado o inactivo'),
-    20505: (409, 'Stock insuficiente para realizar la operación'),
+    20505: (409, 'Existencias insuficientes para realizar la operación'),
 }
 
 _SP_AJUSTAR_EXISTENCIA_ERRORS = {
     20504: (404, 'Producto no encontrado o inactivo'),
-    20506: (400, 'Stock objetivo inválido'),
+    20506: (400, 'Existencia objetivo inválida'),
 }
 
 
@@ -186,11 +186,11 @@ def crear_producto(data: ProductoCreate, current_user: dict=None):
                     id_usuario,
                     None,
                     None,
-                    f'Stock inicial alta producto {clave_interna}',
+                    f'Existencia inicial alta producto {clave_interna}',
                 ])
             except oracledb.DatabaseError as exc:
                 raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
-                                       default_detail='No se pudo registrar el stock inicial')
+                                       default_detail='No se pudo registrar la existencia inicial')
 
         # FECHA_CADUCIDAD no la maneja el SP — update directo
         if data.fecha_caducidad:
@@ -370,7 +370,7 @@ def crear_comodato(data: ComodatoCreate, current_user: dict=None):
         except oracledb.DatabaseError as exc:
             conn.rollback()
             raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
-                                   default_detail='No se pudo registrar el movimiento de stock')
+                                   default_detail='No se pudo registrar el movimiento de existencias')
         log_insert(conn, 'COMODATO', id_comodato, id_usuario, f'Comodato {folio} creado para paciente {data.id_paciente}')
         conn.commit()
     return _fetch_comodato(id_comodato)
