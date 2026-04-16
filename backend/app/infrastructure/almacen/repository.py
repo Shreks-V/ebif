@@ -13,23 +13,29 @@ from app.schemas.schemas import ProductoCreate, ServicioCreate, ComodatoCreate
 logger = logging.getLogger(__name__)
 
 _SP_CREAR_PRODUCTO_ERRORS = {
-    20701: (400, None),
-    20702: (400, None),
-    20703: (409, None),
+    20701: (400, 'Tipo de producto inválido'),
+    20702: (400, 'Clave interna requerida'),
+    20703: (409, 'La clave interna ya existe'),
 }
 
 _SP_MOVIMIENTO_STOCK_ERRORS = {
-    20501: (400, None),
-    20502: (400, None),
-    20503: (400, None),
-    20504: (400, None),
-    20505: (409, None),
+    20501: (400, 'Tipo de movimiento inválido'),
+    20502: (400, 'Cantidad inválida para el movimiento'),
+    20503: (400, 'Referencia de usuario inválida'),
+    20504: (400, 'Producto no encontrado o inactivo'),
+    20505: (409, 'Stock insuficiente para realizar la operación'),
 }
 
 _SP_AJUSTAR_EXISTENCIA_ERRORS = {
-    20504: (404, None),
-    20506: (400, None),
+    20504: (404, 'Producto no encontrado o inactivo'),
+    20506: (400, 'Stock objetivo inválido'),
 }
+
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
 
 
 def _normalize_tipo_producto_for_db(value: Optional[str]) -> str:
@@ -90,8 +96,9 @@ def _generate_internal_key(conn, tipo_producto: str) -> str:
     next_seq = int(row.get('max_seq') or 0) + 1
     return f'{prefix}-{next_seq:03d}'
 
-def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None):
+def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar productos del almacen con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _PRODUCTOS_BASE_SQL + ' WHERE 1=1'
     params: dict = {}
     if tipo_producto:
@@ -103,7 +110,9 @@ def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=
     if busqueda:
         sql += ' AND (LOWER(p.NOMBRE) LIKE :busqueda OR LOWER(p.DESCRIPCION) LIKE :busqueda OR LOWER(p.CLAVE_INTERNA) LIKE :busqueda)'
         params['busqueda'] = f'%{busqueda.lower()}%'
-    sql += ' ORDER BY p.ID_PRODUCTO'
+    sql += ' ORDER BY p.ID_PRODUCTO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
@@ -234,8 +243,9 @@ def desactivar_producto(id_producto: int, current_user: dict=None):
         conn.commit()
     return {'message': 'Producto desactivado correctamente'}
 
-def listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None):
+def listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar servicios con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = '\n        SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n               ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n               PRECIO_CUOTA_A, PRECIO_CUOTA_B\n        FROM SERVICIO WHERE 1=1\n    '
     params: dict = {}
     if activo:
@@ -244,7 +254,9 @@ def listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, c
     if busqueda:
         sql += ' AND (LOWER(NOMBRE) LIKE :busqueda OR LOWER(DESCRIPCION) LIKE :busqueda)'
         params['busqueda'] = f'%{busqueda.lower()}%'
-    sql += ' ORDER BY ID_SERVICIO'
+    sql += ' ORDER BY ID_SERVICIO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
@@ -303,8 +315,9 @@ def desactivar_servicio(id_servicio: int, current_user: dict=None):
     return {'message': 'Servicio desactivado correctamente'}
 _COMODATOS_BASE_SQL = "\n    SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.ID_EQUIPO, c.ID_PACIENTE,\n           c.ID_USUARIO_REGISTRO, c.FECHA_PRESTAMO, c.FECHA_DEVOLUCION,\n           c.ESTATUS, c.MONTO_TOTAL, c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n           c.EXENTO_PAGO, c.NOTAS,\n           pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO || ' ' || NVL(pa.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           pa.FOLIO AS FOLIO_PACIENTE,\n           pr.NOMBRE AS NOMBRE_EQUIPO\n    FROM COMODATO c\n    LEFT JOIN PACIENTE pa ON pa.ID_PACIENTE = c.ID_PACIENTE\n    LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n"
 
-def listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: dict=None):
+def listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar comodatos con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _COMODATOS_BASE_SQL + ' WHERE 1=1'
     params: dict = {}
     if estatus:
@@ -313,7 +326,9 @@ def listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, 
     if busqueda:
         sql += " AND (LOWER(pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO) LIKE :busqueda OR LOWER(pr.NOMBRE) LIKE :busqueda OR LOWER(pa.FOLIO) LIKE :busqueda OR LOWER(c.FOLIO_COMODATO) LIKE :busqueda)"
         params['busqueda'] = f'%{busqueda.lower()}%'
-    sql += ' ORDER BY c.ID_COMODATO DESC'
+    sql += ' ORDER BY c.ID_COMODATO DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
@@ -421,8 +436,9 @@ def ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current_
     return _fetch_producto(id_producto)
 
 
-def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optional[str]=None, current_user: dict=None):
+def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar movimientos de inventario con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = '\n        SELECT ID_MOVIMIENTO, ID_PRODUCTO, ID_USUARIO_REGISTRO,\n               ID_VENTA, ID_COMODATO, FECHA_MOVIMIENTO,\n               TIPO_MOVIMIENTO, CANTIDAD, OBSERVACIONES\n        FROM MOVIMIENTO_INVENTARIO WHERE 1=1\n    '
     params: dict = {}
     if id_producto:
@@ -431,7 +447,9 @@ def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optiona
     if tipo_movimiento:
         sql += ' AND TIPO_MOVIMIENTO = :tipo'
         params['tipo'] = tipo_movimiento
-    sql += ' ORDER BY FECHA_MOVIMIENTO DESC, ID_MOVIMIENTO DESC'
+    sql += ' ORDER BY FECHA_MOVIMIENTO DESC, ID_MOVIMIENTO DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)

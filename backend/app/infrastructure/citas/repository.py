@@ -21,6 +21,14 @@ _SP_CANCELAR_CITA_ERRORS = {
     20306: (404, None),
     20307: (400, None),
 }
+
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
+
+
 CITA_BASE_QUERY = "\n    SELECT c.ID_CITA, c.ID_PACIENTE, c.ID_USUARIO_REGISTRO,\n           c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO,\n           p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           p.FOLIO AS FOLIO_PACIENTE\n    FROM CITA c\n    JOIN PACIENTE p ON c.ID_PACIENTE = p.ID_PACIENTE\n"
 
 def _serialize_row(row: dict) -> dict:
@@ -120,8 +128,9 @@ def citas_proximas(dias: int = 7, current_user: dict = None):
         row = cursor.fetchone()
     return {'count': int(row[0]) if row else 0, 'desde': desde, 'hasta': hasta}
 
-def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, current_user: dict=None):
+def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar citas con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     conditions = []
     params: dict = {}
     if fecha:
@@ -136,8 +145,10 @@ def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paci
     if busqueda:
         conditions.append("(UPPER(p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')) LIKE UPPER(:busqueda) OR UPPER(p.FOLIO) LIKE UPPER(:busqueda) OR UPPER(c.NOTAS) LIKE UPPER(:busqueda))")
         params['busqueda'] = f'%{busqueda}%'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     where_clause = ' WHERE ' + ' AND '.join(conditions) if conditions else ''
-    sql = CITA_BASE_QUERY + where_clause + ' ORDER BY c.FECHA_HORA DESC'
+    sql = CITA_BASE_QUERY + where_clause + ' ORDER BY c.FECHA_HORA DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)

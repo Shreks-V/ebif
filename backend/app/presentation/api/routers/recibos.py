@@ -14,8 +14,16 @@ def listar_metodos_pago(current_user: dict=Depends(get_current_user)):
     return service.listar_metodos_pago(current_user)
 
 @router.get('')
-def listar_ventas(fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), id_paciente: Optional[int]=Query(None), search: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
-    return service.listar_ventas(fecha_inicio, fecha_fin, id_paciente, search, current_user)
+def listar_ventas(
+    fecha_inicio: Optional[str]=Query(None),
+    fecha_fin: Optional[str]=Query(None),
+    id_paciente: Optional[int]=Query(None, ge=1),
+    search: Optional[str]=Query(None, max_length=120),
+    limit: int=Query(100, ge=1, le=500),
+    offset: int=Query(0, ge=0),
+    current_user: dict=Depends(get_current_user),
+):
+    return service.listar_ventas(fecha_inicio, fecha_fin, id_paciente, search, current_user, limit, offset)
 
 @router.post('', status_code=201)
 def crear_venta(data: VentaCreate, current_user: dict=Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))):

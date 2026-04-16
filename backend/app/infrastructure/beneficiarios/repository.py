@@ -9,6 +9,12 @@ from app.schemas.schemas import BeneficiarioCreate
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
+
 def _date_to_str(val) -> str | None:
     """Convert a datetime/date object to ISO string, or return None."""
     if val is None:
@@ -193,9 +199,10 @@ def _sync_membresias_vencidas(conn) -> int:
     return updated
 
 
-def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: dict=None):
+def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar beneficiarios con filtros opcionales."""
     with get_db() as conn:
+        safe_limit, safe_offset = _normalize_pagination(limit, offset)
         _sync_membresias_vencidas(conn)
         conditions = ["p.ACTIVO = 'S'", "p.ESTATUS_REGISTRO = 'APROBADO'"]
         params: dict = {}
@@ -218,7 +225,9 @@ def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None,
             conditions.append('(LOWER(p.NOMBRE) LIKE :busqueda OR LOWER(p.APELLIDO_PATERNO) LIKE :busqueda OR LOWER(p.APELLIDO_MATERNO) LIKE :busqueda OR LOWER(p.FOLIO) LIKE :busqueda OR LOWER(p.CIUDAD) LIKE :busqueda)')
             params['busqueda'] = f'%{busqueda.lower()}%'
         where_clause = ' AND '.join(conditions)
-        sql = f'SELECT p.* FROM PACIENTE p WHERE {where_clause} ORDER BY p.ID_PACIENTE'
+        params['offset'] = safe_offset
+        params['limit'] = safe_limit
+        sql = f'SELECT p.* FROM PACIENTE p WHERE {where_clause} ORDER BY p.ID_PACIENTE OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
         cur = conn.cursor()
         cur.execute(sql, params)
         rows = rows_to_dicts(cur)
@@ -301,8 +310,20 @@ def eliminar_beneficiario(folio: str, current_user: dict=None):
         conn.commit()
         return {'detail': 'Beneficiario eliminado correctamente'}
 
-def historial_beneficiario(folio: str, current_user: dict=None):
+def historial_beneficiario(
+    folio: str,
+    current_user: dict=None,
+    limit_citas: int=100,
+    offset_citas: int=0,
+    limit_pagos: int=100,
+    offset_pagos: int=0,
+    limit_comodatos: int=100,
+    offset_comodatos: int=0,
+):
     """Obtener historial de servicios, pagos y citas del beneficiario."""
+    safe_limit_citas, safe_offset_citas = _normalize_pagination(limit_citas, offset_citas)
+    safe_limit_pagos, safe_offset_pagos = _normalize_pagination(limit_pagos, offset_pagos)
+    safe_limit_comodatos, safe_offset_comodatos = _normalize_pagination(limit_comodatos, offset_comodatos)
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute('SELECT * FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
@@ -318,8 +339,8 @@ def historial_beneficiario(folio: str, current_user: dict=None):
         id_paciente = paciente['id_paciente']
         citas_raw = _safe_rows_query(
             cur,
-            '\n            SELECT c.ID_CITA, c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO\n            FROM CITA c\n            WHERE c.ID_PACIENTE = :id\n            ORDER BY c.FECHA_HORA DESC\n            ',
-            {'id': id_paciente},
+            '\n            SELECT c.ID_CITA, c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO\n            FROM CITA c\n            WHERE c.ID_PACIENTE = :id\n            ORDER BY c.FECHA_HORA DESC\n            OFFSET :offset_citas ROWS FETCH NEXT :limit_citas ROWS ONLY\n            ',
+            {'id': id_paciente, 'offset_citas': safe_offset_citas, 'limit_citas': safe_limit_citas},
             'citas del beneficiario',
         )
         citas = []
@@ -351,8 +372,8 @@ def historial_beneficiario(folio: str, current_user: dict=None):
             citas.append(ci)
         pagos_raw = _safe_rows_query(
             cur,
-            '\n            SELECT v.ID_VENTA, v.FOLIO_VENTA, v.FECHA_VENTA,\n                   v.MONTO_TOTAL, v.MONTO_PAGADO, v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO, v.CANCELADA, v.MOTIVO_CANCELACION\n            FROM VENTA v\n            WHERE v.ID_PACIENTE = :id\n            ORDER BY v.FECHA_VENTA DESC\n            ',
-            {'id': id_paciente},
+            '\n            SELECT v.ID_VENTA, v.FOLIO_VENTA, v.FECHA_VENTA,\n                   v.MONTO_TOTAL, v.MONTO_PAGADO, v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO, v.CANCELADA, v.MOTIVO_CANCELACION\n            FROM VENTA v\n            WHERE v.ID_PACIENTE = :id\n            ORDER BY v.FECHA_VENTA DESC\n            OFFSET :offset_pagos ROWS FETCH NEXT :limit_pagos ROWS ONLY\n            ',
+            {'id': id_paciente, 'offset_pagos': safe_offset_pagos, 'limit_pagos': safe_limit_pagos},
             'pagos del beneficiario',
         )
         pagos = []
@@ -364,8 +385,8 @@ def historial_beneficiario(folio: str, current_user: dict=None):
             pagos.append(pg)
         comodatos_raw = _safe_rows_query(
             cur,
-            '\n            SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.FECHA_PRESTAMO,\n                   c.FECHA_DEVOLUCION, c.ESTATUS, c.MONTO_TOTAL,\n                   c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n                   pr.NOMBRE AS nombre_equipo\n            FROM COMODATO c\n            LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n            WHERE c.ID_PACIENTE = :id\n            ORDER BY c.FECHA_PRESTAMO DESC\n            ',
-            {'id': id_paciente},
+            '\n            SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.FECHA_PRESTAMO,\n                   c.FECHA_DEVOLUCION, c.ESTATUS, c.MONTO_TOTAL,\n                   c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n                   pr.NOMBRE AS nombre_equipo\n            FROM COMODATO c\n            LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n            WHERE c.ID_PACIENTE = :id\n            ORDER BY c.FECHA_PRESTAMO DESC\n            OFFSET :offset_comodatos ROWS FETCH NEXT :limit_comodatos ROWS ONLY\n            ',
+            {'id': id_paciente, 'offset_comodatos': safe_offset_comodatos, 'limit_comodatos': safe_limit_comodatos},
             'comodatos del beneficiario',
         )
         comodatos = []
@@ -379,8 +400,9 @@ def historial_beneficiario(folio: str, current_user: dict=None):
         return {'folio': folio, 'nombre': nombre_completo, 'citas': citas, 'pagos': pagos, 'comodatos': comodatos}
 
 
-def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: dict = None):
+def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: dict = None, limit: int=500, offset: int=0):
     """Beneficiarios con membresía que vence en los próximos N días."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
         _sync_membresias_vencidas(conn)
         cur = conn.cursor()
@@ -392,8 +414,9 @@ def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: dict = Non
                AND p.MEMBRESIA_ESTATUS = 'ACTIVO'
                AND p.FECHA_VENCIMIENTO_MEMBRESIA IS NOT NULL
                AND p.FECHA_VENCIMIENTO_MEMBRESIA <= TRUNC(SYSDATE) + :dias
-             ORDER BY p.FECHA_VENCIMIENTO_MEMBRESIA ASC
-        """, {'dias': dias})
+           ORDER BY p.FECHA_VENCIMIENTO_MEMBRESIA ASC
+           OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
+       """, {'dias': dias, 'offset': safe_offset, 'limit': safe_limit})
         rows = rows_to_dicts(cur)
         patient_ids = [r['id_paciente'] for r in rows]
         tipos_map = _batch_fetch_tipos_espina(conn, patient_ids)

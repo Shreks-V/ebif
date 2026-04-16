@@ -38,5 +38,5 @@ def reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
 def reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=None, current_user: dict=None):
     return _get_repository().reporte_consolidado_mensual(mes, anio, current_user)
 
-def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
-    return _get_repository().historial_reportes(tipo_reporte, fecha_inicio, fecha_fin, current_user)
+def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
+    return _get_repository().historial_reportes(tipo_reporte, fecha_inicio, fecha_fin, current_user, limit, offset)

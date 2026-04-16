@@ -18,8 +18,8 @@ def stats_ventas(current_user: dict=None):
 def listar_metodos_pago(current_user: dict=None):
     return _get_repository().listar_metodos_pago(current_user)
 
-def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, id_paciente: Optional[int]=None, search: Optional[str]=None, current_user: dict=None):
-    return _get_repository().listar_ventas(fecha_inicio, fecha_fin, id_paciente, search, current_user)
+def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, id_paciente: Optional[int]=None, search: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
+    return _get_repository().listar_ventas(fecha_inicio, fecha_fin, id_paciente, search, current_user, limit, offset)
 
 def crear_venta(data: VentaCreate, current_user: dict=None):
     return _get_repository().crear_venta(data, current_user)

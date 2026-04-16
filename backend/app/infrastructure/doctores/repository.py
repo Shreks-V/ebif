@@ -16,6 +16,12 @@ _SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS = {
     20601: (404, None),  # Doctor no existe o inactivo
 }
 
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
+
 def _serialize(row: dict) -> dict:
     """Strip CHAR padding and convert datetimes to ISO strings."""
     result = {}
@@ -72,24 +78,26 @@ def doctor_del_dia(current_user: dict=None):
         logger.exception('Error al consultar doctor del día')
         raise HTTPException(status_code=500, detail='Error interno del servidor')
 
-def listar_doctores(current_user: dict=None):
+def listar_doctores(current_user: dict=None, limit: int=100, offset: int=0):
     """Listar todos los doctores con sus servicios."""
     try:
+        safe_limit, safe_offset = _normalize_pagination(limit, offset)
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR ORDER BY ID_DOCTOR')
+            cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR ORDER BY ID_DOCTOR OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY', {'offset': safe_offset, 'limit': safe_limit})
             rows = rows_to_dicts(cursor)
             return [_doctor_with_servicios(conn, r) for r in rows]
     except Exception as e:
         logger.exception('Error al consultar doctores')
         raise HTTPException(status_code=500, detail='Error interno del servidor')
 
-def obtener_disponibilidad_semana(current_user: dict=None):
+def obtener_disponibilidad_semana(current_user: dict=None, limit: int=500, offset: int=0):
     """Obtener toda la disponibilidad de todos los doctores (para validar conflictos)."""
     try:
+        safe_limit, safe_offset = _normalize_pagination(limit, offset)
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT dd.ID_DISPONIBILIDAD, dd.ID_DOCTOR, dd.DIA_SEMANA, TO_CHAR(dd.HORA_INICIO, 'HH24:MI') AS HORA_INICIO, TO_CHAR(dd.HORA_FIN, 'HH24:MI') AS HORA_FIN, dd.DISPONIBLE, d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS NOMBRE_DOCTOR FROM DISPONIBILIDAD_DOCTOR dd JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR WHERE d.ACTIVO = 'S' AND dd.DISPONIBLE = 'S' ORDER BY dd.DIA_SEMANA, dd.HORA_INICIO")
+            cursor.execute("SELECT dd.ID_DISPONIBILIDAD, dd.ID_DOCTOR, dd.DIA_SEMANA, TO_CHAR(dd.HORA_INICIO, 'HH24:MI') AS HORA_INICIO, TO_CHAR(dd.HORA_FIN, 'HH24:MI') AS HORA_FIN, dd.DISPONIBLE, d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS NOMBRE_DOCTOR FROM DISPONIBILIDAD_DOCTOR dd JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR WHERE d.ACTIVO = 'S' AND dd.DISPONIBLE = 'S' ORDER BY dd.DIA_SEMANA, dd.HORA_INICIO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY", {'offset': safe_offset, 'limit': safe_limit})
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
     except Exception as e:
@@ -168,15 +176,16 @@ def desactivar_doctor(id_doctor: int, current_user: dict=None):
         logger.exception('Error al desactivar doctor')
         raise HTTPException(status_code=500, detail='Error interno del servidor')
 
-def obtener_disponibilidad(id_doctor: int, current_user: dict=None):
+def obtener_disponibilidad(id_doctor: int, current_user: dict=None, limit: int=500, offset: int=0):
     """Obtener disponibilidad semanal de un doctor."""
     try:
+        safe_limit, safe_offset = _normalize_pagination(limit, offset)
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
             if cursor.fetchone() is None:
                 raise HTTPException(status_code=404, detail='Doctor no encontrado')
-            cursor.execute("SELECT ID_DISPONIBILIDAD, ID_DOCTOR, DIA_SEMANA, TO_CHAR(HORA_INICIO, 'HH24:MI') AS HORA_INICIO, TO_CHAR(HORA_FIN, 'HH24:MI') AS HORA_FIN, DISPONIBLE, FECHA_REGISTRO FROM DISPONIBILIDAD_DOCTOR WHERE ID_DOCTOR = :id_doctor ORDER BY DIA_SEMANA, HORA_INICIO", {'id_doctor': id_doctor})
+            cursor.execute("SELECT ID_DISPONIBILIDAD, ID_DOCTOR, DIA_SEMANA, TO_CHAR(HORA_INICIO, 'HH24:MI') AS HORA_INICIO, TO_CHAR(HORA_FIN, 'HH24:MI') AS HORA_FIN, DISPONIBLE, FECHA_REGISTRO FROM DISPONIBILIDAD_DOCTOR WHERE ID_DOCTOR = :id_doctor ORDER BY DIA_SEMANA, HORA_INICIO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY", {'id_doctor': id_doctor, 'offset': safe_offset, 'limit': safe_limit})
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
     except HTTPException:

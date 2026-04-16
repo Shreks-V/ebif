@@ -5,11 +5,14 @@ import { HttpInterceptorFn } from '@angular/common/http';
  *  - POST   /api/preregistro           (create pre-registro)
  *  - GET    /api/preregistro/tipos-espina
  *  - GET    /api/preregistro/tipos-documento
- *  - POST   /api/preregistro/:id/documentos  (upload document)
- *  - GET    /api/preregistro/:id/documentos  (list documents)
- *  - DELETE /api/preregistro/:id/documentos/:id (delete document)
- *  - PUT    /api/preregistro/:id       (update multi-step form)
- *  - GET    /api/preregistro/:id       (get pre-registro detail)
+ *
+ * Scoped preregistro resources are protected with X-Preregistro-Token when
+ * there is no authenticated user session:
+ *  - POST   /api/preregistro/:id/documentos
+ *  - GET    /api/preregistro/:id/documentos
+ *  - DELETE /api/preregistro/:id/documentos/:id
+ *  - PUT    /api/preregistro/:id
+ *  - GET    /api/preregistro/:id
  *
  * Admin endpoints like /aprobar, /rechazar and GET list MUST carry the token.
  */
@@ -36,8 +39,38 @@ function isPublicPreregistroUrl(url: string, method: string): boolean {
   return false;
 }
 
+function isScopedPreregistroResourceUrl(url: string): boolean {
+  if (!url.includes('/preregistro')) return false;
+
+  if (/\/preregistro\/\d+\/?$/.test(url)) return true;
+  if (/\/preregistro\/\d+\/documentos(\/\d+)?(\/archivo)?\/?$/.test(url)) return true;
+
+  return false;
+}
+
+function getAuthToken(): string | null {
+  const sessionToken = sessionStorage.getItem('token');
+  if (sessionToken) return sessionToken;
+
+  const legacyToken = localStorage.getItem('token');
+  if (legacyToken) {
+    sessionStorage.setItem('token', legacyToken);
+    localStorage.removeItem('token');
+    return legacyToken;
+  }
+  return null;
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
+  const preregistroToken = sessionStorage.getItem('preregistro_token');
+
+  if (preregistroToken && isScopedPreregistroResourceUrl(req.url)) {
+    req = req.clone({
+      setHeaders: { 'X-Preregistro-Token': preregistroToken },
+    });
+  }
+
   if (token && !isPublicPreregistroUrl(req.url, req.method)) {
     req = req.clone({
       setHeaders: { Authorization: `Bearer ${token}` },

@@ -32,7 +32,7 @@ const ROLE_LABELS: Record<string, string> = {
     <nav class="bg-gradient-to-r from-[#00328b] via-[#0052cc] to-[#00328b] shadow-2xl sticky top-0 z-50 border-b-4 border-[#f3ad1c]">
       <div class="max-w-[1400px] mx-auto px-8">
         <div class="flex items-center justify-between h-16">
-
+    
           <!-- Left: Logo -->
           <a routerLink="/dashboard" class="flex items-center gap-3 text-white no-underline flex-shrink-0">
             <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-[#0052cc]">
@@ -43,192 +43,212 @@ const ROLE_LABELS: Record<string, string> = {
             </div>
             <span class="font-bold text-white text-lg hidden sm:block">Espina Bífida</span>
           </a>
-
+    
           <!-- Center: Navigation (desktop) -->
           <div class="hidden lg:flex items-center gap-1">
             <a routerLink="/dashboard"
-               [class]="isActive('/dashboard') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
-               class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
+              [class]="isActive('/dashboard') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
               </svg>
               Inicio
             </a>
-
+    
             <a routerLink="/recibos"
-               [class]="isActive('/recibos') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
-               class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
+              [class]="isActive('/recibos') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>
               </svg>
               Recibos
             </a>
-
+    
             <a routerLink="/registro-usuarios"
-               [class]="isActive('/registro-usuarios') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
-               class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
+              [class]="isActive('/registro-usuarios') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
               Beneficiarios
             </a>
-
+    
             <a routerLink="/citas"
-               [class]="isActive('/citas') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
-               class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
+              [class]="isActive('/citas') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
               </svg>
               Citas
             </a>
-
+    
             <a routerLink="/almacen"
-               [class]="isActive('/almacen') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
-               class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
+              [class]="isActive('/almacen') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
               </svg>
               Almacen
             </a>
-
+    
             <a routerLink="/reportes"
-               [class]="isActive('/reportes') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
-               class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
+              [class]="isActive('/reportes') ? 'bg-[#f3ad1c] text-white shadow-lg scale-105' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 no-underline whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
               </svg>
               Reportes
             </a>
           </div>
-
+    
           <!-- Right: Notifications + User menu + Mobile hamburger -->
           <div class="flex items-center gap-3 relative">
             <!-- Notifications bell (desktop) -->
             <div class="hidden lg:block relative">
               <button (click)="$event.stopPropagation(); toggleNotifications()"
-                      class="relative flex items-center justify-center w-11 h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all duration-200 cursor-pointer"
-                      title="Notificaciones">
+                class="relative flex items-center justify-center w-11 h-11 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all duration-200 cursor-pointer"
+                title="Notificaciones">
                 <!-- Bell icon — animated shake when there are alerts -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                     [class.animate-bounce]="notifications.length > 0 && !notificationsOpen">
+                  [class.animate-bounce]="notifications.length > 0 && !notificationsOpen">
                   <path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
                 </svg>
-                <span *ngIf="notifications.length > 0"
-                      class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#f3ad1c] text-[#00328b] text-[10px] font-black flex items-center justify-center">
-                  {{ notifications.length > 9 ? '9+' : notifications.length }}
-                </span>
+                @if (notifications.length > 0) {
+                  <span
+                    class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#f3ad1c] text-[#00328b] text-[10px] font-black flex items-center justify-center">
+                    {{ notifications.length > 9 ? '9+' : notifications.length }}
+                  </span>
+                }
               </button>
-
+    
               <!-- Notification panel -->
-              <div *ngIf="notificationsOpen"
-                   class="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-
-                <!-- Header -->
-                <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                  <div class="flex items-center gap-2">
-                    <p class="text-sm font-bold text-slate-800">Notificaciones</p>
-                    <span *ngIf="notifications.length > 0"
+              @if (notificationsOpen) {
+                <div
+                  class="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                  <!-- Header -->
+                  <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-bold text-slate-800">Notificaciones</p>
+                      @if (notifications.length > 0) {
+                        <span
                           class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-[11px] font-bold">
-                      {{ notifications.length }}
-                    </span>
+                          {{ notifications.length }}
+                        </span>
+                      }
+                    </div>
+                    <button (click)="refreshNotifications()"
+                      class="flex items-center gap-1.5 text-xs font-semibold text-[#0052cc] hover:text-[#00328b] transition-colors cursor-pointer"
+                      [class.opacity-50]="notifLoading">
+                      @if (!notifLoading) {
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                      }
+                      @if (notifLoading) {
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="animate-spin">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                      }
+                      Actualizar
+                    </button>
                   </div>
-                  <button (click)="refreshNotifications()"
-                          class="flex items-center gap-1.5 text-xs font-semibold text-[#0052cc] hover:text-[#00328b] transition-colors cursor-pointer"
-                          [class.opacity-50]="notifLoading">
-                    <svg *ngIf="!notifLoading" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    <svg *ngIf="notifLoading" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="animate-spin">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    Actualizar
-                  </button>
-                </div>
-
-                <!-- Empty state -->
-                <div *ngIf="notifications.length === 0 && !notifLoading" class="px-5 py-10 flex flex-col items-center gap-3 text-center">
-                  <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
-                      <path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
-                    </svg>
-                  </div>
-                  <p class="text-sm font-bold text-slate-700">Todo al día</p>
-                  <p class="text-xs text-slate-400">No hay alertas pendientes en este momento.</p>
-                </div>
-
-                <!-- Loading state -->
-                <div *ngIf="notifLoading" class="px-5 py-8 flex items-center justify-center gap-2 text-slate-400 text-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                  </svg>
-                  Cargando alertas...
-                </div>
-
-                <!-- Notification list -->
-                <div *ngIf="notifications.length > 0" class="max-h-80 overflow-y-auto divide-y divide-slate-100">
-                  <button *ngFor="let n of notifications"
+                  <!-- Empty state -->
+                  @if (notifications.length === 0 && !notifLoading) {
+                    <div class="px-5 py-10 flex flex-col items-center gap-3 text-center">
+                      <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+                          <path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+                        </svg>
+                      </div>
+                      <p class="text-sm font-bold text-slate-700">Todo al día</p>
+                      <p class="text-xs text-slate-400">No hay alertas pendientes en este momento.</p>
+                    </div>
+                  }
+                  <!-- Loading state -->
+                  @if (notifLoading) {
+                    <div class="px-5 py-8 flex items-center justify-center gap-2 text-slate-400 text-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                      </svg>
+                      Cargando alertas...
+                    </div>
+                  }
+                  <!-- Notification list -->
+                  @if (notifications.length > 0) {
+                    <div class="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                      @for (n of notifications; track n) {
+                        <button
                           (click)="navegarNotificacion(n)"
                           class="w-full flex items-start gap-3.5 px-5 py-3.5 hover:bg-slate-50 transition-colors text-left cursor-pointer">
-
-                    <!-- Category icon pill -->
-                    <div class="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          <!-- Category icon pill -->
+                          <div class="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                          [ngClass]="{
                            'bg-blue-100': n.categoria === 'citas',
                            'bg-amber-100': n.categoria === 'membresias',
                            'bg-red-100': n.categoria === 'almacen' && n.tipo === 'warning',
                            'bg-orange-100': n.categoria === 'almacen' && n.id === 'caducidad'
                          }">
-                      <!-- Citas icon -->
-                      <svg *ngIf="n.categoria === 'citas'" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
-                      </svg>
-                      <!-- Membresías icon -->
-                      <svg *ngIf="n.categoria === 'membresias'" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                      <!-- Almacén stock icon -->
-                      <svg *ngIf="n.categoria === 'almacen' && n.id === 'stock_bajo'" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
-                      </svg>
-                      <!-- Almacén caducidad icon -->
-                      <svg *ngIf="n.categoria === 'almacen' && n.id === 'caducidad'" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
-                      </svg>
-                    </div>
-
-                    <!-- Text + count -->
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-center justify-between gap-2">
-                        <p class="text-sm font-bold text-slate-800 truncate">{{ n.titulo }}</p>
-                        <span class="shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-bold"
+                            <!-- Citas icon -->
+                            @if (n.categoria === 'citas') {
+                              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+                              </svg>
+                            }
+                            <!-- Membresías icon -->
+                            @if (n.categoria === 'membresias') {
+                              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                              </svg>
+                            }
+                            <!-- Almacén stock icon -->
+                            @if (n.categoria === 'almacen' && n.id === 'stock_bajo') {
+                              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+                              </svg>
+                            }
+                            <!-- Almacén caducidad icon -->
+                            @if (n.categoria === 'almacen' && n.id === 'caducidad') {
+                              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+                              </svg>
+                            }
+                          </div>
+                          <!-- Text + count -->
+                          <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                              <p class="text-sm font-bold text-slate-800 truncate">{{ n.titulo }}</p>
+                              <span class="shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-bold"
                               [ngClass]="{
                                 'bg-blue-100 text-blue-700': n.tipo === 'info',
                                 'bg-amber-100 text-amber-700': n.tipo === 'warning'
                               }">
-                          {{ n.count }}
-                        </span>
-                      </div>
-                      <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">{{ n.detalle }}</p>
+                                {{ n.count }}
+                              </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">{{ n.detalle }}</p>
+                          </div>
+                          <!-- Chevron -->
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0">
+                            <path d="m9 18 6-6-6-6"/>
+                          </svg>
+                        </button>
+                      }
                     </div>
-
-                    <!-- Chevron -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0">
-                      <path d="m9 18 6-6-6-6"/>
-                    </svg>
-                  </button>
+                  }
+                  <!-- Footer -->
+                  @if (notifications.length > 0) {
+                    <div class="px-5 py-2.5 border-t border-slate-100 bg-slate-50 text-[11px] text-slate-400 text-center">
+                      Última actualización: {{ lastRefresh }}
+                    </div>
+                  }
                 </div>
-
-                <!-- Footer -->
-                <div *ngIf="notifications.length > 0" class="px-5 py-2.5 border-t border-slate-100 bg-slate-50 text-[11px] text-slate-400 text-center">
-                  Última actualización: {{ lastRefresh }}
-                </div>
-              </div>
+              }
             </div>
-
+    
             <!-- User menu (desktop) -->
             <div class="hidden lg:block relative">
               <button (click)="$event.stopPropagation(); toggleUserMenu()"
-                      class="flex items-center gap-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 px-3 py-2 transition-all duration-200 cursor-pointer">
+                class="flex items-center gap-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 px-3 py-2 transition-all duration-200 cursor-pointer">
                 <div class="w-8 h-8 rounded-lg bg-[#f3ad1c] text-[#00328b] font-black text-xs flex items-center justify-center">
                   {{ userInitials }}
                 </div>
@@ -240,118 +260,116 @@ const ROLE_LABELS: Record<string, string> = {
                   <path d="m6 9 6 6 6-6"/>
                 </svg>
               </button>
-
-              <div *ngIf="userMenuOpen" class="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                <div class="px-4 py-4 bg-slate-50 border-b border-slate-100">
-                  <p class="text-sm font-black text-slate-900">{{ userName }}</p>
-                  <p class="text-xs font-semibold text-slate-600">{{ userRole }}</p>
-                  <p class="text-xs text-slate-500 mt-1">{{ userEmail }}</p>
+    
+              @if (userMenuOpen) {
+                <div class="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                  <div class="px-4 py-4 bg-slate-50 border-b border-slate-100">
+                    <p class="text-sm font-black text-slate-900">{{ userName }}</p>
+                    <p class="text-xs font-semibold text-slate-600">{{ userRole }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{{ userEmail }}</p>
+                  </div>
+                  <div class="p-2">
+                    <button (click)="auth.logout()" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                      Cerrar sesi&oacute;n
+                    </button>
+                  </div>
                 </div>
-
-                <div class="p-2">
-                  <button (click)="auth.logout()" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
-                    Cerrar sesi&oacute;n
-                  </button>
-                </div>
-              </div>
+              }
             </div>
-
+    
             <!-- Mobile menu button -->
             <button (click)="mobileMenuOpen = !mobileMenuOpen; userMenuOpen = false; notificationsOpen = false"
-                    class="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 text-white border border-white/20 cursor-pointer">
+              class="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 text-white border border-white/20 cursor-pointer">
               <!-- Menu icon -->
-              <svg *ngIf="!mobileMenuOpen" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
-              </svg>
+              @if (!mobileMenuOpen) {
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+                </svg>
+              }
               <!-- X icon -->
-              <svg *ngIf="mobileMenuOpen" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-              </svg>
+              @if (mobileMenuOpen) {
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+              }
             </button>
           </div>
-
+    
         </div>
-
+    
         <!-- Mobile menu -->
-        <div *ngIf="mobileMenuOpen" class="lg:hidden pb-4 flex flex-col gap-1">
-          <a routerLink="/dashboard" (click)="mobileMenuOpen = false"
-             [class]="isActive('/dashboard') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
-             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-            Inicio
-          </a>
-
-          <a routerLink="/recibos" (click)="mobileMenuOpen = false"
-             [class]="isActive('/recibos') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
-             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>
-            </svg>
-            Recibos
-          </a>
-
-          <a routerLink="/registro-usuarios" (click)="mobileMenuOpen = false"
-             [class]="isActive('/registro-usuarios') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
-             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            Beneficiarios
-          </a>
-
-          <a routerLink="/citas" (click)="mobileMenuOpen = false"
-             [class]="isActive('/citas') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
-             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
-            </svg>
-            Citas
-          </a>
-
-          <a routerLink="/almacen" (click)="mobileMenuOpen = false"
-             [class]="isActive('/almacen') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
-             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
-            </svg>
-            Almacen
-          </a>
-
-          <a routerLink="/reportes" (click)="mobileMenuOpen = false"
-             [class]="isActive('/reportes') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
-             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
-            </svg>
-            Reportes
-          </a>
-
-          <div class="mt-2 px-5 py-3 rounded-xl bg-white/10 border border-white/20 text-white">
-            <p class="text-xs font-bold">Usuario</p>
-            <p class="text-sm font-semibold truncate">{{ userName }}</p>
-            <p class="text-xs text-white/80 truncate">{{ userEmail }}</p>
+        @if (mobileMenuOpen) {
+          <div class="lg:hidden pb-4 flex flex-col gap-1">
+            <a routerLink="/dashboard" (click)="mobileMenuOpen = false"
+              [class]="isActive('/dashboard') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              Inicio
+            </a>
+            <a routerLink="/recibos" (click)="mobileMenuOpen = false"
+              [class]="isActive('/recibos') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>
+              </svg>
+              Recibos
+            </a>
+            <a routerLink="/registro-usuarios" (click)="mobileMenuOpen = false"
+              [class]="isActive('/registro-usuarios') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              Beneficiarios
+            </a>
+            <a routerLink="/citas" (click)="mobileMenuOpen = false"
+              [class]="isActive('/citas') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+              </svg>
+              Citas
+            </a>
+            <a routerLink="/almacen" (click)="mobileMenuOpen = false"
+              [class]="isActive('/almacen') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+              </svg>
+              Almacen
+            </a>
+            <a routerLink="/reportes" (click)="mobileMenuOpen = false"
+              [class]="isActive('/reportes') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm no-underline">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+              </svg>
+              Reportes
+            </a>
+            <div class="mt-2 px-5 py-3 rounded-xl bg-white/10 border border-white/20 text-white">
+              <p class="text-xs font-bold">Usuario</p>
+              <p class="text-sm font-semibold truncate">{{ userName }}</p>
+              <p class="text-xs text-white/80 truncate">{{ userEmail }}</p>
+            </div>
+            <div class="px-5 py-3 rounded-xl bg-white/10 border border-white/20 text-white">
+              <p class="text-xs font-bold">Notificaciones</p>
+              <p class="text-sm font-semibold">{{ notifications.length === 0 ? 'Sin alertas por ahora' : notifications.length + ' pendientes' }}</p>
+            </div>
+            <hr class="border-white/20 my-2">
+            <button (click)="auth.logout()"
+              class="flex items-center gap-2 bg-white/10 hover:bg-red-600 text-white rounded-xl border border-white/20 px-5 py-2.5 font-semibold text-sm transition-all duration-200 cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
+              </svg>
+              Salir
+            </button>
           </div>
-
-          <div class="px-5 py-3 rounded-xl bg-white/10 border border-white/20 text-white">
-            <p class="text-xs font-bold">Notificaciones</p>
-            <p class="text-sm font-semibold">{{ notifications.length === 0 ? 'Sin alertas por ahora' : notifications.length + ' pendientes' }}</p>
-          </div>
-
-          <hr class="border-white/20 my-2">
-
-          <button (click)="auth.logout()"
-                  class="flex items-center gap-2 bg-white/10 hover:bg-red-600 text-white rounded-xl border border-white/20 px-5 py-2.5 font-semibold text-sm transition-all duration-200 cursor-pointer">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
-            </svg>
-            Salir
-          </button>
-        </div>
+        }
       </div>
     </nav>
-  `,
+    `,
   styles: []
 })
 export class NavbarComponent implements OnInit, OnDestroy {

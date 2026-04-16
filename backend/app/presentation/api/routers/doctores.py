@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from app.schemas.schemas import DoctorCreate, DisponibilidadCreate
 from app.application.doctores import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
@@ -9,12 +9,20 @@ def doctor_del_dia(current_user: dict=Depends(get_current_user)):
     return service.doctor_del_dia(current_user)
 
 @router.get('')
-def listar_doctores(current_user: dict=Depends(get_current_user)):
-    return service.listar_doctores(current_user)
+def listar_doctores(
+    limit: int=Query(100, ge=1, le=500),
+    offset: int=Query(0, ge=0),
+    current_user: dict=Depends(get_current_user),
+):
+    return service.listar_doctores(current_user, limit, offset)
 
 @router.get('/disponibilidad/semana')
-def obtener_disponibilidad_semana(current_user: dict=Depends(get_current_user)):
-    return service.obtener_disponibilidad_semana(current_user)
+def obtener_disponibilidad_semana(
+    limit: int=Query(500, ge=1, le=500),
+    offset: int=Query(0, ge=0),
+    current_user: dict=Depends(get_current_user),
+):
+    return service.obtener_disponibilidad_semana(current_user, limit, offset)
 
 @router.get('/{id_doctor}')
 def obtener_doctor(id_doctor: int, current_user: dict=Depends(get_current_user)):
@@ -33,8 +41,13 @@ def desactivar_doctor(id_doctor: int, current_user: dict=Depends(require_role('A
     return service.desactivar_doctor(id_doctor, current_user)
 
 @router.get('/{id_doctor}/disponibilidad')
-def obtener_disponibilidad(id_doctor: int, current_user: dict=Depends(get_current_user)):
-    return service.obtener_disponibilidad(id_doctor, current_user)
+def obtener_disponibilidad(
+    id_doctor: int,
+    limit: int=Query(500, ge=1, le=500),
+    offset: int=Query(0, ge=0),
+    current_user: dict=Depends(get_current_user),
+):
+    return service.obtener_disponibilidad(id_doctor, current_user, limit, offset)
 
 @router.post('/{id_doctor}/disponibilidad', status_code=201)
 def crear_disponibilidad(id_doctor: int, data: DisponibilidadCreate, current_user: dict=Depends(get_current_user)):
