@@ -15,12 +15,14 @@ from app.infrastructure.security.adapters import JwtAccessTokenIssuer, SecurityP
 from app.presentation.api.dependencies import get_auth_service
 from app.presentation.api.routers import auth as auth_router
 from app.presentation.api.routers import beneficiarios as beneficiarios_router
+from app.presentation.api.routers import preregistro as preregistro_router
 
 from Pruebas.support_auth import InMemoryUserRepository, build_user
 from Pruebas.support_beneficiarios import (
     InMemoryBeneficiariosRepository,
     default_seed_patients,
 )
+from Pruebas.support_preregistro import InMemoryPreregistroRepository
 
 
 def build_minimal_auth_app(auth_service: AuthService) -> FastAPI:
@@ -41,6 +43,19 @@ def build_minimal_app_with_beneficiarios(auth_service: AuthService) -> FastAPI:
     app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
     app.include_router(
         beneficiarios_router.router, prefix="/api/beneficiarios", tags=["Beneficiarios"]
+    )
+    app.dependency_overrides[get_auth_service] = lambda: auth_service
+    return app
+
+
+def build_minimal_app_with_preregistro(auth_service: AuthService) -> FastAPI:
+    app = FastAPI()
+    app.state.limiter = auth_router.limiter
+    app.add_middleware(SlowAPIMiddleware)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.include_router(
+        preregistro_router.router, prefix="/api/preregistro", tags=["Pre-Registro"]
     )
     app.dependency_overrides[get_auth_service] = lambda: auth_service
     return app
@@ -122,6 +137,33 @@ def beneficiarios_client_factory(
             fallback_users=[],
         )
         app = build_minimal_app_with_beneficiarios(auth_service)
+        return TestClient(app)
+
+    return _make
+
+
+@pytest.fixture
+def preregistro_client_factory(
+    password_hasher: SecurityPasswordHasher,
+) -> Callable[[InMemoryPreregistroRepository | None, InMemoryUserRepository | None], TestClient]:
+    """App con /api/auth + /api/preregistro y repo en memoria."""
+
+    def _make(
+        repo: InMemoryPreregistroRepository | None = None,
+        user_repo: InMemoryUserRepository | None = None,
+    ) -> TestClient:
+        from app.application.preregistro import use_cases as pre_uc
+
+        pre_repo = repo or InMemoryPreregistroRepository()
+        pre_uc.configure_repository(pre_repo)
+        urepo = user_repo or _default_beneficiarios_user_repo(password_hasher)
+        auth_service = AuthService(
+            user_repository=urepo,
+            password_hasher=password_hasher,
+            token_issuer=JwtAccessTokenIssuer(),
+            fallback_users=[],
+        )
+        app = build_minimal_app_with_preregistro(auth_service)
         return TestClient(app)
 
     return _make
