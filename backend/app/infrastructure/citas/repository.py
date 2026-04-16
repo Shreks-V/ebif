@@ -100,6 +100,26 @@ def citas_hoy(current_user: dict=None):
     canceladas = sum((1 for c in citas if c['estatus'] == 'CANCELADA'))
     return {'fecha': hoy.isoformat(), 'total': len(citas), 'programadas': programadas, 'completadas': completadas, 'canceladas': canceladas, 'citas': citas}
 
+def citas_proximas(dias: int = 7, current_user: dict = None):
+    """Cuenta de citas PROGRAMADAS en los próximos N días (excluyendo hoy)."""
+    hoy = date.today()
+    desde = (hoy + timedelta(days=1)).isoformat()
+    hasta = (hoy + timedelta(days=dias)).isoformat()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS TOTAL
+              FROM CITA
+             WHERE TRUNC(FECHA_HORA) >= TO_DATE(:desde, 'YYYY-MM-DD')
+               AND TRUNC(FECHA_HORA) <= TO_DATE(:hasta, 'YYYY-MM-DD')
+               AND ESTATUS = 'PROGRAMADA'
+            """,
+            {'desde': desde, 'hasta': hasta},
+        )
+        row = cursor.fetchone()
+    return {'count': int(row[0]) if row else 0, 'desde': desde, 'hasta': hasta}
+
 def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, current_user: dict=None):
     """Listar citas con filtros opcionales."""
     conditions = []
@@ -283,3 +303,6 @@ class OracleCitasRepository:
 
     def eliminar_cita(self, *args, **kwargs):
         return eliminar_cita(*args, **kwargs)
+
+    def citas_proximas(self, *args, **kwargs):
+        return citas_proximas(*args, **kwargs)

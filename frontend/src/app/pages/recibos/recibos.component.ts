@@ -59,10 +59,10 @@ interface ConceptoCobroOption {
   standalone: true,
   imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
   template: `
-    <app-navbar></app-navbar>
-
-    <main class="flex-1 min-h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb]/30 via-white to-[#e0f2ff]/50">
-      <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
+    <div class="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-[#b9e5fb]/30 via-white to-[#e0f2ff]/50">
+      <app-navbar></app-navbar>
+      <main class="flex-1 min-h-0 overflow-y-auto">
+        <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
 
         <!-- Header -->
         <div class="flex items-center justify-between">
@@ -118,7 +118,7 @@ interface ConceptoCobroOption {
         </div>
 
         <!-- Loading Skeleton -->
-        <div *ngIf="loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100 p-6">
+        <div *ngIf="loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100 p-6 min-h-[320px]">
           <div class="animate-pulse space-y-4">
             <div *ngFor="let _ of [1,2,3,4,5]" class="flex items-center gap-4 py-3">
               <div class="h-4 bg-slate-200 rounded w-24"></div>
@@ -132,7 +132,7 @@ interface ConceptoCobroOption {
         </div>
 
         <!-- Table -->
-        <div *ngIf="!loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100 overflow-auto max-h-[calc(100vh-320px)]">
+        <div *ngIf="!loading" class="bg-white rounded-xl shadow-lg border-2 border-slate-100 overflow-auto max-h-[calc(100vh-430px)] min-h-[320px]">
           <table class="w-full">
             <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-20 shadow-sm">
               <tr>
@@ -247,8 +247,9 @@ interface ConceptoCobroOption {
           </div>
         </div>
 
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
 
     <!-- Detail Modal -->
     <div *ngIf="showDetalle && reciboSeleccionado" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" (click)="closeDetalle()">
@@ -381,12 +382,35 @@ interface ConceptoCobroOption {
           <!-- Paciente -->
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1.5">Paciente</label>
-            <select [(ngModel)]="nuevoCobro.id_paciente"
-              (ngModelChange)="onPacienteCobroChange()"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
-              <option [ngValue]="0" disabled>Seleccionar paciente...</option>
-              <option *ngFor="let b of beneficiariosList" [ngValue]="b.id">{{ b.folio }} - {{ b.nombre }}</option>
-            </select>
+            <div class="relative">
+              <input type="text"
+                [(ngModel)]="beneficiarioBusqueda"
+                (input)="filtrarBeneficiariosCobro()"
+                (focus)="onBeneficiarioBusquedaFocus()"
+                (blur)="onBeneficiarioBusquedaBlur()"
+                placeholder="Buscar por nombre o folio..."
+                class="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"
+                [ngClass]="nuevoCobro.id_paciente ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 focus:border-[#00328b]'" />
+              <!-- Clear selection button -->
+              <button *ngIf="nuevoCobro.id_paciente" type="button"
+                (click)="limpiarSeleccionBeneficiario()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-slate-300 hover:bg-slate-400 text-white transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+              <!-- Dropdown list -->
+              <div *ngIf="showBeneficiarioDropdown"
+                class="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-2xl max-h-56 overflow-y-auto">
+                <button *ngFor="let b of beneficiariosFiltradosCobro" type="button"
+                  (mousedown)="seleccionarBeneficiarioCobro(b)"
+                  class="w-full text-left px-4 py-3 hover:bg-emerald-50 transition-colors border-b border-slate-100 last:border-b-0 flex items-center gap-3">
+                  <span class="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md shrink-0">{{ b.folio }}</span>
+                  <span class="text-sm text-slate-700 truncate">{{ b.nombre }}</span>
+                </button>
+                <div *ngIf="beneficiariosFiltradosCobro.length === 0" class="px-4 py-3 text-sm text-slate-400 text-center">
+                  Sin resultados
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Producto / Servicio -->
@@ -565,6 +589,10 @@ export class RecibosComponent implements OnInit {
   guardandoCobro = false;
   nuevoCobroError = '';
   beneficiariosList: BeneficiarioOption[] = [];
+  // Beneficiario combobox state
+  beneficiarioBusqueda = '';
+  showBeneficiarioDropdown = false;
+  beneficiariosFiltradosCobro: BeneficiarioOption[] = [];
   metodosPagoCatalogo: MetodoPagoCatalogo[] = [];
   serviciosCatalogo: ConceptoCobroOption[] = [];
   productosCatalogo: ConceptoCobroOption[] = [];
@@ -700,6 +728,9 @@ export class RecibosComponent implements OnInit {
     this.nuevoCobroSaldoPendiente = 0;
     this.conceptoPrecioUnitario = 0;
     this.nuevoConcepto = { tipo: 'SERVICIO', id: 0, cantidad: 1 };
+    this.beneficiarioBusqueda = '';
+    this.showBeneficiarioDropdown = false;
+    this.beneficiariosFiltradosCobro = [];
 
     // Load beneficiarios and metodos de pago
     this.api.getBeneficiarios().subscribe({
@@ -786,6 +817,50 @@ export class RecibosComponent implements OnInit {
   }
 
   onPacienteCobroChange(): void {
+    this.recalcularMontoDesdeConcepto();
+  }
+
+  // ── Beneficiario combobox ──
+
+  filtrarBeneficiariosCobro(): void {
+    const q = this.beneficiarioBusqueda.toLowerCase().trim();
+    this.nuevoCobro.id_paciente = 0; // clear selection while typing
+    if (!q) {
+      this.beneficiariosFiltradosCobro = this.beneficiariosList.slice(0, 10);
+    } else {
+      this.beneficiariosFiltradosCobro = this.beneficiariosList
+        .filter(b =>
+          b.nombre.toLowerCase().includes(q) ||
+          (b.folio || '').toLowerCase().includes(q)
+        )
+        .slice(0, 20);
+    }
+    this.showBeneficiarioDropdown = true;
+  }
+
+  onBeneficiarioBusquedaFocus(): void {
+    const q = this.beneficiarioBusqueda.toLowerCase().trim();
+    this.beneficiariosFiltradosCobro = q
+      ? this.beneficiariosList.filter(b => b.nombre.toLowerCase().includes(q) || (b.folio || '').toLowerCase().includes(q)).slice(0, 20)
+      : this.beneficiariosList.slice(0, 10);
+    this.showBeneficiarioDropdown = true;
+  }
+
+  onBeneficiarioBusquedaBlur(): void {
+    setTimeout(() => { this.showBeneficiarioDropdown = false; }, 200);
+  }
+
+  seleccionarBeneficiarioCobro(b: BeneficiarioOption): void {
+    this.nuevoCobro.id_paciente = b.id;
+    this.beneficiarioBusqueda = `${b.folio} - ${b.nombre}`;
+    this.showBeneficiarioDropdown = false;
+    this.onPacienteCobroChange();
+  }
+
+  limpiarSeleccionBeneficiario(): void {
+    this.nuevoCobro.id_paciente = 0;
+    this.beneficiarioBusqueda = '';
+    this.beneficiariosFiltradosCobro = this.beneficiariosList.slice(0, 10);
     this.recalcularMontoDesdeConcepto();
   }
 

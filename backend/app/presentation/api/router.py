@@ -7,6 +7,7 @@ from app.presentation.api.routers import (
     citas,
     doctores,
     exportaciones,
+    notificaciones,
     preregistro,
     recibos,
     reportes,
@@ -24,4 +25,5 @@ def build_api_router() -> APIRouter:
     router.include_router(preregistro.router, prefix="/api/preregistro", tags=["Pre-Registro"])
     router.include_router(doctores.router, prefix="/api/doctores", tags=["Doctores"])
     router.include_router(exportaciones.router, prefix="/api/exportaciones", tags=["Exportaciones"])
+    router.include_router(notificaciones.router, prefix="/api/notificaciones", tags=["Notificaciones"])
     return router

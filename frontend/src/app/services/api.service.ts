@@ -53,6 +53,18 @@ export class ApiService {
     return this.http.get<any[]>(`${this.apiUrl}/beneficiarios/tipos-espina`);
   }
 
+  getNotificaciones(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/notificaciones`);
+  }
+
+  getMembresiasProximasAVencer(dias: number = 30): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/beneficiarios/membresias/proximas-a-vencer?dias=${dias}`);
+  }
+
+  renovarMembresia(folio: string, data: { monto_total: number; exento_pago: string; metodos_pago: { id_metodo_pago: number; monto: number }[] }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/beneficiarios/${folio}/renovar-membresia`, data);
+  }
+
   // ──────────────── Citas ────────────────
 
   getCitas(filters?: any): Observable<any[]> {

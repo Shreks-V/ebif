@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
-from app.schemas.schemas import BeneficiarioCreate, BeneficiarioResponse
+from app.schemas.schemas import BeneficiarioCreate, BeneficiarioResponse, RenovarMembresiaCreate
 from app.application.beneficiarios import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()
@@ -40,3 +40,11 @@ def eliminar_beneficiario(folio: str, current_user: dict=Depends(require_role('A
 @router.get('/{folio}/historial')
 def historial_beneficiario(folio: str, current_user: dict=Depends(get_current_user)):
     return service.historial_beneficiario(folio, current_user)
+
+@router.get('/membresias/proximas-a-vencer')
+def membresias_proximas_a_vencer(dias: int=Query(30, ge=1, le=365), current_user: dict=Depends(get_current_user)):
+    return service.listar_membresias_proximas_a_vencer(dias, current_user)
+
+@router.post('/{folio}/renovar-membresia', status_code=200)
+def renovar_membresia(folio: str, data: RenovarMembresiaCreate, current_user: dict=Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))):
+    return service.renovar_membresia(folio, data.model_dump(), current_user)

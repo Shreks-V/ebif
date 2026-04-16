@@ -86,6 +86,14 @@ class BeneficiarioResponse(BeneficiarioBase):
     tutor: Optional[int] = None
     relacion_parentezco: Optional[str] = None
     tipos_espina: Optional[List[dict]] = None  # [{id_tipo_espina, nombre}]
+    fecha_inicio_membresia: Optional[str] = None
+    fecha_vencimiento_membresia: Optional[str] = None
+
+
+class RenovarMembresiaCreate(BaseModel):
+    monto_total: float
+    exento_pago: str = 'N'
+    metodos_pago: List[dict] = []  # [{id_metodo_pago, monto}]
 
 
 # ──────────────────────────── TIPO ESPINA BIFIDA ────────────────────────────

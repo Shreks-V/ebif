@@ -38,3 +38,6 @@ def cancelar_cita(id_cita: int, current_user: dict=None):
 
 def eliminar_cita(id_cita: int, current_user: dict=None):
     return _get_repository().eliminar_cita(id_cita, current_user)
+
+def citas_proximas(dias: int = 7, current_user: dict = None):
+    return _get_repository().citas_proximas(dias, current_user)

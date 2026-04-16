@@ -64,6 +64,8 @@ def _patient_row_to_response(row: dict, conn=None, tipos_map: dict | None=None) 
     row['fecha_nacimiento'] = _date_to_str(row.get('fecha_nacimiento'))
     row['fecha_alta'] = _date_to_str(row.get('fecha_alta'))
     row['fecha_registro'] = _date_to_str(row.get('fecha_registro'))
+    row['fecha_inicio_membresia'] = _date_to_str(row.get('fecha_inicio_membresia'))
+    row['fecha_vencimiento_membresia'] = _date_to_str(row.get('fecha_vencimiento_membresia'))
     for field in ('activo', 'usa_valvula', 'genero', 'membresia_estatus', 'tipo_cuota'):
         if field in row and row[field] is not None:
             row[field] = _strip_char(row[field])
@@ -175,9 +177,26 @@ def dashboard_stats(current_user: dict=None):
         nuevos_semana_anterior = cur.fetchone()[0]
         return {'total': total, 'activos': activos, 'inactivos': inactivos, 'por_genero': {'Masculino': masculino, 'Femenino': femenino}, 'por_procedencia': {'Nuevo León': nuevo_leon, 'Foráneos': foraneos}, 'por_etapa_vida': etapas, 'nuevos_esta_semana': nuevos_esta_semana, 'nuevos_semana_anterior': nuevos_semana_anterior}
 
+def _sync_membresias_vencidas(conn) -> int:
+    """Marca como VENCIDO las membresías cuya fecha de vencimiento ya pasó."""
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE PACIENTE
+           SET MEMBRESIA_ESTATUS = 'VENCIDO'
+         WHERE MEMBRESIA_ESTATUS = 'ACTIVO'
+           AND FECHA_VENCIMIENTO_MEMBRESIA IS NOT NULL
+           AND FECHA_VENCIMIENTO_MEMBRESIA < TRUNC(SYSDATE)
+    """)
+    updated = cur.rowcount
+    if updated:
+        conn.commit()
+    return updated
+
+
 def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: dict=None):
     """Listar beneficiarios con filtros opcionales."""
     with get_db() as conn:
+        _sync_membresias_vencidas(conn)
         conditions = ["p.ACTIVO = 'S'", "p.ESTATUS_REGISTRO = 'APROBADO'"]
         params: dict = {}
         if nombre:
@@ -249,6 +268,17 @@ def actualizar_beneficiario(folio: str, data: BeneficiarioCreate, current_user: 
         payload = data.model_dump()
         tipos_ids = payload.pop('tipos_espina', None) or []
         cur.execute("\n            UPDATE PACIENTE SET\n                NOMBRE = :nombre,\n                APELLIDO_PATERNO = :apellido_paterno,\n                APELLIDO_MATERNO = :apellido_materno,\n                GENERO = :genero,\n                FECHA_NACIMIENTO = TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'),\n                CURP = :curp,\n                NOMBRE_PADRE_MADRE = :nombre_padre_madre,\n                DIRECCION = :direccion,\n                COLONIA = :colonia,\n                CIUDAD = :ciudad,\n                ESTADO = :estado,\n                CODIGO_POSTAL = :codigo_postal,\n                TELEFONO_CASA = :telefono_casa,\n                TELEFONO_CELULAR = :telefono_celular,\n                CORREO_ELECTRONICO = :correo_electronico,\n                EN_EMERGENCIA_AVISAR_A = :en_emergencia_avisar_a,\n                TELEFONO_EMERGENCIA = :telefono_emergencia,\n                MUNICIPIO_NACIMIENTO = :municipio_nacimiento,\n                ESTADO_NACIMIENTO = :estado_nacimiento,\n                HOSPITAL_NACIMIENTO = :hospital_nacimiento,\n                TIPO_SANGRE = :tipo_sangre,\n                USA_VALVULA = :usa_valvula,\n                NOTAS_ADICIONALES = :notas_adicionales,\n                MEMBRESIA_ESTATUS = :membresia_estatus,\n                ACTIVO = :activo,\n                TIPO_CUOTA = :tipo_cuota\n            WHERE ID_PACIENTE = :id_paciente\n            ", {'nombre': payload['nombre'], 'apellido_paterno': payload['apellido_paterno'], 'apellido_materno': payload.get('apellido_materno'), 'genero': payload.get('genero'), 'fecha_nacimiento': _normalize_date_input(payload.get('fecha_nacimiento')), 'curp': encrypt(payload.get('curp')), 'nombre_padre_madre': encrypt(payload.get('nombre_padre_madre')), 'direccion': encrypt(payload.get('direccion')), 'colonia': payload.get('colonia'), 'ciudad': payload.get('ciudad'), 'estado': payload.get('estado'), 'codigo_postal': payload.get('codigo_postal'), 'telefono_casa': encrypt(payload.get('telefono_casa')), 'telefono_celular': encrypt(payload.get('telefono_celular')), 'correo_electronico': encrypt(payload.get('correo_electronico')), 'en_emergencia_avisar_a': encrypt(payload.get('en_emergencia_avisar_a')), 'telefono_emergencia': encrypt(payload.get('telefono_emergencia')), 'municipio_nacimiento': payload.get('municipio_nacimiento'), 'estado_nacimiento': payload.get('estado_nacimiento'), 'hospital_nacimiento': encrypt(payload.get('hospital_nacimiento')), 'tipo_sangre': encrypt(payload.get('tipo_sangre')), 'usa_valvula': payload.get('usa_valvula', 'N'), 'notas_adicionales': encrypt(payload.get('notas_adicionales')), 'membresia_estatus': payload.get('membresia_estatus', 'ACTIVO'), 'activo': payload.get('activo', 'S'), 'tipo_cuota': payload.get('tipo_cuota'), 'id_paciente': id_paciente})
+        # Si la membresía quedó ACTIVO y las fechas están vacías o vencidas,
+        # iniciar un nuevo período desde hoy + 12 meses.
+        cur.execute("""
+            UPDATE PACIENTE
+               SET FECHA_INICIO_MEMBRESIA      = TRUNC(SYSDATE),
+                   FECHA_VENCIMIENTO_MEMBRESIA = ADD_MONTHS(TRUNC(SYSDATE), 12)
+             WHERE ID_PACIENTE = :id_paciente
+               AND MEMBRESIA_ESTATUS = 'ACTIVO'
+               AND (FECHA_INICIO_MEMBRESIA IS NULL
+                    OR FECHA_VENCIMIENTO_MEMBRESIA < TRUNC(SYSDATE))
+        """, {'id_paciente': id_paciente})
         cur.execute('DELETE FROM PACIENTE_TIPO_ESPINA WHERE ID_PACIENTE = :id', {'id': id_paciente})
         for tid in tipos_ids:
             cur.execute('\n                INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO)\n                VALUES (:id_paciente, :id_tipo_espina, SYSDATE)\n                ', {'id_paciente': id_paciente, 'id_tipo_espina': tid})
@@ -349,6 +379,96 @@ def historial_beneficiario(folio: str, current_user: dict=None):
         return {'folio': folio, 'nombre': nombre_completo, 'citas': citas, 'pagos': pagos, 'comodatos': comodatos}
 
 
+def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: dict = None):
+    """Beneficiarios con membresía que vence en los próximos N días."""
+    with get_db() as conn:
+        _sync_membresias_vencidas(conn)
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT p.*
+              FROM PACIENTE p
+             WHERE p.ACTIVO = 'S'
+               AND p.ESTATUS_REGISTRO = 'APROBADO'
+               AND p.MEMBRESIA_ESTATUS = 'ACTIVO'
+               AND p.FECHA_VENCIMIENTO_MEMBRESIA IS NOT NULL
+               AND p.FECHA_VENCIMIENTO_MEMBRESIA <= TRUNC(SYSDATE) + :dias
+             ORDER BY p.FECHA_VENCIMIENTO_MEMBRESIA ASC
+        """, {'dias': dias})
+        rows = rows_to_dicts(cur)
+        patient_ids = [r['id_paciente'] for r in rows]
+        tipos_map = _batch_fetch_tipos_espina(conn, patient_ids)
+        return [_patient_row_to_response(row, tipos_map=tipos_map) for row in rows]
+
+
+def renovar_membresia(folio: str, data: dict, current_user: dict = None):
+    """Renueva la membresía por 12 meses y crea el cobro correspondiente."""
+    from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
+    import oracledb
+
+    monto_total = float(data.get('monto_total', 0))
+    exento_pago = data.get('exento_pago', 'N')
+    metodos_pago = data.get('metodos_pago', [])
+    id_usuario = (current_user or {}).get('id_usuario', 1)
+
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT ID_PACIENTE FROM PACIENTE WHERE FOLIO = :folio AND ACTIVO = 'S'",
+            {'folio': folio}
+        )
+        row = cur.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail='Beneficiario no encontrado')
+        id_paciente = row[0]
+
+        # 1. Actualizar fechas de membresía
+        cur.execute("""
+            UPDATE PACIENTE
+               SET MEMBRESIA_ESTATUS           = 'ACTIVO',
+                   FECHA_INICIO_MEMBRESIA      = TRUNC(SYSDATE),
+                   FECHA_VENCIMIENTO_MEMBRESIA = ADD_MONTHS(TRUNC(SYSDATE), 12)
+             WHERE ID_PACIENTE = :id
+        """, {'id': id_paciente})
+
+        # 2. Crear cobro vía SP (igual que cualquier venta normal)
+        metodos_ids   = [int(mp['id_metodo_pago']) for mp in metodos_pago if mp.get('monto', 0) > 0]
+        metodos_montos = [float(mp['monto']) for mp in metodos_pago if mp.get('monto', 0) > 0]
+
+        productos_arr  = make_number_list(conn, [])
+        cantidades_arr = make_number_list(conn, [])
+        metodos_arr    = make_number_list(conn, metodos_ids)
+        montos_arr     = make_number_list(conn, metodos_montos)
+
+        id_venta_out = cur.var(int)
+        folio_venta_out = cur.var(str)
+        try:
+            cur.callproc('SP_REGISTRAR_VENTA_COMPLETA', [
+                id_paciente,
+                id_usuario,
+                monto_total,
+                exento_pago,
+                productos_arr,
+                cantidades_arr,
+                metodos_arr,
+                montos_arr,
+                id_venta_out,
+                folio_venta_out,
+            ])
+        except oracledb.DatabaseError as exc:
+            raise sp_error_to_http(exc, {}, default_detail='No se pudo registrar el cobro de renovación')
+
+        folio_venta = folio_venta_out.getvalue()
+        conn.commit()
+
+        # 3. Devolver paciente actualizado
+        cur.execute('SELECT * FROM PACIENTE WHERE ID_PACIENTE = :id', {'id': id_paciente})
+        patient_row = row_to_dict(cur)
+        return {
+            'paciente': _patient_row_to_response(patient_row, conn),
+            'folio_venta': folio_venta,
+        }
+
+
 class OracleBeneficiariosRepository:
     def listar_tipos_espina(self, *args, **kwargs):
         return listar_tipos_espina(*args, **kwargs)
@@ -376,3 +496,9 @@ class OracleBeneficiariosRepository:
 
     def historial_beneficiario(self, *args, **kwargs):
         return historial_beneficiario(*args, **kwargs)
+
+    def listar_membresias_proximas_a_vencer(self, *args, **kwargs):
+        return listar_membresias_proximas_a_vencer(*args, **kwargs)
+
+    def renovar_membresia(self, *args, **kwargs):
+        return renovar_membresia(*args, **kwargs)

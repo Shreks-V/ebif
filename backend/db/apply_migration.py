@@ -18,7 +18,9 @@ from app.infrastructure.persistence.oracle import get_db  # noqa: E402
 
 
 PLSQL_RE = re.compile(
-    r"^\s*CREATE\s+(OR\s+REPLACE\s+)?(PROCEDURE|FUNCTION|TRIGGER|PACKAGE|TYPE)\b",
+    r"^\s*(CREATE\s+(OR\s+REPLACE\s+)?(PROCEDURE|FUNCTION|TRIGGER|PACKAGE|TYPE)\b"
+    r"|BEGIN\b"
+    r"|DECLARE\b)",
     re.IGNORECASE,
 )
 

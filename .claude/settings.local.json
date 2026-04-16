@@ -94,7 +94,10 @@
       "Bash(./venv/bin/python -c \"from app.main import app; print\\('OK routes:', len\\(app.routes\\)\\)\")",
       "Bash(./venv/bin/python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(sorted\\(d['paths'].keys\\(\\)\\)[:40]\\)\\)\")",
       "mcp__dbeaver__list_connections",
-      "mcp__dbeaver__execute_query"
+      "mcp__dbeaver__execute_query",
+      "Bash(python db/apply_migration.py db/migrations/013_membresia_anual.sql)",
+      "Bash(venv/bin/python db/apply_migration.py db/migrations/013_membresia_anual.sql)",
+      "Bash(venv/bin/python -)"
     ]
   },
   "enableAllProjectMcpServers": true,

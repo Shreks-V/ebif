@@ -38,6 +38,8 @@ interface Beneficiario {
   tipoCuota: string;
   activo: string;
   tiposEspina: {idTipoEspina: number, nombre: string}[];
+  fechaInicioMembresia: string | null;
+  fechaVencimientoMembresia: string | null;
   // UI helpers
   iniciales: string;
   color: string;
@@ -161,6 +163,19 @@ interface NuevoBeneficiarioDocumento {
             </div>
           </div>
 
+          <!-- Alerta membresías próximas a vencer -->
+          <div *ngIf="membresiasProximasCount > 0 && currentTab === 'activos'" class="bg-amber-50 border-2 border-amber-300 rounded-2xl px-5 py-3 flex items-center gap-3">
+            <div class="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              </svg>
+            </div>
+            <p class="text-sm font-bold text-amber-800">
+              {{ membresiasProximasCount }} membresía{{ membresiasProximasCount === 1 ? '' : 's' }} próxima{{ membresiasProximasCount === 1 ? '' : 's' }} a vencer en los próximos 30 días.
+              <span class="font-normal">Verifica la columna Membresía y renueva según corresponda.</span>
+            </p>
+          </div>
+
           <!-- Tab Content: Beneficiarios Activos -->
           <div *ngIf="currentTab === 'activos' && !loading" class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-auto max-h-[calc(100vh-320px)]">
             <table class="w-full">
@@ -172,11 +187,11 @@ interface NuevoBeneficiarioDocumento {
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cuota</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Membresia</th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Alta</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
+                  <th class="w-14 px-4 py-4"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let b of paginatedBeneficiarios; let i = index" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                <tr *ngFor="let b of paginatedBeneficiarios; let i = index" class="group border-b border-slate-100 hover:bg-slate-50/70 transition-colors cursor-default">
                   <td class="px-6 py-4 text-sm font-semibold text-slate-700">{{ b.folio }}</td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
@@ -186,45 +201,34 @@ interface NuevoBeneficiarioDocumento {
                       <span class="text-sm font-semibold text-slate-800">{{ b.nombre }} {{ b.apellidoPaterno }} {{ b.apellidoMaterno }}</span>
                     </div>
                   </td>
-                  <td class="px-6 py-4 text-sm text-slate-600">{{ $any(b.tiposEspina[0])?.nombre || 'N/A' }}</td>
-                  <td class="px-6 py-4">
-                    <span [class]="getCuotaBadgeClass(b.tipoCuota)">{{ b.tipoCuota }}</span>
+                  <td class="px-6 py-4 text-sm text-slate-600">
+                    <span *ngIf="b.tiposEspina?.length; else noEspina">
+                      <span *ngFor="let te of b.tiposEspina; let last = last">{{ te.nombre }}{{ !last ? ', ' : '' }}</span>
+                    </span>
+                    <ng-template #noEspina>N/A</ng-template>
                   </td>
                   <td class="px-6 py-4">
-                    <span [class]="getMembresiaBadgeClass(b.membresiaEstatus)">{{ b.membresiaEstatus }}</span>
+                    <span [class]="getCuotaBadgeClass(b.tipoCuota)">{{ cuotaShortLabel(b.tipoCuota) }}</span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex flex-col gap-0.5">
+                      <span [class]="getMembresiaBadgeClass(b.membresiaEstatus)">{{ b.membresiaEstatus }}</span>
+                      <span *ngIf="b.fechaVencimientoMembresia" class="text-xs font-semibold" [ngClass]="getMembresiaVencimientoClass(b)">
+                        Vence: {{ b.fechaVencimientoMembresia | slice:0:10 }}
+                      </span>
+                    </div>
                   </td>
                   <td class="px-6 py-4 text-sm text-slate-600">{{ b.fechaAlta }}</td>
-                  <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
-                      <!-- Eye -->
-                      <button (click)="verDetalleBeneficiario(b)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Ver detalle">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                      </button>
-                      <!-- Editar -->
-                      <button (click)="editarBeneficiario(b)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-colors" title="Editar">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" d="m15 5 4 4"/>
-                        </svg>
-                      </button>
-                      <!-- History -->
-                      <button (click)="verHistorialBeneficiario(b)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:text-purple-600 hover:bg-purple-50 hover:border-purple-200 transition-colors" title="Historial">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <circle cx="12" cy="12" r="10"/>
-                          <polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                      </button>
-                      <!-- Desactivar -->
-                      <button (click)="confirmarDesactivar(b)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors" title="Desactivar">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                          <line x1="12" y1="2" x2="12" y2="12"/>
-                        </svg>
-                      </button>
-                    </div>
+                  <td class="px-4 py-4 text-center">
+                    <button (click)="toggleActionMenu(b, $event)"
+                      class="w-8 h-8 rounded-lg flex items-center justify-center transition-all border"
+                      [ngClass]="openActionMenu === b.folio
+                        ? 'bg-slate-700 border-slate-700 text-white shadow-md'
+                        : 'bg-white border-slate-200 text-slate-400 group-hover:border-slate-300 group-hover:text-slate-600 group-hover:shadow-sm hover:bg-slate-50'">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                      </svg>
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -279,7 +283,7 @@ interface NuevoBeneficiarioDocumento {
                   </td>
                   <td class="px-6 py-4 text-sm text-slate-600">{{ p.estatus }}</td>
                   <td class="px-6 py-4">
-                    <span [class]="getCuotaBadgeClass(p.tipoCuota)">Cuota {{ p.tipoCuota }}</span>
+                    <span [class]="getCuotaBadgeClass(p.tipoCuota)">Cuota {{ cuotaShortLabel(p.tipoCuota) }}</span>
                   </td>
                   <td class="px-6 py-4 text-sm text-slate-600">{{ p.fechaSolicitud }}</td>
                   <td class="px-6 py-4">
@@ -348,7 +352,8 @@ interface NuevoBeneficiarioDocumento {
     </div>
 
     <!-- ==================== MODAL: Nuevo Beneficiario ==================== -->
-    <div *ngIf="showNuevoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeNuevoModal()">
+    <!-- No click-outside-to-close: the form has too much data to lose accidentally -->
+    <div *ngIf="showNuevoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
@@ -465,6 +470,19 @@ interface NuevoBeneficiarioDocumento {
               <input type="checkbox" [(ngModel)]="formDataUsaValvula" name="usa_valvula" id="usa_valvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
               <label for="usa_valvula" class="text-sm font-semibold text-slate-700">Usa Valvula</label>
             </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo(s) de Espina Bifida</label>
+              <div class="flex flex-wrap gap-4">
+                <label *ngFor="let te of tiposEspinaCatalogo" class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox"
+                         [checked]="isNuevoEspinaSelected(te.id_tipo_espina)"
+                         (change)="toggleNuevoEspina(te.id_tipo_espina)"
+                         class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+                  <span class="text-sm font-semibold text-slate-700">{{ te.nombre }}</span>
+                </label>
+                <span *ngIf="tiposEspinaCatalogo.length === 0" class="text-sm text-slate-400">Cargando...</span>
+              </div>
+            </div>
           </div>
 
           <!-- Membresia -->
@@ -474,8 +492,8 @@ interface NuevoBeneficiarioDocumento {
               <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota *</label>
               <select [(ngModel)]="formData.tipo_cuota" name="tipo_cuota" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
                 <option value="">Seleccionar</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
+                <option value="CUOTA A">A</option>
+                <option value="CUOTA B">B</option>
               </select>
             </div>
             <div>
@@ -563,7 +581,10 @@ interface NuevoBeneficiarioDocumento {
         <!-- Badges -->
         <div class="flex items-center gap-3 mb-6">
           <span [class]="getMembresiaBadgeClass(beneficiarioSeleccionado.membresiaEstatus)">{{ beneficiarioSeleccionado.membresiaEstatus }}</span>
-          <span [class]="getCuotaBadgeClass(beneficiarioSeleccionado.tipoCuota)">Cuota {{ beneficiarioSeleccionado.tipoCuota }}</span>
+          <span [class]="getCuotaBadgeClass(beneficiarioSeleccionado.tipoCuota)">Cuota {{ cuotaShortLabel(beneficiarioSeleccionado.tipoCuota) }}</span>
+          <span *ngIf="beneficiarioSeleccionado.fechaVencimientoMembresia" class="text-xs font-semibold" [ngClass]="getMembresiaVencimientoClass(beneficiarioSeleccionado)">
+            Vence: {{ beneficiarioSeleccionado.fechaVencimientoMembresia | slice:0:10 }}
+          </span>
         </div>
 
         <!-- Personal -->
@@ -574,7 +595,12 @@ interface NuevoBeneficiarioDocumento {
           <div><span class="text-xs font-bold text-slate-400 uppercase">CURP</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.curp || '-' }}</p></div>
           <div><span class="text-xs font-bold text-slate-400 uppercase">Padre/Madre</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.nombrePadreMadre || '-' }}</p></div>
           <div><span class="text-xs font-bold text-slate-400 uppercase">Fecha Alta</span><p class="text-sm font-semibold text-slate-800">{{ beneficiarioSeleccionado.fechaAlta || '-' }}</p></div>
-          <div><span class="text-xs font-bold text-slate-400 uppercase">Tipo Espina</span><p class="text-sm font-semibold text-slate-800">{{ $any(beneficiarioSeleccionado.tiposEspina[0])?.nombre || 'N/A' }}</p></div>
+          <div class="md:col-span-2"><span class="text-xs font-bold text-slate-400 uppercase">Tipo(s) de Espina</span>
+            <div class="flex flex-wrap gap-2 mt-1">
+              <span *ngFor="let te of beneficiarioSeleccionado.tiposEspina" class="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800">{{ te.nombre }}</span>
+              <span *ngIf="!beneficiarioSeleccionado.tiposEspina?.length" class="text-sm font-semibold text-slate-800">N/A</span>
+            </div>
+          </div>
         </div>
 
         <!-- Direccion -->
@@ -648,7 +674,7 @@ interface NuevoBeneficiarioDocumento {
         <!-- Badges -->
         <div class="flex items-center gap-3 mb-6">
           <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">{{ preregistroSeleccionado.estatus }}</span>
-          <span [class]="getCuotaBadgeClass(preregistroSeleccionado.tipoCuota)">Cuota {{ preregistroSeleccionado.tipoCuota }}</span>
+          <span [class]="getCuotaBadgeClass(preregistroSeleccionado.tipoCuota)">Cuota {{ cuotaShortLabel(preregistroSeleccionado.tipoCuota) }}</span>
         </div>
 
         <!-- Personal -->
@@ -795,8 +821,8 @@ interface NuevoBeneficiarioDocumento {
               <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota</label>
               <select [(ngModel)]="preregistroEditData.tipo_cuota" name="preTipoCuota" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
                 <option value="">Seleccionar</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
+                <option value="CUOTA A">A</option>
+                <option value="CUOTA B">B</option>
               </select>
             </div>
             <div class="md:col-span-2">
@@ -929,14 +955,26 @@ interface NuevoBeneficiarioDocumento {
               <input type="checkbox" [(ngModel)]="editFormDataUsaValvula" name="editUsaValvula" id="editUsaValvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
               <label for="editUsaValvula" class="text-sm font-semibold text-slate-700">Usa Valvula</label>
             </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo(s) de Espina Bifida</label>
+              <div class="flex flex-wrap gap-4">
+                <label *ngFor="let te of tiposEspinaCatalogo" class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox"
+                         [checked]="isEditEspinaSelected(te.id_tipo_espina)"
+                         (change)="toggleEditEspina(te.id_tipo_espina)"
+                         class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+                  <span class="text-sm font-semibold text-slate-700">{{ te.nombre }}</span>
+                </label>
+              </div>
+            </div>
           </div>
           <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Membresia</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota *</label>
               <select [(ngModel)]="editFormData.tipo_cuota" name="editTipoCuota" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
-                <option value="A">A</option>
-                <option value="B">B</option>
+                <option value="CUOTA A">A</option>
+                <option value="CUOTA B">B</option>
               </select>
             </div>
             <div>
@@ -1046,6 +1084,146 @@ interface NuevoBeneficiarioDocumento {
       </div>
     </div>
 
+    <!-- ==================== MENÚ CONTEXTUAL FILA ==================== -->
+    <!-- Backdrop invisible para cerrar al clic fuera -->
+    <div *ngIf="openActionMenu" class="fixed inset-0 z-40" (click)="closeActionMenu()"></div>
+    <!-- Dropdown -->
+    <div *ngIf="openActionMenu && menuBeneficiario"
+         class="fixed z-50 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-1.5 overflow-hidden"
+         [style.top.px]="menuPosition.top"
+         [style.left.px]="menuPosition.left"
+         (click)="$event.stopPropagation()">
+      <!-- Ver detalle -->
+      <button (click)="verDetalleBeneficiario(menuBeneficiario!); closeActionMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span class="font-medium">Ver detalle</span>
+      </button>
+      <!-- Editar -->
+      <button (click)="editarBeneficiario(menuBeneficiario!); closeActionMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m15 5 4 4"/>
+        </svg>
+        <span class="font-medium">Editar</span>
+      </button>
+      <!-- Historial -->
+      <button (click)="verHistorialBeneficiario(menuBeneficiario!); closeActionMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span class="font-medium">Historial</span>
+      </button>
+      <!-- Renovar membresía -->
+      <button (click)="abrirRenovarModal(menuBeneficiario!); closeActionMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-emerald-700 hover:bg-emerald-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span class="font-medium">Renovar membresía</span>
+      </button>
+      <!-- Divider -->
+      <div class="border-t border-slate-100 my-1"></div>
+      <!-- Desactivar -->
+      <button (click)="confirmarDesactivar(menuBeneficiario!); closeActionMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+        <span class="font-medium">Desactivar</span>
+      </button>
+    </div>
+
+    <!-- ==================== MODAL: Renovar Membresía ==================== -->
+    <div *ngIf="showRenovarModal && beneficiarioARenovar" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h2 class="text-xl font-black text-slate-900">Renovar Membresía</h2>
+            <p class="text-sm text-slate-500">{{ beneficiarioARenovar.nombre }} {{ beneficiarioARenovar.apellidoPaterno }}</p>
+          </div>
+          <button (click)="showRenovarModal = false" class="w-9 h-9 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Info actual -->
+        <div class="mb-5 p-4 bg-slate-50 rounded-xl space-y-1">
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-500 font-semibold">Estado actual</span>
+            <span [class]="getMembresiaBadgeClass(beneficiarioARenovar.membresiaEstatus)">{{ beneficiarioARenovar.membresiaEstatus }}</span>
+          </div>
+          <div *ngIf="beneficiarioARenovar.fechaVencimientoMembresia" class="flex justify-between text-sm">
+            <span class="text-slate-500 font-semibold">Vencimiento actual</span>
+            <span class="font-bold text-slate-700">{{ beneficiarioARenovar.fechaVencimientoMembresia | slice:0:10 }}</span>
+          </div>
+          <div class="flex justify-between text-sm pt-1 border-t border-slate-200">
+            <span class="text-slate-500 font-semibold">Nueva vigencia</span>
+            <span class="font-bold text-emerald-600">1 año desde hoy</span>
+          </div>
+        </div>
+
+        <!-- Monto -->
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Monto de la Cuota *</label>
+          <input type="number" [(ngModel)]="renovarMonto" min="0" step="0.01"
+            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none transition-all text-sm"
+            placeholder="0.00" />
+        </div>
+
+        <!-- Exento -->
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Exento de Pago</label>
+          <select [(ngModel)]="renovarExento" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 focus:outline-none transition-all text-sm">
+            <option value="N">No</option>
+            <option value="S">Sí</option>
+          </select>
+        </div>
+
+        <!-- Métodos de pago -->
+        <div *ngIf="renovarExento !== 'S'" class="mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-semibold text-slate-700">Métodos de Pago</label>
+            <button type="button" (click)="renovarMetodosPago.push({id_metodo_pago:0, monto:0})" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">+ Agregar</button>
+          </div>
+          <div class="space-y-2">
+            <div *ngFor="let mp of renovarMetodosPago; let i = index" class="flex items-center gap-2">
+              <select [(ngModel)]="mp.id_metodo_pago" class="flex-1 px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:border-emerald-500 focus:outline-none transition-all">
+                <option [ngValue]="0" disabled>Método...</option>
+                <option *ngFor="let m of renovarMetodosCatalogo" [ngValue]="m.id">{{ m.nombre }}</option>
+              </select>
+              <input type="number" [(ngModel)]="mp.monto" min="0" step="0.01" placeholder="0.00"
+                class="w-28 px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:border-emerald-500 focus:outline-none transition-all" />
+              <button *ngIf="renovarMetodosPago.length > 1" type="button" (click)="renovarMetodosPago.splice(i,1)"
+                class="w-9 h-9 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="renovarError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">{{ renovarError }}</div>
+
+        <!-- Botones -->
+        <div class="flex gap-3">
+          <button type="button" (click)="confirmarRenovacion()" [disabled]="renovarSubmitting"
+            class="flex-1 px-5 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50">
+            {{ renovarSubmitting ? 'Renovando...' : 'Confirmar Renovación' }}
+          </button>
+          <button type="button" (click)="showRenovarModal = false"
+            class="px-5 py-3 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ==================== MODAL: Confirmar Desactivar ==================== -->
     <div *ngIf="showConfirmDesactivar" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
@@ -1110,10 +1288,31 @@ export class BeneficiariosComponent implements OnInit {
   showConfirmDesactivar = false;
   beneficiarioADesactivar: any = null;
 
+  // Renovar membresía modal
+  showRenovarModal = false;
+  beneficiarioARenovar: Beneficiario | null = null;
+  renovarMonto = 0;
+  renovarExento = 'N';
+  renovarMetodosPago: { id_metodo_pago: number; monto: number }[] = [{ id_metodo_pago: 0, monto: 0 }];
+  renovarMetodosCatalogo: { id: number; nombre: string }[] = [];
+  renovarError = '';
+  renovarSubmitting = false;
+
+  // Alertas membresía
+  membresiasProximasCount = 0;
+
+  // Menú contextual por fila
+  openActionMenu: string | null = null;
+  menuPosition = { top: 0, left: 0 };
+  menuBeneficiario: Beneficiario | null = null;
+
   // Form data for new beneficiario
   formData: any = {};
   tiposDocumentoCatalogo: any[] = [];
   nuevoBeneficiarioDocumentos: NuevoBeneficiarioDocumento[] = [{ id_tipo_documento: 0, archivo: null }];
+  tiposEspinaCatalogo: any[] = [];
+  formDataTiposEspina: number[] = [];
+  editFormDataTiposEspina: number[] = [];
 
   // Select options
   estadosMexicanos = [
@@ -1146,6 +1345,7 @@ export class BeneficiariosComponent implements OnInit {
     this.loadBeneficiarios();
     this.loadPreregistros();
     this.loadTiposDocumentoCatalogo();
+    this.loadAlertasMembresia();
     this.resetFormData();
 
     this.route.queryParams.subscribe(params => {
@@ -1232,6 +1432,8 @@ export class BeneficiariosComponent implements OnInit {
             idTipoEspina: te.id_tipo_espina,
             nombre: te.nombre
           })),
+          fechaInicioMembresia: item.fecha_inicio_membresia || null,
+          fechaVencimientoMembresia: item.fecha_vencimiento_membresia || null,
           iniciales: (item.nombre?.charAt(0) || '') + (item.apellido_paterno?.charAt(0) || ''),
           color: this.avatarColors[index % this.avatarColors.length]
         } as Beneficiario));
@@ -1276,6 +1478,13 @@ export class BeneficiariosComponent implements OnInit {
   openNuevoModal(): void {
     this.resetFormData();
     this.nuevoError = '';
+    this.formDataTiposEspina = [];
+    if (this.tiposEspinaCatalogo.length === 0) {
+      this.api.getTiposEspina().subscribe({
+        next: (data: any[]) => { this.tiposEspinaCatalogo = data || []; },
+        error: () => {}
+      });
+    }
     this.showNuevoModal = true;
   }
 
@@ -1316,6 +1525,7 @@ export class BeneficiariosComponent implements OnInit {
 
     const payload = { ...this.formData };
     payload.usa_valvula = this.formDataUsaValvula ? 'S' : 'N';
+    payload.tipos_espina = this.formDataTiposEspina;
 
     const documentosValidos = this.nuevoBeneficiarioDocumentos
       .filter((doc) => doc.id_tipo_documento > 0 && !!doc.archivo);
@@ -1410,7 +1620,7 @@ export class BeneficiariosComponent implements OnInit {
           en_emergencia_avisar_a: data?.en_emergencia_avisar_a || '',
           telefono_emergencia: data?.telefono_emergencia || '',
           tipo_sangre: data?.tipo_sangre || '',
-          tipo_cuota: data?.tipo_cuota || p.tipoCuota || 'A',
+          tipo_cuota: data?.tipo_cuota || p.tipoCuota || 'CUOTA A',
           notas_adicionales: data?.notas_adicionales || '',
           paso_actual: data?.paso_actual || 5,
         };
@@ -1586,10 +1796,15 @@ export class BeneficiariosComponent implements OnInit {
     this.preregistrosPage = page;
   }
 
+  cuotaShortLabel(cuota: string): string {
+    return (cuota || '').replace(/cuota\s*/i, '').trim() || cuota;
+  }
+
   getCuotaBadgeClass(cuota: string): string {
     const base = 'px-3 py-1 rounded-full text-xs font-bold';
-    if (cuota === 'A') return `${base} bg-emerald-100 text-emerald-800`;
-    if (cuota === 'B') return `${base} bg-blue-100 text-blue-800`;
+    const letter = this.cuotaShortLabel(cuota).toUpperCase();
+    if (letter === 'A') return `${base} bg-emerald-100 text-emerald-800`;
+    if (letter === 'B') return `${base} bg-blue-100 text-blue-800`;
     return `${base} bg-slate-100 text-slate-800`;
   }
 
@@ -1667,10 +1882,17 @@ export class BeneficiariosComponent implements OnInit {
       tipo_sangre: b.tipoSangre || '',
       notas_adicionales: b.notasAdicionales || '',
       membresia_estatus: b.membresiaEstatus || 'ACTIVO',
-      tipo_cuota: b.tipoCuota || 'A',
+      tipo_cuota: b.tipoCuota || 'CUOTA A',
     };
     this.editFormDataUsaValvula = b.usaValvula === 'S';
+    this.editFormDataTiposEspina = (b.tiposEspina || []).map((te: any) => te.idTipoEspina);
     this.editError = '';
+    if (this.tiposEspinaCatalogo.length === 0) {
+      this.api.getTiposEspina().subscribe({
+        next: (data: any[]) => { this.tiposEspinaCatalogo = data || []; },
+        error: () => {}
+      });
+    }
     this.showEditModal = true;
   }
 
@@ -1684,6 +1906,7 @@ export class BeneficiariosComponent implements OnInit {
     this.editError = '';
     const payload = { ...this.editFormData };
     payload.usa_valvula = this.editFormDataUsaValvula ? 'S' : 'N';
+    payload.tipos_espina = this.editFormDataTiposEspina;
 
     this.api.updateBeneficiario(this.editFolio, payload).subscribe({
       next: () => {
@@ -1719,5 +1942,129 @@ export class BeneficiariosComponent implements OnInit {
         this.showConfirmDesactivar = false;
       }
     });
+  }
+
+  // ──────────── Membresía ────────────
+
+  private loadAlertasMembresia(): void {
+    this.api.getMembresiasProximasAVencer(30).subscribe({
+      next: (data: any[]) => { this.membresiasProximasCount = data.length; },
+      error: () => { this.membresiasProximasCount = 0; }
+    });
+  }
+
+  getDiasParaVencer(b: Beneficiario): number {
+    if (!b.fechaVencimientoMembresia) return 999;
+    const venc = new Date(b.fechaVencimientoMembresia);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return Math.round((venc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  getMembresiaVencimientoClass(b: Beneficiario): string {
+    if (b.membresiaEstatus === 'VENCIDO') return 'text-red-600';
+    const dias = this.getDiasParaVencer(b);
+    if (dias <= 30) return 'text-amber-600';
+    return 'text-slate-400';
+  }
+
+  abrirRenovarModal(b: Beneficiario): void {
+    this.beneficiarioARenovar = b;
+    this.renovarMonto = 0;
+    this.renovarExento = 'N';
+    this.renovarMetodosPago = [{ id_metodo_pago: 0, monto: 0 }];
+    this.renovarError = '';
+    this.renovarSubmitting = false;
+    if (this.renovarMetodosCatalogo.length === 0) {
+      this.api.getMetodosPago().subscribe({
+        next: (data: any[]) => {
+          this.renovarMetodosCatalogo = data.map((m: any) => ({ id: m.id_metodo_pago || m.id, nombre: m.nombre }));
+        },
+        error: () => {}
+      });
+    }
+    this.showRenovarModal = true;
+  }
+
+  confirmarRenovacion(): void {
+    if (!this.beneficiarioARenovar) return;
+    if (!this.renovarMonto || this.renovarMonto <= 0) {
+      this.renovarError = 'El monto debe ser mayor a 0.';
+      return;
+    }
+    const metodosValidos = this.renovarMetodosPago.filter(m => m.id_metodo_pago > 0 && m.monto > 0);
+    if (this.renovarExento !== 'S' && metodosValidos.length === 0) {
+      this.renovarError = 'Agrega al menos un método de pago.';
+      return;
+    }
+
+    this.renovarSubmitting = true;
+    this.renovarError = '';
+    const payload = {
+      monto_total: this.renovarMonto,
+      exento_pago: this.renovarExento,
+      metodos_pago: this.renovarExento === 'S' ? [] : metodosValidos,
+    };
+    this.api.renovarMembresia(this.beneficiarioARenovar.folio, payload).subscribe({
+      next: (res: any) => {
+        this.renovarSubmitting = false;
+        this.showRenovarModal = false;
+        this.beneficiarioARenovar = null;
+        this.loadBeneficiarios();
+        this.loadAlertasMembresia();
+        if (res?.folio_venta) {
+          alert(`Membresía renovada. Cobro generado: ${res.folio_venta}`);
+        }
+      },
+      error: (err: any) => {
+        this.renovarSubmitting = false;
+        this.renovarError = err?.error?.detail || 'Error al renovar la membresía.';
+      }
+    });
+  }
+
+  // ──────────── Menú contextual ────────────
+
+  toggleActionMenu(b: Beneficiario, event: MouseEvent): void {
+    if (this.openActionMenu === b.folio) {
+      this.openActionMenu = null;
+      this.menuBeneficiario = null;
+      return;
+    }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.menuPosition = {
+      top: rect.bottom + 6,
+      left: Math.max(8, rect.right - 208),
+    };
+    this.openActionMenu = b.folio;
+    this.menuBeneficiario = b;
+    event.stopPropagation();
+  }
+
+  closeActionMenu(): void {
+    this.openActionMenu = null;
+    this.menuBeneficiario = null;
+  }
+
+  // ──────────── Tipos Espina helpers ────────────
+
+  isNuevoEspinaSelected(id: number): boolean {
+    return this.formDataTiposEspina.includes(id);
+  }
+
+  toggleNuevoEspina(id: number): void {
+    const idx = this.formDataTiposEspina.indexOf(id);
+    if (idx >= 0) this.formDataTiposEspina.splice(idx, 1);
+    else this.formDataTiposEspina.push(id);
+  }
+
+  isEditEspinaSelected(id: number): boolean {
+    return this.editFormDataTiposEspina.includes(id);
+  }
+
+  toggleEditEspina(id: number): void {
+    const idx = this.editFormDataTiposEspina.indexOf(id);
+    if (idx >= 0) this.editFormDataTiposEspina.splice(idx, 1);
+    else this.editFormDataTiposEspina.push(id);
   }
 }

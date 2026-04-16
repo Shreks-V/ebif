@@ -38,3 +38,9 @@ def eliminar_beneficiario(folio: str, current_user: dict=None):
 
 def historial_beneficiario(folio: str, current_user: dict=None):
     return _get_repository().historial_beneficiario(folio, current_user)
+
+def listar_membresias_proximas_a_vencer(dias: int=30, current_user: dict=None):
+    return _get_repository().listar_membresias_proximas_a_vencer(dias, current_user)
+
+def renovar_membresia(folio: str, data: dict, current_user: dict=None):
+    return _get_repository().renovar_membresia(folio, data, current_user)
