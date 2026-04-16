@@ -17,6 +17,7 @@ from app.presentation.api.routers import auth as auth_router
 from app.presentation.api.routers import beneficiarios as beneficiarios_router
 from app.presentation.api.routers import citas as citas_router
 from app.presentation.api.routers import preregistro as preregistro_router
+from app.presentation.api.routers import recibos as recibos_router
 
 from Pruebas.support_auth import InMemoryUserRepository, build_user
 from Pruebas.support_beneficiarios import (
@@ -25,6 +26,7 @@ from Pruebas.support_beneficiarios import (
 )
 from Pruebas.support_citas import InMemoryCitasRepository
 from Pruebas.support_preregistro import InMemoryPreregistroRepository
+from Pruebas.support_recibos import InMemoryRecibosRepository
 
 
 def build_minimal_auth_app(auth_service: AuthService) -> FastAPI:
@@ -70,6 +72,17 @@ def build_minimal_app_with_preregistro(auth_service: AuthService) -> FastAPI:
     app.include_router(
         preregistro_router.router, prefix="/api/preregistro", tags=["Pre-Registro"]
     )
+    app.dependency_overrides[get_auth_service] = lambda: auth_service
+    return app
+
+
+def build_minimal_app_with_recibos(auth_service: AuthService) -> FastAPI:
+    app = FastAPI()
+    app.state.limiter = auth_router.limiter
+    app.add_middleware(SlowAPIMiddleware)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.include_router(recibos_router.router, prefix="/api/recibos", tags=["Recibos"])
     app.dependency_overrides[get_auth_service] = lambda: auth_service
     return app
 
@@ -204,6 +217,33 @@ def citas_client_factory(
             fallback_users=[],
         )
         app = build_minimal_app_with_citas(auth_service)
+        return TestClient(app)
+
+    return _make
+
+
+@pytest.fixture
+def recibos_client_factory(
+    password_hasher: SecurityPasswordHasher,
+) -> Callable[[InMemoryRecibosRepository | None, InMemoryUserRepository | None], TestClient]:
+    """App con /api/auth + /api/recibos y repo en memoria (semilla por defecto)."""
+
+    def _make(
+        repo: InMemoryRecibosRepository | None = None,
+        user_repo: InMemoryUserRepository | None = None,
+    ) -> TestClient:
+        from app.application.recibos import use_cases as recibos_uc
+
+        r_repo = repo or InMemoryRecibosRepository()
+        recibos_uc.configure_repository(r_repo)
+        urepo = user_repo or _default_beneficiarios_user_repo(password_hasher)
+        auth_service = AuthService(
+            user_repository=urepo,
+            password_hasher=password_hasher,
+            token_issuer=JwtAccessTokenIssuer(),
+            fallback_users=[],
+        )
+        app = build_minimal_app_with_recibos(auth_service)
         return TestClient(app)
 
     return _make
