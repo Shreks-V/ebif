@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Query, Depends, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from typing import Optional
-from app.schemas.schemas import PreRegistroCreate
+from app.schemas.schemas import PreRegistroCreate, AprobarPreRegistroData
 from app.application.preregistro import use_cases as service
-from app.presentation.api.security import get_current_user
+from app.presentation.api.security import get_current_user, get_optional_current_user
 router = APIRouter()
 
 @router.get('')
@@ -30,16 +31,27 @@ def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
     return service.actualizar_preregistro(id_paciente, data)
 
 @router.post('/{id_paciente}/aprobar')
-def aprobar_preregistro(id_paciente: int, current_user: dict=Depends(get_current_user)):
-    return service.aprobar_preregistro(id_paciente, current_user)
+def aprobar_preregistro(id_paciente: int, body: AprobarPreRegistroData = None, current_user: dict=Depends(get_current_user)):
+    tipo_cuota = body.tipo_cuota if body else None
+    return service.aprobar_preregistro(id_paciente, tipo_cuota, current_user)
 
 @router.post('/{id_paciente}/documentos')
-async def subir_documento(id_paciente: int, id_tipo_documento: int=Form(...), archivo: UploadFile=File(...)):
-    return await service.subir_documento(id_paciente, id_tipo_documento, archivo)
+async def subir_documento(
+    id_paciente: int,
+    id_tipo_documento: int = Form(...),
+    archivo: UploadFile = File(...),
+    current_user: dict | None = Depends(get_optional_current_user),
+):
+    return await service.subir_documento(id_paciente, id_tipo_documento, archivo, current_user)
 
 @router.get('/{id_paciente}/documentos')
 def listar_documentos(id_paciente: int):
     return service.listar_documentos(id_paciente)
+
+@router.get('/{id_paciente}/documentos/{id_documento}/archivo')
+def obtener_documento_archivo(id_paciente: int, id_documento: int):
+    archivo = service.obtener_documento_archivo(id_paciente, id_documento)
+    return FileResponse(path=archivo['file_path'], media_type=archivo['content_type'])
 
 @router.delete('/{id_paciente}/documentos/{id_documento}')
 def eliminar_documento(id_paciente: int, id_documento: int):

@@ -13,12 +13,15 @@ Cubre:
 import io
 import logging
 from datetime import datetime, date
+from pathlib import Path
 from typing import Optional
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.privacy.crypto import decrypt_row, PACIENTE_ENCRYPTED_FIELDS
 logger = logging.getLogger(__name__)
+
+UPLOAD_DOCUMENTOS_DIR = Path(__file__).resolve().parents[3] / 'uploads' / 'documentos'
 
 def _strip(val):
     return val.strip() if isinstance(val, str) else val
@@ -124,10 +127,23 @@ def exportar_beneficiario_pdf(folio: str, current_user: dict=None):
 
 def exportar_credencial_pdf(folio: str, current_user: dict=None):
     """Generar credencial del beneficiario en PDF (RF-RB-06)."""
-    from reportlab.lib.pagesizes import landscape
+    from reportlab.lib.pagesizes import landscape, A6
     from reportlab.lib.units import cm
     from reportlab.lib import colors
     from reportlab.pdfgen import canvas as pdf_canvas
+    NAVY   = colors.HexColor('#00328b')
+    NAVY_L = colors.HexColor('#e8eef8')
+    GRAY   = colors.HexColor('#64748b')
+    LGRAY  = colors.HexColor('#f1f5f9')
+    BLACK  = colors.HexColor('#1e293b')
+    WHITE  = colors.white
+    def _lbl(cv, x, y, txt):
+        cv.setFillColor(NAVY); cv.setFont('Helvetica-Bold', 6.5)
+        cv.drawString(x, y, txt.upper())
+    def _val(cv, x, y, txt, bold=False, size=8):
+        cv.setFillColor(BLACK)
+        cv.setFont('Helvetica-Bold' if bold else 'Helvetica', size)
+        cv.drawString(x, y, str(txt) if txt else '-')
     try:
         with get_db() as conn:
             cur = conn.cursor()
@@ -136,43 +152,167 @@ def exportar_credencial_pdf(folio: str, current_user: dict=None):
             if not paciente:
                 raise HTTPException(status_code=404, detail='Beneficiario no encontrado')
             paciente = decrypt_row(paciente, PACIENTE_ENCRYPTED_FIELDS)
-            cur.execute('SELECT te.NOMBRE FROM PACIENTE_TIPO_ESPINA pte\n                   JOIN TIPO_ESPINA_BIFIDA te ON te.ID_TIPO_ESPINA = pte.ID_TIPO_ESPINA\n                   WHERE pte.ID_PACIENTE = :id', {'id': paciente['id_paciente']})
+            cur.execute(
+                'SELECT te.NOMBRE FROM PACIENTE_TIPO_ESPINA pte '
+                'JOIN TIPO_ESPINA_BIFIDA te ON te.ID_TIPO_ESPINA = pte.ID_TIPO_ESPINA '
+                'WHERE pte.ID_PACIENTE = :id', {'id': paciente['id_paciente']}
+            )
             tipos = [r[0].strip() for r in cur.fetchall()]
-        nombre = f'{paciente['nombre']} {paciente['apellido_paterno']} {paciente.get('apellido_materno') or ''}'.strip()
+            cur.execute(
+                'SELECT dp.ID_DOCUMENTO, dp.RUTA_ARCHIVO, dp.FORMATO_ARCHIVO, dp.FECHA_CARGA, '
+                '       td.NOMBRE AS TIPO_NOMBRE '
+                'FROM DOCUMENTO_PACIENTE dp '
+                'LEFT JOIN TIPO_DOCUMENTO td ON td.ID_TIPO_DOCUMENTO = dp.ID_TIPO_DOCUMENTO '
+                "WHERE dp.ID_PACIENTE = :id AND dp.ACTIVO = 'S'",
+                {'id': paciente['id_paciente']}
+            )
+            documentos = rows_to_dicts(cur)
+
+        foto_path = None
+        imagenes = [
+            d for d in documentos
+            if str(d.get('formato_archivo') or '').strip().upper() in {'JPG', 'JPEG', 'PNG', 'WEBP'}
+        ]
+        if imagenes:
+            fotos_por_tipo = [
+                d for d in imagenes
+                if any(
+                    marker in str(d.get('tipo_nombre') or '').lower()
+                    for marker in ('foto', 'fotografia', 'imagen')
+                )
+            ]
+            candidatas = fotos_por_tipo or imagenes
+            candidatas.sort(key=lambda d: d.get('fecha_carga') or datetime.min, reverse=True)
+            ruta = str(candidatas[0].get('ruta_archivo') or '').strip()
+            if ruta:
+                ruta_local = (UPLOAD_DOCUMENTOS_DIR / Path(ruta).name).resolve()
+                if ruta_local.exists() and ruta_local.is_file():
+                    foto_path = ruta_local
+
+        def _sv(k): return _strip(paciente.get(k)) or ''
+        nombre_completo = f"{_sv('nombre')} {_sv('apellido_paterno')} {_sv('apellido_materno')}".strip()
+        direccion = f"{_sv('direccion')}, {_sv('colonia')}"
+        ciudad_est = f"{_sv('ciudad')}{', ' + _sv('estado') if _sv('estado') else ''}"
+        fecha_nac = (_sv('fecha_nacimiento') or '')[:10]
+        fecha_exp = (_sv('fecha_alta') or '')[:10]
+        valvula = 'Si' if (_sv('usa_valvula') or 'N').upper() == 'S' else 'No'
+        padecimiento = ', '.join(tipos) if tipos else 'No especificado'
+        # Card size: A6 landscape (148 x 105 mm)
+        W, H = landscape(A6)
         buf = io.BytesIO()
-        w, h = (10 * cm, 6.5 * cm)
-        c = pdf_canvas.Canvas(buf, pagesize=(w, h))
-        c.setFillColor(colors.HexColor('#1e3a5f'))
-        c.rect(0, 0, w, h, fill=1)
-        c.setFillColor(colors.HexColor('#2d5f8a'))
-        c.rect(0, h - 1.6 * cm, w, 1.6 * cm, fill=1)
-        c.setFillColor(colors.white)
-        c.setFont('Helvetica-Bold', 11)
-        c.drawCentredString(w / 2, h - 1.1 * cm, 'Asociación de Espina Bífida')
-        c.setFont('Helvetica', 7)
-        c.drawCentredString(w / 2, h - 1.4 * cm, 'Credencial de Beneficiario')
-        c.setFillColor(colors.white)
-        c.setFont('Helvetica-Bold', 9)
-        y = h - 2.3 * cm
-        c.drawString(0.5 * cm, y, f'Nombre: {nombre}')
-        y -= 0.55 * cm
-        c.setFont('Helvetica', 8)
-        c.drawString(0.5 * cm, y, f'Folio: {folio}')
-        y -= 0.5 * cm
-        c.drawString(0.5 * cm, y, f'CURP: {paciente.get('curp') or 'N/A'}')
-        y -= 0.5 * cm
-        c.drawString(0.5 * cm, y, f'Tipo de Sangre: {paciente.get('tipo_sangre') or 'N/A'}')
-        y -= 0.5 * cm
-        c.drawString(0.5 * cm, y, f'Diagnóstico: {(', '.join(tipos) if tipos else 'N/A')}')
-        y -= 0.5 * cm
-        c.drawString(0.5 * cm, y, f'Membresía: {_strip(paciente.get('membresia_estatus')) or 'N/A'}')
-        c.save()
+        cv = pdf_canvas.Canvas(buf, pagesize=(W, H))
+        # Background
+        cv.setFillColor(WHITE); cv.rect(0, 0, W, H, fill=1, stroke=0)
+        # Header bar
+        hdr_h = 1.6 * cm
+        cv.setFillColor(NAVY); cv.rect(0, H - hdr_h, W, hdr_h, fill=1, stroke=0)
+        cv.setFillColor(WHITE); cv.setFont('Helvetica-Bold', 10)
+        cv.drawString(0.5 * cm, H - 1.05 * cm, 'ESPINA BIFIDA - Asociacion de Nuevo Leon ABP')
+        cv.setFont('Helvetica', 7)
+        cv.drawString(0.5 * cm, H - 1.4 * cm, 'CREDENCIAL DE BENEFICIARIO')
+        cv.setFont('Helvetica-Bold', 9)
+        cv.drawRightString(W - 0.5 * cm, H - 1.05 * cm, f'Folio: {folio}')
+        cv.setFont('Helvetica', 7)
+        cv.drawRightString(W - 0.5 * cm, H - 1.4 * cm, f'Membresia No.: {_sv("id_paciente") or "N/A"}')
+        # Photo box (left column)
+        photo_x, photo_y = 0.4 * cm, H - hdr_h - 3.9 * cm
+        photo_w, photo_h = 2.8 * cm, 3.5 * cm
+        cv.setFillColor(LGRAY); cv.setStrokeColor(colors.HexColor('#cbd5e1'))
+        cv.rect(photo_x, photo_y, photo_w, photo_h, fill=1, stroke=1)
+        if foto_path:
+            try:
+                cv.drawImage(
+                    str(foto_path),
+                    photo_x + 0.05 * cm,
+                    photo_y + 0.05 * cm,
+                    photo_w - 0.10 * cm,
+                    photo_h - 0.10 * cm,
+                    preserveAspectRatio=True,
+                    anchor='c',
+                    mask='auto',
+                )
+            except Exception:
+                logger.warning('No se pudo renderizar la foto del beneficiario en credencial', exc_info=True)
+                cv.setFillColor(GRAY); cv.setFont('Helvetica', 6)
+                cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 + 0.3 * cm, 'FOTOGRAFIA')
+                cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 - 0.1 * cm, 'DEL PORTADOR')
+        else:
+            cv.setFillColor(GRAY); cv.setFont('Helvetica', 6)
+            cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 + 0.3 * cm, 'FOTOGRAFIA')
+            cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 - 0.1 * cm, 'DEL PORTADOR')
+        # Left column content (below photo)
+        lx = 0.4 * cm
+        ly = photo_y - 0.65 * cm
+        _lbl(cv, lx, ly, 'Nombre Completo'); ly -= 0.35 * cm
+        _val(cv, lx, ly, nombre_completo[:42], bold=True, size=7); ly -= 0.5 * cm
+        _lbl(cv, lx, ly, 'Direccion'); ly -= 0.32 * cm
+        _val(cv, lx, ly, direccion[:38], size=7); ly -= 0.28 * cm
+        _val(cv, lx, ly, ciudad_est[:38], size=7); ly -= 0.45 * cm
+        _lbl(cv, lx, ly, 'Tel. Casa'); ly -= 0.32 * cm
+        _val(cv, lx, ly, _sv('telefono_casa') or '-', size=7); ly -= 0.45 * cm
+        _lbl(cv, lx, ly, 'Nombre de Padre / Madre'); ly -= 0.32 * cm
+        _val(cv, lx, ly, (_sv('nombre_padre_madre') or '-')[:35], size=7); ly -= 0.45 * cm
+        _lbl(cv, lx, ly, 'Fecha de Expedicion'); ly -= 0.32 * cm
+        _val(cv, lx, ly, fecha_exp or '-', size=7)
+        # Vertical divider
+        mid_x = 3.6 * cm
+        cv.setStrokeColor(colors.HexColor('#e2e8f0'))
+        cv.line(mid_x, 0.55 * cm, mid_x, H - hdr_h - 0.2 * cm)
+        # Right column
+        rx = mid_x + 0.4 * cm
+        ry = H - hdr_h - 0.55 * cm
+        _lbl(cv, rx, ry, 'Padecimiento'); ry -= 0.32 * cm
+        _val(cv, rx, ry, padecimiento[:55], bold=True, size=7); ry -= 0.5 * cm
+        col2 = rx + 3.5 * cm
+        _lbl(cv, rx, ry, 'Tipo de Sangre'); _lbl(cv, col2, ry, 'Tiene Valvula')
+        ry -= 0.32 * cm
+        _val(cv, rx, ry, _sv('tipo_sangre') or '-', bold=True, size=9)
+        _val(cv, col2, ry, valvula, bold=True, size=8); ry -= 0.55 * cm
+        _lbl(cv, rx, ry, 'En caso de accidente avisar a'); ry -= 0.32 * cm
+        _val(cv, rx, ry, (_sv('en_emergencia_avisar_a') or '-')[:42], size=7); ry -= 0.42 * cm
+        _lbl(cv, rx, ry, 'Telefono de Emergencia'); ry -= 0.32 * cm
+        _val(cv, rx, ry, _sv('telefono_emergencia') or '-', size=7); ry -= 0.42 * cm
+        _lbl(cv, rx, ry, 'Correo Electronico'); ry -= 0.32 * cm
+        _val(cv, rx, ry, (_sv('correo_electronico') or '-')[:45], size=7); ry -= 0.52 * cm
+        # Horizontal divider
+        cv.setStrokeColor(colors.HexColor('#e2e8f0'))
+        cv.line(rx, ry + 0.15 * cm, W - 0.4 * cm, ry + 0.15 * cm)
+        ry -= 0.25 * cm
+        # Birth data 3 sub-cols
+        c3a = rx; c3b = rx + 2.2 * cm; c3c = rx + 4.6 * cm
+        _lbl(cv, c3a, ry, 'Datos de Nacimiento'); ry -= 0.32 * cm
+        _lbl(cv, c3a, ry, 'Fecha'); _lbl(cv, c3b, ry, 'Lugar Nac.'); _lbl(cv, c3c, ry, 'Hospital')
+        ry -= 0.32 * cm
+        _val(cv, c3a, ry, fecha_nac or '-', size=7)
+        _val(cv, c3b, ry, (_sv('estado_nacimiento') or '-')[:16], size=7)
+        _val(cv, c3c, ry, (_sv('hospital_nacimiento') or '-')[:18], size=7)
+        ry -= 0.5 * cm
+        # Association box
+        box_w = W - rx - 0.4 * cm
+        box_h = 0.9 * cm
+        cv.setFillColor(NAVY_L); cv.setStrokeColor(NAVY)
+        cv.roundRect(rx, ry - box_h + 0.25 * cm, box_w, box_h, 0.15 * cm, fill=1, stroke=1)
+        cx_box = rx + box_w / 2
+        cv.setFillColor(NAVY); cv.setFont('Helvetica-Bold', 6.5)
+        cv.drawCentredString(cx_box, ry - 0.08 * cm, 'ASOCIACION DE ESPINA BIFIDA DE NUEVO LEON ABP')
+        cv.setFont('Helvetica', 6)
+        cv.drawCentredString(cx_box, ry - 0.42 * cm, 'www.espinabifida.org.mx')
+        # Bottom footer
+        cv.setFillColor(LGRAY); cv.rect(0, 0, W, 0.55 * cm, fill=1, stroke=0)
+        cv.setFillColor(GRAY); cv.setFont('Helvetica', 6)
+        cuota = _sv('tipo_cuota') or 'No asignada'
+        vencimiento = (_sv('fecha_vencimiento_membresia') or '')[:10] or 'Indefinida'
+        cv.drawString(0.4 * cm, 0.2 * cm, f'Cuota: {cuota}')
+        cv.drawCentredString(W / 2, 0.2 * cm, f'Vigencia: {vencimiento}')
+        cv.drawRightString(W - 0.4 * cm, 0.2 * cm, f'CURP: {_sv("curp") or "N/A"}')
+        cv.save()
         return _pdf_response(buf, f'credencial_{folio}.pdf')
     except HTTPException:
         raise
     except Exception:
         logger.exception('Error al generar credencial PDF')
         raise HTTPException(status_code=500, detail='Error interno del servidor')
+
 
 def exportar_comprobante_cita(id_cita: int, current_user: dict=None):
     """Generar comprobante PDF de una cita con sus servicios (RF-SO-10)."""

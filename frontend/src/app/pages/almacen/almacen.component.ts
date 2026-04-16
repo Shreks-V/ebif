@@ -59,6 +59,11 @@ interface ComodatoItem {
   notas?: string;
 }
 
+interface TableSortState {
+  key: string;
+  direction: 'asc' | 'desc';
+}
+
 @Component({
   selector: 'app-almacen',
   standalone: true,
@@ -276,15 +281,60 @@ interface ComodatoItem {
                 <table class="w-full text-sm">
                   <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
                     <tr class="bg-slate-50 border-b border-slate-200">
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">ID</th>
-                      <th *ngIf="selectedCategory !== 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">Categor&iacute;a</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Nombre</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">{{ unidadColumnLabel() }}</th>
-                      <th *ngIf="selectedCategory === 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">Horario</th>
-                      <th *ngIf="selectedCategory !== 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">Stock Actual</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Precio Cuota A</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Precio Cuota B</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Estado</th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('id')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>ID</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'id') }}</span>
+                        </button>
+                      </th>
+                      <th *ngIf="selectedCategory !== 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('categoria')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Categor&iacute;a</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'categoria') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('nombre')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Nombre</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'nombre') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('unidad')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>{{ unidadColumnLabel() }}</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'unidad') }}</span>
+                        </button>
+                      </th>
+                      <th *ngIf="selectedCategory === 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('horario')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Horario</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'horario') }}</span>
+                        </button>
+                      </th>
+                      <th *ngIf="selectedCategory !== 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('stock')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Stock Actual</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'stock') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('precioA')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Precio Cuota A</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'precioA') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('precioB')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Precio Cuota B</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'precioB') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleInventarioSort('estado')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Estado</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'estado') }}</span>
+                        </button>
+                      </th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Acciones</th>
                     </tr>
                   </thead>
@@ -375,12 +425,42 @@ interface ComodatoItem {
                 <table class="w-full text-sm">
                   <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
                     <tr class="bg-slate-50 border-b border-slate-200">
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Folio</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Beneficiario</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Equipo</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Fecha Pr&eacute;stamo</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Devoluci&oacute;n</th>
-                      <th class="text-left px-5 py-4 font-semibold text-slate-600">Estatus</th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleComodatosSort('folioComodato')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Folio</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(comodatosSort, 'folioComodato') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleComodatosSort('beneficiario')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Beneficiario</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(comodatosSort, 'beneficiario') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleComodatosSort('equipo')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Equipo</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(comodatosSort, 'equipo') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleComodatosSort('fechaPrestamo')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Fecha Pr&eacute;stamo</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(comodatosSort, 'fechaPrestamo') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleComodatosSort('fechaDevolucion')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Devoluci&oacute;n</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(comodatosSort, 'fechaDevolucion') }}</span>
+                        </button>
+                      </th>
+                      <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                        <button type="button" (click)="toggleComodatosSort('estatus')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                          <span>Estatus</span>
+                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(comodatosSort, 'estatus') }}</span>
+                        </button>
+                      </th>
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">Acciones</th>
                     </tr>
                   </thead>
@@ -929,6 +1009,8 @@ export class AlmacenComponent implements OnInit {
   servicios: ServicioItem[] = [];
   comodatos: ComodatoItem[] = [];
   alertasCaducidad = 0;
+  inventarioSort: TableSortState = { key: 'id', direction: 'asc' };
+  comodatosSort: TableSortState = { key: 'fechaPrestamo', direction: 'desc' };
 
   // Modal state
   showNuevoProductoModal = false;
@@ -1399,17 +1481,108 @@ export class AlmacenComponent implements OnInit {
       items = items.filter(i => i.nombre.toLowerCase().includes(q) || i.categoria.toLowerCase().includes(q));
     }
 
-    return items;
+    return this.sortRows(items, this.inventarioSort, (item, key) => {
+      switch (key) {
+        case 'id':
+          return item.id;
+        case 'categoria':
+          return item.categoria;
+        case 'nombre':
+          return item.nombre;
+        case 'unidad':
+          return this.unidadCellValue(item);
+        case 'horario':
+          return item.horario || '';
+        case 'stock':
+          return item.cantidadDisponible ?? -1;
+        case 'precioA':
+          return item.precioA ?? -1;
+        case 'precioB':
+          return item.precioB ?? -1;
+        case 'estado':
+          return item.estado;
+        default:
+          return item.id;
+      }
+    });
   }
 
   filteredComodatos(): ComodatoItem[] {
-    if (!this.searchComodatos.trim()) return this.comodatos;
-    const q = this.searchComodatos.toLowerCase();
-    return this.comodatos.filter(c =>
+    const base = !this.searchComodatos.trim()
+      ? this.comodatos
+      : this.comodatos.filter(c => {
+          const q = this.searchComodatos.toLowerCase();
+          return (
       c.nombrePaciente.toLowerCase().includes(q) ||
       c.folioComodato.toLowerCase().includes(q) ||
       c.nombreEquipo.toLowerCase().includes(q)
-    );
+          );
+        });
+
+    return this.sortRows(base, this.comodatosSort, (com, key) => {
+      switch (key) {
+        case 'folioComodato':
+          return com.folioComodato;
+        case 'beneficiario':
+          return `${com.nombrePaciente} ${com.folioPaciente}`;
+        case 'equipo':
+          return com.nombreEquipo;
+        case 'fechaPrestamo':
+          return com.fechaPrestamo;
+        case 'fechaDevolucion':
+          return com.fechaDevolucion || '';
+        case 'estatus':
+          return com.estatus;
+        default:
+          return com.folioComodato;
+      }
+    });
+  }
+
+  toggleInventarioSort(key: string): void {
+    if (this.inventarioSort.key === key) {
+      this.inventarioSort.direction = this.inventarioSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.inventarioSort = { key, direction: 'asc' };
+    }
+  }
+
+  toggleComodatosSort(key: string): void {
+    if (this.comodatosSort.key === key) {
+      this.comodatosSort.direction = this.comodatosSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.comodatosSort = { key, direction: 'asc' };
+    }
+  }
+
+  getSortIndicator(sort: TableSortState, key: string): string {
+    if (sort.key !== key) return '-';
+    return sort.direction === 'asc' ? '^' : 'v';
+  }
+
+  private sortRows<T>(rows: T[], sort: TableSortState, valueGetter: (row: T, key: string) => unknown): T[] {
+    const direction = sort.direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const left = this.toComparableValue(valueGetter(a, sort.key));
+      const right = this.toComparableValue(valueGetter(b, sort.key));
+      if (left < right) return -1 * direction;
+      if (left > right) return 1 * direction;
+      return 0;
+    });
+  }
+
+  private toComparableValue(value: unknown): number | string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') return value;
+
+    const text = String(value).trim();
+    const maybeDate = Date.parse(text);
+    if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
+
+    const maybeNumber = Number(text);
+    if (!Number.isNaN(maybeNumber) && text !== '') return maybeNumber;
+
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
   getCategoryIconBg(categoria: string): string {

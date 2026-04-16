@@ -10,6 +10,11 @@ interface IndicadorOption {
   nombre: string;
 }
 
+interface TableSortState {
+  key: string;
+  direction: 'asc' | 'desc';
+}
+
 @Component({
   selector: 'app-reportes',
   standalone: true,
@@ -172,12 +177,15 @@ interface IndicadorOption {
                 <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
                   <tr>
                     <th *ngFor="let col of reporteColumnas" class="text-left px-5 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      {{ col }}
+                      <button type="button" (click)="toggleReporteSort(col)" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                        <span>{{ col }}</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(reporteSort, col) }}</span>
+                      </button>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let row of reporteData" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                  <tr *ngFor="let row of reporteDataOrdenada" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                     <td *ngFor="let col of reporteColumnas" class="px-5 py-3 text-sm text-slate-700">
                       {{ row[col] }}
                     </td>
@@ -393,12 +401,15 @@ interface IndicadorOption {
               <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th *ngFor="let col of vistaPreviaColumnas" class="text-left px-4 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    {{ col }}
+                    <button type="button" (click)="toggleVistaPreviaSort(col)" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                      <span>{{ col }}</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(vistaPreviaSort, col) }}</span>
+                    </button>
                   </th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let row of vistaPreviaData" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                <tr *ngFor="let row of vistaPreviaDataOrdenada" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                   <td *ngFor="let col of vistaPreviaColumnas" class="px-4 py-3 text-sm text-slate-700">
                     {{ row[col] }}
                   </td>
@@ -428,6 +439,7 @@ export class ReportesComponent {
   // Report results
   reporteData: any[] | null = null;
   reporteColumnas: string[] = [];
+  reporteSort: TableSortState = { key: '', direction: 'asc' };
   reporteError = '';
   generandoReporte = false;
 
@@ -435,6 +447,7 @@ export class ReportesComponent {
   showVistaPrevia = false;
   vistaPreviaData: any[] | null = null;
   vistaPreviaColumnas: string[] = [];
+  vistaPreviaSort: TableSortState = { key: '', direction: 'asc' };
   vistaPreviaError = '';
 
   periods = [
@@ -628,6 +641,64 @@ export class ReportesComponent {
     return labels[this.tipoReporte] || 'Reporte';
   }
 
+  get reporteDataOrdenada(): any[] {
+    if (!this.reporteData) return [];
+    return this.sortDynamicRows(this.reporteData, this.reporteSort);
+  }
+
+  get vistaPreviaDataOrdenada(): any[] {
+    if (!this.vistaPreviaData) return [];
+    return this.sortDynamicRows(this.vistaPreviaData, this.vistaPreviaSort);
+  }
+
+  toggleReporteSort(col: string): void {
+    if (this.reporteSort.key === col) {
+      this.reporteSort.direction = this.reporteSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.reporteSort = { key: col, direction: 'asc' };
+    }
+  }
+
+  toggleVistaPreviaSort(col: string): void {
+    if (this.vistaPreviaSort.key === col) {
+      this.vistaPreviaSort.direction = this.vistaPreviaSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.vistaPreviaSort = { key: col, direction: 'asc' };
+    }
+  }
+
+  getSortIndicator(sort: TableSortState, key: string): string {
+    if (sort.key !== key) return '-';
+    return sort.direction === 'asc' ? '^' : 'v';
+  }
+
+  private sortDynamicRows(rows: any[], sort: TableSortState): any[] {
+    if (!sort.key) return [...rows];
+    const direction = sort.direction === 'asc' ? 1 : -1;
+
+    return [...rows].sort((a, b) => {
+      const left = this.toComparableValue(a?.[sort.key]);
+      const right = this.toComparableValue(b?.[sort.key]);
+      if (left < right) return -1 * direction;
+      if (left > right) return 1 * direction;
+      return 0;
+    });
+  }
+
+  private toComparableValue(value: unknown): number | string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') return value;
+
+    const text = String(value).trim();
+    const maybeDate = Date.parse(text);
+    if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
+
+    const maybeNumber = Number(text);
+    if (!Number.isNaN(maybeNumber) && text !== '') return maybeNumber;
+
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
   private buildFilters(): any {
     const filters: any = { periodo: this.selectedPeriod };
     if (this.selectedPeriod === 'personalizado') {
@@ -692,6 +763,7 @@ export class ReportesComponent {
         const { columnas, data } = this.extractColumnsAndData(response);
         this.reporteColumnas = columnas;
         this.reporteData = data;
+        this.reporteSort = { key: columnas[0] || '', direction: 'asc' };
         this.generandoReporte = false;
       },
       error: (err: any) => {
@@ -705,6 +777,7 @@ export class ReportesComponent {
   limpiarReporte(): void {
     this.reporteData = null;
     this.reporteColumnas = [];
+    this.reporteSort = { key: '', direction: 'asc' };
   }
 
   vistaPrevia(): void {
@@ -740,6 +813,7 @@ export class ReportesComponent {
         const { columnas, data } = this.extractColumnsAndData(response);
         this.vistaPreviaColumnas = columnas;
         this.vistaPreviaData = data;
+        this.vistaPreviaSort = { key: columnas[0] || '', direction: 'asc' };
         this.generandoReporte = false;
       },
       error: (err: any) => {
@@ -754,6 +828,7 @@ export class ReportesComponent {
     this.showVistaPrevia = false;
     this.vistaPreviaData = null;
     this.vistaPreviaColumnas = [];
+    this.vistaPreviaSort = { key: '', direction: 'asc' };
     this.vistaPreviaError = '';
   }
 

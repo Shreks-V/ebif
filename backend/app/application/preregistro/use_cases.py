@@ -31,14 +31,27 @@ def obtener_preregistro(id_paciente: int):
 def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
     return _get_repository().actualizar_preregistro(id_paciente, data)
 
-def aprobar_preregistro(id_paciente: int, current_user: dict=None):
-    return _get_repository().aprobar_preregistro(id_paciente, current_user)
+def aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: dict = None):
+    return _get_repository().aprobar_preregistro(id_paciente, tipo_cuota, current_user)
 
-async def subir_documento(id_paciente: int, id_tipo_documento: int=..., archivo: UploadFile=...):
-    return await _get_repository().subir_documento(id_paciente, id_tipo_documento, archivo)
+async def subir_documento(
+    id_paciente: int,
+    id_tipo_documento: int = ...,
+    archivo: UploadFile = ...,
+    current_user: dict | None = None,
+):
+    return await _get_repository().subir_documento(
+        id_paciente,
+        id_tipo_documento,
+        archivo,
+        current_user,
+    )
 
 def listar_documentos(id_paciente: int):
     return _get_repository().listar_documentos(id_paciente)
+
+def obtener_documento_archivo(id_paciente: int, id_documento: int):
+    return _get_repository().obtener_documento_archivo(id_paciente, id_documento)
 
 def eliminar_documento(id_paciente: int, id_documento: int):
     return _get_repository().eliminar_documento(id_paciente, id_documento)

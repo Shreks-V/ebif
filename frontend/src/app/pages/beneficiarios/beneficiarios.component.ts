@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -40,6 +40,7 @@ interface Beneficiario {
   tiposEspina: {idTipoEspina: number, nombre: string}[];
   fechaInicioMembresia: string | null;
   fechaVencimientoMembresia: string | null;
+  fotoUrl: string | null;
   // UI helpers
   iniciales: string;
   color: string;
@@ -52,8 +53,22 @@ interface Preregistro {
   apellidoPaterno: string;
   apellidoMaterno: string;
   fechaNacimiento: string;
+  genero: string;
   curp: string;
   nombrePadreMadre: string;
+  direccion: string;
+  colonia: string;
+  ciudad: string;
+  estado: string;
+  codigoPostal: string;
+  telefonoCasa: string;
+  telefonoCelular: string;
+  correoElectronico: string;
+  enEmergenciaAvisarA: string;
+  telefonoEmergencia: string;
+  tipoSangre: string;
+  usaValvula: string;
+  notasAdicionales: string;
   tipoCuota: string;
   fechaSolicitud: string;
   estatus: string;
@@ -65,6 +80,11 @@ interface Preregistro {
 interface NuevoBeneficiarioDocumento {
   id_tipo_documento: number;
   archivo: File | null;
+}
+
+interface TableSortState {
+  key: string;
+  direction: 'asc' | 'desc';
 }
 
 @Component({
@@ -181,12 +201,42 @@ interface NuevoBeneficiarioDocumento {
             <table class="w-full">
               <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
                 <tr class="bg-slate-50 border-b border-slate-200">
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Folio</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo Espina</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cuota</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Membresia</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Alta</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="toggleBeneficiariosSort('folio')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Folio</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(beneficiariosSort, 'folio') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="toggleBeneficiariosSort('nombre')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Nombre Completo</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(beneficiariosSort, 'nombre') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="toggleBeneficiariosSort('tipoEspina')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Tipo Espina</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(beneficiariosSort, 'tipoEspina') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="toggleBeneficiariosSort('cuota')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Cuota</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(beneficiariosSort, 'cuota') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="toggleBeneficiariosSort('membresia')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Membresia</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(beneficiariosSort, 'membresia') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="toggleBeneficiariosSort('fechaAlta')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Fecha Alta</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(beneficiariosSort, 'fechaAlta') }}</span>
+                    </button>
+                  </th>
                   <th class="w-14 px-4 py-4"></th>
                 </tr>
               </thead>
@@ -196,13 +246,17 @@ interface NuevoBeneficiarioDocumento {
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
                       <div [class]="b.color + ' w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm'">
-                        {{ b.iniciales }}
+                        <img *ngIf="b.fotoUrl; else avatarInicialesLista"
+                             [src]="b.fotoUrl"
+                             [alt]="'Foto de ' + b.nombre"
+                             class="w-full h-full rounded-full object-cover" />
+                        <ng-template #avatarInicialesLista>{{ b.iniciales }}</ng-template>
                       </div>
                       <span class="text-sm font-semibold text-slate-800">{{ b.nombre }} {{ b.apellidoPaterno }} {{ b.apellidoMaterno }}</span>
                     </div>
                   </td>
                   <td class="px-6 py-4 text-sm text-slate-600">
-                    <span *ngIf="b.tiposEspina?.length; else noEspina">
+                    <span *ngIf="b.tiposEspina.length; else noEspina">
                       <span *ngFor="let te of b.tiposEspina; let last = last">{{ te.nombre }}{{ !last ? ', ' : '' }}</span>
                     </span>
                     <ng-template #noEspina>N/A</ng-template>
@@ -262,11 +316,36 @@ interface NuevoBeneficiarioDocumento {
             <table class="w-full">
               <thead class="sticky top-0 z-10 shadow-sm">
                 <tr class="bg-amber-50 border-b border-amber-200">
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estatus</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cuota</th>
-                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha Solicitud</th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="togglePreregistrosSort('id')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>ID</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(preregistrosSort, 'id') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="togglePreregistrosSort('nombre')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Nombre</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(preregistrosSort, 'nombre') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="togglePreregistrosSort('estatus')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Estatus</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(preregistrosSort, 'estatus') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="togglePreregistrosSort('cuota')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Cuota</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(preregistrosSort, 'cuota') }}</span>
+                    </button>
+                  </th>
+                  <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <button type="button" (click)="togglePreregistrosSort('fechaSolicitud')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                      <span>Fecha Solicitud</span>
+                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(preregistrosSort, 'fechaSolicitud') }}</span>
+                    </button>
+                  </th>
                   <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -304,7 +383,7 @@ interface NuevoBeneficiarioDocumento {
                       </button>
                       <!-- Aprobar -->
                       <button
-                        (click)="aprobarPreregistro(p)"
+                        (click)="abrirModalAprobacion(p)"
                         class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition-colors"
                       >
                         Aprobar
@@ -564,7 +643,11 @@ interface NuevoBeneficiarioDocumento {
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-4">
             <div [class]="beneficiarioSeleccionado.color + ' w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg'">
-              {{ beneficiarioSeleccionado.iniciales }}
+              <img *ngIf="beneficiarioSeleccionado.fotoUrl; else avatarInicialesDetalle"
+                   [src]="beneficiarioSeleccionado.fotoUrl"
+                   [alt]="'Foto de ' + beneficiarioSeleccionado.nombre"
+                   class="w-full h-full rounded-full object-cover" />
+              <ng-template #avatarInicialesDetalle>{{ beneficiarioSeleccionado.iniciales }}</ng-template>
             </div>
             <div>
               <h2 class="text-2xl font-black text-slate-900">{{ beneficiarioSeleccionado.nombre }} {{ beneficiarioSeleccionado.apellidoPaterno }} {{ beneficiarioSeleccionado.apellidoMaterno }}</h2>
@@ -598,7 +681,7 @@ interface NuevoBeneficiarioDocumento {
           <div class="md:col-span-2"><span class="text-xs font-bold text-slate-400 uppercase">Tipo(s) de Espina</span>
             <div class="flex flex-wrap gap-2 mt-1">
               <span *ngFor="let te of beneficiarioSeleccionado.tiposEspina" class="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800">{{ te.nombre }}</span>
-              <span *ngIf="!beneficiarioSeleccionado.tiposEspina?.length" class="text-sm font-semibold text-slate-800">N/A</span>
+              <span *ngIf="!beneficiarioSeleccionado.tiposEspina.length" class="text-sm font-semibold text-slate-800">N/A</span>
             </div>
           </div>
         </div>
@@ -634,7 +717,7 @@ interface NuevoBeneficiarioDocumento {
         <!-- Actions -->
         <div class="flex justify-between items-center">
           <div class="flex gap-2">
-            <button (click)="descargarCredencial(beneficiarioSeleccionado.folio)" class="px-4 py-2 rounded-xl font-bold text-sm bg-[#00328b] text-white hover:bg-[#002266] transition-all flex items-center gap-2">
+            <button (click)="verCredencial(beneficiarioSeleccionado)" class="px-4 py-2 rounded-xl font-bold text-sm bg-[#00328b] text-white hover:bg-[#002266] transition-all flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
               Credencial
             </button>
@@ -652,57 +735,153 @@ interface NuevoBeneficiarioDocumento {
 
     <!-- ==================== MODAL: Detalle Preregistro ==================== -->
     <div *ngIf="showDetallePreregistroModal && preregistroSeleccionado" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeDetallePreregistroModal()">
-      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full mx-4 max-h-[92vh] flex flex-col" (click)="$event.stopPropagation()">
+        <!-- Header sticky -->
+        <div class="flex items-center justify-between px-8 pt-8 pb-5 border-b border-slate-100 shrink-0">
           <div class="flex items-center gap-4">
-            <div [class]="preregistroSeleccionado.color + ' w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg'">
+            <div [class]="preregistroSeleccionado.color + ' w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0'">
               {{ preregistroSeleccionado.iniciales }}
             </div>
             <div>
-              <h2 class="text-2xl font-black text-slate-900">{{ preregistroSeleccionado.nombre }} {{ preregistroSeleccionado.apellidoPaterno }} {{ preregistroSeleccionado.apellidoMaterno }}</h2>
-              <p class="text-slate-500 font-semibold">Pre-registro #{{ preregistroSeleccionado.id }}</p>
+              <h2 class="text-xl font-black text-slate-900">{{ preregistroSeleccionado.nombre }} {{ preregistroSeleccionado.apellidoPaterno }} {{ preregistroSeleccionado.apellidoMaterno }}</h2>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">{{ preregistroSeleccionado.estatus }}</span>
+                <span *ngIf="preregistroSeleccionado.tipoCuota" [class]="getCuotaBadgeClass(preregistroSeleccionado.tipoCuota)">Cuota {{ cuotaShortLabel(preregistroSeleccionado.tipoCuota) }}</span>
+                <span *ngIf="!preregistroSeleccionado.tipoCuota" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500">Sin cuota asignada</span>
+              </div>
             </div>
           </div>
-          <button (click)="closeDetallePreregistroModal()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
+          <button (click)="closeDetallePreregistroModal()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
-        <!-- Badges -->
-        <div class="flex items-center gap-3 mb-6">
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">{{ preregistroSeleccionado.estatus }}</span>
-          <span [class]="getCuotaBadgeClass(preregistroSeleccionado.tipoCuota)">Cuota {{ cuotaShortLabel(preregistroSeleccionado.tipoCuota) }}</span>
+        <!-- Scrollable body -->
+        <div class="overflow-y-auto flex-1 px-8 py-6 space-y-6">
+
+          <!-- Datos Personales -->
+          <div>
+            <h3 class="text-xs font-bold text-[#00328b] uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">Datos Personales</h3>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Nombre</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.nombre }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Apellido Paterno</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.apellidoPaterno }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Apellido Materno</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.apellidoMaterno || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha de Nacimiento</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.fechaNacimiento ? preregistroSeleccionado.fechaNacimiento.substring(0,10) : '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Sexo</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.genero || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">CURP</span><p class="text-sm font-semibold text-slate-800 mt-0.5 font-mono">{{ preregistroSeleccionado.curp || '-' }}</p></div>
+              <div class="col-span-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Padre / Madre</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.nombrePadreMadre || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Folio</span><p class="text-sm font-semibold text-slate-800 mt-0.5 font-mono">{{ preregistroSeleccionado.folio || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha de Solicitud</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.fechaSolicitud ? preregistroSeleccionado.fechaSolicitud.substring(0,10) : '-' }}</p></div>
+            </div>
+          </div>
+
+          <!-- Direccion -->
+          <div>
+            <h3 class="text-xs font-bold text-[#00328b] uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">Direccion</h3>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+              <div class="col-span-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Calle y numero</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.direccion || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Colonia</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.colonia || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Ciudad</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.ciudad || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Estado</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.estado || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Codigo Postal</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.codigoPostal || '-' }}</p></div>
+            </div>
+          </div>
+
+          <!-- Contacto -->
+          <div>
+            <h3 class="text-xs font-bold text-[#00328b] uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">Contacto</h3>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Telefono Casa</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.telefonoCasa || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Telefono Celular</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.telefonoCelular || '-' }}</p></div>
+              <div class="col-span-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Correo Electronico</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.correoElectronico || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">En Emergencia Avisar a</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.enEmergenciaAvisarA || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Telefono Emergencia</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.telefonoEmergencia || '-' }}</p></div>
+            </div>
+          </div>
+
+          <!-- Info Medica -->
+          <div>
+            <h3 class="text-xs font-bold text-[#00328b] uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">Informacion Medica</h3>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Tipo de Sangre</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.tipoSangre || '-' }}</p></div>
+              <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Usa Valvula</span>
+                <p class="mt-0.5">
+                  <span *ngIf="preregistroSeleccionado.usaValvula === 'S'" class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">Si</span>
+                  <span *ngIf="preregistroSeleccionado.usaValvula !== 'S'" class="text-sm font-semibold text-slate-800">No</span>
+                </p>
+              </div>
+              <div *ngIf="preregistroSeleccionado.notasAdicionales" class="col-span-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Notas Adicionales</span><p class="text-sm font-semibold text-slate-800 mt-0.5 whitespace-pre-wrap">{{ preregistroSeleccionado.notasAdicionales }}</p></div>
+            </div>
+          </div>
         </div>
 
-        <!-- Personal -->
-        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3 border-b-2 border-slate-100 pb-2">Datos Personales</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-6">
-          <div><span class="text-xs font-bold text-slate-400 uppercase">Nombre</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.nombre }}</p></div>
-          <div><span class="text-xs font-bold text-slate-400 uppercase">Apellido Paterno</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.apellidoPaterno }}</p></div>
-          <div><span class="text-xs font-bold text-slate-400 uppercase">Apellido Materno</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.apellidoMaterno || '-' }}</p></div>
-          <div><span class="text-xs font-bold text-slate-400 uppercase">Fecha Nacimiento</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.fechaNacimiento || '-' }}</p></div>
-          <div><span class="text-xs font-bold text-slate-400 uppercase">CURP</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.curp || '-' }}</p></div>
-          <div><span class="text-xs font-bold text-slate-400 uppercase">Padre/Madre</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.nombrePadreMadre || '-' }}</p></div>
-          <div><span class="text-xs font-bold text-slate-400 uppercase">Fecha Solicitud</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.fechaSolicitud || '-' }}</p></div>
-          <div><span class="text-xs font-bold text-slate-400 uppercase">Folio</span><p class="text-sm font-semibold text-slate-800">{{ preregistroSeleccionado.folio || '-' }}</p></div>
+        <!-- Footer actions sticky -->
+        <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-slate-100 shrink-0">
+          <button (click)="closeDetallePreregistroModal()" class="px-5 py-2.5 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+            Cerrar
+          </button>
+          <button (click)="closeDetallePreregistroModal(); editarPreregistro(preregistroSeleccionado!)" class="px-5 py-2.5 rounded-xl font-bold border-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-all">
+            Editar
+          </button>
+          <button (click)="closeDetallePreregistroModal(); rechazarPreregistro(preregistroSeleccionado!)" class="px-5 py-2.5 rounded-xl font-bold border-2 border-red-400 text-red-500 hover:bg-red-50 transition-all">
+            Rechazar
+          </button>
+          <button (click)="closeDetallePreregistroModal(); abrirModalAprobacion(preregistroSeleccionado!)" class="px-5 py-2.5 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
+            Aprobar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODAL: Confirmar Aprobacion ==================== -->
+    <div *ngIf="showAprobarModal && preregistroAProbar" class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center" (click)="showAprobarModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
+        <!-- Icon + Title -->
+        <div class="flex flex-col items-center text-center mb-6">
+          <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-black text-slate-900">Aprobar Beneficiario</h3>
+          <p class="text-slate-500 text-sm mt-1 font-semibold">{{ preregistroAProbar.nombre }} {{ preregistroAProbar.apellidoPaterno }} {{ preregistroAProbar.apellidoMaterno }}</p>
+        </div>
+
+        <!-- Cuota selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-slate-700 mb-3">Tipo de Cuota <span class="text-red-500">*</span></label>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button"
+              (click)="aprobarCuotaSeleccionada = 'CUOTA A'"
+              [ngClass]="aprobarCuotaSeleccionada === 'CUOTA A'
+                ? 'border-[#00328b] bg-[#00328b] text-white shadow-lg'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
+              class="px-4 py-4 rounded-2xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1">
+              <span class="text-base">Cuota A</span>
+              <span class="text-xs font-normal opacity-75">Tarifa estandar</span>
+            </button>
+            <button type="button"
+              (click)="aprobarCuotaSeleccionada = 'CUOTA B'"
+              [ngClass]="aprobarCuotaSeleccionada === 'CUOTA B'
+                ? 'border-[#f3ad1c] bg-[#f3ad1c] text-white shadow-lg'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
+              class="px-4 py-4 rounded-2xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1">
+              <span class="text-base">Cuota B</span>
+              <span class="text-xs font-normal opacity-75">Tarifa diferenciada</span>
+            </button>
+          </div>
+          <p *ngIf="!aprobarCuotaSeleccionada" class="text-xs text-amber-600 font-semibold mt-2">Selecciona el tipo de cuota para continuar</p>
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center justify-end gap-3">
-          <button (click)="closeDetallePreregistroModal()" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
-            Cerrar
+        <div class="flex gap-3">
+          <button (click)="showAprobarModal = false" class="flex-1 px-5 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+            Cancelar
           </button>
-          <button (click)="closeDetallePreregistroModal(); editarPreregistro(preregistroSeleccionado)" class="px-6 py-3 rounded-xl font-bold border-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-all">
-            Editar Datos
-          </button>
-          <button (click)="closeDetallePreregistroModal(); aprobarPreregistro(preregistroSeleccionado)" class="px-6 py-3 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
-            Aprobar
-          </button>
-          <button (click)="closeDetallePreregistroModal(); rechazarPreregistro(preregistroSeleccionado)" class="px-6 py-3 rounded-xl font-bold border-2 border-red-400 text-red-500 hover:bg-red-50 transition-all">
-            Rechazar
+          <button (click)="confirmarAprobacion()"
+            [disabled]="!aprobarCuotaSeleccionada || submittingAprobacion"
+            class="flex-1 px-5 py-3 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ submittingAprobacion ? 'Aprobando...' : 'Confirmar Aprobacion' }}
           </button>
         </div>
       </div>
@@ -859,6 +1038,40 @@ interface NuevoBeneficiarioDocumento {
           </button>
         </div>
         <form (ngSubmit)="guardarEdicionBeneficiario()">
+          <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Fotografia</h3>
+          <div class="mb-6 rounded-2xl border-2 border-slate-200 p-4 flex flex-col sm:flex-row gap-4 bg-slate-50">
+            <div class="w-28 h-36 rounded-xl border-2 border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
+              <img *ngIf="editFotoPreviewUrl; else fotoEditPlaceholder"
+                   [src]="editFotoPreviewUrl"
+                   alt="Vista previa de foto"
+                   class="w-full h-full object-cover" />
+              <ng-template #fotoEditPlaceholder>
+                <div class="text-center text-slate-300 px-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                  <p class="text-[10px] font-bold">Sin foto</p>
+                </div>
+              </ng-template>
+            </div>
+
+            <div class="flex-1 space-y-3">
+              <div>
+                <p class="text-sm font-bold text-slate-800">Cargar foto del beneficiario</p>
+                <p class="text-xs font-semibold text-slate-500">Esta imagen se mostrara en el avatar y en la credencial generada.</p>
+              </div>
+
+              <input type="file"
+                     accept="image/png,image/jpeg,image/jpg"
+                     (change)="onFotoBeneficiarioSeleccionada($event)"
+                     class="w-full text-sm font-semibold text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[#00328b] file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-white hover:file:bg-[#002266]" />
+
+              <p *ngIf="editFotoFile" class="text-xs font-semibold text-emerald-700">
+                Archivo seleccionado: {{ editFotoFile.name }}
+              </p>
+            </div>
+          </div>
+
           <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Datos Personales</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
@@ -1033,35 +1246,77 @@ interface NuevoBeneficiarioDocumento {
           <!-- Tab: Citas -->
           <div *ngIf="historialTab === 'citas'">
             <div *ngIf="!historialData.citas?.length" class="text-center py-8 text-slate-400 text-sm">Sin citas registradas</div>
-            <div *ngFor="let c of historialData.citas" class="border border-slate-200 rounded-xl p-4 mb-3">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-bold text-slate-800">{{ c.fecha_hora }}</span>
-                <span [class]="c.estatus === 'COMPLETADA' ? 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700' : c.estatus === 'CANCELADA' ? 'px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700' : 'px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700'">{{ c.estatus }}</span>
+            <div *ngFor="let c of historialData.citas" class="border-2 border-slate-200 rounded-2xl p-4 mb-3 bg-white shadow-sm">
+              <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Fecha y hora</p>
+                  <p class="text-base font-black text-slate-900">{{ formatDateTime(c.fecha_hora) }}</p>
+                </div>
+                <span [class]="getCitaStatusClass(c.estatus)">{{ getCitaStatusLabel(c.estatus) }}</span>
               </div>
-              <div *ngIf="c.servicios?.length" class="text-xs text-slate-500 mb-1">
-                <span class="font-semibold">Servicios:</span> {{ c.servicios | json }}
+
+              <div *ngIf="c.servicios?.length" class="mb-3">
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Servicios</p>
+                <div class="space-y-2">
+                  <div *ngFor="let s of c.servicios" class="rounded-xl border border-slate-200 px-3 py-2 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-semibold text-slate-800">{{ s.nombre || 'Servicio' }}</span>
+                      <span *ngIf="s.cancelado === 'S'" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">Cancelado</span>
+                    </div>
+                    <div class="text-xs font-semibold text-slate-600 flex items-center gap-3">
+                      <span>Cantidad: {{ s.cantidad || 1 }}</span>
+                      <span>Monto: {{ formatMoney(s.monto_pagado) }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div *ngIf="c.doctores?.length" class="text-xs text-slate-500">
-                <span class="font-semibold">Doctores:</span>
-                <span *ngFor="let d of c.doctores; let last = last">{{ d.nombre_doctor }}{{ !last ? ', ' : '' }}</span>
+
+              <div *ngIf="c.doctores?.length" class="mb-2">
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Equipo medico</p>
+                <div class="flex flex-wrap gap-2">
+                  <span *ngFor="let d of c.doctores" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                    {{ d.nombre_doctor }}<span *ngIf="d.especialidad"> - {{ d.especialidad }}</span>
+                  </span>
+                </div>
               </div>
-              <div *ngIf="c.notas" class="text-xs text-slate-400 mt-1 italic">{{ c.notas }}</div>
+
+              <div *ngIf="c.notas" class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <span class="font-bold">Notas:</span> {{ c.notas }}
+              </div>
             </div>
           </div>
 
           <!-- Tab: Pagos -->
           <div *ngIf="historialTab === 'pagos'">
             <div *ngIf="!historialData.pagos?.length" class="text-center py-8 text-slate-400 text-sm">Sin pagos registrados</div>
-            <div *ngFor="let p of historialData.pagos" class="border border-slate-200 rounded-xl p-4 mb-3">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-bold text-slate-800">{{ p.folio_venta }}</span>
-                <span class="text-sm font-semibold" [class.text-red-500]="p.cancelada === 'S'" [class.text-emerald-600]="p.cancelada !== 'S'">
-                  {{ p.cancelada === 'S' ? 'Cancelado' : ('$' + p.monto_total) }}
-                </span>
+            <div *ngFor="let p of historialData.pagos" class="border-2 border-slate-200 rounded-2xl p-4 mb-3 bg-white shadow-sm">
+              <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Recibo</p>
+                  <p class="text-base font-black text-slate-900">{{ p.folio_venta || ('Venta #' + p.id_venta) }}</p>
+                </div>
+                <span [class]="getPagoStatusClass(p)">{{ getPagoStatusLabel(p) }}</span>
               </div>
-              <div class="text-xs text-slate-500">
-                <span class="font-semibold">Fecha:</span> {{ p.fecha_venta }}
-                <span *ngIf="p.saldo_pendiente > 0" class="ml-3 text-amber-600 font-semibold">Saldo pendiente: {{ '$' + p.saldo_pendiente }}</span>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Fecha</p>
+                  <p class="text-sm font-semibold text-slate-800">{{ formatDateTime(p.fecha_venta) }}</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Total</p>
+                  <p class="text-sm font-semibold text-slate-800">{{ formatMoney(p.monto_total) }}</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Saldo pendiente</p>
+                  <p class="text-sm font-semibold" [class.text-amber-700]="hasPendingAmount(p.saldo_pendiente)" [class.text-emerald-700]="!hasPendingAmount(p.saldo_pendiente)">
+                    {{ formatMoney(p.saldo_pendiente) }}
+                  </p>
+                </div>
+              </div>
+
+              <div *ngIf="p.motivo_cancelacion" class="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <span class="font-bold">Motivo de cancelacion:</span> {{ p.motivo_cancelacion }}
               </div>
             </div>
           </div>
@@ -1069,14 +1324,36 @@ interface NuevoBeneficiarioDocumento {
           <!-- Tab: Comodatos -->
           <div *ngIf="historialTab === 'comodatos'">
             <div *ngIf="!historialData.comodatos?.length" class="text-center py-8 text-slate-400 text-sm">Sin comodatos registrados</div>
-            <div *ngFor="let cm of historialData.comodatos" class="border border-slate-200 rounded-xl p-4 mb-3">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-bold text-slate-800">{{ cm.nombre_equipo || cm.folio_comodato }}</span>
-                <span [class]="cm.estatus === 'DEVUELTO' ? 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700' : 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700'">{{ cm.estatus }}</span>
+            <div *ngFor="let cm of historialData.comodatos" class="border-2 border-slate-200 rounded-2xl p-4 mb-3 bg-white shadow-sm">
+              <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Equipo</p>
+                  <p class="text-base font-black text-slate-900">{{ cm.nombre_equipo || cm.folio_comodato }}</p>
+                  <p *ngIf="cm.folio_comodato" class="text-xs font-semibold text-slate-500 mt-0.5">{{ cm.folio_comodato }}</p>
+                </div>
+                <span [class]="getComodatoStatusClass(cm.estatus)">{{ getComodatoStatusLabel(cm.estatus) }}</span>
               </div>
-              <div class="text-xs text-slate-500">
-                <span class="font-semibold">Prestamo:</span> {{ cm.fecha_prestamo }}
-                <span *ngIf="cm.fecha_devolucion" class="ml-3"><span class="font-semibold">Devolucion:</span> {{ cm.fecha_devolucion }}</span>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Prestamo</p>
+                  <p class="text-sm font-semibold text-slate-800">{{ formatDate(cm.fecha_prestamo) }}</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Devolucion</p>
+                  <p class="text-sm font-semibold text-slate-800">{{ cm.fecha_devolucion ? formatDate(cm.fecha_devolucion) : 'Sin fecha de devolucion' }}</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" *ngIf="cm.monto_total !== null || cm.saldo_pendiente !== null">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3" *ngIf="cm.monto_total !== null && cm.monto_total !== undefined">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Monto total</p>
+                  <p class="text-sm font-semibold text-slate-800">{{ formatMoney(cm.monto_total) }}</p>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3" *ngIf="cm.saldo_pendiente !== null && cm.saldo_pendiente !== undefined">
+                  <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Saldo pendiente</p>
+                  <p class="text-sm font-semibold" [class.text-amber-700]="hasPendingAmount(cm.saldo_pendiente)" [class.text-emerald-700]="!hasPendingAmount(cm.saldo_pendiente)">{{ formatMoney(cm.saldo_pendiente) }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -1116,6 +1393,14 @@ interface NuevoBeneficiarioDocumento {
           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
         <span class="font-medium">Historial</span>
+      </button>
+      <!-- Credencial -->
+      <button (click)="verCredencial(menuBeneficiario!); closeActionMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#00328b] hover:bg-blue-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#00328b] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/>
+        </svg>
+        <span class="font-medium">Credencial</span>
       </button>
       <!-- Renovar membresía -->
       <button (click)="abrirRenovarModal(menuBeneficiario!); closeActionMenu()"
@@ -1241,9 +1526,204 @@ interface NuevoBeneficiarioDocumento {
         </div>
       </div>
     </div>
+
+    <!-- ==================== MODAL: Preview Credencial ==================== -->
+    <div *ngIf="showCredencialModal && credencialBeneficiario" class="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4" (click)="showCredencialModal = false">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden" (click)="$event.stopPropagation()">
+
+        <!-- Modal header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 class="text-lg font-black text-slate-900">Vista previa de Credencial</h2>
+          <div class="flex items-center gap-2">
+            <button (click)="descargarCredencial(credencialBeneficiario!.folio)" class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-[#00328b] text-white hover:bg-[#002266] transition-all">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Descargar PDF
+            </button>
+            <button (click)="showCredencialModal = false" class="w-9 h-9 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Credential card -->
+        <div class="p-6 bg-slate-100">
+          <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden" style="font-size:11px; line-height:1.4">
+
+            <!-- Card header -->
+            <div class="bg-[#00328b] px-4 py-2.5 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#00328b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#00328b" stroke="none"/>
+                    <path stroke="white" stroke-width="1.5" d="M12 6v6l4 2"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-white font-black text-xs tracking-wide leading-tight">ESPINA BIFIDA</p>
+                  <p class="text-blue-200 font-semibold leading-tight" style="font-size:9px">Asociacion de Nuevo Leon ABP</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-blue-200 font-semibold" style="font-size:9px">CREDENCIAL DE BENEFICIARIO</p>
+                <p class="text-white font-black text-sm">Folio: {{ credencialBeneficiario!.folio }}</p>
+              </div>
+            </div>
+
+            <!-- Card body -->
+            <div class="flex gap-0">
+
+              <!-- Left: photo + basic info -->
+              <div class="w-40 shrink-0 border-r border-slate-200 p-3 flex flex-col gap-2">
+                <!-- Photo placeholder -->
+                <div class="w-full aspect-[3/4] bg-slate-100 rounded-xl border-2 border-slate-200 overflow-hidden flex flex-col items-center justify-center text-slate-300">
+                  <img *ngIf="credencialBeneficiario!.fotoUrl; else credencialSinFoto"
+                       [src]="credencialBeneficiario!.fotoUrl"
+                       [alt]="'Foto de ' + credencialBeneficiario!.nombre"
+                       class="w-full h-full object-cover" />
+                  <ng-template #credencialSinFoto>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span style="font-size:8px" class="text-slate-300 font-semibold">FOTOGRAFIA</span>
+                  </ng-template>
+                </div>
+
+                <!-- Membership badge -->
+                <div class="bg-[#00328b]/5 rounded-lg px-2 py-1.5 border border-[#00328b]/10 text-center">
+                  <p class="text-[#00328b] font-black" style="font-size:9px">MEMBRESIA No.</p>
+                  <p class="text-slate-800 font-bold text-xs">{{ credencialBeneficiario!.idPaciente }}</p>
+                </div>
+
+                <!-- Estatus -->
+                <div class="text-center">
+                  <span class="inline-block px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700" style="font-size:8px">
+                    {{ credencialBeneficiario!.membresiaEstatus }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Center: personal + contact -->
+              <div class="flex-1 p-3 space-y-2 border-r border-slate-200">
+                <!-- Name big -->
+                <div>
+                  <p class="text-[#00328b] font-black" style="font-size:9px">NOMBRE</p>
+                  <p class="font-bold text-slate-900 text-sm leading-tight">{{ credencialBeneficiario!.nombre }} {{ credencialBeneficiario!.apellidoPaterno }} {{ credencialBeneficiario!.apellidoMaterno }}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                  <div>
+                    <p class="text-[#00328b] font-black" style="font-size:9px">FECHA DE EXPEDICION</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.fechaAlta ? credencialBeneficiario!.fechaAlta.substring(0,10) : '-' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[#00328b] font-black" style="font-size:9px">SEXO</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.genero || '-' }}</p>
+                  </div>
+                  <div class="col-span-2">
+                    <p class="text-[#00328b] font-black" style="font-size:9px">DIRECCION</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.direccion || '-' }}, {{ credencialBeneficiario!.colonia || '' }}</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.ciudad || '' }}{{ credencialBeneficiario!.estado ? ', ' + credencialBeneficiario!.estado : '' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[#00328b] font-black" style="font-size:9px">TEL. CASA</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.telefonoCasa || '-' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[#00328b] font-black" style="font-size:9px">CELULAR</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.telefonoCelular || '-' }}</p>
+                  </div>
+                  <div class="col-span-2">
+                    <p class="text-[#00328b] font-black" style="font-size:9px">CORREO ELECTRONICO</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.correoElectronico || '-' }}</p>
+                  </div>
+                  <div class="col-span-2">
+                    <p class="text-[#00328b] font-black" style="font-size:9px">NOMBRE DE PADRE/MADRE</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.nombrePadreMadre || '-' }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: medical + emergency + birth -->
+              <div class="w-52 shrink-0 p-3 flex flex-col gap-2">
+
+                <!-- Padecimiento -->
+                <div>
+                  <p class="text-[#00328b] font-black" style="font-size:9px">PADECIMIENTO</p>
+                  <p class="font-semibold text-slate-800 leading-tight">{{ credencialPadecimiento }}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                  <div>
+                    <p class="text-[#00328b] font-black" style="font-size:9px">TIPO DE SANGRE</p>
+                    <p class="font-bold text-slate-800 text-sm">{{ credencialBeneficiario!.tipoSangre || '-' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[#00328b] font-black" style="font-size:9px">TIENE VALVULA</p>
+                    <p class="font-bold text-slate-800">{{ credencialBeneficiario!.usaValvula === 'S' ? 'Si' : 'No' }}</p>
+                  </div>
+                  <div class="col-span-2">
+                    <p class="text-[#00328b] font-black" style="font-size:9px">EN CASO DE ACCIDENTE AVISAR A</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.enEmergenciaAvisarA || '-' }}</p>
+                  </div>
+                  <div class="col-span-2">
+                    <p class="text-[#00328b] font-black" style="font-size:9px">TELEFONO EMERGENCIA</p>
+                    <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.telefonoEmergencia || '-' }}</p>
+                  </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="h-px bg-slate-100"></div>
+
+                <!-- Birth data -->
+                <div>
+                  <p class="text-[#00328b] font-black" style="font-size:9px">DATOS DE NACIMIENTO</p>
+                  <div class="grid grid-cols-2 gap-x-2 gap-y-1 mt-1">
+                    <div>
+                      <p class="text-slate-400 font-semibold" style="font-size:8px">Fecha</p>
+                      <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.fechaNacimiento ? credencialBeneficiario!.fechaNacimiento.substring(0,10) : '-' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-slate-400 font-semibold" style="font-size:8px">Lugar Nac.</p>
+                      <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.estadoNacimiento || '-' }}</p>
+                    </div>
+                    <div class="col-span-2">
+                      <p class="text-slate-400 font-semibold" style="font-size:8px">Hospital</p>
+                      <p class="font-semibold text-slate-800">{{ credencialBeneficiario!.hospitalNacimiento || '-' }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="h-px bg-slate-100"></div>
+
+                <!-- Association footer -->
+                <div class="text-center bg-[#00328b]/5 rounded-lg p-2 border border-[#00328b]/10 mt-auto">
+                  <p class="text-[#00328b] font-black leading-tight" style="font-size:8px">ASOCIACION DE ESPINA BIFIDA</p>
+                  <p class="text-[#00328b] font-black leading-tight" style="font-size:8px">DE NUEVO LEON ABP</p>
+                  <p class="text-slate-500 font-semibold mt-0.5" style="font-size:8px">www.espinabifida.org.mx</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card footer -->
+            <div class="bg-slate-50 border-t border-slate-200 px-4 py-2 flex items-center justify-between">
+              <p class="text-slate-400 font-semibold" style="font-size:9px">Cuota: {{ credencialBeneficiario!.tipoCuota || 'No asignada' }}</p>
+              <p class="text-slate-400 font-semibold" style="font-size:9px">Vigencia: {{ credencialBeneficiario!.fechaVencimientoMembresia ? credencialBeneficiario!.fechaVencimientoMembresia.substring(0,10) : 'Indefinida' }}</p>
+              <p class="text-slate-400 font-semibold" style="font-size:9px">CURP: {{ credencialBeneficiario!.curp || '-' }}</p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Footer note -->
+        <div class="px-6 py-3 border-t border-slate-100 bg-slate-50 text-center">
+          <p class="text-xs text-slate-400 font-semibold">El PDF descargado es la version oficial para impresion</p>
+        </div>
+      </div>
+    </div>
   `
 })
-export class BeneficiariosComponent implements OnInit {
+export class BeneficiariosComponent implements OnInit, OnDestroy {
   currentTab: 'activos' | 'preregistros' = 'activos';
   searchTerm = '';
 
@@ -1257,6 +1737,10 @@ export class BeneficiariosComponent implements OnInit {
   showDetalleModal = false;
   showDetallePreregistroModal = false;
   showEditPreregistroModal = false;
+  showAprobarModal = false;
+  preregistroAProbar: Preregistro | null = null;
+  aprobarCuotaSeleccionada = '';
+  submittingAprobacion = false;
   beneficiarioSeleccionado: Beneficiario | null = null;
   preregistroSeleccionado: Preregistro | null = null;
   submittingNuevo = false;
@@ -1277,6 +1761,8 @@ export class BeneficiariosComponent implements OnInit {
   editFolio = '';
   submittingEdit = false;
   editError = '';
+  editFotoFile: File | null = null;
+  editFotoPreviewUrl: string | null = null;
 
   // Historial modal
   showHistorialModal = false;
@@ -1305,6 +1791,20 @@ export class BeneficiariosComponent implements OnInit {
   openActionMenu: string | null = null;
   menuPosition = { top: 0, left: 0 };
   menuBeneficiario: Beneficiario | null = null;
+  beneficiariosSort: TableSortState = { key: 'folio', direction: 'asc' };
+  preregistrosSort: TableSortState = { key: 'id', direction: 'asc' };
+  private actionMenuTriggerElement: HTMLElement | null = null;
+  private readonly actionMenuWidth = 208; // Tailwind w-52
+  private readonly actionMenuEstimatedHeight = 332;
+  private readonly actionMenuGap = 6;
+  private readonly actionMenuViewportPadding = 8;
+  private readonly onViewportGeometryChange = (): void => {
+    this.repositionOpenActionMenu();
+  };
+
+  // Credencial preview
+  showCredencialModal = false;
+  credencialBeneficiario: Beneficiario | null = null;
 
   // Form data for new beneficiario
   formData: any = {};
@@ -1353,6 +1853,14 @@ export class BeneficiariosComponent implements OnInit {
         this.openNuevoModal();
       }
     });
+
+    window.visualViewport?.addEventListener('resize', this.onViewportGeometryChange, { passive: true });
+    window.visualViewport?.addEventListener('scroll', this.onViewportGeometryChange, { passive: true });
+  }
+
+  ngOnDestroy(): void {
+    window.visualViewport?.removeEventListener('resize', this.onViewportGeometryChange);
+    window.visualViewport?.removeEventListener('scroll', this.onViewportGeometryChange);
   }
 
   private resetFormData(): void {
@@ -1434,10 +1942,12 @@ export class BeneficiariosComponent implements OnInit {
           })),
           fechaInicioMembresia: item.fecha_inicio_membresia || null,
           fechaVencimientoMembresia: item.fecha_vencimiento_membresia || null,
+          fotoUrl: null,
           iniciales: (item.nombre?.charAt(0) || '') + (item.apellido_paterno?.charAt(0) || ''),
           color: this.avatarColors[index % this.avatarColors.length]
         } as Beneficiario));
         this.filterData();
+        this.cargarFotosBeneficiarios(this.beneficiarios);
         this.loading = false;
       },
       error: (err) => {
@@ -1457,8 +1967,22 @@ export class BeneficiariosComponent implements OnInit {
           apellidoPaterno: item.apellido_paterno,
           apellidoMaterno: item.apellido_materno || '',
           fechaNacimiento: item.fecha_nacimiento,
-          curp: item.curp,
-          nombrePadreMadre: item.nombre_padre_madre,
+          genero: item.genero || '',
+          curp: item.curp || '',
+          nombrePadreMadre: item.nombre_padre_madre || '',
+          direccion: item.direccion || '',
+          colonia: item.colonia || '',
+          ciudad: item.ciudad || '',
+          estado: item.estado || '',
+          codigoPostal: item.codigo_postal || '',
+          telefonoCasa: item.telefono_casa || '',
+          telefonoCelular: item.telefono_celular || '',
+          correoElectronico: item.correo_electronico || '',
+          enEmergenciaAvisarA: item.en_emergencia_avisar_a || '',
+          telefonoEmergencia: item.telefono_emergencia || '',
+          tipoSangre: item.tipo_sangre || '',
+          usaValvula: item.usa_valvula || 'N',
+          notasAdicionales: item.notas_adicionales || '',
           tipoCuota: item.tipo_cuota || '',
           fechaSolicitud: item.fecha_registro,
           estatus: item.estatus_registro,
@@ -1469,6 +1993,96 @@ export class BeneficiariosComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading preregistros:', err);
+      }
+    });
+  }
+
+  private getFotoTipoDocumentoId(): number {
+    const tipo = this.tiposDocumentoCatalogo.find((item: any) => {
+      const nombre = String(item?.nombre || '').toLowerCase();
+      const descripcion = String(item?.descripcion || '').toLowerCase();
+      const texto = `${nombre} ${descripcion}`;
+      return texto.includes('foto') || texto.includes('fotografia') || texto.includes('imagen');
+    });
+    const id = Number(tipo?.id_tipo_documento || 0);
+    return Number.isFinite(id) ? id : 0;
+  }
+
+  private getTipoDocumentoFotoUploadId(): number {
+    const tipoFoto = this.getFotoTipoDocumentoId();
+    if (tipoFoto > 0) return tipoFoto;
+
+    const fallback = Number(this.tiposDocumentoCatalogo?.[0]?.id_tipo_documento || 0);
+    return Number.isFinite(fallback) ? fallback : 0;
+  }
+
+  private esFormatoImagen(formato: any): boolean {
+    const valor = String(formato || '').trim().toUpperCase();
+    return ['JPG', 'JPEG', 'PNG', 'WEBP'].includes(valor);
+  }
+
+  private obtenerFechaDocumento(valor: any): number {
+    if (!valor) return 0;
+    const ms = new Date(valor).getTime();
+    return Number.isNaN(ms) ? 0 : ms;
+  }
+
+  private seleccionarDocumentoFoto(documentos: any[]): any | null {
+    if (!Array.isArray(documentos) || documentos.length === 0) return null;
+
+    const imagenes = documentos.filter((doc) => this.esFormatoImagen(doc?.formato_archivo));
+    if (!imagenes.length) return null;
+
+    const fotosExplicitas = imagenes.filter((doc) => {
+      const tipo = String(doc?.tipo_nombre || '').toLowerCase();
+      const nombreArchivo = String(doc?.nombre_archivo || '').toLowerCase();
+      return tipo.includes('foto') || tipo.includes('fotografia') || tipo.includes('imagen') || nombreArchivo.includes('foto');
+    });
+
+    const candidatas = fotosExplicitas.length ? fotosExplicitas : imagenes;
+    return [...candidatas].sort(
+      (a, b) => this.obtenerFechaDocumento(b?.fecha_carga) - this.obtenerFechaDocumento(a?.fecha_carga)
+    )[0] || null;
+  }
+
+  private actualizarFotoEnVistas(idPaciente: number, fotoUrl: string | null): void {
+    this.beneficiarios = this.beneficiarios.map((b) =>
+      b.idPaciente === idPaciente ? { ...b, fotoUrl } : b
+    );
+    this.filteredBeneficiarios = this.filteredBeneficiarios.map((b) =>
+      b.idPaciente === idPaciente ? { ...b, fotoUrl } : b
+    );
+
+    if (this.beneficiarioSeleccionado?.idPaciente === idPaciente) {
+      this.beneficiarioSeleccionado = { ...this.beneficiarioSeleccionado, fotoUrl };
+    }
+    if (this.credencialBeneficiario?.idPaciente === idPaciente) {
+      this.credencialBeneficiario = { ...this.credencialBeneficiario, fotoUrl };
+    }
+  }
+
+  private cargarFotosBeneficiarios(items: Beneficiario[]): void {
+    if (!items.length) return;
+
+    const requests = items.map((beneficiario) =>
+      this.api.getDocumentos(beneficiario.idPaciente).pipe(
+        map((docs: any[]) => {
+          const fotoDoc = this.seleccionarDocumentoFoto(docs || []);
+          const fotoUrl = fotoDoc?.id_documento
+            ? this.api.getDocumentoArchivoUrl(beneficiario.idPaciente, Number(fotoDoc.id_documento))
+            : null;
+          return { idPaciente: beneficiario.idPaciente, fotoUrl };
+        }),
+        catchError(() => of({ idPaciente: beneficiario.idPaciente, fotoUrl: null }))
+      )
+    );
+
+    forkJoin(requests).subscribe({
+      next: (results) => {
+        results.forEach((item) => this.actualizarFotoEnVistas(item.idPaciente, item.fotoUrl));
+      },
+      error: (err) => {
+        console.error('Error al cargar fotos de beneficiarios:', err);
       }
     });
   }
@@ -1704,7 +2318,18 @@ export class BeneficiariosComponent implements OnInit {
     });
   }
 
-  // ──────────── Descargar credencial PDF (RF-RB-06) ────────────
+  // ──────────── Credencial (RF-RB-06) ────────────
+
+  get credencialPadecimiento(): string {
+    const tipos = this.credencialBeneficiario?.tiposEspina;
+    if (!tipos || tipos.length === 0) return '-';
+    return tipos.map(t => t.nombre).join(', ');
+  }
+
+  verCredencial(b: Beneficiario): void {
+    this.credencialBeneficiario = b;
+    this.showCredencialModal = true;
+  }
 
   descargarCredencial(folio: string): void {
     this.api.exportarCredencialPdf(folio).subscribe({
@@ -1746,7 +2371,12 @@ export class BeneficiariosComponent implements OnInit {
   }
 
   get paginatedBeneficiarios(): Beneficiario[] {
-    return this.filteredBeneficiarios.slice(this.beneficiariosStart, this.beneficiariosEnd);
+    const sorted = this.sortRows(
+      this.filteredBeneficiarios,
+      this.beneficiariosSort,
+      (b, key) => this.getBeneficiarioSortValue(b, key),
+    );
+    return sorted.slice(this.beneficiariosStart, this.beneficiariosEnd);
   }
 
   get preregistrosStart(): number {
@@ -1762,7 +2392,12 @@ export class BeneficiariosComponent implements OnInit {
   }
 
   get paginatedPreregistros(): Preregistro[] {
-    return this.filteredPreregistros.slice(this.preregistrosStart, this.preregistrosEnd);
+    const sorted = this.sortRows(
+      this.filteredPreregistros,
+      this.preregistrosSort,
+      (p, key) => this.getPreregistroSortValue(p, key),
+    );
+    return sorted.slice(this.preregistrosStart, this.preregistrosEnd);
   }
 
   filterData(): void {
@@ -1796,6 +2431,99 @@ export class BeneficiariosComponent implements OnInit {
     this.preregistrosPage = page;
   }
 
+  toggleBeneficiariosSort(key: string): void {
+    if (this.beneficiariosSort.key === key) {
+      this.beneficiariosSort.direction = this.beneficiariosSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.beneficiariosSort = { key, direction: 'asc' };
+    }
+    this.beneficiariosPage = 1;
+  }
+
+  togglePreregistrosSort(key: string): void {
+    if (this.preregistrosSort.key === key) {
+      this.preregistrosSort.direction = this.preregistrosSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.preregistrosSort = { key, direction: 'asc' };
+    }
+    this.preregistrosPage = 1;
+  }
+
+  getSortIndicator(sort: TableSortState, key: string): string {
+    if (sort.key !== key) return '-';
+    return sort.direction === 'asc' ? '^' : 'v';
+  }
+
+  private sortRows<T>(rows: T[], sort: TableSortState, valueGetter: (row: T, key: string) => unknown): T[] {
+    const direction = sort.direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const left = valueGetter(a, sort.key);
+      const right = valueGetter(b, sort.key);
+
+      const leftComparable = this.toComparableValue(left);
+      const rightComparable = this.toComparableValue(right);
+
+      if (leftComparable < rightComparable) return -1 * direction;
+      if (leftComparable > rightComparable) return 1 * direction;
+      return 0;
+    });
+  }
+
+  private toComparableValue(value: unknown): number | string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') return value;
+    if (value instanceof Date) return value.getTime();
+
+    const text = String(value).trim();
+    const maybeDate = Date.parse(text);
+    if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) {
+      return maybeDate;
+    }
+
+    const maybeNumber = Number(text);
+    if (!Number.isNaN(maybeNumber) && text !== '') {
+      return maybeNumber;
+    }
+
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  private getBeneficiarioSortValue(b: Beneficiario, key: string): unknown {
+    switch (key) {
+      case 'folio':
+        return b.folio;
+      case 'nombre':
+        return `${b.nombre} ${b.apellidoPaterno} ${b.apellidoMaterno}`;
+      case 'tipoEspina':
+        return (b.tiposEspina || []).map((te) => te.nombre).join(', ');
+      case 'cuota':
+        return this.cuotaShortLabel(b.tipoCuota);
+      case 'membresia':
+        return `${b.membresiaEstatus} ${b.fechaVencimientoMembresia || ''}`;
+      case 'fechaAlta':
+        return b.fechaAlta;
+      default:
+        return b.folio;
+    }
+  }
+
+  private getPreregistroSortValue(p: Preregistro, key: string): unknown {
+    switch (key) {
+      case 'id':
+        return p.id;
+      case 'nombre':
+        return `${p.nombre} ${p.apellidoPaterno} ${p.apellidoMaterno}`;
+      case 'estatus':
+        return p.estatus;
+      case 'cuota':
+        return this.cuotaShortLabel(p.tipoCuota);
+      case 'fechaSolicitud':
+        return p.fechaSolicitud;
+      default:
+        return p.id;
+    }
+  }
+
   cuotaShortLabel(cuota: string): string {
     return (cuota || '').replace(/cuota\s*/i, '').trim() || cuota;
   }
@@ -1816,15 +2544,121 @@ export class BeneficiariosComponent implements OnInit {
     return `${base} bg-slate-100 text-slate-800`;
   }
 
-  aprobarPreregistro(p: Preregistro): void {
-    this.api.aprobarPreRegistro(p.id).subscribe({
+  formatDateTime(value: string | null | undefined): string {
+    if (!value) return 'Sin fecha';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  }
+
+  formatDate(value: string | null | undefined): string {
+    if (!value) return 'Sin fecha';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('es-MX', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  formatMoney(value: number | string | null | undefined): string {
+    const amount = Number(value ?? 0);
+    if (Number.isNaN(amount)) return '$0.00';
+    return amount.toLocaleString('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  hasPendingAmount(value: number | string | null | undefined): boolean {
+    const amount = Number(value ?? 0);
+    if (Number.isNaN(amount)) return false;
+    return amount > 0;
+  }
+
+  getCitaStatusLabel(status: string | null | undefined): string {
+    const normalized = String(status || '').toUpperCase();
+    if (normalized === 'PROGRAMADA') return 'Programada';
+    if (normalized === 'COMPLETADA') return 'Completada';
+    if (normalized === 'CANCELADA') return 'Cancelada';
+    return normalized || 'Sin estatus';
+  }
+
+  getCitaStatusClass(status: string | null | undefined): string {
+    const base = 'px-3 py-1 rounded-full text-xs font-bold';
+    const normalized = String(status || '').toUpperCase();
+    if (normalized === 'COMPLETADA') return `${base} bg-emerald-100 text-emerald-700`;
+    if (normalized === 'CANCELADA') return `${base} bg-red-100 text-red-700`;
+    if (normalized === 'PROGRAMADA') return `${base} bg-blue-100 text-blue-700`;
+    return `${base} bg-slate-100 text-slate-700`;
+  }
+
+  getPagoStatusLabel(pago: any): string {
+    if (pago?.cancelada === 'S') return 'Cancelado';
+    if (Number(pago?.saldo_pendiente || 0) > 0) return 'Con saldo';
+    return 'Pagado';
+  }
+
+  getPagoStatusClass(pago: any): string {
+    const base = 'px-3 py-1 rounded-full text-xs font-bold';
+    if (pago?.cancelada === 'S') return `${base} bg-red-100 text-red-700`;
+    if (Number(pago?.saldo_pendiente || 0) > 0) return `${base} bg-amber-100 text-amber-700`;
+    return `${base} bg-emerald-100 text-emerald-700`;
+  }
+
+  getComodatoStatusLabel(status: string | null | undefined): string {
+    const normalized = String(status || '').toUpperCase();
+    if (normalized === 'ACTIVO') return 'Activo';
+    if (normalized === 'DEVUELTO') return 'Devuelto';
+    if (normalized === 'VENCIDO') return 'Vencido';
+    return normalized || 'Sin estatus';
+  }
+
+  getComodatoStatusClass(status: string | null | undefined): string {
+    const base = 'px-3 py-1 rounded-full text-xs font-bold';
+    const normalized = String(status || '').toUpperCase();
+    if (normalized === 'DEVUELTO') return `${base} bg-emerald-100 text-emerald-700`;
+    if (normalized === 'VENCIDO') return `${base} bg-red-100 text-red-700`;
+    if (normalized === 'ACTIVO') return `${base} bg-amber-100 text-amber-700`;
+    return `${base} bg-slate-100 text-slate-700`;
+  }
+
+  abrirModalAprobacion(p: Preregistro): void {
+    this.preregistroAProbar = p;
+    this.aprobarCuotaSeleccionada = p.tipoCuota || '';
+    this.submittingAprobacion = false;
+    this.showAprobarModal = true;
+  }
+
+  confirmarAprobacion(): void {
+    if (!this.preregistroAProbar || !this.aprobarCuotaSeleccionada) return;
+    this.submittingAprobacion = true;
+    this.api.aprobarPreRegistro(this.preregistroAProbar.id, this.aprobarCuotaSeleccionada).subscribe({
       next: () => {
-        this.preregistros = this.preregistros.filter(item => item.id !== p.id);
+        this.showAprobarModal = false;
+        this.preregistros = this.preregistros.filter(item => item.id !== this.preregistroAProbar!.id);
+        this.preregistroAProbar = null;
         this.filterData();
         this.loadBeneficiarios();
       },
-      error: (err) => console.error('Error al aprobar:', err)
+      error: (err) => {
+        console.error('Error al aprobar:', err);
+        this.submittingAprobacion = false;
+      }
     });
+  }
+
+  aprobarPreregistro(p: Preregistro): void {
+    this.abrirModalAprobacion(p);
   }
 
   rechazarPreregistro(p: Preregistro): void {
@@ -1886,7 +2720,12 @@ export class BeneficiariosComponent implements OnInit {
     };
     this.editFormDataUsaValvula = b.usaValvula === 'S';
     this.editFormDataTiposEspina = (b.tiposEspina || []).map((te: any) => te.idTipoEspina);
+    this.editFotoFile = null;
+    this.editFotoPreviewUrl = b.fotoUrl || null;
     this.editError = '';
+    if (this.tiposDocumentoCatalogo.length === 0) {
+      this.loadTiposDocumentoCatalogo();
+    }
     if (this.tiposEspinaCatalogo.length === 0) {
       this.api.getTiposEspina().subscribe({
         next: (data: any[]) => { this.tiposEspinaCatalogo = data || []; },
@@ -1896,23 +2735,88 @@ export class BeneficiariosComponent implements OnInit {
     this.showEditModal = true;
   }
 
+  onFotoBeneficiarioSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length ? input.files[0] : null;
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.editError = 'Selecciona un archivo de imagen valido.';
+      input.value = '';
+      return;
+    }
+
+    this.editError = '';
+    this.editFotoFile = file;
+    if (this.editFotoPreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.editFotoPreviewUrl);
+    }
+    this.editFotoPreviewUrl = URL.createObjectURL(file);
+  }
+
+  private finalizarEdicionBeneficiario(): void {
+    this.submittingEdit = false;
+    this.showEditModal = false;
+    this.editFotoFile = null;
+    if (this.editFotoPreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.editFotoPreviewUrl);
+    }
+    this.editFotoPreviewUrl = null;
+    this.loadBeneficiarios();
+  }
+
   guardarEdicionBeneficiario(): void {
     if (!this.editFormData.nombre || !this.editFormData.apellido_paterno || !this.editFormData.genero ||
         !this.editFormData.fecha_nacimiento || !this.editFormData.curp) {
       this.editError = 'Por favor completa todos los campos obligatorios.';
       return;
     }
+
+    const beneficiario = this.beneficiarios.find((item) => item.folio === this.editFolio);
+    if (!beneficiario) {
+      this.editError = 'No se encontro el beneficiario a actualizar.';
+      return;
+    }
+
     this.submittingEdit = true;
     this.editError = '';
+
     const payload = { ...this.editFormData };
     payload.usa_valvula = this.editFormDataUsaValvula ? 'S' : 'N';
     payload.tipos_espina = this.editFormDataTiposEspina;
 
     this.api.updateBeneficiario(this.editFolio, payload).subscribe({
       next: () => {
-        this.submittingEdit = false;
-        this.showEditModal = false;
-        this.loadBeneficiarios();
+        if (!this.editFotoFile) {
+          this.finalizarEdicionBeneficiario();
+          return;
+        }
+
+        const tipoDocFoto = this.getTipoDocumentoFotoUploadId();
+        if (!tipoDocFoto) {
+          this.submittingEdit = false;
+          this.editError = 'No se pudo preparar la carga de la foto. Recarga la página e intenta nuevamente.';
+          return;
+        }
+
+        this.api.uploadDocumento(beneficiario.idPaciente, tipoDocFoto, this.editFotoFile).subscribe({
+          next: (resp: any) => {
+            const idDocumento = Number(resp?.id_documento || 0);
+            if (idDocumento > 0) {
+              this.actualizarFotoEnVistas(
+                beneficiario.idPaciente,
+                this.api.getDocumentoArchivoUrl(beneficiario.idPaciente, idDocumento)
+              );
+            }
+            this.finalizarEdicionBeneficiario();
+          },
+          error: (err) => {
+            this.submittingEdit = false;
+            this.editError = err?.error?.detail || 'Los datos se guardaron, pero no se pudo cargar la foto.';
+            console.error('Error uploading beneficiario photo:', err);
+            this.loadBeneficiarios();
+          }
+        });
       },
       error: (err) => {
         this.submittingEdit = false;
@@ -2025,17 +2929,48 @@ export class BeneficiariosComponent implements OnInit {
 
   // ──────────── Menú contextual ────────────
 
-  toggleActionMenu(b: Beneficiario, event: MouseEvent): void {
-    if (this.openActionMenu === b.folio) {
-      this.openActionMenu = null;
-      this.menuBeneficiario = null;
+  private getActionMenuPosition(triggerRect: DOMRect): { top: number; left: number } {
+    const viewportPadding = this.actionMenuViewportPadding;
+    const preferredTop = triggerRect.bottom + this.actionMenuGap;
+    const maxTop = Math.max(viewportPadding, window.innerHeight - this.actionMenuEstimatedHeight - viewportPadding);
+
+    // Mantener el menú lo más abajo posible dentro del viewport para evitar que se vea "demasiado arriba".
+    let top = Math.min(preferredTop, maxTop);
+    top = Math.max(viewportPadding, top);
+
+    const preferredLeft = triggerRect.right - this.actionMenuWidth;
+    const maxLeft = Math.max(viewportPadding, window.innerWidth - this.actionMenuWidth - viewportPadding);
+    const left = Math.min(Math.max(viewportPadding, preferredLeft), maxLeft);
+
+    return { top, left };
+  }
+
+  private repositionOpenActionMenu(): void {
+    if (!this.openActionMenu || !this.actionMenuTriggerElement) {
       return;
     }
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.menuPosition = {
-      top: rect.bottom + 6,
-      left: Math.max(8, rect.right - 208),
-    };
+
+    if (!document.body.contains(this.actionMenuTriggerElement)) {
+      this.closeActionMenu();
+      return;
+    }
+
+    this.menuPosition = this.getActionMenuPosition(this.actionMenuTriggerElement.getBoundingClientRect());
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.repositionOpenActionMenu();
+  }
+
+  toggleActionMenu(b: Beneficiario, event: MouseEvent): void {
+    if (this.openActionMenu === b.folio) {
+      this.closeActionMenu();
+      return;
+    }
+    this.actionMenuTriggerElement = event.currentTarget as HTMLElement;
+    const rect = this.actionMenuTriggerElement.getBoundingClientRect();
+    this.menuPosition = this.getActionMenuPosition(rect);
     this.openActionMenu = b.folio;
     this.menuBeneficiario = b;
     event.stopPropagation();
@@ -2044,6 +2979,7 @@ export class BeneficiariosComponent implements OnInit {
   closeActionMenu(): void {
     this.openActionMenu = null;
     this.menuBeneficiario = null;
+    this.actionMenuTriggerElement = null;
   }
 
   // ──────────── Tipos Espina helpers ────────────

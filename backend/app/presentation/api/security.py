@@ -7,9 +7,12 @@ from app.domain.auth.roles import normalize_role
 from app.infrastructure.security.auth import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+optional_oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/auth/login", auto_error=False
+)
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+def _build_user_from_token(token: str) -> dict:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciales inválidas",
@@ -21,7 +24,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         if correo is None:
             raise credentials_exception
         rol_normalizado = normalize_role(payload.get("rol", "OPERATIVO"))
-        user = {
+        return {
             "correo": str(correo).strip(),
             "rol": rol_normalizado,
             "rol_original": payload.get("rol", "OPERATIVO"),
@@ -31,6 +34,24 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
 
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    user = _build_user_from_token(token)
+
+    set_current_user_id(user.get("id_usuario"))
+    try:
+        yield user
+    finally:
+        clear_current_user_id()
+
+
+async def get_optional_current_user(token: str | None = Depends(optional_oauth2_scheme)):
+    if not token:
+        clear_current_user_id()
+        yield None
+        return
+
+    user = _build_user_from_token(token)
     set_current_user_id(user.get("id_usuario"))
     try:
         yield user

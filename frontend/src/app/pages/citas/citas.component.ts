@@ -1,10 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
+
+interface TableSortState {
+  key: string;
+  direction: 'asc' | 'desc';
+}
 
 @Component({
   selector: 'app-citas',
@@ -148,24 +153,40 @@ import { ApiService } from '../../services/api.service';
                 <thead class="sticky top-0 z-10 shadow-sm">
                   <tr class="border-t border-slate-200 bg-slate-50">
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      <div class="flex items-center gap-1.5">
+                      <button type="button" (click)="toggleCitasSort('fechaHora')" class="flex items-center gap-1.5 hover:text-slate-700 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
                           <line x1="16" x2="16" y1="2" y2="6"/>
                           <line x1="8" x2="8" y1="2" y2="6"/>
                           <line x1="3" x2="21" y1="10" y2="10"/>
                         </svg>
-                        Fecha / Hora
-                      </div>
+                        <span>Fecha / Hora</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(citasSort, 'fechaHora') }}</span>
+                      </button>
                     </th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Paciente</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo de Consulta</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <button type="button" (click)="toggleCitasSort('paciente')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                        <span>Paciente</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(citasSort, 'paciente') }}</span>
+                      </button>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <button type="button" (click)="toggleCitasSort('tipoConsulta')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                        <span>Tipo de Consulta</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(citasSort, 'tipoConsulta') }}</span>
+                      </button>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <button type="button" (click)="toggleCitasSort('estado')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                        <span>Estado</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(citasSort, 'estado') }}</span>
+                      </button>
+                    </th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  <tr *ngFor="let cita of citasFiltradas" class="hover:bg-slate-50 transition-colors">
+                  <tr *ngFor="let cita of citasFiltradas" class="group hover:bg-slate-50 transition-colors">
                     <td class="px-6 py-4 font-medium text-slate-900">
                       <div>{{ getFecha(cita.fechaHora) }}</div>
                       <div class="text-xs text-slate-500">{{ getHora(cita.fechaHora) }}</div>
@@ -181,38 +202,15 @@ import { ApiService } from '../../services/api.service';
                       </span>
                     </td>
                     <td class="px-6 py-4">
-                      <div class="flex items-center gap-1">
-                        <button (click)="verDetalleCita(cita)" class="p-1.5 text-slate-400 hover:text-[#00328b] hover:bg-slate-100 rounded-lg transition-colors" title="Ver detalle">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                          </svg>
-                        </button>
-                        <button (click)="editarCita(cita)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
-                          </svg>
-                        </button>
-                        <button *ngIf="cita.estatus !== 'COMPLETADA'" (click)="completarCitaInline(cita)" class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Completar">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                        </button>
-                        <button *ngIf="cita.estatus !== 'CANCELADA'" (click)="cancelarCitaInline(cita)" class="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Cancelar">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                          </svg>
-                        </button>
-                        <button (click)="descargarComprobante(cita)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Comprobante PDF">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                          </svg>
-                        </button>
-                        <button (click)="confirmarEliminarCita(cita)" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                          </svg>
-                        </button>
-                      </div>
+                      <button (click)="toggleCitaMenu(cita, $event)"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center transition-all border"
+                        [ngClass]="openCitaMenu === cita.idCita
+                          ? 'bg-slate-700 border-slate-700 text-white shadow-md'
+                          : 'bg-white border-slate-200 text-slate-400 group-hover:border-slate-300 group-hover:text-slate-600 hover:bg-slate-50'">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                   <tr *ngIf="citasFiltradas.length === 0">
@@ -261,16 +259,41 @@ import { ApiService } from '../../services/api.service';
               <table class="w-full text-sm">
                 <thead class="sticky top-0 z-10 shadow-sm">
                   <tr class="border-t border-slate-200 bg-slate-50">
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Especialidad</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Contacto</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Servicios</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <button type="button" (click)="toggleMedicosSort('nombre')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                        <span>Nombre</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'nombre') }}</span>
+                      </button>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <button type="button" (click)="toggleMedicosSort('especialidad')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                        <span>Especialidad</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'especialidad') }}</span>
+                      </button>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <button type="button" (click)="toggleMedicosSort('contacto')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                        <span>Contacto</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'contacto') }}</span>
+                      </button>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <button type="button" (click)="toggleMedicosSort('servicios')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                        <span>Servicios</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'servicios') }}</span>
+                      </button>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <button type="button" (click)="toggleMedicosSort('estado')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                        <span>Estado</span>
+                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'estado') }}</span>
+                      </button>
+                    </th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  <tr *ngFor="let medico of medicosFiltrados" class="hover:bg-slate-50 transition-colors">
+                  <tr *ngFor="let medico of medicosFiltrados" class="group hover:bg-slate-50 transition-colors">
                     <td class="px-6 py-4">
                       <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#00328b] to-[#0052cc] flex items-center justify-center text-white text-xs font-bold">
@@ -320,28 +343,15 @@ import { ApiService } from '../../services/api.service';
                       </span>
                     </td>
                     <td class="px-6 py-4">
-                      <div class="flex items-center gap-1">
-                        <button (click)="verDetalleMedico(medico)" class="p-1.5 text-slate-400 hover:text-[#00328b] hover:bg-slate-100 rounded-lg transition-colors" title="Ver detalle">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                          </svg>
-                        </button>
-                        <button (click)="editarMedico(medico)" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
-                          </svg>
-                        </button>
-                        <button (click)="abrirDisponibilidad(medico)" class="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Disponibilidad">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
-                          </svg>
-                        </button>
-                        <button (click)="toggleActivoMedico(medico)" class="p-1.5 rounded-lg transition-colors" [ngClass]="medico.activo === 'S' ? 'text-slate-400 hover:text-red-600 hover:bg-red-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'" [title]="medico.activo === 'S' ? 'Desactivar' : 'Activar'">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
-                          </svg>
-                        </button>
-                      </div>
+                      <button (click)="toggleMedicoMenu(medico, $event)"
+                        class="w-8 h-8 rounded-lg flex items-center justify-center transition-all border"
+                        [ngClass]="openMedicoMenu === medico.idDoctor
+                          ? 'bg-slate-700 border-slate-700 text-white shadow-md'
+                          : 'bg-white border-slate-200 text-slate-400 group-hover:border-slate-300 group-hover:text-slate-600 hover:bg-slate-50'">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                   <tr *ngIf="medicosFiltrados.length === 0">
@@ -358,6 +368,97 @@ import { ApiService } from '../../services/api.service';
       </main>
 
       <app-footer></app-footer>
+    </div>
+
+    <!-- ==================== MENÚ ⋮ CITAS ==================== -->
+    <div *ngIf="openCitaMenu !== null" class="fixed inset-0 z-40" (click)="closeCitaMenu()"></div>
+    <div *ngIf="openCitaMenu !== null && menuCita"
+      class="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 w-48 overflow-hidden"
+      [style.top.px]="menuCitaPosition.top"
+      [style.left.px]="menuCitaPosition.left"
+      (click)="$event.stopPropagation()">
+      <button (click)="verDetalleCita(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span class="font-medium">Ver detalle</span>
+      </button>
+      <button (click)="editarCita(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m15 5 4 4"/>
+        </svg>
+        <span class="font-medium">Editar</span>
+      </button>
+      <button *ngIf="menuCita.estatus !== 'COMPLETADA'" (click)="completarCitaInline(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span class="font-medium">Marcar completada</span>
+      </button>
+      <button *ngIf="menuCita.estatus !== 'CANCELADA'" (click)="cancelarCitaInline(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <span class="font-medium">Cancelar cita</span>
+      </button>
+      <button (click)="descargarComprobante(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+        <span class="font-medium">Comprobante PDF</span>
+      </button>
+      <div class="h-px bg-slate-100 my-1"></div>
+      <button (click)="confirmarEliminarCita(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+        </svg>
+        <span class="font-medium">Eliminar</span>
+      </button>
+    </div>
+
+    <!-- ==================== MENÚ ⋮ MÉDICOS ==================== -->
+    <div *ngIf="openMedicoMenu !== null" class="fixed inset-0 z-40" (click)="closeMedicoMenu()"></div>
+    <div *ngIf="openMedicoMenu !== null && menuMedico"
+      class="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 w-48 overflow-hidden"
+      [style.top.px]="menuMedicoPosition.top"
+      [style.left.px]="menuMedicoPosition.left"
+      (click)="$event.stopPropagation()">
+      <button (click)="verDetalleMedico(menuMedico); closeMedicoMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        <span class="font-medium">Ver detalle</span>
+      </button>
+      <button (click)="editarMedico(menuMedico); closeMedicoMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m15 5 4 4"/>
+        </svg>
+        <span class="font-medium">Editar</span>
+      </button>
+      <button (click)="abrirDisponibilidad(menuMedico); closeMedicoMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+        </svg>
+        <span class="font-medium">Disponibilidad</span>
+      </button>
+      <div class="h-px bg-slate-100 my-1"></div>
+      <button (click)="toggleActivoMedico(menuMedico); closeMedicoMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left"
+        [ngClass]="menuMedico.activo === 'S' ? 'text-red-600 hover:bg-red-50' : 'text-emerald-700 hover:bg-emerald-50'">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" [ngClass]="menuMedico.activo === 'S' ? 'text-red-500' : 'text-emerald-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+        <span class="font-medium">{{ menuMedico.activo === 'S' ? 'Desactivar' : 'Activar' }}</span>
+      </button>
     </div>
 
     <!-- ==================== MODAL: Nueva Cita ==================== -->
@@ -995,14 +1096,15 @@ import { ApiService } from '../../services/api.service';
     </div>
   `
 })
-export class CitasComponent implements OnInit {
+export class CitasComponent implements OnInit, OnDestroy {
   activeTab: 'citas' | 'medicos' = 'citas';
 
   searchCitas = '';
   searchMedicos = '';
   filtroEstado = 'Todas';
   filtroTipo = 'Todas';
-  todayStr = new Date().toISOString().split('T')[0];
+  // Usar siempre America/Monterrey (GMT-6) para calcular la fecha local
+  todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Monterrey' });
   filtroFecha = this.todayStr; // default: hoy
 
   estadoFilters = ['Todas', 'PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
@@ -1013,6 +1115,8 @@ export class CitasComponent implements OnInit {
   citasFiltradas: any[] = [];
   medicos: any[] = [];
   medicosFiltrados: any[] = [];
+  citasSort: TableSortState = { key: 'fechaHora', direction: 'asc' };
+  medicosSort: TableSortState = { key: 'nombre', direction: 'asc' };
 
   // Modal visibility
   showNuevaCitaModal = false;
@@ -1023,6 +1127,24 @@ export class CitasComponent implements OnInit {
   // Detail selections
   citaSeleccionada: any = null;
   medicoSeleccionado: any = null;
+
+  // ⋮ menus
+  openCitaMenu: number | null = null;
+  menuCitaPosition = { top: 0, left: 0 };
+  menuCita: any = null;
+  openMedicoMenu: number | null = null;
+  menuMedicoPosition = { top: 0, left: 0 };
+  menuMedico: any = null;
+  private citaMenuTriggerElement: HTMLElement | null = null;
+  private medicoMenuTriggerElement: HTMLElement | null = null;
+  private readonly actionMenuWidth = 192; // Tailwind w-48
+  private readonly citaMenuEstimatedHeight = 340;
+  private readonly medicoMenuEstimatedHeight = 260;
+  private readonly actionMenuGap = 6;
+  private readonly actionMenuViewportPadding = 8;
+  private readonly onViewportGeometryChange = (): void => {
+    this.repositionOpenActionMenus();
+  };
 
   // Servicios list (loaded once on init)
   serviciosList: any[] = [];
@@ -1102,6 +1224,19 @@ export class CitasComponent implements OnInit {
         setTimeout(() => this.abrirNuevaCita(), 0);
       }
     });
+
+    window.visualViewport?.addEventListener('resize', this.onViewportGeometryChange, { passive: true });
+    window.visualViewport?.addEventListener('scroll', this.onViewportGeometryChange, { passive: true });
+  }
+
+  ngOnDestroy(): void {
+    window.visualViewport?.removeEventListener('resize', this.onViewportGeometryChange);
+    window.visualViewport?.removeEventListener('scroll', this.onViewportGeometryChange);
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.repositionOpenActionMenus();
   }
 
   cargarCitas(): void {
@@ -1136,41 +1271,72 @@ export class CitasComponent implements OnInit {
   cargarDoctores(): void {
     this.api.getDoctores().subscribe({
       next: (data) => {
-        this.medicos = data.map((d: any) => ({
-          idDoctor: d.id_doctor,
-          nombre: d.nombre,
-          apellidoPaterno: d.apellido_paterno,
-          apellidoMaterno: d.apellido_materno,
-          especialidad: d.especialidad,
-          telefono: d.telefono,
-          correo: d.correo,
-          activo: d.activo,
-          servicios: (d.servicios || []).map((s: any) => ({
-            idServicio: s.id_servicio,
-            nombre: s.nombre,
-          })),
-          iniciales: (d.nombre?.charAt(0) || '') + (d.apellido_paterno?.charAt(0) || ''),
-        }));
-        this.medicosFiltrados = [...this.medicos];
+        this.medicos = data.map((d: any) => this.mapDoctorFromApi(d));
+        this.filtrarMedicos();
       },
       error: (err) => console.error('Error al cargar médicos:', err),
     });
   }
 
+  private normalizeActivo(value: unknown): 'S' | 'N' {
+    return String(value || '').trim().toUpperCase() === 'S' ? 'S' : 'N';
+  }
+
+  private mapDoctorFromApi(d: any): any {
+    return {
+      idDoctor: d.id_doctor,
+      nombre: d.nombre,
+      apellidoPaterno: d.apellido_paterno,
+      apellidoMaterno: d.apellido_materno,
+      especialidad: d.especialidad,
+      telefono: d.telefono,
+      correo: d.correo,
+      activo: this.normalizeActivo(d.activo),
+      servicios: (d.servicios || []).map((s: any) => ({
+        idServicio: s.id_servicio,
+        nombre: s.nombre,
+      })),
+      iniciales: (d.nombre?.charAt(0) || '') + (d.apellido_paterno?.charAt(0) || ''),
+    };
+  }
+
+  private replaceMedicoInView(updated: any): void {
+    this.medicos = this.medicos.map((m) => (m.idDoctor === updated.idDoctor ? updated : m));
+    this.medicosFiltrados = this.medicosFiltrados.map((m) => (m.idDoctor === updated.idDoctor ? updated : m));
+
+    if (this.medicoSeleccionado?.idDoctor === updated.idDoctor) {
+      this.medicoSeleccionado = updated;
+    }
+    if (this.menuMedico?.idDoctor === updated.idDoctor) {
+      this.menuMedico = updated;
+    }
+  }
+
+  // Fuerza GMT-6 (America/Monterrey) para toda presentacion de fechas
+  private toMXDate(fechaHora: string): Date {
+    // Oracle devuelve sin sufijo de zona; interpretamos como UTC-6 añadiendo el offset
+    const clean = fechaHora.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(fechaHora)
+      ? fechaHora
+      : fechaHora + '-06:00';
+    return new Date(clean);
+  }
+
   getHora(fechaHora: string): string {
-    return fechaHora.split('T')[1]?.substring(0, 5) || '';
+    if (!fechaHora) return '';
+    return this.toMXDate(fechaHora)
+      .toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Monterrey' });
   }
 
   getFecha(fechaHora: string): string {
     if (!fechaHora) return '';
-    const d = new Date(fechaHora);
-    return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
+    return this.toMXDate(fechaHora)
+      .toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'America/Monterrey' });
   }
 
   formatFechaHora(fechaHora: string): string {
     if (!fechaHora) return '';
-    const date = new Date(fechaHora);
-    return date.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return this.toMXDate(fechaHora)
+      .toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Monterrey' });
   }
 
   getEstadoBadgeClass(estatus: string): string {
@@ -1195,7 +1361,9 @@ export class CitasComponent implements OnInit {
 
     if (this.filtroFecha) {
       resultado = resultado.filter(c => {
-        const citaDate = c.fechaHora?.split('T')[0];
+        if (!c.fechaHora) return false;
+        const citaDate = this.toMXDate(c.fechaHora)
+          .toLocaleDateString('en-CA', { timeZone: 'America/Monterrey' });
         return citaDate === this.filtroFecha;
       });
     }
@@ -1210,20 +1378,112 @@ export class CitasComponent implements OnInit {
       );
     }
 
-    this.citasFiltradas = resultado;
+    this.citasFiltradas = this.sortRows(resultado, this.citasSort, (cita, key) => {
+      switch (key) {
+        case 'fechaHora':
+          return cita.fechaHora;
+        case 'paciente':
+          return cita.nombrePaciente;
+        case 'tipoConsulta':
+          return cita.servicios?.[0]?.nombre || '';
+        case 'estado':
+          return cita.estatus;
+        default:
+          return cita.fechaHora;
+      }
+    });
   }
 
   filtrarMedicos(): void {
     if (!this.searchMedicos) {
-      this.medicosFiltrados = [...this.medicos];
+      this.medicosFiltrados = this.sortRows(this.medicos, this.medicosSort, (medico, key) => {
+        switch (key) {
+          case 'nombre':
+            return `${medico.nombre} ${medico.apellidoPaterno} ${medico.apellidoMaterno || ''}`;
+          case 'especialidad':
+            return medico.especialidad;
+          case 'contacto':
+            return `${medico.telefono || ''} ${medico.correo || ''}`;
+          case 'servicios':
+            return (medico.servicios || []).map((s: any) => s.nombre).join(', ');
+          case 'estado':
+            return medico.activo;
+          default:
+            return medico.nombre;
+        }
+      });
       return;
     }
     const busqueda = this.searchMedicos.toLowerCase();
-    this.medicosFiltrados = this.medicos.filter(m =>
+    const filtrados = this.medicos.filter(m =>
       m.nombre.toLowerCase().includes(busqueda) ||
       m.apellidoPaterno.toLowerCase().includes(busqueda) ||
       m.especialidad.toLowerCase().includes(busqueda)
     );
+    this.medicosFiltrados = this.sortRows(filtrados, this.medicosSort, (medico, key) => {
+      switch (key) {
+        case 'nombre':
+          return `${medico.nombre} ${medico.apellidoPaterno} ${medico.apellidoMaterno || ''}`;
+        case 'especialidad':
+          return medico.especialidad;
+        case 'contacto':
+          return `${medico.telefono || ''} ${medico.correo || ''}`;
+        case 'servicios':
+          return (medico.servicios || []).map((s: any) => s.nombre).join(', ');
+        case 'estado':
+          return medico.activo;
+        default:
+          return medico.nombre;
+      }
+    });
+  }
+
+  toggleCitasSort(key: string): void {
+    if (this.citasSort.key === key) {
+      this.citasSort.direction = this.citasSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.citasSort = { key, direction: 'asc' };
+    }
+    this.filtrarCitas();
+  }
+
+  toggleMedicosSort(key: string): void {
+    if (this.medicosSort.key === key) {
+      this.medicosSort.direction = this.medicosSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.medicosSort = { key, direction: 'asc' };
+    }
+    this.filtrarMedicos();
+  }
+
+  getSortIndicator(sort: TableSortState, key: string): string {
+    if (sort.key !== key) return '-';
+    return sort.direction === 'asc' ? '^' : 'v';
+  }
+
+  private sortRows<T>(rows: T[], sort: TableSortState, valueGetter: (row: T, key: string) => unknown): T[] {
+    const direction = sort.direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const left = this.toComparableValue(valueGetter(a, sort.key));
+      const right = this.toComparableValue(valueGetter(b, sort.key));
+      if (left < right) return -1 * direction;
+      if (left > right) return 1 * direction;
+      return 0;
+    });
+  }
+
+  private toComparableValue(value: unknown): number | string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') return value;
+
+    const text = String(value).trim();
+    const maybeDate = Date.parse(text);
+    if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
+
+    const maybeNumber = Number(text);
+    if (!Number.isNaN(maybeNumber) && text !== '') return maybeNumber;
+
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
   // ──────────────── Nueva Cita ────────────────
@@ -1516,9 +1776,25 @@ export class CitasComponent implements OnInit {
   }
 
   toggleActivoMedico(medico: any): void {
-    const previo = medico.activo;
-    const nuevo = previo === 'S' ? 'N' : 'S';
+    const previo = this.normalizeActivo(medico.activo);
+    const nuevo: 'S' | 'N' = previo === 'S' ? 'N' : 'S';
     medico.activo = nuevo;
+
+    if (nuevo === 'N') {
+      this.api.deleteDoctor(medico.idDoctor).subscribe({
+        next: () => {
+          this.replaceMedicoInView({ ...medico, activo: 'N' });
+          this.filtrarMedicos();
+        },
+        error: (err) => {
+          medico.activo = previo;
+          console.error('Error al desactivar médico:', err);
+          alert(err?.error?.detail || 'No se pudo cambiar el estado del médico.');
+        },
+      });
+      return;
+    }
+
     const payload = {
       nombre: medico.nombre,
       apellido_paterno: medico.apellidoPaterno,
@@ -1530,10 +1806,20 @@ export class CitasComponent implements OnInit {
       servicios: (medico.servicios || []).map((s: any) => s.idServicio),
     };
     this.api.updateDoctor(medico.idDoctor, payload).subscribe({
-      next: () => this.cargarDoctores(),
+      next: (response: any) => {
+        if (response) {
+          this.replaceMedicoInView(this.mapDoctorFromApi(response));
+          this.filtrarMedicos();
+          return;
+        }
+
+        this.replaceMedicoInView({ ...medico, activo: nuevo });
+        this.filtrarMedicos();
+      },
       error: (err) => {
         medico.activo = previo;
         console.error('Error al cambiar estado del médico:', err);
+        alert(err?.error?.detail || 'No se pudo cambiar el estado del médico.');
       },
     });
   }
@@ -1630,5 +1916,91 @@ export class CitasComponent implements OnInit {
     if (!timestamp) return '';
     const d = new Date(timestamp);
     return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  // ──────────────── ⋮ Menús Citas ────────────────
+
+  private getActionMenuPosition(triggerRect: DOMRect, estimatedHeight: number): { top: number; left: number } {
+    const viewportPadding = this.actionMenuViewportPadding;
+    const preferredTop = triggerRect.bottom + this.actionMenuGap;
+    const maxTop = Math.max(viewportPadding, window.innerHeight - estimatedHeight - viewportPadding);
+
+    // Mantener el menú lo más abajo posible dentro del viewport sin recortarlo.
+    let top = Math.min(preferredTop, maxTop);
+    top = Math.max(viewportPadding, top);
+
+    const preferredLeft = triggerRect.right - this.actionMenuWidth;
+    const maxLeft = Math.max(viewportPadding, window.innerWidth - this.actionMenuWidth - viewportPadding);
+    const left = Math.min(Math.max(viewportPadding, preferredLeft), maxLeft);
+
+    return { top, left };
+  }
+
+  private repositionOpenActionMenus(): void {
+    if (this.openCitaMenu !== null && this.citaMenuTriggerElement) {
+      if (!document.body.contains(this.citaMenuTriggerElement)) {
+        this.closeCitaMenu();
+      } else {
+        this.menuCitaPosition = this.getActionMenuPosition(
+          this.citaMenuTriggerElement.getBoundingClientRect(),
+          this.citaMenuEstimatedHeight,
+        );
+      }
+    }
+
+    if (this.openMedicoMenu !== null && this.medicoMenuTriggerElement) {
+      if (!document.body.contains(this.medicoMenuTriggerElement)) {
+        this.closeMedicoMenu();
+      } else {
+        this.menuMedicoPosition = this.getActionMenuPosition(
+          this.medicoMenuTriggerElement.getBoundingClientRect(),
+          this.medicoMenuEstimatedHeight,
+        );
+      }
+    }
+  }
+
+  toggleCitaMenu(cita: any, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.openCitaMenu === cita.idCita) {
+      this.closeCitaMenu();
+      return;
+    }
+    this.citaMenuTriggerElement = event.currentTarget as HTMLElement;
+    this.menuCitaPosition = this.getActionMenuPosition(
+      this.citaMenuTriggerElement.getBoundingClientRect(),
+      this.citaMenuEstimatedHeight,
+    );
+    this.menuCita = cita;
+    this.openCitaMenu = cita.idCita;
+  }
+
+  closeCitaMenu(): void {
+    this.openCitaMenu = null;
+    this.menuCita = null;
+    this.citaMenuTriggerElement = null;
+  }
+
+  // ──────────────── ⋮ Menús Médicos ────────────────
+
+  toggleMedicoMenu(medico: any, event: MouseEvent): void {
+    event.stopPropagation();
+    if (this.openMedicoMenu === medico.idDoctor) {
+      this.closeMedicoMenu();
+      return;
+    }
+    this.medicoMenuTriggerElement = event.currentTarget as HTMLElement;
+    this.menuMedicoPosition = this.getActionMenuPosition(
+      this.medicoMenuTriggerElement.getBoundingClientRect(),
+      this.medicoMenuEstimatedHeight,
+    );
+    this.menuMedico = medico;
+    this.openMedicoMenu = medico.idDoctor;
+  }
+
+  closeMedicoMenu(): void {
+    this.openMedicoMenu = null;
+    this.menuMedico = null;
+    this.medicoMenuTriggerElement = null;
   }
 }

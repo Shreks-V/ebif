@@ -448,8 +448,8 @@ export class ApiService {
     return this.http.put<any>(`${this.apiUrl}/preregistro/${id}`, data);
   }
 
-  aprobarPreRegistro(id: number): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/preregistro/${id}/aprobar`, {});
+  aprobarPreRegistro(id: number, tipoCuota?: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/preregistro/${id}/aprobar`, { tipo_cuota: tipoCuota || null });
   }
 
   rechazarPreRegistro(id: number): Observable<any> {
@@ -473,6 +473,10 @@ export class ApiService {
 
   getDocumentos(idPaciente: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/preregistro/${idPaciente}/documentos`);
+  }
+
+  getDocumentoArchivoUrl(idPaciente: number, idDocumento: number): string {
+    return `${this.apiUrl}/preregistro/${idPaciente}/documentos/${idDocumento}/archivo`;
   }
 
   deleteDocumento(idPaciente: number, idDocumento: number): Observable<any> {

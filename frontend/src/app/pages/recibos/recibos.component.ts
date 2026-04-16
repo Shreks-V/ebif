@@ -54,6 +54,11 @@ interface ConceptoCobroOption {
   precioDefault: number;
 }
 
+interface TableSortState {
+  key: string;
+  direction: 'asc' | 'desc';
+}
+
 @Component({
   selector: 'app-recibos',
   standalone: true,
@@ -137,43 +142,57 @@ interface ConceptoCobroOption {
             <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-20 shadow-sm">
               <tr>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
-                  <div class="flex items-center gap-1.5">
+                  <button type="button" (click)="toggleRecibosSort('folioVenta')" class="flex items-center gap-1.5 hover:text-slate-900 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></svg>
-                    Folio
-                  </div>
+                    <span>Folio</span>
+                    <span class="text-[10px] font-black leading-none">{{ getSortIndicator(recibosSort, 'folioVenta') }}</span>
+                  </button>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
-                  <div class="flex items-center gap-1.5">
+                  <button type="button" (click)="toggleRecibosSort('nombrePaciente')" class="flex items-center gap-1.5 hover:text-slate-900 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    Beneficiario
-                  </div>
+                    <span>Beneficiario</span>
+                    <span class="text-[10px] font-black leading-none">{{ getSortIndicator(recibosSort, 'nombrePaciente') }}</span>
+                  </button>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
-                  <div class="flex items-center gap-1.5">
+                  <button type="button" (click)="toggleRecibosSort('fechaVenta')" class="flex items-center gap-1.5 hover:text-slate-900 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                    Fecha
-                  </div>
+                    <span>Fecha</span>
+                    <span class="text-[10px] font-black leading-none">{{ getSortIndicator(recibosSort, 'fechaVenta') }}</span>
+                  </button>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
-                  <div class="flex items-center gap-1.5">
+                  <button type="button" (click)="toggleRecibosSort('montoTotal')" class="flex items-center gap-1.5 hover:text-slate-900 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    Monto Total
-                  </div>
+                    <span>Monto Total</span>
+                    <span class="text-[10px] font-black leading-none">{{ getSortIndicator(recibosSort, 'montoTotal') }}</span>
+                  </button>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
-                  <div class="flex items-center gap-1.5">
+                  <button type="button" (click)="toggleRecibosSort('montoPagado')" class="flex items-center gap-1.5 hover:text-slate-900 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    Pagado
-                  </div>
+                    <span>Pagado</span>
+                    <span class="text-[10px] font-black leading-none">{{ getSortIndicator(recibosSort, 'montoPagado') }}</span>
+                  </button>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
-                  Saldo
+                  <button type="button" (click)="toggleRecibosSort('saldoPendiente')" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                    <span>Saldo</span>
+                    <span class="text-[10px] font-black leading-none">{{ getSortIndicator(recibosSort, 'saldoPendiente') }}</span>
+                  </button>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
-                  Pago
+                  <button type="button" (click)="toggleRecibosSort('pago')" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                    <span>Pago</span>
+                    <span class="text-[10px] font-black leading-none">{{ getSortIndicator(recibosSort, 'pago') }}</span>
+                  </button>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
-                  Estado
+                  <button type="button" (click)="toggleRecibosSort('estado')" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                    <span>Estado</span>
+                    <span class="text-[10px] font-black leading-none">{{ getSortIndicator(recibosSort, 'estado') }}</span>
+                  </button>
                 </th>
                 <th class="text-left px-5 py-4 text-xs font-bold text-slate-700">
                   Acci&oacute;n
@@ -569,6 +588,7 @@ export class RecibosComponent implements OnInit {
   loading = true;
   recibos: Recibo[] = [];
   recibosFiltrados: Recibo[] = [];
+  recibosSort: TableSortState = { key: 'fechaVenta', direction: 'desc' };
 
   montoTotal = 0;
   montoEfectivo = 0;
@@ -649,7 +669,7 @@ export class RecibosComponent implements OnInit {
             monto: mp.monto
           }))
         }));
-        this.recibosFiltrados = [...this.recibos];
+        this.recibosFiltrados = this.sortRows(this.recibos, this.recibosSort, (recibo, key) => this.getReciboSortValue(recibo, key));
         this.calcularEstadisticas();
         this.loading = false;
       },
@@ -675,7 +695,7 @@ export class RecibosComponent implements OnInit {
   }
 
   filtrarRecibos(): void {
-    this.recibosFiltrados = this.recibos.filter(r => {
+    const filtrados = this.recibos.filter(r => {
       const matchFolio = !this.filtroFolio ||
         r.folioVenta.toLowerCase().includes(this.filtroFolio.toLowerCase());
       const matchBeneficiario = !this.filtroBeneficiario ||
@@ -690,6 +710,7 @@ export class RecibosComponent implements OnInit {
       }
       return matchFolio && matchBeneficiario && matchFechaInicio && matchFechaFin;
     });
+    this.recibosFiltrados = this.sortRows(filtrados, this.recibosSort, (recibo, key) => this.getReciboSortValue(recibo, key));
   }
 
   limpiarFiltros(): void {
@@ -697,7 +718,69 @@ export class RecibosComponent implements OnInit {
     this.filtroBeneficiario = '';
     this.filtroFechaInicio = '';
     this.filtroFechaFin = '';
-    this.recibosFiltrados = [...this.recibos];
+    this.recibosFiltrados = this.sortRows(this.recibos, this.recibosSort, (recibo, key) => this.getReciboSortValue(recibo, key));
+  }
+
+  toggleRecibosSort(key: string): void {
+    if (this.recibosSort.key === key) {
+      this.recibosSort.direction = this.recibosSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.recibosSort = { key, direction: 'asc' };
+    }
+    this.filtrarRecibos();
+  }
+
+  getSortIndicator(sort: TableSortState, key: string): string {
+    if (sort.key !== key) return '-';
+    return sort.direction === 'asc' ? '^' : 'v';
+  }
+
+  private getReciboSortValue(recibo: Recibo, key: string): unknown {
+    switch (key) {
+      case 'folioVenta':
+        return recibo.folioVenta;
+      case 'nombrePaciente':
+        return recibo.nombrePaciente;
+      case 'fechaVenta':
+        return recibo.fechaVenta;
+      case 'montoTotal':
+        return recibo.montoTotal;
+      case 'montoPagado':
+        return recibo.montoPagado;
+      case 'saldoPendiente':
+        return recibo.saldoPendiente;
+      case 'pago':
+        return this.getPagoLabel(recibo);
+      case 'estado':
+        return recibo.cancelada === 'S' ? 'cancelada' : (recibo.saldoPendiente === 0 ? 'pagada' : 'pendiente');
+      default:
+        return recibo.fechaVenta;
+    }
+  }
+
+  private sortRows<T>(rows: T[], sort: TableSortState, valueGetter: (row: T, key: string) => unknown): T[] {
+    const direction = sort.direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const left = this.toComparableValue(valueGetter(a, sort.key));
+      const right = this.toComparableValue(valueGetter(b, sort.key));
+      if (left < right) return -1 * direction;
+      if (left > right) return 1 * direction;
+      return 0;
+    });
+  }
+
+  private toComparableValue(value: unknown): number | string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') return value;
+
+    const text = String(value).trim();
+    const maybeDate = Date.parse(text);
+    if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
+
+    const maybeNumber = Number(text);
+    if (!Number.isNaN(maybeNumber) && text !== '') return maybeNumber;
+
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
   calcularEstadisticas(): void {

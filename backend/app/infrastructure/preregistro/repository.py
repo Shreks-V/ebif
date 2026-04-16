@@ -1,5 +1,6 @@
 from datetime import datetime, date
 import logging
+import mimetypes
 import os
 import uuid
 from pathlib import Path
@@ -34,6 +35,48 @@ def _serialize(row: dict) -> dict:
         else:
             result[key] = value
     return result
+
+
+def _resolve_usuario_registro_id(conn, current_user: dict | None) -> int:
+    """Resolver un ID_USUARIO_REGISTRO existente para cumplir FK de DOCUMENTO_PACIENTE."""
+    cursor = conn.cursor()
+
+    candidato = (current_user or {}).get('id_usuario')
+    try:
+        candidato = int(candidato) if candidato is not None else None
+    except (TypeError, ValueError):
+        candidato = None
+
+    if candidato is not None:
+        cursor.execute(
+            'SELECT ID_USUARIO FROM USUARIO_SISTEMA WHERE ID_USUARIO = :id',
+            {'id': candidato},
+        )
+        row = cursor.fetchone()
+        if row is not None:
+            return int(row[0])
+
+    correo = (current_user or {}).get('correo')
+    if correo:
+        cursor.execute(
+            'SELECT ID_USUARIO FROM USUARIO_SISTEMA WHERE LOWER(CORREO) = LOWER(:correo)',
+            {'correo': str(correo).strip()},
+        )
+        row = cursor.fetchone()
+        if row is not None:
+            return int(row[0])
+
+    cursor.execute('SELECT MIN(ID_USUARIO) FROM USUARIO_SISTEMA')
+    row = cursor.fetchone()
+    fallback_id = int(row[0]) if row and row[0] is not None else None
+    if fallback_id is not None:
+        return fallback_id
+
+    raise HTTPException(
+        status_code=500,
+        detail='No existe un usuario válido para registrar la carga del documento',
+    )
+
 _BASE_SQL = '\n    SELECT ID_PACIENTE, FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n           FECHA_NACIMIENTO, GENERO, CURP,\n           ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,\n           DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n           TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n           TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL, ESTATUS_REGISTRO,\n           FECHA_REGISTRO, EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n           TIPO_SANGRE, USA_VALVULA\n    FROM PACIENTE\n'
 
 def listar_preregistros(estatus: Optional[str]=None, current_user: dict=None):
@@ -159,7 +202,7 @@ def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
         conn.commit()
     return _fetch_preregistro(id_paciente)
 
-def aprobar_preregistro(id_paciente: int, current_user: dict=None):
+def aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: dict = None):
     """Aprobar un pre-registro y convertirlo en beneficiario aprobado."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -175,12 +218,31 @@ def aprobar_preregistro(id_paciente: int, current_user: dict=None):
         cursor.execute('SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE')
         folio_num = cursor.fetchone()[0]
         new_folio = f'BEN-{folio_num:06d}'
-        cursor.execute("UPDATE PACIENTE SET\n                ESTATUS_REGISTRO = 'APROBADO',\n                FOLIO = :folio,\n                MEMBRESIA_ESTATUS = 'ACTIVO',\n                FECHA_ALTA = SYSDATE\n               WHERE ID_PACIENTE = :id", {'folio': new_folio, 'id': id_paciente})
+        base_sql = (
+            "UPDATE PACIENTE SET"
+            "  ESTATUS_REGISTRO = 'APROBADO',"
+            "  FOLIO = :folio,"
+            "  MEMBRESIA_ESTATUS = 'ACTIVO',"
+            "  FECHA_ALTA = SYSDATE,"
+            "  FECHA_INICIO_MEMBRESIA = TRUNC(SYSDATE),"
+            "  FECHA_VENCIMIENTO_MEMBRESIA = ADD_MONTHS(TRUNC(SYSDATE), 12)"
+        )
+        params = {'folio': new_folio, 'id': id_paciente}
+        if tipo_cuota:
+            base_sql += ", TIPO_CUOTA = :tipo_cuota"
+            params['tipo_cuota'] = tipo_cuota
+        base_sql += " WHERE ID_PACIENTE = :id"
+        cursor.execute(base_sql, params)
         conn.commit()
     preregistro = _fetch_preregistro(id_paciente)
     return {'message': 'Pre-registro aprobado exitosamente', 'preregistro': preregistro}
 
-async def subir_documento(id_paciente: int, id_tipo_documento: int=..., archivo: UploadFile=...):
+async def subir_documento(
+    id_paciente: int,
+    id_tipo_documento: int = ...,
+    archivo: UploadFile = ...,
+    current_user: dict | None = None,
+):
     """Subir un documento para un pre-registro."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -204,8 +266,24 @@ async def subir_documento(id_paciente: int, id_tipo_documento: int=..., archivo:
         f.write(content)
     with get_db() as conn:
         cursor = conn.cursor()
+        id_usuario = _resolve_usuario_registro_id(conn, current_user)
         id_var = cursor.var(int)
-        cursor.execute("INSERT INTO DOCUMENTO_PACIENTE\n               (ID_PACIENTE, ID_TIPO_DOCUMENTO, NOMBRE_ARCHIVO, RUTA_ARCHIVO, FORMATO_ARCHIVO, ACTIVO, FECHA_CARGA)\n               VALUES (:id_pac, :id_tipo, :nombre, :ruta, :formato, 'S', SYSDATE)\n               RETURNING ID_DOCUMENTO INTO :id_out", {'id_pac': id_paciente, 'id_tipo': id_tipo_documento, 'nombre': archivo.filename, 'ruta': unique_name, 'formato': ext.lstrip('.').upper() if ext else 'OTRO', 'id_out': id_var})
+        cursor.execute(
+            "INSERT INTO DOCUMENTO_PACIENTE\n"
+            "       (ID_PACIENTE, ID_TIPO_DOCUMENTO, NOMBRE_ARCHIVO, RUTA_ARCHIVO, FORMATO_ARCHIVO,\n"
+            "        ID_USUARIO_REGISTRO, ACTIVO, FECHA_CARGA)\n"
+            "VALUES (:id_pac, :id_tipo, :nombre, :ruta, :formato, :id_usr, 'S', SYSDATE)\n"
+            "RETURNING ID_DOCUMENTO INTO :id_out",
+            {
+                'id_pac': id_paciente,
+                'id_tipo': id_tipo_documento,
+                'nombre': archivo.filename,
+                'ruta': unique_name,
+                'formato': ext.lstrip('.').upper() if ext else 'OTRO',
+                'id_usr': id_usuario,
+                'id_out': id_var,
+            },
+        )
         new_id = id_var.getvalue()[0]
         conn.commit()
     return {'id_documento': new_id, 'nombre_archivo': archivo.filename, 'formato': ext.lstrip('.').upper() if ext else 'OTRO'}
@@ -217,6 +295,36 @@ def listar_documentos(id_paciente: int):
         cursor.execute("SELECT dp.ID_DOCUMENTO, dp.ID_TIPO_DOCUMENTO, td.NOMBRE AS TIPO_NOMBRE,\n                      dp.NOMBRE_ARCHIVO, dp.FORMATO_ARCHIVO, dp.FECHA_CARGA\n               FROM DOCUMENTO_PACIENTE dp\n               LEFT JOIN TIPO_DOCUMENTO td ON td.ID_TIPO_DOCUMENTO = dp.ID_TIPO_DOCUMENTO\n               WHERE dp.ID_PACIENTE = :id AND dp.ACTIVO = 'S'\n               ORDER BY dp.FECHA_CARGA DESC", {'id': id_paciente})
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
+
+def obtener_documento_archivo(id_paciente: int, id_documento: int):
+    """Obtener metadata del archivo físico de un documento activo."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT RUTA_ARCHIVO, NOMBRE_ARCHIVO "
+            "FROM DOCUMENTO_PACIENTE "
+            "WHERE ID_DOCUMENTO = :id_doc AND ID_PACIENTE = :id_pac AND ACTIVO = 'S'",
+            {'id_doc': id_documento, 'id_pac': id_paciente},
+        )
+        row = row_to_dict(cursor)
+
+    if not row:
+        raise HTTPException(status_code=404, detail='Documento no encontrado')
+
+    ruta_archivo = (row.get('ruta_archivo') or '').strip()
+    if not ruta_archivo:
+        raise HTTPException(status_code=404, detail='Documento sin archivo asociado')
+
+    file_path = (UPLOAD_DIR / os.path.basename(ruta_archivo)).resolve()
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail='Archivo no encontrado en almacenamiento')
+
+    content_type, _ = mimetypes.guess_type(row.get('nombre_archivo') or file_path.name)
+    return {
+        'file_path': str(file_path),
+        'content_type': content_type or 'application/octet-stream',
+        'filename': row.get('nombre_archivo') or file_path.name,
+    }
 
 def eliminar_documento(id_paciente: int, id_documento: int):
     """Eliminar (soft delete) un documento."""
@@ -269,6 +377,9 @@ class OraclePreregistroRepository:
 
     def listar_documentos(self, *args, **kwargs):
         return listar_documentos(*args, **kwargs)
+
+    def obtener_documento_archivo(self, *args, **kwargs):
+        return obtener_documento_archivo(*args, **kwargs)
 
     def eliminar_documento(self, *args, **kwargs):
         return eliminar_documento(*args, **kwargs)

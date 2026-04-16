@@ -97,7 +97,10 @@
       "mcp__dbeaver__execute_query",
       "Bash(python db/apply_migration.py db/migrations/013_membresia_anual.sql)",
       "Bash(venv/bin/python db/apply_migration.py db/migrations/013_membresia_anual.sql)",
-      "Bash(venv/bin/python -)"
+      "Bash(venv/bin/python -)",
+      "Bash(npx tsc *)",
+      "Bash(python -c ' *)",
+      "Bash(venv/bin/python -c ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,
