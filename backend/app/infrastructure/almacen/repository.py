@@ -31,6 +31,24 @@ _SP_AJUSTAR_EXISTENCIA_ERRORS = {
     20506: (400, None),
 }
 
+
+def _normalize_tipo_producto_for_db(value: Optional[str]) -> str:
+    """Accept API aliases and return the DB/SP canonical value."""
+    tipo = str(value or '').strip().upper()
+    if tipo == 'EQUIPO':
+        return 'EQUIPO_MEDICO'
+    return tipo
+
+
+def _normalize_tipo_producto_for_api(value: Optional[str]) -> Optional[str]:
+    """Return API-friendly type names for frontend compatibility."""
+    if value is None:
+        return None
+    tipo = str(value).strip().upper()
+    if tipo == 'EQUIPO_MEDICO':
+        return 'EQUIPO'
+    return tipo
+
 def _serialize(row: dict) -> dict:
     """Strip CHAR padding and convert dates to ISO strings."""
     result = {}
@@ -41,6 +59,8 @@ def _serialize(row: dict) -> dict:
             result[key] = value.strip()
         else:
             result[key] = value
+    if 'tipo_producto' in result:
+        result['tipo_producto'] = _normalize_tipo_producto_for_api(result['tipo_producto'])
     return result
 
 _PRODUCTOS_BASE_SQL = "\n    SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE, p.DESCRIPCION,\n           p.TIPO_PRODUCTO, p.ACTIVO, p.ID_USUARIO_REGISTRO, p.FECHA_REGISTRO,\n           p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,\n           m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,\n           eq.NUMERO_SERIE, eq.MARCA, eq.MODELO, eq.ESTATUS_EQUIPO, eq.OBSERVACIONES,\n           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA, ex.FECHA_CADUCIDAD\n    FROM PRODUCTO p\n    LEFT JOIN MEDICAMENTO m        ON m.ID_PRODUCTO  = p.ID_PRODUCTO\n    LEFT JOIN EQUIPO_MEDICO eq     ON eq.ID_PRODUCTO = p.ID_PRODUCTO\n    LEFT JOIN EXISTENCIA_PRODUCTO ex ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'\n"
@@ -76,7 +96,7 @@ def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=
     params: dict = {}
     if tipo_producto:
         sql += ' AND p.TIPO_PRODUCTO = :tipo_producto'
-        params['tipo_producto'] = tipo_producto
+        params['tipo_producto'] = _normalize_tipo_producto_for_db(tipo_producto)
     if activo:
         sql += ' AND p.ACTIVO = :activo'
         params['activo'] = activo
@@ -108,16 +128,17 @@ def crear_producto(data: ProductoCreate, current_user: dict=None):
         id_usuario = current_user.get('id_usuario', 1)
         id_producto = None
         clave_interna = None
+        tipo_producto_db = _normalize_tipo_producto_for_db(data.tipo_producto)
 
         for _ in range(5):
-            clave_interna = _generate_internal_key(conn, data.tipo_producto)
+            clave_interna = _generate_internal_key(conn, tipo_producto_db)
             id_out = cursor.var(int)
             try:
                 cursor.callproc('SP_CREAR_PRODUCTO_CON_EXISTENCIA', [
                     clave_interna,
                     data.nombre,
                     data.descripcion,
-                    data.tipo_producto,
+                    tipo_producto_db,
                     data.precio_cuota_a,
                     data.precio_cuota_b,
                     id_usuario,
@@ -189,12 +210,13 @@ def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: di
     """Actualizar un producto existente."""
     with get_db() as conn:
         cursor = conn.cursor()
+        tipo_producto_db = _normalize_tipo_producto_for_db(data.tipo_producto)
         cursor.execute('SELECT ID_PRODUCTO, TIPO_PRODUCTO FROM PRODUCTO WHERE ID_PRODUCTO = :id', {'id': id_producto})
         existing = cursor.fetchone()
         if not existing:
             raise HTTPException(status_code=404, detail='Producto no encontrado')
-        cursor.execute('UPDATE PRODUCTO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                TIPO_PRODUCTO = :tipo, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b\n               WHERE ID_PRODUCTO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'tipo': data.tipo_producto, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id': id_producto})
-        if data.tipo_producto == 'MEDICAMENTO':
+        cursor.execute('UPDATE PRODUCTO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                TIPO_PRODUCTO = :tipo, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b\n               WHERE ID_PRODUCTO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'tipo': tipo_producto_db, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id': id_producto})
+        if tipo_producto_db == 'MEDICAMENTO':
             cursor.execute('MERGE INTO MEDICAMENTO m\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (m.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       PRESENTACION = :presentacion, DOSIS = :dosis,\n                       REQUIERE_CADUCIDAD = :requiere\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)\n                       VALUES (:id, :presentacion, :dosis, :requiere)', {'id': id_producto, 'presentacion': data.presentacion, 'dosis': data.dosis, 'requiere': data.requiere_caducidad or 'N'})
         else:
             cursor.execute('MERGE INTO EQUIPO_MEDICO eq\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (eq.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       NUMERO_SERIE = :serie, MARCA = :marca, MODELO = :modelo,\n                       ESTATUS_EQUIPO = :estatus, OBSERVACIONES = :obs\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, NUMERO_SERIE, MARCA, MODELO, ESTATUS_EQUIPO, OBSERVACIONES)\n                       VALUES (:id, :serie, :marca, :modelo, :estatus, :obs)', {'id': id_producto, 'serie': data.numero_serie, 'marca': data.marca, 'modelo': data.modelo, 'estatus': data.estatus_equipo or 'DISPONIBLE', 'obs': data.observaciones})

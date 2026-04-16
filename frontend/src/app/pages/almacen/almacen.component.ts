@@ -534,9 +534,17 @@ interface TableSortState {
           <!-- Row: Clave Interna + Nombre -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Clave Interna *</label>
-              <input type="text" [(ngModel)]="productoForm.clave_interna" name="clave_interna" required
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: MED-001" />
+              <label class="block text-sm font-semibold text-slate-700 mb-1">
+                Clave Interna <span *ngIf="productoForm.tipo_producto !== 'SERVICIO'">*</span>
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="productoForm.clave_interna"
+                name="clave_interna"
+                [required]="productoForm.tipo_producto !== 'SERVICIO'"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"
+                placeholder="Ej: MED-001"
+              />
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
@@ -561,6 +569,7 @@ interface TableSortState {
                 <option value="">Seleccionar...</option>
                 <option value="MEDICAMENTO">Medicamento</option>
                 <option value="EQUIPO">Equipo</option>
+                <option value="SERVICIO">Servicio</option>
               </select>
             </div>
             <div>
@@ -659,8 +668,22 @@ interface TableSortState {
             </div>
           </ng-container>
 
+          <!-- SERVICIO-specific fields -->
+          <ng-container *ngIf="productoForm.tipo_producto === 'SERVICIO'">
+            <div class="border-t-2 border-slate-100 pt-4">
+              <h3 class="text-sm font-bold text-purple-700 mb-3">Datos de Servicio</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Cuota de Recuperaci&oacute;n</label>
+                  <input type="number" [(ngModel)]="productoForm.cuota_recuperacion" name="cuota_recuperacion" step="0.01" min="0"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
           <!-- Row: Cantidad, Nivel Minimo, Unidad Medida -->
-          <div class="border-t-2 border-slate-100 pt-4">
+          <div *ngIf="productoForm.tipo_producto !== 'SERVICIO'" class="border-t-2 border-slate-100 pt-4">
             <h3 class="text-sm font-bold text-slate-600 mb-3">Existencia</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -1066,14 +1089,14 @@ export class AlmacenComponent implements OnInit {
 
   loadProductos(): void {
     this.loading = true;
-    this.api.getProductos().subscribe({
+    this.api.getProductos({ activo: 'S' }).subscribe({
       next: (data) => {
         this.productos = data.map((p: any) => ({
           idProducto: p.id_producto,
           claveInterna: p.clave_interna,
           nombre: p.nombre,
           descripcion: p.descripcion,
-          tipoProducto: p.tipo_producto,
+          tipoProducto: this.normalizeTipoProducto(p.tipo_producto),
           precioA: p.precio_cuota_a,
           precioB: p.precio_cuota_b,
           activo: p.activo,
@@ -1111,7 +1134,7 @@ export class AlmacenComponent implements OnInit {
   }
 
   loadServicios(): void {
-    this.api.getServicios().subscribe({
+    this.api.getServicios({ activo: 'S' }).subscribe({
       next: (data) => {
         this.servicios = data.map((s: any) => ({
           idServicio: s.id_servicio,
@@ -1125,6 +1148,12 @@ export class AlmacenComponent implements OnInit {
       },
       error: (err) => console.error('Error loading servicios:', err),
     });
+  }
+
+  private normalizeTipoProducto(value: unknown): string {
+    const tipo = String(value || '').trim().toUpperCase();
+    if (tipo === 'EQUIPO_MEDICO') return 'EQUIPO';
+    return tipo;
   }
 
   loadComodatos(): void {
@@ -1171,6 +1200,7 @@ export class AlmacenComponent implements OnInit {
       modelo: '',
       estatus_equipo: 'DISPONIBLE',
       observaciones: '',
+      cuota_recuperacion: 0,
       cantidad_disponible: 0,
       nivel_minimo: 5,
       unidad_medida: '',
@@ -1229,6 +1259,7 @@ export class AlmacenComponent implements OnInit {
       modelo: producto.modelo ?? '',
       estatus_equipo: producto.estatusEquipo ?? 'DISPONIBLE',
       observaciones: producto.observaciones ?? '',
+      cuota_recuperacion: 0,
       cantidad_disponible: producto.cantidadDisponible ?? 0,
       nivel_minimo: producto.nivelMinimo ?? 5,
       unidad_medida: producto.unidadMedida,
@@ -1243,10 +1274,41 @@ export class AlmacenComponent implements OnInit {
   }
 
   submitProducto(): void {
-    if (!this.productoForm.clave_interna || !this.productoForm.nombre || !this.productoForm.tipo_producto) return;
+    if (!this.productoForm.nombre || !this.productoForm.tipo_producto) return;
+    if (this.productoForm.tipo_producto !== 'SERVICIO' && !this.productoForm.clave_interna) return;
 
     this.submittingProducto = true;
     const payload: any = { ...this.productoForm };
+
+    if (payload.tipo_producto === 'SERVICIO') {
+      if (this.editingProduct) {
+        alert('La edici\u00f3n de servicios se realiza desde la tabla de servicios.');
+        this.submittingProducto = false;
+        return;
+      }
+
+      const servicioPayload = {
+        nombre: payload.nombre,
+        descripcion: payload.descripcion,
+        activo: payload.activo,
+        precio_cuota_a: payload.precio_cuota_a,
+        precio_cuota_b: payload.precio_cuota_b,
+        cuota_recuperacion: payload.cuota_recuperacion ?? 0,
+      };
+
+      this.api.createServicio(servicioPayload).subscribe({
+        next: () => {
+          this.loadServicios();
+          this.closeProductoModal();
+          this.submittingProducto = false;
+        },
+        error: (err) => {
+          console.error('Error creating servicio:', err);
+          this.submittingProducto = false;
+        },
+      });
+      return;
+    }
 
     // Clean up type-specific fields
     if (payload.tipo_producto === 'MEDICAMENTO') {
@@ -1255,11 +1317,13 @@ export class AlmacenComponent implements OnInit {
       delete payload.modelo;
       delete payload.estatus_equipo;
       delete payload.observaciones;
+      delete payload.cuota_recuperacion;
     } else if (payload.tipo_producto === 'EQUIPO') {
       delete payload.presentacion;
       delete payload.dosis;
       delete payload.requiere_caducidad;
       delete payload.fecha_caducidad;
+      delete payload.cuota_recuperacion;
     }
     if (payload.fecha_caducidad === '') {
       payload.fecha_caducidad = null;
@@ -1325,6 +1389,7 @@ export class AlmacenComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error deleting item:', err);
+        alert(err?.error?.detail || 'No se pudo eliminar el elemento seleccionado.');
         this.submittingDelete = false;
       },
     });
