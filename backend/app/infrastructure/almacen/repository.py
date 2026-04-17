@@ -229,7 +229,29 @@ def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: di
             cursor.execute('MERGE INTO MEDICAMENTO m\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (m.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       PRESENTACION = :presentacion, DOSIS = :dosis,\n                       REQUIERE_CADUCIDAD = :requiere\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)\n                       VALUES (:id, :presentacion, :dosis, :requiere)', {'id': id_producto, 'presentacion': data.presentacion, 'dosis': data.dosis, 'requiere': data.requiere_caducidad or 'N'})
         else:
             cursor.execute('MERGE INTO EQUIPO_MEDICO eq\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (eq.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       NUMERO_SERIE = :serie, MARCA = :marca, MODELO = :modelo,\n                       ESTATUS_EQUIPO = :estatus, OBSERVACIONES = :obs\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, NUMERO_SERIE, MARCA, MODELO, ESTATUS_EQUIPO, OBSERVACIONES)\n                       VALUES (:id, :serie, :marca, :modelo, :estatus, :obs)', {'id': id_producto, 'serie': data.numero_serie, 'marca': data.marca, 'modelo': data.modelo, 'estatus': data.estatus_equipo or 'DISPONIBLE', 'obs': data.observaciones})
-        cursor.execute("MERGE INTO EXISTENCIA_PRODUCTO ex\n               USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n               ON (ex.ID_PRODUCTO = src.ID_PRODUCTO AND ex.ACTIVO = 'S')\n               WHEN MATCHED THEN UPDATE SET\n                   CANTIDAD_DISPONIBLE = :cant, NIVEL_MINIMO = :nmin,\n                   UNIDAD_MEDIDA = :unidad,\n                   FECHA_CADUCIDAD = CASE WHEN :fecha_cad IS NOT NULL THEN TO_DATE(:fecha_cad2, 'YYYY-MM-DD') ELSE NULL END\n               WHEN NOT MATCHED THEN INSERT\n                   (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD)\n                   VALUES (:id, :cant, :nmin, :unidad, 'S',\n                           CASE WHEN :fecha_cad3 IS NOT NULL THEN TO_DATE(:fecha_cad4, 'YYYY-MM-DD') ELSE NULL END)", {'id': id_producto, 'cant': data.cantidad_disponible, 'nmin': data.nivel_minimo, 'unidad': data.unidad_medida, 'fecha_cad': data.fecha_caducidad, 'fecha_cad2': data.fecha_caducidad, 'fecha_cad3': data.fecha_caducidad, 'fecha_cad4': data.fecha_caducidad})
+        fecha_cad_val = (
+            datetime.strptime(data.fecha_caducidad[:10], '%Y-%m-%d').date()
+            if data.fecha_caducidad else None
+        )
+        cursor.execute(
+            "MERGE INTO EXISTENCIA_PRODUCTO ex"
+            " USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src"
+            " ON (ex.ID_PRODUCTO = src.ID_PRODUCTO AND ex.ACTIVO = 'S')"
+            " WHEN MATCHED THEN UPDATE SET"
+            "     CANTIDAD_DISPONIBLE = :cant, NIVEL_MINIMO = :nmin,"
+            "     UNIDAD_MEDIDA = :unidad,"
+            "     FECHA_CADUCIDAD = :fecha_cad"
+            " WHEN NOT MATCHED THEN INSERT"
+            "     (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD)"
+            "     VALUES (:id, :cant, :nmin, :unidad, 'S', :fecha_cad)",
+            {
+                'id': id_producto,
+                'cant': data.cantidad_disponible,
+                'nmin': data.nivel_minimo,
+                'unidad': data.unidad_medida,
+                'fecha_cad': fecha_cad_val,
+            },
+        )
         conn.commit()
     return _fetch_producto(id_producto)
 
@@ -360,7 +382,7 @@ def crear_comodato(data: ComodatoCreate, current_user: dict=None):
         try:
             cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
                 data.id_equipo,
-                'SALIDA_MERMA',
+                'SALIDA_COMODATO',
                 1,
                 id_usuario,
                 None,
@@ -403,7 +425,7 @@ def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: di
             try:
                 cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
                     id_equipo_prev,
-                    'ENTRADA',
+                    'DEVOLUCION_COMODATO',
                     1,
                     id_usuario,
                     None,

@@ -346,7 +346,12 @@ class MovimientoInventario(BaseModel):
     id_venta: Optional[int] = None
     id_comodato: Optional[int] = None
     fecha_movimiento: Optional[str] = None
-    tipo_movimiento: Literal["ENTRADA", "SALIDA", "AJUSTE", "SALIDA_MERMA"]
+    tipo_movimiento: Literal[
+        "ENTRADA", "SALIDA_VENTA", "SALIDA_COMODATO",
+        "DEVOLUCION_COMODATO", "SALIDA_MERMA", "AJUSTE_POS", "AJUSTE_NEG",
+        # valores legacy del schema original
+        "SALIDA", "AJUSTE",
+    ]
     cantidad: int = Field(ge=0)
     observaciones: Optional[str] = None
 
