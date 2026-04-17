@@ -22,10 +22,10 @@ interface TableSortState {
   template: `
     <div class="h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff] overflow-hidden">
       <app-navbar></app-navbar>
-
+    
       <main class="flex-1 overflow-y-auto">
         <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
-
+    
           <!-- Header -->
           <div class="flex items-center gap-4">
             <div class="bg-[#00328b] p-3 rounded-xl shadow-lg">
@@ -40,10 +40,10 @@ interface TableSortState {
             </div>
             <div>
               <h1 class="text-3xl font-bold text-slate-800">Reportes e Indicadores</h1>
-              <p class="text-slate-500 text-sm mt-1">Genera reportes documentales y visualiza graficas en pantalla</p>
+              <p class="text-slate-500 text-sm mt-1">Genera reportes documentales y visualiza gráficas en pantalla</p>
             </div>
           </div>
-
+    
           <!-- SECTION 1: Generar Reporte Documento -->
           <div class="bg-white rounded-xl shadow-lg border-2 border-slate-200 p-6">
             <!-- Section header -->
@@ -63,61 +63,66 @@ interface TableSortState {
                 <p class="text-slate-500 text-sm">Selecciona el tipo de reporte, periodo y genera un reporte</p>
               </div>
             </div>
-
-            <!-- Report type selector (hidden — Excel exports all sheets, preview uses default 'resumen') -->
+    
+            <!-- Selector de tipo de reporte (oculto: Excel exporta todas las hojas y la vista previa usa 'resumen') -->
             <div class="mb-6 hidden">
               <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Reporte</label>
               <select [(ngModel)]="tipoReporte"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
                 <option value="">Seleccionar tipo de reporte...</option>
-                <option value="genero">Reporte por Genero</option>
+                <option value="genero">Reporte por Género</option>
                 <option value="etapa-vida">Reporte por Etapa de Vida</option>
                 <option value="tipo-espina">Reporte por Tipo de Espina</option>
                 <option value="estado">Reporte por Estado</option>
                 <option value="resumen">Reporte Resumen</option>
               </select>
             </div>
-
+    
             <!-- Period selector grid -->
             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-              <button
-                *ngFor="let period of periods"
-                (click)="selectPeriod(period.id)"
-                class="px-4 py-3 rounded-lg border-2 font-semibold text-sm flex flex-col items-center gap-1 transition-all cursor-pointer"
+              @for (period of periods; track period) {
+                <button
+                  (click)="selectPeriod(period.id)"
+                  class="px-4 py-3 rounded-lg border-2 font-semibold text-sm flex flex-col items-center gap-1 transition-all cursor-pointer"
                 [ngClass]="{
                   'bg-[#00328b] text-white border-[#00328b] shadow-lg': selectedPeriod === period.id,
                   'bg-white text-slate-700 border-slate-300 hover:border-[#00328b]': selectedPeriod !== period.id
                 }">
-                <!-- Calendar icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-                  <line x1="16" x2="16" y1="2" y2="6"/>
-                  <line x1="8" x2="8" y1="2" y2="6"/>
-                  <line x1="3" x2="21" y1="10" y2="10"/>
-                </svg>
-                {{ period.label }}
-              </button>
+                  <!-- Calendar icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                    <line x1="16" x2="16" y1="2" y2="6"/>
+                    <line x1="8" x2="8" y1="2" y2="6"/>
+                    <line x1="3" x2="21" y1="10" y2="10"/>
+                  </svg>
+                  {{ period.label }}
+                </button>
+              }
             </div>
-
+    
             <!-- Custom date inputs -->
-            <div *ngIf="selectedPeriod === 'personalizado'" class="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 mb-6">
-              <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha Inicio</label>
-                <input type="date" [(ngModel)]="fechaInicio"
-                  class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100">
+            @if (selectedPeriod === 'personalizado') {
+              <div class="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 mb-6">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha Inicio</label>
+                  <input type="date" [(ngModel)]="fechaInicio"
+                    class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha Fin</label>
+                  <input type="date" [(ngModel)]="fechaFin"
+                    class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                </div>
               </div>
-              <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha Fin</label>
-                <input type="date" [(ngModel)]="fechaFin"
-                  class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100">
-              </div>
-            </div>
-
+            }
+    
             <!-- Error / info messages -->
-            <div *ngIf="reporteError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-              {{ reporteError }}
-            </div>
-
+            @if (reporteError) {
+              <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                {{ reporteError }}
+              </div>
+            }
+    
             <!-- Action buttons -->
             <div class="flex gap-3 pt-4 border-t border-slate-200">
               <button (click)="generarReporte()" [disabled]="generandoReporte" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
@@ -155,47 +160,55 @@ interface TableSortState {
               </button>
             </div>
           </div>
-
+    
           <!-- Report Results Section -->
-          <div *ngIf="reporteData && reporteData.length > 0" class="bg-white rounded-xl shadow-lg border-2 border-slate-200 p-6">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-3">
-                <div class="bg-emerald-500 p-2 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                  </svg>
+          @if (reporteData && reporteData.length > 0) {
+            <div class="bg-white rounded-xl shadow-lg border-2 border-slate-200 p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="bg-emerald-500 p-2 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 class="text-xl font-bold text-slate-800">Resultados del Reporte</h2>
+                    <p class="text-slate-500 text-sm">{{ getReporteTipoLabel() }} - {{ reporteData.length }} registros</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 class="text-xl font-bold text-slate-800">Resultados del Reporte</h2>
-                  <p class="text-slate-500 text-sm">{{ getReporteTipoLabel() }} - {{ reporteData.length }} registros</p>
-                </div>
+                <button (click)="limpiarReporte()" class="text-sm font-semibold text-slate-500 hover:text-red-500 cursor-pointer">Limpiar</button>
               </div>
-              <button (click)="limpiarReporte()" class="text-sm font-semibold text-slate-500 hover:text-red-500 cursor-pointer">Limpiar</button>
+              <div>
+                <table class="w-full">
+                  <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
+                    <tr>
+                      @for (col of reporteColumnas; track col) {
+                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          <button type="button" (click)="toggleReporteSort(col)" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                            <span>{{ col }}</span>
+                            <span class="text-[10px] font-black leading-none">{{ getSortIndicator(reporteSort, col) }}</span>
+                          </button>
+                        </th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of reporteDataOrdenada; track row) {
+                      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                        @for (col of reporteColumnas; track col) {
+                          <td class="px-5 py-3 text-sm text-slate-700">
+                            {{ row[col] }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div>
-              <table class="w-full">
-                <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
-                  <tr>
-                    <th *ngFor="let col of reporteColumnas" class="text-left px-5 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      <button type="button" (click)="toggleReporteSort(col)" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
-                        <span>{{ col }}</span>
-                        <span class="text-[10px] font-black leading-none">{{ getSortIndicator(reporteSort, col) }}</span>
-                      </button>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let row of reporteDataOrdenada" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                    <td *ngFor="let col of reporteColumnas" class="px-5 py-3 text-sm text-slate-700">
-                      {{ row[col] }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- SECTION 2: Visualizacion de Graficas -->
+          }
+    
+          <!-- SECTION 2: Visualización de Gráficas -->
           <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border-2 border-[#00328b] p-6">
             <!-- Header -->
             <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
@@ -210,7 +223,7 @@ interface TableSortState {
                   </svg>
                 </div>
                 <div>
-                  <h2 class="text-xl font-bold text-slate-800">Visualizacion de Graficas</h2>
+                  <h2 class="text-xl font-bold text-slate-800">Visualización de Gráficas</h2>
                   <p class="text-slate-500 text-sm">Selecciona indicadores para visualizar en pantalla</p>
                 </div>
               </div>
@@ -221,7 +234,7 @@ interface TableSortState {
                     <line x1="12" x2="12" y1="5" y2="19"/>
                     <line x1="5" x2="19" y1="12" y2="12"/>
                   </svg>
-                  Agregar Graficas
+                  Agregar gráficas
                 </button>
                 <button (click)="limpiarGraficas()" class="px-4 py-2 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
                   <!-- Trash icon -->
@@ -242,191 +255,231 @@ interface TableSortState {
                 </button>
               </div>
             </div>
-
+    
             <!-- Added charts compact list -->
-            <div *ngIf="selectedCharts.length > 0" class="bg-white border-2 border-blue-300 rounded-lg p-4 mb-6">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-sm font-semibold text-slate-700">Graficas seleccionadas:</span>
-                <span *ngFor="let chart of selectedCharts"
-                  class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-                  {{ getChartName(chart) }}
-                  <button (click)="removeChart(chart)" class="ml-1 hover:text-red-600 transition-colors cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" x2="6" y1="6" y2="18"/>
-                      <line x1="6" x2="18" y1="6" y2="18"/>
-                    </svg>
-                  </button>
-                </span>
+            @if (selectedCharts.length > 0) {
+              <div class="bg-white border-2 border-blue-300 rounded-lg p-4 mb-6">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-sm font-semibold text-slate-700">Gráficas seleccionadas:</span>
+                  @for (chart of selectedCharts; track chart) {
+                    <span
+                      class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                      {{ getChartName(chart) }}
+                      <button (click)="removeChart(chart)" class="ml-1 hover:text-red-600 transition-colors cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" x2="6" y1="6" y2="18"/>
+                          <line x1="6" x2="18" y1="6" y2="18"/>
+                        </svg>
+                      </button>
+                    </span>
+                  }
+                </div>
               </div>
-            </div>
-
+            }
+    
             <!-- Empty state -->
-            <div *ngIf="selectedCharts.length === 0" class="text-center py-16 bg-white rounded-lg border-2 border-dashed border-slate-300">
-              <div class="flex justify-center mb-4">
-                <!-- Big chart icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 3v18h18"/>
-                  <path d="M18 17V9"/>
-                  <path d="M13 17V5"/>
-                  <path d="M8 17v-3"/>
-                </svg>
+            @if (selectedCharts.length === 0) {
+              <div class="text-center py-16 bg-white rounded-lg border-2 border-dashed border-slate-300">
+                <div class="flex justify-center mb-4">
+                  <!-- Big chart icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v18h18"/>
+                    <path d="M18 17V9"/>
+                    <path d="M13 17V5"/>
+                    <path d="M8 17v-3"/>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700 mb-2">No hay gráficas para visualizar</h3>
+                <p class="text-slate-500 text-sm mb-6">Agrega indicadores para generar gráficas y visualizar los datos</p>
+                <button (click)="toggleModal()" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors inline-flex items-center gap-2 cursor-pointer">
+                  <!-- Plus icon -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" x2="12" y1="5" y2="19"/>
+                    <line x1="5" x2="19" y1="12" y2="12"/>
+                  </svg>
+                  Agregar gráficas
+                </button>
               </div>
-              <h3 class="text-lg font-bold text-slate-700 mb-2">No hay graficas para visualizar</h3>
-              <p class="text-slate-500 text-sm mb-6">Agrega indicadores para generar graficas y visualizar los datos</p>
-              <button (click)="toggleModal()" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors inline-flex items-center gap-2 cursor-pointer">
-                <!-- Plus icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" x2="12" y1="5" y2="19"/>
-                  <line x1="5" x2="19" y1="12" y2="12"/>
-                </svg>
-                Agregar Graficas
-              </button>
-            </div>
-
+            }
+    
             <!-- Chart cards grid -->
-            <div *ngIf="selectedCharts.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div *ngFor="let chart of selectedCharts" class="bg-white rounded-xl shadow border-2 border-slate-200 p-6">
-                <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-base font-bold text-slate-800">{{ getChartName(chart) }}</h3>
-                  <button (click)="removeChart(chart)" class="text-slate-400 hover:text-red-500 transition-colors cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" x2="6" y1="6" y2="18"/>
-                      <line x1="6" x2="18" y1="6" y2="18"/>
-                    </svg>
-                  </button>
-                </div>
-                <!-- Loading -->
-                <div *ngIf="!chartData[chart]" class="h-48 flex items-center justify-center text-slate-400 text-sm">Cargando datos...</div>
-                <!-- No data -->
-                <div *ngIf="chartData[chart] && chartData[chart].length === 0" class="h-48 flex items-center justify-center text-slate-400 text-sm">Sin datos disponibles</div>
-                <!-- Bar chart -->
-                <div *ngIf="chartData[chart] && chartData[chart].length > 0" class="space-y-3">
-                  <div *ngFor="let item of chartData[chart]; let i = index" class="flex items-center gap-3">
-                    <span class="text-xs text-slate-600 font-semibold w-28 truncate text-right" [title]="item.label">{{ item.label }}</span>
-                    <div class="flex-1 bg-slate-100 rounded-full h-7 relative overflow-hidden">
-                      <div class="h-full rounded-full transition-all duration-700 flex items-center justify-end pr-2"
-                        [style.width.%]="item.pct"
-                        [style.background]="chartColors[i % chartColors.length]">
-                        <span class="text-[11px] font-bold text-white drop-shadow" *ngIf="item.pct > 12">{{ item.value }}</span>
-                      </div>
-                      <span class="text-[11px] font-bold text-slate-600 absolute left-2 top-1/2 -translate-y-1/2" *ngIf="item.pct <= 12">{{ item.value }}</span>
+            @if (selectedCharts.length > 0) {
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                @for (chart of selectedCharts; track chart) {
+                  <div class="bg-white rounded-xl shadow border-2 border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                      <h3 class="text-base font-bold text-slate-800">{{ getChartName(chart) }}</h3>
+                      <button (click)="removeChart(chart)" class="text-slate-400 hover:text-red-500 transition-colors cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" x2="6" y1="6" y2="18"/>
+                          <line x1="6" x2="18" y1="6" y2="18"/>
+                        </svg>
+                      </button>
                     </div>
-                    <span class="text-xs text-slate-400 font-semibold w-10 text-right">{{ item.pct | number:'1.0-0' }}%</span>
+                    <!-- Loading -->
+                    @if (!chartData[chart]) {
+                      <div class="h-48 flex items-center justify-center text-slate-400 text-sm">Cargando datos...</div>
+                    }
+                    <!-- No data -->
+                    @if (chartData[chart] && chartData[chart].length === 0) {
+                      <div class="h-48 flex items-center justify-center text-slate-400 text-sm">Sin datos disponibles</div>
+                    }
+                    <!-- Bar chart -->
+                    @if (chartData[chart] && chartData[chart].length > 0) {
+                      <div class="space-y-3">
+                        @for (item of chartData[chart]; track item; let i = $index) {
+                          <div class="flex items-center gap-3">
+                            <span class="text-xs text-slate-600 font-semibold w-28 truncate text-right" [title]="item.label">{{ item.label }}</span>
+                            <div class="flex-1 bg-slate-100 rounded-full h-7 relative overflow-hidden">
+                              <div class="h-full rounded-full transition-all duration-700 flex items-center justify-end pr-2"
+                                [style.width.%]="item.pct"
+                                [style.background]="chartColors[i % chartColors.length]">
+                                @if (item.pct > 12) {
+                                  <span class="text-[11px] font-bold text-white drop-shadow">{{ item.value }}</span>
+                                }
+                              </div>
+                              @if (item.pct <= 12) {
+                                <span class="text-[11px] font-bold text-slate-600 absolute left-2 top-1/2 -translate-y-1/2">{{ item.value }}</span>
+                              }
+                            </div>
+                            <span class="text-xs text-slate-400 font-semibold w-10 text-right">{{ item.pct | number:'1.0-0' }}%</span>
+                          </div>
+                        }
+                      </div>
+                    }
                   </div>
-                </div>
+                }
               </div>
-            </div>
+            }
           </div>
-
+    
         </div>
       </main>
-
+    
       <app-footer></app-footer>
-
-      <!-- Modal: Add Charts -->
-      <div *ngIf="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" (click)="toggleModal()">
-        <div class="bg-white rounded-xl shadow-2xl border-2 border-slate-200 w-full max-w-md mx-4 p-6" (click)="$event.stopPropagation()">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-slate-800">Agregar Graficas</h3>
-            <button (click)="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" x2="6" y1="6" y2="18"/>
-                <line x1="6" x2="18" y1="6" y2="18"/>
-              </svg>
-            </button>
-          </div>
-          <p class="text-slate-500 text-sm mb-4">Selecciona los indicadores que deseas visualizar</p>
-          <div class="space-y-2 max-h-72 overflow-y-auto">
-            <button *ngFor="let option of indicadorOptions"
-              (click)="toggleChart(option.id)"
-              class="w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all flex items-center justify-between cursor-pointer"
+    
+      <!-- Modal: Agregar gráficas -->
+      @if (showModal) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" (click)="toggleModal()">
+          <div class="bg-white rounded-xl shadow-2xl border-2 border-slate-200 w-full max-w-md mx-4 p-6" (click)="$event.stopPropagation()">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-800">Agregar gráficas</h3>
+              <button (click)="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" x2="6" y1="6" y2="18"/>
+                  <line x1="6" x2="18" y1="6" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <p class="text-slate-500 text-sm mb-4">Selecciona los indicadores que deseas visualizar</p>
+            <div class="space-y-2 max-h-72 overflow-y-auto">
+              @for (option of indicadorOptions; track option) {
+                <button
+                  (click)="toggleChart(option.id)"
+                  class="w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all flex items-center justify-between cursor-pointer"
               [ngClass]="{
                 'bg-[#00328b] text-white border-[#00328b]': isChartSelected(option.id),
                 'bg-white text-slate-700 border-slate-200 hover:border-[#00328b] hover:bg-blue-50': !isChartSelected(option.id)
               }">
-              <span>{{ option.nombre }}</span>
-              <svg *ngIf="isChartSelected(option.id)" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </button>
-          </div>
-          <div class="flex gap-3 mt-6 pt-4 border-t border-slate-200">
-            <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors cursor-pointer">
-              Aceptar
-            </button>
-            <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm transition-colors cursor-pointer">
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vista Previa Modal -->
-      <div *ngIf="showVistaPrevia" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeVistaPrevia()">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
-          <!-- Modal Header -->
-          <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-[#00328b] rounded-xl flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              </div>
-              <div>
-                <h2 class="text-xl font-bold text-slate-900">Vista Previa del Reporte</h2>
-                <p class="text-xs text-slate-500">{{ getReporteTipoLabel() }}</p>
-              </div>
+                  <span>{{ option.nombre }}</span>
+                  @if (isChartSelected(option.id)) {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  }
+                </button>
+              }
             </div>
-            <button (click)="closeVistaPrevia()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Loading state -->
-          <div *ngIf="generandoReporte" class="text-center py-12">
-            <p class="text-slate-500 text-sm">Cargando datos...</p>
-          </div>
-
-          <!-- Preview error -->
-          <div *ngIf="vistaPreviaError" class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4">
-            {{ vistaPreviaError }}
-          </div>
-
-          <!-- Preview table -->
-          <div *ngIf="!generandoReporte && vistaPreviaData && vistaPreviaData.length > 0">
-            <table class="w-full">
-              <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
-                <tr>
-                  <th *ngFor="let col of vistaPreviaColumnas" class="text-left px-4 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    <button type="button" (click)="toggleVistaPreviaSort(col)" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
-                      <span>{{ col }}</span>
-                      <span class="text-[10px] font-black leading-none">{{ getSortIndicator(vistaPreviaSort, col) }}</span>
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let row of vistaPreviaDataOrdenada" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                  <td *ngFor="let col of vistaPreviaColumnas" class="px-4 py-3 text-sm text-slate-700">
-                    {{ row[col] }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <p class="text-xs text-slate-400 mt-3 text-right">{{ vistaPreviaData.length }} registros</p>
-          </div>
-
-          <!-- Empty -->
-          <div *ngIf="!generandoReporte && vistaPreviaData && vistaPreviaData.length === 0" class="text-center py-12">
-            <p class="text-slate-400 text-sm">No se encontraron datos para los filtros seleccionados.</p>
+            <div class="flex gap-3 mt-6 pt-4 border-t border-slate-200">
+              <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors cursor-pointer">
+                Aceptar
+              </button>
+              <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm transition-colors cursor-pointer">
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      }
+    
+      <!-- Vista Previa Modal -->
+      @if (showVistaPrevia) {
+        <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeVistaPrevia()">
+          <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-[#00328b] rounded-xl flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-xl font-bold text-slate-900">Vista Previa del Reporte</h2>
+                  <p class="text-xs text-slate-500">{{ getReporteTipoLabel() }}</p>
+                </div>
+              </div>
+              <button (click)="closeVistaPrevia()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Loading state -->
+            @if (generandoReporte) {
+              <div class="text-center py-12">
+                <p class="text-slate-500 text-sm">Cargando datos...</p>
+              </div>
+            }
+            <!-- Error de vista previa -->
+            @if (vistaPreviaError) {
+              <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4">
+                {{ vistaPreviaError }}
+              </div>
+            }
+            <!-- Tabla de vista previa -->
+            @if (!generandoReporte && vistaPreviaData && vistaPreviaData.length > 0) {
+              <div>
+                <table class="w-full">
+                  <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
+                    <tr>
+                      @for (col of vistaPreviaColumnas; track col) {
+                        <th class="text-left px-4 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          <button type="button" (click)="toggleVistaPreviaSort(col)" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                            <span>{{ col }}</span>
+                            <span class="text-[10px] font-black leading-none">{{ getSortIndicator(vistaPreviaSort, col) }}</span>
+                          </button>
+                        </th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of vistaPreviaDataOrdenada; track row) {
+                      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                        @for (col of vistaPreviaColumnas; track col) {
+                          <td class="px-4 py-3 text-sm text-slate-700">
+                            {{ row[col] }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+                <p class="text-xs text-slate-400 mt-3 text-right">{{ vistaPreviaData.length }} registros</p>
+              </div>
+            }
+            <!-- Empty -->
+            @if (!generandoReporte && vistaPreviaData && vistaPreviaData.length === 0) {
+              <div class="text-center py-12">
+                <p class="text-slate-400 text-sm">No se encontraron datos para los filtros seleccionados.</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
-  `
+    `
 })
 export class ReportesComponent {
   selectedPeriod = 'ultimo-mes';
@@ -455,7 +508,7 @@ export class ReportesComponent {
     { id: 'ultimos-3-meses', label: 'Ultimos 3 Meses' },
     { id: 'ultimo-trimestre', label: 'Ultimo Trimestre' },
     { id: 'ultimos-6-meses', label: 'Ultimos 6 Meses' },
-    { id: 'ultimo-ano', label: 'Ultimo Ano' },
+    { id: 'ultimo-ano', label: 'Último Año' },
     { id: 'personalizado', label: 'Personalizado' }
   ];
 
@@ -632,7 +685,7 @@ export class ReportesComponent {
 
   getReporteTipoLabel(): string {
     const labels: Record<string, string> = {
-      'genero': 'Reporte por Genero',
+      'genero': 'Reporte por Género',
       'etapa-vida': 'Reporte por Etapa de Vida',
       'tipo-espina': 'Reporte por Tipo de Espina',
       'estado': 'Reporte por Estado',

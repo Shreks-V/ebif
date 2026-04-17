@@ -26,17 +26,31 @@ export class AuthService {
     this.loadUser();
   }
 
+  private getToken(): string | null {
+    const sessionToken = sessionStorage.getItem('token');
+    if (sessionToken) return sessionToken;
+
+    const legacyToken = localStorage.getItem('token');
+    if (legacyToken) {
+      sessionStorage.setItem('token', legacyToken);
+      localStorage.removeItem('token');
+      return legacyToken;
+    }
+    return null;
+  }
+
   login(correo: string, password: string): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { correo, password }).pipe(
       tap((res) => {
-        localStorage.setItem('token', res.access_token);
+        sessionStorage.setItem('token', res.access_token);
+        localStorage.removeItem('token');
         this.loadUser();
       })
     );
   }
 
   loadUser(): void {
-    const token = localStorage.getItem('token');
+    const token = this.getToken();
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
@@ -53,13 +67,15 @@ export class AuthService {
   }
 
   logout(): void {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('preregistro_token');
     localStorage.removeItem('token');
     this.userSubject.next(null);
     this.router.navigate(['/']);
   }
 
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('token');
+    const token = this.getToken();
     if (!token) return false;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));

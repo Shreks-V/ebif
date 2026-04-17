@@ -13,8 +13,8 @@ def _get_repository() -> PreregistroRepository:
         raise RuntimeError('preregistro repository is not configured')
     return _repository
 
-def listar_preregistros(estatus: Optional[str]=None, current_user: dict=None):
-    return _get_repository().listar_preregistros(estatus, current_user)
+def listar_preregistros(estatus: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
+    return _get_repository().listar_preregistros(estatus, current_user, limit, offset)
 
 def crear_preregistro(data: PreRegistroCreate):
     return _get_repository().crear_preregistro(data)
@@ -47,8 +47,8 @@ async def subir_documento(
         current_user,
     )
 
-def listar_documentos(id_paciente: int):
-    return _get_repository().listar_documentos(id_paciente)
+def listar_documentos(id_paciente: int, limit: int=100, offset: int=0):
+    return _get_repository().listar_documentos(id_paciente, limit, offset)
 
 def obtener_documento_archivo(id_paciente: int, id_documento: int):
     return _get_repository().obtener_documento_archivo(id_paciente, id_documento)

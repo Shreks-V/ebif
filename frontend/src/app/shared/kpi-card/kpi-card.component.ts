@@ -1,6 +1,5 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-kpi-card',
@@ -88,11 +87,9 @@ export class KpiCardComponent implements OnChanges {
   @Input() trend = '';
   @Input() trendUp = true;
 
-  safeIcon: SafeHtml = '';
-
-  constructor(private sanitizer: DomSanitizer) {}
+  safeIcon = '';
 
   ngOnChanges() {
-    this.safeIcon = this.sanitizer.bypassSecurityTrustHtml(this.iconSvg);
+    this.safeIcon = this.iconSvg || '';
   }
 }

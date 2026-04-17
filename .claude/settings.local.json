@@ -100,7 +100,18 @@
       "Bash(venv/bin/python -)",
       "Bash(npx tsc *)",
       "Bash(python -c ' *)",
-      "Bash(venv/bin/python -c ' *)"
+      "Bash(venv/bin/python -c ' *)",
+      "Bash(venv/bin/python3 -c ' *)",
+      "Bash(timeout 25 venv/bin/python3 -c ' *)",
+      "Bash(nc *)",
+      "Bash(venv/bin/python3 -)",
+      "Bash(xargs -0 cat)",
+      "Bash(grep -v \"^$\")",
+      "Bash(find . -name \"__pycache__\" -not -path \"*/.git/*\" -not -path \"*/node_modules/*\" -not -path \"*/.venv/*\" -not -path \"*/venv/*\" -exec rm -rf {} +)",
+      "Bash(find . -name \"*.pyc\" -not -path \"*/.git/*\" -not -path \"*/node_modules/*\" -not -path \"*/.venv/*\" -not -path \"*/venv/*\" -exec rm -f {} +)",
+      "Bash(find . -name \".DS_Store\" -not -path \"*/.git/*\" -exec rm -f {} +)",
+      "Bash(rm -rf frontend/.angular)",
+      "Bash(rm -rf frontend/dist)"
     ]
   },
   "enableAllProjectMcpServers": true,

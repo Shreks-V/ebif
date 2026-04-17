@@ -25,6 +25,12 @@ logger = logging.getLogger(__name__)
 UPLOAD_DIR = Path(__file__).resolve().parents[3] / 'uploads' / 'documentos'
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
+
 def _serialize(row: dict) -> dict:
     result = {}
     for key, value in row.items():
@@ -79,14 +85,17 @@ def _resolve_usuario_registro_id(conn, current_user: dict | None) -> int:
 
 _BASE_SQL = '\n    SELECT ID_PACIENTE, FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n           FECHA_NACIMIENTO, GENERO, CURP,\n           ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,\n           DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n           TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n           TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL, ESTATUS_REGISTRO,\n           FECHA_REGISTRO, EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n           TIPO_SANGRE, USA_VALVULA\n    FROM PACIENTE\n'
 
-def listar_preregistros(estatus: Optional[str]=None, current_user: dict=None):
+def listar_preregistros(estatus: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar todos los pre-registros (pacientes pendientes de aprobación)."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _BASE_SQL + " WHERE ESTATUS_REGISTRO IN ('PENDIENTE', 'RECHAZADO')"
     params: dict = {}
     if estatus:
         sql = _BASE_SQL + ' WHERE ESTATUS_REGISTRO = :estatus'
         params['estatus'] = estatus
-    sql += ' ORDER BY FECHA_REGISTRO DESC'
+    sql += ' ORDER BY FECHA_REGISTRO DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
@@ -288,11 +297,21 @@ async def subir_documento(
         conn.commit()
     return {'id_documento': new_id, 'nombre_archivo': archivo.filename, 'formato': ext.lstrip('.').upper() if ext else 'OTRO'}
 
-def listar_documentos(id_paciente: int):
+def listar_documentos(id_paciente: int, limit: int=100, offset: int=0):
     """Listar documentos de un pre-registro."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT dp.ID_DOCUMENTO, dp.ID_TIPO_DOCUMENTO, td.NOMBRE AS TIPO_NOMBRE,\n                      dp.NOMBRE_ARCHIVO, dp.FORMATO_ARCHIVO, dp.FECHA_CARGA\n               FROM DOCUMENTO_PACIENTE dp\n               LEFT JOIN TIPO_DOCUMENTO td ON td.ID_TIPO_DOCUMENTO = dp.ID_TIPO_DOCUMENTO\n               WHERE dp.ID_PACIENTE = :id AND dp.ACTIVO = 'S'\n               ORDER BY dp.FECHA_CARGA DESC", {'id': id_paciente})
+        cursor.execute(
+            "SELECT dp.ID_DOCUMENTO, dp.ID_TIPO_DOCUMENTO, td.NOMBRE AS TIPO_NOMBRE,\n"
+            "       dp.NOMBRE_ARCHIVO, dp.FORMATO_ARCHIVO, dp.FECHA_CARGA\n"
+            "  FROM DOCUMENTO_PACIENTE dp\n"
+            "  LEFT JOIN TIPO_DOCUMENTO td ON td.ID_TIPO_DOCUMENTO = dp.ID_TIPO_DOCUMENTO\n"
+            " WHERE dp.ID_PACIENTE = :id AND dp.ACTIVO = 'S'\n"
+            " ORDER BY dp.FECHA_CARGA DESC\n"
+            " OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY",
+            {'id': id_paciente, 'offset': safe_offset, 'limit': safe_limit},
+        )
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
 

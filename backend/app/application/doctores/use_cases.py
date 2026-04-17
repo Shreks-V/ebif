@@ -14,11 +14,11 @@ def _get_repository() -> DoctoresRepository:
 def doctor_del_dia(current_user: dict=None):
     return _get_repository().doctor_del_dia(current_user)
 
-def listar_doctores(current_user: dict=None):
-    return _get_repository().listar_doctores(current_user)
+def listar_doctores(current_user: dict=None, limit: int=100, offset: int=0):
+    return _get_repository().listar_doctores(current_user, limit, offset)
 
-def obtener_disponibilidad_semana(current_user: dict=None):
-    return _get_repository().obtener_disponibilidad_semana(current_user)
+def obtener_disponibilidad_semana(current_user: dict=None, limit: int=500, offset: int=0):
+    return _get_repository().obtener_disponibilidad_semana(current_user, limit, offset)
 
 def obtener_doctor(id_doctor: int, current_user: dict=None):
     return _get_repository().obtener_doctor(id_doctor, current_user)
@@ -32,8 +32,8 @@ def actualizar_doctor(id_doctor: int, data: DoctorCreate, current_user: dict=Non
 def desactivar_doctor(id_doctor: int, current_user: dict=None):
     return _get_repository().desactivar_doctor(id_doctor, current_user)
 
-def obtener_disponibilidad(id_doctor: int, current_user: dict=None):
-    return _get_repository().obtener_disponibilidad(id_doctor, current_user)
+def obtener_disponibilidad(id_doctor: int, current_user: dict=None, limit: int=500, offset: int=0):
+    return _get_repository().obtener_disponibilidad(id_doctor, current_user, limit, offset)
 
 def crear_disponibilidad(id_doctor: int, data: DisponibilidadCreate, current_user: dict=None):
     return _get_repository().crear_disponibilidad(id_doctor, data, current_user)

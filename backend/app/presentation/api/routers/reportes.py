@@ -42,5 +42,12 @@ def reporte_consolidado_mensual(mes: Optional[int]=Query(None, description='Mes 
     return service.reporte_consolidado_mensual(mes, anio, current_user)
 
 @router.get('/historial', response_model=List[ReporteResponse])
-def historial_reportes(tipo_reporte: Optional[str]=Query(None), fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
-    return service.historial_reportes(tipo_reporte, fecha_inicio, fecha_fin, current_user)
+def historial_reportes(
+    tipo_reporte: Optional[str]=Query(None, max_length=60),
+    fecha_inicio: Optional[str]=Query(None),
+    fecha_fin: Optional[str]=Query(None),
+    limit: int=Query(100, ge=1, le=500),
+    offset: int=Query(0, ge=0),
+    current_user: dict=Depends(get_current_user),
+):
+    return service.historial_reportes(tipo_reporte, fecha_inicio, fecha_fin, current_user, limit, offset)

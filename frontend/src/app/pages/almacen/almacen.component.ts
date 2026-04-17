@@ -71,10 +71,10 @@ interface TableSortState {
   template: `
     <div class="h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff] overflow-hidden">
       <app-navbar />
-
+    
       <main class="flex-1 overflow-y-auto">
         <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
-
+    
           <!-- Header -->
           <div class="flex items-center gap-4">
             <div class="w-14 h-14 bg-[#00328b] rounded-2xl flex items-center justify-center shadow-lg">
@@ -87,47 +87,66 @@ interface TableSortState {
               <p class="text-slate-500 text-sm">Control de medicamentos, servicios y comodatos</p>
             </div>
           </div>
-
+    
           <!-- KPI Cards -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <!-- Total Items -->
-            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
+            <!-- Total de elementos -->
+            <button
+              type="button"
+              (click)="mostrarInventarioCompleto()"
+              class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200 text-left cursor-pointer hover:shadow-xl transition-all"
+            >
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
               <svg class="w-8 h-8 text-blue-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
               </svg>
               <p class="text-4xl font-black text-slate-900">{{ productos.length + servicios.length }}</p>
-              <p class="text-sm text-slate-600 mt-1">Items en inventario</p>
-            </div>
-            <!-- Bajo Stock -->
-            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-amber-200">
+              <p class="text-sm text-slate-600 mt-1">Elementos en inventario</p>
+            </button>
+            <!-- Existencias bajas -->
+            <button
+              type="button"
+              (click)="mostrarExistenciasBajas()"
+              [disabled]="getBajoStockCount() === 0"
+              class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-amber-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl"
+            >
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
               <svg class="w-8 h-8 text-amber-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
               </svg>
               <p class="text-4xl font-black text-slate-900">{{ getBajoStockCount() }}</p>
-              <p class="text-sm text-slate-600 mt-1">Alertas de stock</p>
-            </div>
+              <p class="text-sm text-slate-600 mt-1">Alertas de existencias</p>
+            </button>
             <!-- Pr&oacute;ximos a Vencer (RF-I-06) -->
-            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-red-200">
+            <button
+              type="button"
+              (click)="mostrarProximosAVencer()"
+              [disabled]="getProximosAVencerCount() === 0"
+              class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-red-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl"
+            >
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-red-500 rounded-full"></div>
               <svg class="w-8 h-8 text-red-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
-              <p class="text-4xl font-black text-slate-900">{{ alertasCaducidad }}</p>
+              <p class="text-4xl font-black text-slate-900">{{ getProximosAVencerCount() }}</p>
               <p class="text-sm text-slate-600 mt-1">Pr&oacute;ximos a vencer</p>
-            </div>
+            </button>
             <!-- Comodatos Activos -->
-            <div class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200">
+            <button
+              type="button"
+              (click)="mostrarComodatosActivos()"
+              [disabled]="getComodatosActivosCount() === 0"
+              class="relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl"
+            >
               <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
               <svg class="w-8 h-8 text-green-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
               <p class="text-4xl font-black text-slate-900">{{ getComodatosActivosCount() }}</p>
               <p class="text-sm text-slate-600 mt-1">Comodatos activos</p>
-            </div>
+            </button>
           </div>
-
+    
           <!-- Tabs -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-2">
             <div class="flex gap-2">
@@ -136,7 +155,7 @@ interface TableSortState {
                 [class]="activeTab === 'inventario'
                   ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
                   : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'"
-              >
+                >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
@@ -147,7 +166,7 @@ interface TableSortState {
                 [class]="activeTab === 'comodatos'
                   ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
                   : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'"
-              >
+                >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                 </svg>
@@ -155,33 +174,47 @@ interface TableSortState {
               </button>
             </div>
           </div>
-
+    
           <!-- Loading Skeleton -->
-          <div *ngIf="loading" class="bg-white rounded-2xl shadow-lg border-2 border-slate-100 p-6">
-            <div class="animate-pulse space-y-4">
-              <div class="grid grid-cols-3 gap-6">
-                <div *ngFor="let _ of [1,2,3]" class="h-28 bg-slate-200 rounded-2xl"></div>
-              </div>
-              <div class="space-y-3 mt-6">
-                <div *ngFor="let _ of [1,2,3,4,5]" class="flex items-center gap-4 py-3">
-                  <div class="w-12 h-12 bg-slate-200 rounded-xl"></div>
-                  <div class="flex-1 space-y-2">
-                    <div class="h-4 bg-slate-200 rounded w-1/2"></div>
-                    <div class="h-3 bg-slate-100 rounded w-1/4"></div>
-                  </div>
-                  <div class="h-4 bg-slate-200 rounded w-16"></div>
+          @if (loading) {
+            <div class="bg-white rounded-2xl shadow-lg border-2 border-slate-100 p-6">
+              <div class="animate-pulse space-y-4">
+                <div class="grid grid-cols-3 gap-6">
+                  @for (_ of [1,2,3]; track _) {
+                    <div class="h-28 bg-slate-200 rounded-2xl"></div>
+                  }
+                </div>
+                <div class="space-y-3 mt-6">
+                  @for (_ of [1,2,3,4,5]; track _) {
+                    <div class="flex items-center gap-4 py-3">
+                      <div class="w-12 h-12 bg-slate-200 rounded-xl"></div>
+                      <div class="flex-1 space-y-2">
+                        <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+                        <div class="h-3 bg-slate-100 rounded w-1/4"></div>
+                      </div>
+                      <div class="h-4 bg-slate-200 rounded w-16"></div>
+                    </div>
+                  }
                 </div>
               </div>
             </div>
-          </div>
-
+          }
+    
           <!-- TAB: Inventario -->
-          <ng-container *ngIf="activeTab === 'inventario' && !loading">
-
+          @if (activeTab === 'inventario' && !loading) {
             <!-- Category Filter Cards -->
             <div class="flex items-center justify-between mb-0">
-              <h2 class="text-lg font-semibold text-slate-800">Filtrar por Categor&iacute;a</h2>
-              <button *ngIf="selectedCategory" (click)="selectedCategory = null" class="text-sm text-slate-500 hover:text-slate-700 cursor-pointer bg-transparent border-0">Limpiar filtro</button>
+              <div class="flex items-center gap-3">
+                <h2 class="text-lg font-semibold text-slate-800">Filtrar por Categor&iacute;a</h2>
+                @if (quickInventoryFilter !== 'none') {
+                  <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                    {{ getQuickFilterLabel() }}
+                  </span>
+                }
+              </div>
+              @if (selectedCategory || quickInventoryFilter !== 'none') {
+                <button (click)="limpiarFiltrosInventarioRapidos()" class="text-sm text-slate-500 hover:text-slate-700 cursor-pointer bg-transparent border-0">Limpiar filtros</button>
+              }
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <!-- Medicamentos -->
@@ -190,7 +223,7 @@ interface TableSortState {
                 [class]="selectedCategory === 'Medicamento'
                   ? 'bg-blue-50 rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-blue-500 text-left transition-all'
                   : 'bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-slate-200 hover:border-blue-300 text-left transition-all'"
-              >
+                >
                 <div class="flex items-center gap-4 mb-3">
                   <div [class]="selectedCategory === 'Medicamento' ? 'p-3 bg-blue-600 rounded-xl shadow-lg' : 'p-3 bg-blue-100 rounded-xl'">
                     <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Medicamento'" [class.text-blue-600]="selectedCategory !== 'Medicamento'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -199,21 +232,20 @@ interface TableSortState {
                   </div>
                   <div>
                     <h3 class="text-lg font-bold text-slate-900">Medicamentos</h3>
-                    <p class="text-sm text-slate-600">{{ getCategoryCount('Medicamento') }} items</p>
+                    <p class="text-sm text-slate-600">{{ getCategoryCount('Medicamento') }} elementos</p>
                   </div>
                 </div>
                 <p class="text-sm font-semibold" [class]="selectedCategory === 'Medicamento' ? 'text-blue-700' : 'text-slate-500'">
                   {{ selectedCategory === 'Medicamento' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
                 </p>
               </button>
-
               <!-- Servicios -->
               <button
                 (click)="toggleCategory('Servicios')"
                 [class]="selectedCategory === 'Servicios'
                   ? 'bg-purple-50 rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-purple-500 text-left transition-all'
                   : 'bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-slate-200 hover:border-purple-300 text-left transition-all'"
-              >
+                >
                 <div class="flex items-center gap-4 mb-3">
                   <div [class]="selectedCategory === 'Servicios' ? 'p-3 bg-purple-600 rounded-xl shadow-lg' : 'p-3 bg-purple-100 rounded-xl'">
                     <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Servicios'" [class.text-purple-600]="selectedCategory !== 'Servicios'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -222,21 +254,20 @@ interface TableSortState {
                   </div>
                   <div>
                     <h3 class="text-lg font-bold text-slate-900">Servicios</h3>
-                    <p class="text-sm text-slate-600">{{ getCategoryCount('Servicios') }} items</p>
+                    <p class="text-sm text-slate-600">{{ getCategoryCount('Servicios') }} elementos</p>
                   </div>
                 </div>
                 <p class="text-sm font-semibold" [class]="selectedCategory === 'Servicios' ? 'text-purple-700' : 'text-slate-500'">
                   {{ selectedCategory === 'Servicios' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
                 </p>
               </button>
-
               <!-- Equipo -->
               <button
                 (click)="toggleCategory('Equipo')"
                 [class]="selectedCategory === 'Equipo'
                   ? 'bg-green-50 rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-green-500 text-left transition-all'
                   : 'bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-slate-200 hover:border-green-300 text-left transition-all'"
-              >
+                >
                 <div class="flex items-center gap-4 mb-3">
                   <div [class]="selectedCategory === 'Equipo' ? 'p-3 bg-green-600 rounded-xl shadow-lg' : 'p-3 bg-green-100 rounded-xl'">
                     <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Equipo'" [class.text-green-600]="selectedCategory !== 'Equipo'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -245,7 +276,7 @@ interface TableSortState {
                   </div>
                   <div>
                     <h3 class="text-lg font-bold text-slate-900">Equipo</h3>
-                    <p class="text-sm text-slate-600">{{ getCategoryCount('Equipo') }} items</p>
+                    <p class="text-sm text-slate-600">{{ getCategoryCount('Equipo') }} elementos</p>
                   </div>
                 </div>
                 <p class="text-sm font-semibold" [class]="selectedCategory === 'Equipo' ? 'text-green-700' : 'text-slate-500'">
@@ -253,7 +284,6 @@ interface TableSortState {
                 </p>
               </button>
             </div>
-
             <!-- Search + Add -->
             <div class="flex flex-col sm:flex-row gap-4">
               <div class="relative flex-1">
@@ -265,16 +295,15 @@ interface TableSortState {
                   [(ngModel)]="searchInventario"
                   placeholder="Buscar en inventario..."
                   class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
+                  />
               </div>
               <button (click)="openNuevoProductoModal()" class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors shadow-lg flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                 </svg>
-                Agregar Item
+                Agregar elemento
               </button>
             </div>
-
             <!-- Inventory Table -->
             <div class="bg-white rounded-2xl shadow-lg border border-slate-200">
               <div>
@@ -287,12 +316,14 @@ interface TableSortState {
                           <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'id') }}</span>
                         </button>
                       </th>
-                      <th *ngIf="selectedCategory !== 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">
-                        <button type="button" (click)="toggleInventarioSort('categoria')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
-                          <span>Categor&iacute;a</span>
-                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'categoria') }}</span>
-                        </button>
-                      </th>
+                      @if (selectedCategory !== 'Servicios') {
+                        <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                          <button type="button" (click)="toggleInventarioSort('categoria')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                            <span>Categor&iacute;a</span>
+                            <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'categoria') }}</span>
+                          </button>
+                        </th>
+                      }
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">
                         <button type="button" (click)="toggleInventarioSort('nombre')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
                           <span>Nombre</span>
@@ -305,18 +336,22 @@ interface TableSortState {
                           <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'unidad') }}</span>
                         </button>
                       </th>
-                      <th *ngIf="selectedCategory === 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">
-                        <button type="button" (click)="toggleInventarioSort('horario')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
-                          <span>Horario</span>
-                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'horario') }}</span>
-                        </button>
-                      </th>
-                      <th *ngIf="selectedCategory !== 'Servicios'" class="text-left px-5 py-4 font-semibold text-slate-600">
-                        <button type="button" (click)="toggleInventarioSort('stock')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
-                          <span>Stock Actual</span>
-                          <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'stock') }}</span>
-                        </button>
-                      </th>
+                      @if (selectedCategory === 'Servicios') {
+                        <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                          <button type="button" (click)="toggleInventarioSort('horario')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                            <span>Horario</span>
+                            <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'horario') }}</span>
+                          </button>
+                        </th>
+                      }
+                      @if (selectedCategory !== 'Servicios') {
+                        <th class="text-left px-5 py-4 font-semibold text-slate-600">
+                          <button type="button" (click)="toggleInventarioSort('stock')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+                            <span>Existencias actuales</span>
+                            <span class="text-[10px] font-black leading-none">{{ getSortIndicator(inventarioSort, 'stock') }}</span>
+                          </button>
+                        </th>
+                      }
                       <th class="text-left px-5 py-4 font-semibold text-slate-600">
                         <button type="button" (click)="toggleInventarioSort('precioA')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
                           <span>Precio Cuota A</span>
@@ -339,65 +374,77 @@ interface TableSortState {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let item of filteredInventario()" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td class="px-5 py-4 text-slate-600 font-mono">{{ item.id }}</td>
-                      <td *ngIf="selectedCategory !== 'Servicios'" class="px-5 py-4">
-                        <div class="flex items-center gap-2">
-                          <div [ngClass]="getCategoryIconBg(item.categoria)" class="w-7 h-7 rounded-lg flex items-center justify-center">
-                            <svg *ngIf="item.categoria === 'MEDICAMENTO'" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>
-                            </svg>
-                            <svg *ngIf="item.categoria === 'SERVICIO'" class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V4"/>
-                            </svg>
-                            <svg *ngIf="item.categoria === 'EQUIPO'" class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                            </svg>
+                    @for (item of filteredInventario(); track item.id + '-' + item.categoria) {
+                      <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-4 text-slate-600 font-mono">{{ item.id }}</td>
+                        @if (selectedCategory !== 'Servicios') {
+                          <td class="px-5 py-4">
+                            <div class="flex items-center gap-2">
+                              <div [ngClass]="getCategoryIconBg(item.categoria)" class="w-7 h-7 rounded-lg flex items-center justify-center">
+                                @if (item.categoria === 'MEDICAMENTO') {
+                                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>
+                                  </svg>
+                                }
+                                @if (item.categoria === 'SERVICIO') {
+                                  <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V4"/>
+                                  </svg>
+                                }
+                                @if (item.categoria === 'EQUIPO') {
+                                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                  </svg>
+                                }
+                              </div>
+                              <span class="text-slate-700">{{ item.categoria || '\u2014' }}</span>
+                            </div>
+                          </td>
+                        }
+                        <td class="px-5 py-4 text-slate-800 font-medium">{{ item.nombre || '\u2014' }}</td>
+                        <td class="px-5 py-4 text-slate-600">{{ unidadCellValue(item) }}</td>
+                        @if (selectedCategory === 'Servicios') {
+                          <td class="px-5 py-4 text-slate-600">{{ item.horario || '\u2014' }}</td>
+                        }
+                        @if (selectedCategory !== 'Servicios') {
+                          <td class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible ?? '\u2014' }}</td>
+                        }
+                        <td class="px-5 py-4">
+                          <span class="text-green-700 font-semibold">{{ formatCurrency(item.precioA) }}</span>
+                        </td>
+                        <td class="px-5 py-4">
+                          <span class="text-blue-700 font-semibold">{{ formatCurrency(item.precioB) }}</span>
+                        </td>
+                        <td class="px-5 py-4">
+                          <span [ngClass]="getEstadoBadgeClass(item.estado || 'N/A')" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                            {{ item.estado || 'N/A' }}
+                          </span>
+                        </td>
+                        <td class="px-5 py-4">
+                          <div class="flex items-center gap-1">
+                            <button (click)="openEditProductoModal(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                              </svg>
+                            </button>
+                            <button (click)="openConfirmDeleteModal(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+                              </svg>
+                            </button>
                           </div>
-                          <span class="text-slate-700">{{ item.categoria }}</span>
-                        </div>
-                      </td>
-                      <td class="px-5 py-4 text-slate-800 font-medium">{{ item.nombre }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ unidadCellValue(item) }}</td>
-                      <td *ngIf="selectedCategory === 'Servicios'" class="px-5 py-4 text-slate-600">{{ item.horario || '\u2014' }}</td>
-                      <td *ngIf="selectedCategory !== 'Servicios'" class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible !== null ? item.cantidadDisponible : '\u2014' }}</td>
-                      <td class="px-5 py-4">
-                        <span class="text-green-700 font-semibold">{{ item.precioA !== null ? '$' + item.precioA.toFixed(2) : '\u2014' }}</span>
-                      </td>
-                      <td class="px-5 py-4">
-                        <span class="text-blue-700 font-semibold">{{ item.precioB !== null ? '$' + item.precioB.toFixed(2) : '\u2014' }}</span>
-                      </td>
-                      <td class="px-5 py-4">
-                        <span [ngClass]="getEstadoBadgeClass(item.estado)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                          {{ item.estado }}
-                        </span>
-                      </td>
-                      <td class="px-5 py-4">
-                        <div class="flex items-center gap-1">
-                          <button (click)="openEditProductoModal(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                          </button>
-                          <button (click)="openConfirmDeleteModal(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+                    }
                   </tbody>
                 </table>
               </div>
             </div>
-
-          </ng-container>
-
+          }
+    
           <!-- TAB: Comodatos -->
-          <ng-container *ngIf="activeTab === 'comodatos'">
-
+          @if (activeTab === 'comodatos') {
             <!-- Search + Nuevo Comodato -->
             <div class="flex flex-col sm:flex-row gap-4">
               <div class="relative flex-1">
@@ -409,7 +456,7 @@ interface TableSortState {
                   [(ngModel)]="searchComodatos"
                   placeholder="Buscar comodatos..."
                   class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                />
+                  />
               </div>
               <button (click)="openNuevoComodatoModal()" class="px-6 py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors shadow-lg flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -418,7 +465,6 @@ interface TableSortState {
                 Nuevo Comodato
               </button>
             </div>
-
             <!-- Comodatos Table -->
             <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-auto max-h-[calc(100vh-320px)]">
               <div>
@@ -465,78 +511,89 @@ interface TableSortState {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let com of filteredComodatos()" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td class="px-5 py-4">
-                        <span class="font-mono text-green-700 font-semibold bg-green-50 px-2 py-0.5 rounded">{{ com.folioComodato }}</span>
-                      </td>
-                      <td class="px-5 py-4">
-                        <div>
-                          <p class="text-slate-800 font-medium">{{ com.nombrePaciente }}</p>
-                          <p class="text-xs text-slate-400">{{ com.folioPaciente }}</p>
-                        </div>
-                      </td>
-                      <td class="px-5 py-4 text-slate-700">{{ com.nombreEquipo }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ com.fechaPrestamo }}</td>
-                      <td class="px-5 py-4 text-slate-600">{{ com.fechaDevolucion ?? '\u2014' }}</td>
-                      <td class="px-5 py-4">
-                        <span [ngClass]="getComodatoEstadoBadgeClass(com.estatus)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                          {{ com.estatus }}
-                        </span>
-                      </td>
-                      <td class="px-5 py-4">
-                        <div class="flex items-center gap-1">
-                          <button (click)="openEditComodatoModal(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                          </button>
-                          <button (click)="descargarContratoComodato(com)" class="p-1.5 rounded-lg hover:bg-blue-50 text-slate-500 hover:text-blue-600 transition-colors" title="Contrato PDF">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                            </svg>
-                          </button>
-                          <button (click)="printComodato(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Imprimir">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/>
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                    @for (com of filteredComodatos(); track com) {
+                      <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-4">
+                          <span class="font-mono text-green-700 font-semibold bg-green-50 px-2 py-0.5 rounded">{{ com.folioComodato }}</span>
+                        </td>
+                        <td class="px-5 py-4">
+                          <div>
+                            <p class="text-slate-800 font-medium">{{ com.nombrePaciente }}</p>
+                            <p class="text-xs text-slate-400">{{ com.folioPaciente }}</p>
+                          </div>
+                        </td>
+                        <td class="px-5 py-4 text-slate-700">{{ com.nombreEquipo }}</td>
+                        <td class="px-5 py-4 text-slate-600">{{ com.fechaPrestamo }}</td>
+                        <td class="px-5 py-4 text-slate-600">{{ com.fechaDevolucion ?? '\u2014' }}</td>
+                        <td class="px-5 py-4">
+                          <span [ngClass]="getComodatoEstadoBadgeClass(com.estatus)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                            {{ com.estatus }}
+                          </span>
+                        </td>
+                        <td class="px-5 py-4">
+                          <div class="flex items-center gap-1">
+                            <button (click)="openEditComodatoModal(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                              </svg>
+                            </button>
+                            <button (click)="descargarContratoComodato(com)" class="p-1.5 rounded-lg hover:bg-blue-50 text-slate-500 hover:text-blue-600 transition-colors" title="Contrato PDF">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                              </svg>
+                            </button>
+                            <button (click)="printComodato(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Imprimir">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
                   </tbody>
                 </table>
               </div>
             </div>
-
-          </ng-container>
-
+          }
+    
         </div>
       </main>
-
+    
       <app-footer />
     </div>
-
+    
     <!-- ==================== MODAL: Nuevo / Editar Producto ==================== -->
-    <div *ngIf="showNuevoProductoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeProductoModal()">
-      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-slate-800">{{ editingProduct ? 'Editar Producto' : 'Agregar Nuevo Item' }}</h2>
-          <button (click)="closeProductoModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-
-        <form (ngSubmit)="submitProducto()" class="space-y-4">
-          <!-- Row: Clave Interna + Nombre -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Clave Interna *</label>
-              <input type="text" [(ngModel)]="productoForm.clave_interna" name="clave_interna" required
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: MED-001" />
+    @if (showNuevoProductoModal) {
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeProductoModal()">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">{{ editingProduct ? 'Editar Producto' : 'Agregar nuevo elemento' }}</h2>
+            <button (click)="closeProductoModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <form (ngSubmit)="submitProducto()" class="space-y-4">
+            <!-- Row: Clave Interna + Nombre -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">
+                  Clave Interna @if (productoForm.tipo_producto !== 'SERVICIO') {
+                  <span>*</span>
+                }
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="productoForm.clave_interna"
+                name="clave_interna"
+                [required]="productoForm.tipo_producto !== 'SERVICIO'"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"
+                placeholder="Ej: MED-001"
+                />
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
@@ -544,14 +601,12 @@ interface TableSortState {
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Nombre del producto" />
             </div>
           </div>
-
           <!-- Descripcion -->
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Descripci&oacute;n</label>
             <textarea [(ngModel)]="productoForm.descripcion" name="descripcion" rows="2"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none" placeholder="Descripci&oacute;n del producto"></textarea>
+            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none" placeholder="Descripci&oacute;n del producto"></textarea>
           </div>
-
           <!-- Row: Tipo Producto + Activo -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -561,6 +616,7 @@ interface TableSortState {
                 <option value="">Seleccionar...</option>
                 <option value="MEDICAMENTO">Medicamento</option>
                 <option value="EQUIPO">Equipo</option>
+                <option value="SERVICIO">Servicio</option>
               </select>
             </div>
             <div>
@@ -572,7 +628,6 @@ interface TableSortState {
               </select>
             </div>
           </div>
-
           <!-- Row: Precios -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -586,9 +641,8 @@ interface TableSortState {
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
             </div>
           </div>
-
           <!-- MEDICAMENTO-specific fields -->
-          <ng-container *ngIf="productoForm.tipo_producto === 'MEDICAMENTO'">
+          @if (productoForm.tipo_producto === 'MEDICAMENTO') {
             <div class="border-t-2 border-slate-100 pt-4">
               <h3 class="text-sm font-bold text-blue-700 mb-3">Datos de Medicamento</h3>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -611,16 +665,17 @@ interface TableSortState {
                   </select>
                 </div>
               </div>
-              <div *ngIf="productoForm.requiere_caducidad === 'S'" class="mt-4">
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Caducidad</label>
-                <input type="date" [(ngModel)]="productoForm.fecha_caducidad" name="fecha_caducidad"
-                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
-              </div>
+              @if (productoForm.requiere_caducidad === 'S') {
+                <div class="mt-4">
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Caducidad</label>
+                  <input type="date" [(ngModel)]="productoForm.fecha_caducidad" name="fecha_caducidad"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+                </div>
+              }
             </div>
-          </ng-container>
-
+          }
           <!-- EQUIPO-specific fields -->
-          <ng-container *ngIf="productoForm.tipo_producto === 'EQUIPO'">
+          @if (productoForm.tipo_producto === 'EQUIPO') {
             <div class="border-t-2 border-slate-100 pt-4">
               <h3 class="text-sm font-bold text-green-700 mb-3">Datos de Equipo</h3>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -657,30 +712,43 @@ interface TableSortState {
                 </div>
               </div>
             </div>
-          </ng-container>
-
-          <!-- Row: Cantidad, Nivel Minimo, Unidad Medida -->
-          <div class="border-t-2 border-slate-100 pt-4">
-            <h3 class="text-sm font-bold text-slate-600 mb-3">Existencia</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Cantidad Disponible</label>
-                <input type="number" [(ngModel)]="productoForm.cantidad_disponible" name="cantidad_disponible" min="0"
-                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0" />
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Nivel M&iacute;nimo</label>
-                <input type="number" [(ngModel)]="productoForm.nivel_minimo" name="nivel_minimo" min="0"
-                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="5" />
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Unidad de Medida</label>
-                <input type="text" [(ngModel)]="productoForm.unidad_medida" name="unidad_medida"
-                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: Pieza, Caja" />
+          }
+          <!-- SERVICIO-specific fields -->
+          @if (productoForm.tipo_producto === 'SERVICIO') {
+            <div class="border-t-2 border-slate-100 pt-4">
+              <h3 class="text-sm font-bold text-purple-700 mb-3">Datos de Servicio</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Cuota de Recuperaci&oacute;n</label>
+                  <input type="number" [(ngModel)]="productoForm.cuota_recuperacion" name="cuota_recuperacion" step="0.01" min="0"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+                </div>
               </div>
             </div>
-          </div>
-
+          }
+          <!-- Row: Cantidad, Nivel Minimo, Unidad Medida -->
+          @if (productoForm.tipo_producto !== 'SERVICIO') {
+            <div class="border-t-2 border-slate-100 pt-4">
+              <h3 class="text-sm font-bold text-slate-600 mb-3">Existencia</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Cantidad Disponible</label>
+                  <input type="number" [(ngModel)]="productoForm.cantidad_disponible" name="cantidad_disponible" min="0"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Nivel M&iacute;nimo</label>
+                  <input type="number" [(ngModel)]="productoForm.nivel_minimo" name="nivel_minimo" min="0"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="5" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-1">Unidad de Medida</label>
+                  <input type="text" [(ngModel)]="productoForm.unidad_medida" name="unidad_medida"
+                    class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: Pieza, Caja" />
+                </div>
+              </div>
+            </div>
+          }
           <!-- Actions -->
           <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
             <button type="button" (click)="closeProductoModal()"
@@ -695,302 +763,311 @@ interface TableSortState {
         </form>
       </div>
     </div>
-
+    }
+    
     <!-- ==================== MODAL: Confirmar Eliminacion ==================== -->
-    <div *ngIf="showConfirmDeleteModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeConfirmDeleteModal()">
-      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-bold text-slate-800">Confirmar Eliminaci&oacute;n</h2>
-          <button (click)="closeConfirmDeleteModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="mb-6">
-          <div class="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
+    @if (showConfirmDeleteModal) {
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeConfirmDeleteModal()">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-slate-800">Confirmar Eliminaci&oacute;n</h2>
+            <button (click)="closeConfirmDeleteModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
-          <p class="text-center text-slate-700 text-lg font-semibold">&iquest;Est&aacute;s seguro?</p>
-          <p class="text-center text-slate-500 text-sm mt-1">
-            Se eliminar&aacute; <span class="font-semibold text-slate-700">"{{ productoToDelete?.nombre }}"</span> del inventario. Esta acci&oacute;n no se puede deshacer.
-          </p>
-        </div>
-        <div class="flex items-center justify-end gap-3">
-          <button (click)="closeConfirmDeleteModal()"
-            class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
-            Cancelar
-          </button>
-          <button (click)="confirmDelete()" [disabled]="submittingDelete"
-            class="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ submittingDelete ? 'Eliminando...' : 'Eliminar' }}
-          </button>
+          <div class="mb-6">
+            <div class="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </div>
+            <p class="text-center text-slate-700 text-lg font-semibold">&iquest;Est&aacute;s seguro?</p>
+            <p class="text-center text-slate-500 text-sm mt-1">
+              Se eliminar&aacute; <span class="font-semibold text-slate-700">"{{ productoToDelete?.nombre }}"</span> del inventario. Esta acci&oacute;n no se puede deshacer.
+            </p>
+          </div>
+          <div class="flex items-center justify-end gap-3">
+            <button (click)="closeConfirmDeleteModal()"
+              class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+              Cancelar
+            </button>
+            <button (click)="confirmDelete()" [disabled]="submittingDelete"
+              class="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ submittingDelete ? 'Eliminando...' : 'Eliminar' }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-
+    }
+    
     <!-- ==================== MODAL: Nuevo Comodato ==================== -->
-    <div *ngIf="showNuevoComodatoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeComodatoModal()">
-      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-slate-800">Nuevo Comodato</h2>
-          <button (click)="closeComodatoModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-
-        <form (ngSubmit)="submitComodato()" class="space-y-4">
-          <!-- Row: Paciente + Equipo -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Paciente *</label>
-              <select [(ngModel)]="comodatoForm.id_paciente" name="id_paciente" required
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
-                <option [ngValue]="null">Seleccionar paciente...</option>
-                <option *ngFor="let b of beneficiariosList" [ngValue]="b.id">{{ b.nombre }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Equipo *</label>
-              <select [(ngModel)]="comodatoForm.id_equipo" name="id_equipo" required
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
-                <option [ngValue]="null">Seleccionar equipo...</option>
-                <option *ngFor="let e of equiposList" [ngValue]="e.idProducto">{{ e.nombre }}</option>
-              </select>
-            </div>
+    @if (showNuevoComodatoModal) {
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeComodatoModal()">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">Nuevo Comodato</h2>
+            <button (click)="closeComodatoModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
-
-          <!-- Row: Fechas -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
-              <input type="date" [(ngModel)]="comodatoForm.fecha_prestamo" name="fecha_prestamo" required
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+          <form (ngSubmit)="submitComodato()" class="space-y-4">
+            <!-- Row: Paciente + Equipo -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Paciente *</label>
+                <select [(ngModel)]="comodatoForm.id_paciente" name="id_paciente" required
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                  <option [ngValue]="null">Seleccionar paciente...</option>
+                  @for (b of beneficiariosList; track b) {
+                    <option [ngValue]="b.id">{{ b.nombre }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Equipo *</label>
+                <select [(ngModel)]="comodatoForm.id_equipo" name="id_equipo" required
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                  <option [ngValue]="null">Seleccionar equipo...</option>
+                  @for (e of equiposList; track e) {
+                    <option [ngValue]="e.idProducto">{{ e.nombre }}</option>
+                  }
+                </select>
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
-              <input type="date" [(ngModel)]="comodatoForm.fecha_devolucion" name="fecha_devolucion"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+            <!-- Row: Fechas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
+                <input type="date" [(ngModel)]="comodatoForm.fecha_prestamo" name="fecha_prestamo" required
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
+                <input type="date" [(ngModel)]="comodatoForm.fecha_devolucion" name="fecha_devolucion"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+              </div>
             </div>
-          </div>
-
-          <!-- Row: Estatus + Exento -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
-              <select [(ngModel)]="comodatoForm.estatus" name="estatus"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
-                <option value="PRESTADO">Prestado</option>
-                <option value="DEVUELTO">Devuelto</option>
-                <option value="CANCELADO">Cancelado</option>
-                <option value="DONADO">Donado</option>
-              </select>
+            <!-- Row: Estatus + Exento -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
+                <select [(ngModel)]="comodatoForm.estatus" name="estatus"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                  <option value="PRESTADO">Prestado</option>
+                  <option value="DEVUELTO">Devuelto</option>
+                  <option value="CANCELADO">Cancelado</option>
+                  <option value="DONADO">Donado</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
+                <select [(ngModel)]="comodatoForm.exento_pago" name="exento_pago"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                  <option value="N">No</option>
+                  <option value="S">S&iacute;</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
-              <select [(ngModel)]="comodatoForm.exento_pago" name="exento_pago"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
-                <option value="N">No</option>
-                <option value="S">S&iacute;</option>
-              </select>
+            <!-- Row: Montos -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
+                <input type="number" [(ngModel)]="comodatoForm.monto_total" name="monto_total" step="0.01" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
+                <input type="number" [(ngModel)]="comodatoForm.monto_pagado" name="monto_pagado" step="0.01" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
+                <input type="number" [(ngModel)]="comodatoForm.saldo_pendiente" name="saldo_pendiente" step="0.01" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+              </div>
             </div>
-          </div>
-
-          <!-- Row: Montos -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Notas -->
             <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
-              <input type="number" [(ngModel)]="comodatoForm.monto_total" name="monto_total" step="0.01" min="0"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
-              <input type="number" [(ngModel)]="comodatoForm.monto_pagado" name="monto_pagado" step="0.01" min="0"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
-              <input type="number" [(ngModel)]="comodatoForm.saldo_pendiente" name="saldo_pendiente" step="0.01" min="0"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
-            </div>
-          </div>
-
-          <!-- Notas -->
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
-            <textarea [(ngModel)]="comodatoForm.notas" name="notas" rows="3"
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
+              <textarea [(ngModel)]="comodatoForm.notas" name="notas" rows="3"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none" placeholder="Notas adicionales..."></textarea>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
-            <button type="button" (click)="closeComodatoModal()"
-              class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
-              Cancelar
-            </button>
-            <button type="submit" [disabled]="submittingComodato"
-              class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-              {{ submittingComodato ? 'Guardando...' : 'Crear Comodato' }}
-            </button>
-          </div>
-        </form>
+            </div>
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
+              <button type="button" (click)="closeComodatoModal()"
+                class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+                Cancelar
+              </button>
+              <button type="submit" [disabled]="submittingComodato"
+                class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                {{ submittingComodato ? 'Guardando...' : 'Crear Comodato' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-
+    }
+    
     <!-- ==================== MODAL: Editar Servicio ==================== -->
-    <div *ngIf="showEditServicioModal && editServicioForm" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditServicioModal = false">
-      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4" (click)="$event.stopPropagation()">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-slate-800">Editar Servicio</h2>
-          <button (click)="showEditServicioModal = false" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <form (ngSubmit)="guardarEdicionServicio()" class="space-y-4">
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
-            <input type="text" [(ngModel)]="editServicioForm.nombre" name="editSrvNombre" required
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Descripci&oacute;n</label>
-            <textarea [(ngModel)]="editServicioForm.descripcion" name="editSrvDesc" rows="3"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none"></textarea>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota A</label>
-              <input type="number" [(ngModel)]="editServicioForm.precio_cuota_a" name="editSrvPrecioA" step="0.01" min="0"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota B</label>
-              <input type="number" [(ngModel)]="editServicioForm.precio_cuota_b" name="editSrvPrecioB" step="0.01" min="0"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
-            <select [(ngModel)]="editServicioForm.activo" name="editSrvActivo"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm">
-              <option value="S">Activo</option>
-              <option value="N">Inactivo</option>
-            </select>
-          </div>
-          <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
-            <button type="button" (click)="showEditServicioModal = false" class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">Cancelar</button>
-            <button type="submit" [disabled]="submittingEditServicio" class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors disabled:opacity-50">
-              {{ submittingEditServicio ? 'Guardando...' : 'Guardar Cambios' }}
+    @if (showEditServicioModal && editServicioForm) {
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditServicioModal = false">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">Editar Servicio</h2>
+            <button (click)="showEditServicioModal = false" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
             </button>
           </div>
-        </form>
+          <form (ngSubmit)="guardarEdicionServicio()" class="space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
+              <input type="text" [(ngModel)]="editServicioForm.nombre" name="editSrvNombre" required
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Descripci&oacute;n</label>
+              <textarea [(ngModel)]="editServicioForm.descripcion" name="editSrvDesc" rows="3"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota A</label>
+                <input type="number" [(ngModel)]="editServicioForm.precio_cuota_a" name="editSrvPrecioA" step="0.01" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota B</label>
+                <input type="number" [(ngModel)]="editServicioForm.precio_cuota_b" name="editSrvPrecioB" step="0.01" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+              <select [(ngModel)]="editServicioForm.activo" name="editSrvActivo"
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm">
+                <option value="S">Activo</option>
+                <option value="N">Inactivo</option>
+              </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+              <button type="button" (click)="showEditServicioModal = false" class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">Cancelar</button>
+              <button type="submit" [disabled]="submittingEditServicio" class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors disabled:opacity-50">
+                {{ submittingEditServicio ? 'Guardando...' : 'Guardar Cambios' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-
+    }
+    
     <!-- ==================== MODAL: Editar Comodato ==================== -->
-    <div *ngIf="showEditComodatoModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditComodatoModal = false">
-      <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-slate-800">Editar Comodato</h2>
-          <button (click)="showEditComodatoModal = false" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <form (ngSubmit)="guardarEdicionComodato()" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
-              <input type="date" [(ngModel)]="editComodatoForm.fecha_prestamo" name="ecFechaPrest" required
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
-              <input type="date" [(ngModel)]="editComodatoForm.fecha_devolucion" name="ecFechaDev"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
-            </div>
+    @if (showEditComodatoModal) {
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditComodatoModal = false">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">Editar Comodato</h2>
+            <button (click)="showEditComodatoModal = false" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
-              <select [(ngModel)]="editComodatoForm.estatus" name="ecEstatus"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
-                <option value="PRESTADO">Prestado</option>
-                <option value="DEVUELTO">Devuelto</option>
-                <option value="CANCELADO">Cancelado</option>
-                <option value="DONADO">Donado</option>
-              </select>
+          <form (ngSubmit)="guardarEdicionComodato()" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
+                <input type="date" [(ngModel)]="editComodatoForm.fecha_prestamo" name="ecFechaPrest" required
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
+                <input type="date" [(ngModel)]="editComodatoForm.fecha_devolucion" name="ecFechaDev"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
+                <select [(ngModel)]="editComodatoForm.estatus" name="ecEstatus"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                  <option value="PRESTADO">Prestado</option>
+                  <option value="DEVUELTO">Devuelto</option>
+                  <option value="CANCELADO">Cancelado</option>
+                  <option value="DONADO">Donado</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
+                <select [(ngModel)]="editComodatoForm.exento_pago" name="ecExento"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                  <option value="N">No</option>
+                  <option value="S">S&iacute;</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
+                <input type="number" [(ngModel)]="editComodatoForm.monto_total" name="ecMontoTotal" step="0.01" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
+                <input type="number" [(ngModel)]="editComodatoForm.monto_pagado" name="ecMontoPagado" step="0.01" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
+                <input type="number" [(ngModel)]="editComodatoForm.saldo_pendiente" name="ecSaldo" step="0.01" min="0"
+                  class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+              </div>
             </div>
             <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
-              <select [(ngModel)]="editComodatoForm.exento_pago" name="ecExento"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
-                <option value="N">No</option>
-                <option value="S">S&iacute;</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
-              <input type="number" [(ngModel)]="editComodatoForm.monto_total" name="ecMontoTotal" step="0.01" min="0"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
-              <input type="number" [(ngModel)]="editComodatoForm.monto_pagado" name="ecMontoPagado" step="0.01" min="0"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
-              <input type="number" [(ngModel)]="editComodatoForm.saldo_pendiente" name="ecSaldo" step="0.01" min="0"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
-            <textarea [(ngModel)]="editComodatoForm.notas" name="ecNotas" rows="3"
+              <label class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
+              <textarea [(ngModel)]="editComodatoForm.notas" name="ecNotas" rows="3"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none"></textarea>
-          </div>
-          <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
-            <button type="button" (click)="showEditComodatoModal = false"
-              class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
-              Cancelar
-            </button>
-            <button type="submit" [disabled]="submittingEditComodato"
-              class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-              {{ submittingEditComodato ? 'Guardando...' : 'Guardar Cambios' }}
-            </button>
-          </div>
-        </form>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
+              <button type="button" (click)="showEditComodatoModal = false"
+                class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+                Cancelar
+              </button>
+              <button type="submit" [disabled]="submittingEditComodato"
+                class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                {{ submittingEditComodato ? 'Guardando...' : 'Guardar Cambios' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-
+    }
+    
     <!-- ==================== PRINT CONTAINER (hidden, used by window.print) ==================== -->
-    <div id="print-comodato" class="hidden print:block print:p-8" *ngIf="printingComodato">
-      <h1 class="text-2xl font-bold mb-4">Comodato {{ printingComodato.folioComodato }}</h1>
-      <table class="w-full border-collapse text-sm">
-        <tr class="border-b"><td class="py-2 font-semibold w-40">Folio:</td><td class="py-2">{{ printingComodato.folioComodato }}</td></tr>
-        <tr class="border-b"><td class="py-2 font-semibold">Paciente:</td><td class="py-2">{{ printingComodato.nombrePaciente }} ({{ printingComodato.folioPaciente }})</td></tr>
-        <tr class="border-b"><td class="py-2 font-semibold">Equipo:</td><td class="py-2">{{ printingComodato.nombreEquipo }}</td></tr>
-        <tr class="border-b"><td class="py-2 font-semibold">Fecha Pr&eacute;stamo:</td><td class="py-2">{{ printingComodato.fechaPrestamo }}</td></tr>
-        <tr class="border-b"><td class="py-2 font-semibold">Fecha Devoluci&oacute;n:</td><td class="py-2">{{ printingComodato.fechaDevolucion ?? 'Pendiente' }}</td></tr>
-        <tr class="border-b"><td class="py-2 font-semibold">Estatus:</td><td class="py-2">{{ printingComodato.estatus }}</td></tr>
-        <tr class="border-b"><td class="py-2 font-semibold">Monto Total:</td><td class="py-2">\${{ printingComodato.montoTotal.toFixed(2) }}</td></tr>
-        <tr class="border-b"><td class="py-2 font-semibold">Monto Pagado:</td><td class="py-2">\${{ printingComodato.montoPagado.toFixed(2) }}</td></tr>
-        <tr class="border-b"><td class="py-2 font-semibold">Saldo Pendiente:</td><td class="py-2">\${{ printingComodato.saldoPendiente.toFixed(2) }}</td></tr>
-        <tr><td class="py-2 font-semibold">Exento de Pago:</td><td class="py-2">{{ printingComodato.exentoPago === 'S' ? 'S&iacute;' : 'No' }}</td></tr>
-      </table>
-    </div>
-  `,
+    @if (printingComodato) {
+      <div id="print-comodato" class="hidden print:block print:p-8">
+        <h1 class="text-2xl font-bold mb-4">Comodato {{ printingComodato.folioComodato }}</h1>
+        <table class="w-full border-collapse text-sm">
+          <tr class="border-b"><td class="py-2 font-semibold w-40">Folio:</td><td class="py-2">{{ printingComodato.folioComodato }}</td></tr>
+          <tr class="border-b"><td class="py-2 font-semibold">Paciente:</td><td class="py-2">{{ printingComodato.nombrePaciente }} ({{ printingComodato.folioPaciente }})</td></tr>
+          <tr class="border-b"><td class="py-2 font-semibold">Equipo:</td><td class="py-2">{{ printingComodato.nombreEquipo }}</td></tr>
+          <tr class="border-b"><td class="py-2 font-semibold">Fecha Pr&eacute;stamo:</td><td class="py-2">{{ printingComodato.fechaPrestamo }}</td></tr>
+          <tr class="border-b"><td class="py-2 font-semibold">Fecha Devoluci&oacute;n:</td><td class="py-2">{{ printingComodato.fechaDevolucion ?? 'Pendiente' }}</td></tr>
+          <tr class="border-b"><td class="py-2 font-semibold">Estatus:</td><td class="py-2">{{ printingComodato.estatus }}</td></tr>
+          <tr class="border-b"><td class="py-2 font-semibold">Monto Total:</td><td class="py-2">\${{ printingComodato.montoTotal.toFixed(2) }}</td></tr>
+          <tr class="border-b"><td class="py-2 font-semibold">Monto Pagado:</td><td class="py-2">\${{ printingComodato.montoPagado.toFixed(2) }}</td></tr>
+          <tr class="border-b"><td class="py-2 font-semibold">Saldo Pendiente:</td><td class="py-2">\${{ printingComodato.saldoPendiente.toFixed(2) }}</td></tr>
+          <tr><td class="py-2 font-semibold">Exento de Pago:</td><td class="py-2">{{ printingComodato.exentoPago === 'S' ? 'S&iacute;' : 'No' }}</td></tr>
+        </table>
+      </div>
+    }
+    `,
   styles: [`
     @media print {
       app-navbar, app-footer, main, .fixed { display: none !important; }
@@ -1001,6 +1078,7 @@ interface TableSortState {
 export class AlmacenComponent implements OnInit {
   activeTab: 'inventario' | 'comodatos' = 'inventario';
   selectedCategory: string | null = null;
+  quickInventoryFilter: 'none' | 'existencias-bajas' | 'proximos-vencer' = 'none';
   searchInventario = '';
   searchComodatos = '';
 
@@ -1009,6 +1087,8 @@ export class AlmacenComponent implements OnInit {
   servicios: ServicioItem[] = [];
   comodatos: ComodatoItem[] = [];
   alertasCaducidad = 0;
+  private stockBajoProductoIds = new Set<number>();
+  private proximosVencerProductoIds = new Set<number>();
   inventarioSort: TableSortState = { key: 'id', direction: 'asc' };
   comodatosSort: TableSortState = { key: 'fechaPrestamo', direction: 'desc' };
 
@@ -1050,6 +1130,15 @@ export class AlmacenComponent implements OnInit {
       if (tab === 'inventario' || tab === 'comodatos') {
         this.activeTab = tab;
       }
+      const filter = String(params['filter'] || '').toLowerCase();
+      if (filter === 'alertas') {
+        this.quickInventoryFilter = 'existencias-bajas';
+        this.activeTab = 'inventario';
+      }
+      if (filter === 'caducidad') {
+        this.quickInventoryFilter = 'proximos-vencer';
+        this.activeTab = 'inventario';
+      }
       if (params['action'] === 'nuevo') {
         setTimeout(() => {
           if (this.activeTab === 'comodatos') {
@@ -1066,30 +1155,30 @@ export class AlmacenComponent implements OnInit {
 
   loadProductos(): void {
     this.loading = true;
-    this.api.getProductos().subscribe({
+    this.api.getProductos({ activo: 'S' }).subscribe({
       next: (data) => {
         this.productos = data.map((p: any) => ({
-          idProducto: p.id_producto,
-          claveInterna: p.clave_interna,
-          nombre: p.nombre,
-          descripcion: p.descripcion,
-          tipoProducto: p.tipo_producto,
-          precioA: p.precio_cuota_a,
-          precioB: p.precio_cuota_b,
-          activo: p.activo,
-          presentacion: p.presentacion,
-          dosis: p.dosis,
-          requiereCaducidad: p.requiere_caducidad,
-          numeroSerie: p.numero_serie,
-          marca: p.marca,
-          modelo: p.modelo,
-          estatusEquipo: p.estatus_equipo,
-          observaciones: p.observaciones,
-          cantidadDisponible: p.cantidad_disponible,
-          nivelMinimo: p.nivel_minimo,
-          unidadMedida: p.unidad_medida,
-          fechaCaducidad: p.fecha_caducidad,
-        }));
+          idProducto: Number(p?.id_producto ?? p?.idProducto ?? 0),
+          claveInterna: String(p?.clave_interna ?? p?.claveInterna ?? ''),
+          nombre: String(p?.nombre ?? ''),
+          descripcion: String(p?.descripcion ?? ''),
+          tipoProducto: this.normalizeTipoProducto(p?.tipo_producto ?? p?.tipoProducto),
+          precioA: this.toNumberOrNull(p?.precio_cuota_a ?? p?.precioA),
+          precioB: this.toNumberOrNull(p?.precio_cuota_b ?? p?.precioB),
+          activo: String(p?.activo ?? 'S'),
+          presentacion: p?.presentacion,
+          dosis: p?.dosis,
+          requiereCaducidad: p?.requiere_caducidad ?? p?.requiereCaducidad,
+          numeroSerie: p?.numero_serie ?? p?.numeroSerie,
+          marca: p?.marca,
+          modelo: p?.modelo,
+          estatusEquipo: p?.estatus_equipo ?? p?.estatusEquipo,
+          observaciones: p?.observaciones,
+          cantidadDisponible: this.toNumberOrNull(p?.cantidad_disponible ?? p?.cantidadDisponible),
+          nivelMinimo: this.toNumberOrNull(p?.nivel_minimo ?? p?.nivelMinimo),
+          unidadMedida: String(p?.unidad_medida ?? p?.unidadMedida ?? '\u2014'),
+          fechaCaducidad: p?.fecha_caducidad ?? p?.fechaCaducidad ?? null,
+        })).filter((p: ProductoItem) => p.idProducto > 0 && !!p.nombre);
         this.loading = false;
       },
       error: (err) => {
@@ -1103,28 +1192,49 @@ export class AlmacenComponent implements OnInit {
     this.api.getAlmacenStats().subscribe({
       next: (stats: any) => {
         this.alertasCaducidad = stats.alertas_caducidad ?? 0;
+        const stockBajo = Array.isArray(stats?.stock_bajo) ? stats.stock_bajo : [];
+        const proximosVencer = Array.isArray(stats?.proximos_vencer) ? stats.proximos_vencer : [];
+
+        this.stockBajoProductoIds = new Set(
+          stockBajo
+            .map((item: any) => Number(item?.id_producto))
+            .filter((id: number) => Number.isInteger(id) && id > 0)
+        );
+        this.proximosVencerProductoIds = new Set(
+          proximosVencer
+            .map((item: any) => Number(item?.id_producto))
+            .filter((id: number) => Number.isInteger(id) && id > 0)
+        );
       },
       error: () => {
         this.alertasCaducidad = 0;
+        this.stockBajoProductoIds.clear();
+        this.proximosVencerProductoIds.clear();
       },
     });
   }
 
   loadServicios(): void {
-    this.api.getServicios().subscribe({
+    this.api.getServicios({ activo: 'S' }).subscribe({
       next: (data) => {
         this.servicios = data.map((s: any) => ({
-          idServicio: s.id_servicio,
-          nombre: s.nombre,
-          descripcion: s.descripcion,
-          cuotaRecuperacion: s.cuota_recuperacion,
-          precioA: s.precio_cuota_a,
-          precioB: s.precio_cuota_b,
-          activo: s.activo,
-        }));
+          idServicio: Number(s?.id_servicio ?? s?.idServicio ?? 0),
+          nombre: String(s?.nombre ?? ''),
+          descripcion: String(s?.descripcion ?? ''),
+          cuotaRecuperacion: Number(s?.cuota_recuperacion ?? s?.cuotaRecuperacion ?? 0),
+          precioA: this.toNumberOrNull(s?.precio_cuota_a ?? s?.precioA),
+          precioB: this.toNumberOrNull(s?.precio_cuota_b ?? s?.precioB),
+          activo: String(s?.activo ?? 'S'),
+        })).filter((s: ServicioItem) => s.idServicio > 0 && !!s.nombre);
       },
       error: (err) => console.error('Error loading servicios:', err),
     });
+  }
+
+  private normalizeTipoProducto(value: unknown): string {
+    const tipo = String(value || '').trim().toUpperCase();
+    if (tipo === 'EQUIPO_MEDICO') return 'EQUIPO';
+    return tipo;
   }
 
   loadComodatos(): void {
@@ -1171,6 +1281,7 @@ export class AlmacenComponent implements OnInit {
       modelo: '',
       estatus_equipo: 'DISPONIBLE',
       observaciones: '',
+      cuota_recuperacion: 0,
       cantidad_disponible: 0,
       nivel_minimo: 5,
       unidad_medida: '',
@@ -1229,6 +1340,7 @@ export class AlmacenComponent implements OnInit {
       modelo: producto.modelo ?? '',
       estatus_equipo: producto.estatusEquipo ?? 'DISPONIBLE',
       observaciones: producto.observaciones ?? '',
+      cuota_recuperacion: 0,
       cantidad_disponible: producto.cantidadDisponible ?? 0,
       nivel_minimo: producto.nivelMinimo ?? 5,
       unidad_medida: producto.unidadMedida,
@@ -1243,10 +1355,41 @@ export class AlmacenComponent implements OnInit {
   }
 
   submitProducto(): void {
-    if (!this.productoForm.clave_interna || !this.productoForm.nombre || !this.productoForm.tipo_producto) return;
+    if (!this.productoForm.nombre || !this.productoForm.tipo_producto) return;
+    if (this.productoForm.tipo_producto !== 'SERVICIO' && !this.productoForm.clave_interna) return;
 
     this.submittingProducto = true;
     const payload: any = { ...this.productoForm };
+
+    if (payload.tipo_producto === 'SERVICIO') {
+      if (this.editingProduct) {
+        alert('La edici\u00f3n de servicios se realiza desde la tabla de servicios.');
+        this.submittingProducto = false;
+        return;
+      }
+
+      const servicioPayload = {
+        nombre: payload.nombre,
+        descripcion: payload.descripcion,
+        activo: payload.activo,
+        precio_cuota_a: payload.precio_cuota_a,
+        precio_cuota_b: payload.precio_cuota_b,
+        cuota_recuperacion: payload.cuota_recuperacion ?? 0,
+      };
+
+      this.api.createServicio(servicioPayload).subscribe({
+        next: () => {
+          this.loadServicios();
+          this.closeProductoModal();
+          this.submittingProducto = false;
+        },
+        error: (err) => {
+          console.error('Error creating servicio:', err);
+          this.submittingProducto = false;
+        },
+      });
+      return;
+    }
 
     // Clean up type-specific fields
     if (payload.tipo_producto === 'MEDICAMENTO') {
@@ -1255,11 +1398,13 @@ export class AlmacenComponent implements OnInit {
       delete payload.modelo;
       delete payload.estatus_equipo;
       delete payload.observaciones;
+      delete payload.cuota_recuperacion;
     } else if (payload.tipo_producto === 'EQUIPO') {
       delete payload.presentacion;
       delete payload.dosis;
       delete payload.requiere_caducidad;
       delete payload.fecha_caducidad;
+      delete payload.cuota_recuperacion;
     }
     if (payload.fecha_caducidad === '') {
       payload.fecha_caducidad = null;
@@ -1325,6 +1470,7 @@ export class AlmacenComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error deleting item:', err);
+        alert(err?.error?.detail || 'No se pudo eliminar el elemento seleccionado.');
         this.submittingDelete = false;
       },
     });
@@ -1408,8 +1554,49 @@ export class AlmacenComponent implements OnInit {
     ).length;
   }
 
+  getProximosAVencerCount(): number {
+    const calculado = this.productos.filter((p) => this.isCaducidadEnRiesgo(p.fechaCaducidad)).length;
+    return Math.max(this.alertasCaducidad, this.proximosVencerProductoIds.size, calculado);
+  }
+
   getComodatosActivosCount(): number {
     return this.comodatos.filter(c => c.estatus === 'PRESTADO').length;
+  }
+
+  mostrarInventarioCompleto(): void {
+    this.activeTab = 'inventario';
+    this.quickInventoryFilter = 'none';
+    this.selectedCategory = null;
+  }
+
+  mostrarExistenciasBajas(): void {
+    if (this.getBajoStockCount() === 0 && this.stockBajoProductoIds.size === 0) return;
+    this.activeTab = 'inventario';
+    this.quickInventoryFilter = 'existencias-bajas';
+    this.selectedCategory = null;
+  }
+
+  mostrarProximosAVencer(): void {
+    if (this.getProximosAVencerCount() === 0) return;
+    this.activeTab = 'inventario';
+    this.quickInventoryFilter = 'proximos-vencer';
+    this.selectedCategory = null;
+  }
+
+  mostrarComodatosActivos(): void {
+    if (this.getComodatosActivosCount() === 0) return;
+    this.activeTab = 'comodatos';
+  }
+
+  limpiarFiltrosInventarioRapidos(): void {
+    this.quickInventoryFilter = 'none';
+    this.selectedCategory = null;
+  }
+
+  getQuickFilterLabel(): string {
+    if (this.quickInventoryFilter === 'existencias-bajas') return 'Mostrando: existencias bajas';
+    if (this.quickInventoryFilter === 'proximos-vencer') return 'Mostrando: próximos a vencer';
+    return '';
   }
 
   getCategoryCount(categoria: string): number {
@@ -1430,8 +1617,8 @@ export class AlmacenComponent implements OnInit {
   }
 
   // Unified row type for the inventory table
-  filteredInventario(): { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string }[] {
-    let items: { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string }[] = [];
+  filteredInventario(): { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string; fechaCaducidad?: string | null }[] {
+    let items: { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string; fechaCaducidad?: string | null }[] = [];
 
     const showMedicamentos = !this.selectedCategory || this.selectedCategory === 'Medicamento';
     const showServicios = !this.selectedCategory || this.selectedCategory === 'Servicios';
@@ -1442,12 +1629,12 @@ export class AlmacenComponent implements OnInit {
         .filter(p => p.tipoProducto === 'MEDICAMENTO')
         .forEach(p => {
           const estado = (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo)
-            ? 'Bajo Stock'
+            ? 'Existencias bajas'
             : (p.cantidadDisponible === 0 ? 'Agotado' : 'Normal');
           items.push({
             id: p.idProducto, categoria: 'MEDICAMENTO', nombre: p.nombre, unidadMedida: p.unidadMedida,
             cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
-            precioA: p.precioA, precioB: p.precioB, estado
+            precioA: p.precioA, precioB: p.precioB, estado, fechaCaducidad: p.fechaCaducidad
           });
         });
     }
@@ -1457,7 +1644,7 @@ export class AlmacenComponent implements OnInit {
         items.push({
           id: s.idServicio, categoria: 'SERVICIO', nombre: s.nombre, unidadMedida: 'Servicio',
           cantidadDisponible: null, nivelMinimo: null,
-          precioA: s.precioA, precioB: s.precioB, estado: 'N/A',
+          precioA: s.precioA, precioB: s.precioB, estado: 'N/A', fechaCaducidad: null,
           doctor: (s as any).doctor || '',
           horario: (s as any).horario || ''
         });
@@ -1471,9 +1658,13 @@ export class AlmacenComponent implements OnInit {
           items.push({
             id: p.idProducto, categoria: 'EQUIPO', nombre: p.nombre, unidadMedida: p.unidadMedida,
             cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
-            precioA: p.precioA, precioB: p.precioB, estado: p.estatusEquipo ?? 'N/A'
+            precioA: p.precioA, precioB: p.precioB, estado: p.estatusEquipo ?? 'N/A', fechaCaducidad: p.fechaCaducidad
           });
         });
+    }
+
+    if (this.quickInventoryFilter !== 'none') {
+      items = items.filter((item) => this.matchesQuickInventoryFilter(item));
     }
 
     if (this.searchInventario.trim()) {
@@ -1505,6 +1696,66 @@ export class AlmacenComponent implements OnInit {
           return item.id;
       }
     });
+  }
+
+  private matchesQuickInventoryFilter(item: {
+    id: number;
+    categoria: string;
+    cantidadDisponible: number | null;
+    nivelMinimo: number | null;
+    fechaCaducidad?: string | null;
+  }): boolean {
+    if (item.categoria === 'SERVICIO') return false;
+
+    if (this.quickInventoryFilter === 'existencias-bajas') {
+      if (this.stockBajoProductoIds.size > 0) {
+        return this.stockBajoProductoIds.has(item.id);
+      }
+      return item.cantidadDisponible !== null
+        && item.nivelMinimo !== null
+        && item.cantidadDisponible < item.nivelMinimo;
+    }
+
+    if (this.quickInventoryFilter === 'proximos-vencer') {
+      if (this.proximosVencerProductoIds.size > 0) {
+        return this.proximosVencerProductoIds.has(item.id);
+      }
+      return this.isCaducidadEnRiesgo(item.fechaCaducidad);
+    }
+
+    return true;
+  }
+
+  private isCaducidadEnRiesgo(fechaCaducidad?: string | null): boolean {
+    if (!fechaCaducidad) return false;
+    const fecha = this.toDateOnly(fechaCaducidad);
+    if (!fecha) return false;
+
+    const hoy = new Date();
+    const base = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const limite = new Date(base);
+    limite.setDate(base.getDate() + 30);
+
+    return fecha <= limite;
+  }
+
+  private toDateOnly(value: string): Date | null {
+    const normalized = value.includes('T') ? value : `${value}T00:00:00`;
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return null;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  private toNumberOrNull(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+
+  formatCurrency(value: unknown): string {
+    const numeric = this.toNumberOrNull(value);
+    if (numeric === null) return '\u2014';
+    return `$${numeric.toFixed(2)}`;
   }
 
   filteredComodatos(): ComodatoItem[] {
@@ -1609,6 +1860,7 @@ export class AlmacenComponent implements OnInit {
     switch (estado) {
       case 'Normal': return 'bg-green-100 text-green-700';
       case 'DISPONIBLE': return 'bg-green-100 text-green-700';
+      case 'Existencias bajas': return 'bg-amber-100 text-amber-700';
       case 'Bajo Stock': return 'bg-amber-100 text-amber-700';
       case 'EN_PRESTAMO': return 'bg-blue-100 text-blue-700';
       case 'Agotado': return 'bg-red-100 text-red-700';

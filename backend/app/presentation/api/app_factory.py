@@ -6,6 +6,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.core.config import settings
 from app.infrastructure.persistence.oracle import close_pool, init_pool
@@ -15,7 +16,7 @@ from app.presentation.api.router import build_api_router
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
-MAX_BODY_SIZE = 10 * 1024 * 1024
+MAX_BODY_SIZE = settings.MAX_UPLOAD_SIZE
 
 
 @asynccontextmanager
@@ -54,16 +55,29 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > MAX_BODY_SIZE:
-            return Response(
-                content='{"detail":"Payload too large"}',
-                status_code=413,
-                media_type="application/json",
-            )
+        if content_length:
+            try:
+                if int(content_length) > MAX_BODY_SIZE:
+                    return Response(
+                        content='{"detail":"Carga útil demasiado grande"}',
+                        status_code=413,
+                        media_type="application/json",
+                    )
+            except ValueError:
+                return Response(
+                    content='{"detail":"Encabezado content-length inválido"}',
+                    status_code=400,
+                    media_type="application/json",
+                )
         return await call_next(request)
 
 
 def create_app() -> FastAPI:
+    if not settings.DEBUG and (not settings.SECRET_KEY or settings.SECRET_KEY == "change-in-production"):
+        raise RuntimeError("SECRET_KEY insegura o no configurada. Defina una clave robusta en entorno.")
+    if not settings.DEBUG and '*' in settings.CORS_ORIGINS:
+        raise RuntimeError("CORS_ORIGINS no puede usar '*' en entornos no debug.")
+
     wire_application()
     app = FastAPI(
         title=settings.APP_NAME,
@@ -76,6 +90,7 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,

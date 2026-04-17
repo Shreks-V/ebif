@@ -18,8 +18,8 @@ def citas_stats(current_user: dict=None):
 def citas_hoy(current_user: dict=None):
     return _get_repository().citas_hoy(current_user)
 
-def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, current_user: dict=None):
-    return _get_repository().listar_citas(fecha, estatus, id_paciente, busqueda, current_user)
+def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
+    return _get_repository().listar_citas(fecha, estatus, id_paciente, busqueda, current_user, limit, offset)
 
 def obtener_cita(id_cita: int, current_user: dict=None):
     return _get_repository().obtener_cita(id_cita, current_user)

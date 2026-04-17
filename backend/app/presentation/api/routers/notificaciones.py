@@ -48,22 +48,23 @@ def get_notificaciones(current_user: dict = Depends(get_current_user)):
 
     # ── Membresías por vencer (30 días) ──────────────────────────────────────
     try:
-        membresias = beneficiarios_svc.listar_membresias_proximas_a_vencer(30, current_user)
+        membresias = beneficiarios_svc.listar_membresias_proximas_a_vencer(30, current_user, 500, 0)
         count_mem = len(membresias) if isinstance(membresias, list) else 0
         if count_mem > 0:
+            count_mem_label = '500+' if count_mem == 500 else str(count_mem)
             notificaciones.append({
                 'id': 'membresias_vencer',
                 'categoria': 'membresias',
                 'tipo': 'warning',
                 'titulo': 'Membresías por vencer',
-                'detalle': f"{count_mem} membresía{'s' if count_mem != 1 else ''} vence{'n' if count_mem != 1 else ''} en los próximos 30 días.",
+                'detalle': f"{count_mem_label} membresía{'s' if count_mem != 1 else ''} vence{'n' if count_mem != 1 else ''} en los próximos 30 días.",
                 'count': count_mem,
                 'link': '/registro-usuarios',
             })
     except Exception:
         pass
 
-    # ── Almacén: stock bajo ───────────────────────────────────────────────────
+    # ── Almacén: existencias bajas ────────────────────────────────────────────
     try:
         stats = almacen_svc.almacen_stats(current_user)
         stock_bajo = int(stats.get('alertas_stock_bajo', 0))
@@ -75,7 +76,7 @@ def get_notificaciones(current_user: dict = Depends(get_current_user)):
                 'categoria': 'almacen',
                 'tipo': 'warning',
                 'titulo': 'Inventario en riesgo',
-                'detalle': f"{stock_bajo} producto{'s' if stock_bajo != 1 else ''} con stock bajo.",
+                'detalle': f"{stock_bajo} producto{'s' if stock_bajo != 1 else ''} con existencias bajas.",
                 'count': stock_bajo,
                 'link': '/almacen',
             })

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -7,18 +7,18 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [FormsModule, RouterModule],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff] flex items-center justify-center p-4 relative overflow-hidden">
       <!-- Decorative blurred circles -->
       <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-full blur-3xl opacity-20"></div>
       <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-br from-[#f3ad1c] to-[#ffb84d] rounded-full blur-3xl opacity-20"></div>
       <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#b9e5fb] rounded-full blur-3xl opacity-30"></div>
-
+    
       <!-- Main container -->
       <div class="w-full max-w-6xl relative z-10">
         <div class="grid md:grid-cols-2 gap-12 items-center">
-
+    
           <!-- Left Panel -->
           <div class="hidden md:block space-y-6">
             <!-- Logo -->
@@ -27,22 +27,22 @@ import { AuthService } from '../../services/auth.service';
                 EB
               </div>
             </div>
-
+    
             <!-- Title -->
             <h1 class="text-5xl font-black text-[#00328b] mb-4 leading-tight">
               Sistema Integral de Gestión
             </h1>
-
+    
             <!-- Subtitle -->
             <p class="text-2xl font-semibold text-[#f3ad1c]">
               Asociación de Espina Bífida
             </p>
-
+    
             <!-- Description -->
             <p class="text-slate-700 leading-relaxed text-lg font-medium">
               Plataforma completa para la gestión de beneficiarios, citas médicas, inventario y servicios especializados.
             </p>
-
+    
             <!-- Feature card -->
             <div class="flex items-start gap-4 p-5 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow border-2 border-[#f3ad1c]/10">
               <div class="w-14 h-14 bg-gradient-to-br from-[#f3ad1c] to-[#ffb84d] rounded-2xl flex items-center justify-center shadow-xl flex-shrink-0">
@@ -57,13 +57,13 @@ import { AuthService } from '../../services/auth.service';
               </div>
             </div>
           </div>
-
-          <!-- Right Panel - Login Form -->
+    
+          <!-- Panel derecho: formulario de acceso -->
           <div class="bg-white rounded-3xl shadow-2xl border-2 border-slate-100 p-8 md:p-10 relative overflow-hidden">
             <!-- Decorative blurs inside card -->
             <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-full blur-3xl opacity-10"></div>
             <div class="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-br from-[#f3ad1c] to-[#ffb84d] rounded-full blur-3xl opacity-10"></div>
-
+    
             <!-- Header -->
             <div class="relative z-10 space-y-6">
               <div class="space-y-3">
@@ -80,14 +80,16 @@ import { AuthService } from '../../services/auth.service';
                   </div>
                 </div>
               </div>
-
+    
               <!-- Form -->
               <form (ngSubmit)="onLogin()" class="space-y-6">
                 <!-- Error message -->
-                <div *ngIf="errorMessage" class="p-4 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-2xl">
-                  <p class="text-sm text-red-800 font-bold">{{ errorMessage }}</p>
-                </div>
-
+                @if (errorMessage) {
+                  <div class="p-4 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-2xl">
+                    <p class="text-sm text-red-800 font-bold">{{ errorMessage }}</p>
+                  </div>
+                }
+    
                 <!-- Correo field -->
                 <div class="space-y-2">
                   <label for="correo" class="text-sm font-bold text-slate-900">Correo electrónico</label>
@@ -108,10 +110,10 @@ import { AuthService } from '../../services/auth.service';
                       [disabled]="loading"
                       required
                       class="w-full pl-16 h-14 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:bg-white focus:border-[#00328b] outline-none transition-colors text-slate-900"
-                    />
+                      />
                   </div>
                 </div>
-
+    
                 <!-- Password field -->
                 <div class="space-y-2">
                   <label for="password" class="text-sm font-bold text-slate-900">Contraseña</label>
@@ -132,34 +134,34 @@ import { AuthService } from '../../services/auth.service';
                       [disabled]="loading"
                       required
                       class="w-full pl-16 h-14 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:bg-white focus:border-[#00328b] outline-none transition-colors text-slate-900"
-                    />
+                      />
                   </div>
                 </div>
-
+    
                 <!-- Submit button -->
                 <button
                   type="submit"
                   [disabled]="loading || !correo || !password"
                   class="w-full h-14 bg-gradient-to-r from-[#00328b] via-[#0052cc] to-[#00328b] text-white rounded-2xl font-bold shadow-2xl text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                >
-                  <ng-container *ngIf="!loading">
+                  >
+                  @if (!loading) {
                     <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
                       <polyline points="10 17 15 12 10 7"/>
                       <line x1="15" x2="3" y1="12" y2="12"/>
                     </svg>
                     Iniciar sesión
-                  </ng-container>
-                  <ng-container *ngIf="loading">
+                  }
+                  @if (loading) {
                     <svg class="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                     </svg>
                     Ingresando...
-                  </ng-container>
+                  }
                 </button>
               </form>
-
+    
               <!-- Demo credentials -->
               <div class="mt-8 p-5 bg-gradient-to-br from-[#b9e5fb] to-[#e0f2ff] rounded-2xl border-2 border-[#00328b]/10">
                 <div class="flex items-center gap-2 mb-2">
@@ -172,14 +174,14 @@ import { AuthService } from '../../services/auth.service';
                 <p class="text-sm text-slate-700">Correo: <span class="font-semibold">admin&#64;espinabifida.org</span></p>
                 <p class="text-sm text-slate-700">Contraseña: <span class="font-semibold">admin123</span></p>
               </div>
-
+    
             </div>
           </div>
-
+    
         </div>
       </div>
     </div>
-  `,
+    `,
   styles: [],
 })
 export class LoginComponent {

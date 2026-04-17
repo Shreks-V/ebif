@@ -1,6 +1,5 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-module-card',
@@ -76,11 +75,9 @@ export class ModuleCardComponent implements OnChanges {
   @Input() iconSvg = '';
   @Input() accentColor = 'var(--azul-oscuro)';
 
-  safeIcon: SafeHtml = '';
-
-  constructor(private sanitizer: DomSanitizer) {}
+  safeIcon = '';
 
   ngOnChanges() {
-    this.safeIcon = this.sanitizer.bypassSecurityTrustHtml(this.iconSvg);
+    this.safeIcon = this.iconSvg || '';
   }
 }

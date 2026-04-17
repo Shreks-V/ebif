@@ -13,23 +13,47 @@ from app.schemas.schemas import ProductoCreate, ServicioCreate, ComodatoCreate
 logger = logging.getLogger(__name__)
 
 _SP_CREAR_PRODUCTO_ERRORS = {
-    20701: (400, None),
-    20702: (400, None),
-    20703: (409, None),
+    20701: (400, 'Tipo de producto inválido'),
+    20702: (400, 'Clave interna requerida'),
+    20703: (409, 'La clave interna ya existe'),
 }
 
 _SP_MOVIMIENTO_STOCK_ERRORS = {
-    20501: (400, None),
-    20502: (400, None),
-    20503: (400, None),
-    20504: (400, None),
-    20505: (409, None),
+    20501: (400, 'Tipo de movimiento inválido'),
+    20502: (400, 'Cantidad inválida para el movimiento'),
+    20503: (400, 'Referencia de usuario inválida'),
+    20504: (400, 'Producto no encontrado o inactivo'),
+    20505: (409, 'Existencias insuficientes para realizar la operación'),
 }
 
 _SP_AJUSTAR_EXISTENCIA_ERRORS = {
-    20504: (404, None),
-    20506: (400, None),
+    20504: (404, 'Producto no encontrado o inactivo'),
+    20506: (400, 'Existencia objetivo inválida'),
 }
+
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
+
+
+def _normalize_tipo_producto_for_db(value: Optional[str]) -> str:
+    """Accept API aliases and return the DB/SP canonical value."""
+    tipo = str(value or '').strip().upper()
+    if tipo == 'EQUIPO':
+        return 'EQUIPO_MEDICO'
+    return tipo
+
+
+def _normalize_tipo_producto_for_api(value: Optional[str]) -> Optional[str]:
+    """Return API-friendly type names for frontend compatibility."""
+    if value is None:
+        return None
+    tipo = str(value).strip().upper()
+    if tipo == 'EQUIPO_MEDICO':
+        return 'EQUIPO'
+    return tipo
 
 def _serialize(row: dict) -> dict:
     """Strip CHAR padding and convert dates to ISO strings."""
@@ -41,6 +65,8 @@ def _serialize(row: dict) -> dict:
             result[key] = value.strip()
         else:
             result[key] = value
+    if 'tipo_producto' in result:
+        result['tipo_producto'] = _normalize_tipo_producto_for_api(result['tipo_producto'])
     return result
 
 _PRODUCTOS_BASE_SQL = "\n    SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE, p.DESCRIPCION,\n           p.TIPO_PRODUCTO, p.ACTIVO, p.ID_USUARIO_REGISTRO, p.FECHA_REGISTRO,\n           p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,\n           m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,\n           eq.NUMERO_SERIE, eq.MARCA, eq.MODELO, eq.ESTATUS_EQUIPO, eq.OBSERVACIONES,\n           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA, ex.FECHA_CADUCIDAD\n    FROM PRODUCTO p\n    LEFT JOIN MEDICAMENTO m        ON m.ID_PRODUCTO  = p.ID_PRODUCTO\n    LEFT JOIN EQUIPO_MEDICO eq     ON eq.ID_PRODUCTO = p.ID_PRODUCTO\n    LEFT JOIN EXISTENCIA_PRODUCTO ex ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'\n"
@@ -70,20 +96,23 @@ def _generate_internal_key(conn, tipo_producto: str) -> str:
     next_seq = int(row.get('max_seq') or 0) + 1
     return f'{prefix}-{next_seq:03d}'
 
-def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None):
+def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar productos del almacen con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _PRODUCTOS_BASE_SQL + ' WHERE 1=1'
     params: dict = {}
     if tipo_producto:
         sql += ' AND p.TIPO_PRODUCTO = :tipo_producto'
-        params['tipo_producto'] = tipo_producto
+        params['tipo_producto'] = _normalize_tipo_producto_for_db(tipo_producto)
     if activo:
         sql += ' AND p.ACTIVO = :activo'
         params['activo'] = activo
     if busqueda:
         sql += ' AND (LOWER(p.NOMBRE) LIKE :busqueda OR LOWER(p.DESCRIPCION) LIKE :busqueda OR LOWER(p.CLAVE_INTERNA) LIKE :busqueda)'
         params['busqueda'] = f'%{busqueda.lower()}%'
-    sql += ' ORDER BY p.ID_PRODUCTO'
+    sql += ' ORDER BY p.ID_PRODUCTO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
@@ -108,16 +137,17 @@ def crear_producto(data: ProductoCreate, current_user: dict=None):
         id_usuario = current_user.get('id_usuario', 1)
         id_producto = None
         clave_interna = None
+        tipo_producto_db = _normalize_tipo_producto_for_db(data.tipo_producto)
 
         for _ in range(5):
-            clave_interna = _generate_internal_key(conn, data.tipo_producto)
+            clave_interna = _generate_internal_key(conn, tipo_producto_db)
             id_out = cursor.var(int)
             try:
                 cursor.callproc('SP_CREAR_PRODUCTO_CON_EXISTENCIA', [
                     clave_interna,
                     data.nombre,
                     data.descripcion,
-                    data.tipo_producto,
+                    tipo_producto_db,
                     data.precio_cuota_a,
                     data.precio_cuota_b,
                     id_usuario,
@@ -156,11 +186,11 @@ def crear_producto(data: ProductoCreate, current_user: dict=None):
                     id_usuario,
                     None,
                     None,
-                    f'Stock inicial alta producto {clave_interna}',
+                    f'Existencia inicial alta producto {clave_interna}',
                 ])
             except oracledb.DatabaseError as exc:
                 raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
-                                       default_detail='No se pudo registrar el stock inicial')
+                                       default_detail='No se pudo registrar la existencia inicial')
 
         # FECHA_CADUCIDAD no la maneja el SP — update directo
         if data.fecha_caducidad:
@@ -189,16 +219,39 @@ def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: di
     """Actualizar un producto existente."""
     with get_db() as conn:
         cursor = conn.cursor()
+        tipo_producto_db = _normalize_tipo_producto_for_db(data.tipo_producto)
         cursor.execute('SELECT ID_PRODUCTO, TIPO_PRODUCTO FROM PRODUCTO WHERE ID_PRODUCTO = :id', {'id': id_producto})
         existing = cursor.fetchone()
         if not existing:
             raise HTTPException(status_code=404, detail='Producto no encontrado')
-        cursor.execute('UPDATE PRODUCTO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                TIPO_PRODUCTO = :tipo, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b\n               WHERE ID_PRODUCTO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'tipo': data.tipo_producto, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id': id_producto})
-        if data.tipo_producto == 'MEDICAMENTO':
+        cursor.execute('UPDATE PRODUCTO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                TIPO_PRODUCTO = :tipo, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b\n               WHERE ID_PRODUCTO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'tipo': tipo_producto_db, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id': id_producto})
+        if tipo_producto_db == 'MEDICAMENTO':
             cursor.execute('MERGE INTO MEDICAMENTO m\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (m.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       PRESENTACION = :presentacion, DOSIS = :dosis,\n                       REQUIERE_CADUCIDAD = :requiere\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)\n                       VALUES (:id, :presentacion, :dosis, :requiere)', {'id': id_producto, 'presentacion': data.presentacion, 'dosis': data.dosis, 'requiere': data.requiere_caducidad or 'N'})
         else:
             cursor.execute('MERGE INTO EQUIPO_MEDICO eq\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (eq.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       NUMERO_SERIE = :serie, MARCA = :marca, MODELO = :modelo,\n                       ESTATUS_EQUIPO = :estatus, OBSERVACIONES = :obs\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, NUMERO_SERIE, MARCA, MODELO, ESTATUS_EQUIPO, OBSERVACIONES)\n                       VALUES (:id, :serie, :marca, :modelo, :estatus, :obs)', {'id': id_producto, 'serie': data.numero_serie, 'marca': data.marca, 'modelo': data.modelo, 'estatus': data.estatus_equipo or 'DISPONIBLE', 'obs': data.observaciones})
-        cursor.execute("MERGE INTO EXISTENCIA_PRODUCTO ex\n               USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n               ON (ex.ID_PRODUCTO = src.ID_PRODUCTO AND ex.ACTIVO = 'S')\n               WHEN MATCHED THEN UPDATE SET\n                   CANTIDAD_DISPONIBLE = :cant, NIVEL_MINIMO = :nmin,\n                   UNIDAD_MEDIDA = :unidad,\n                   FECHA_CADUCIDAD = CASE WHEN :fecha_cad IS NOT NULL THEN TO_DATE(:fecha_cad2, 'YYYY-MM-DD') ELSE NULL END\n               WHEN NOT MATCHED THEN INSERT\n                   (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD)\n                   VALUES (:id, :cant, :nmin, :unidad, 'S',\n                           CASE WHEN :fecha_cad3 IS NOT NULL THEN TO_DATE(:fecha_cad4, 'YYYY-MM-DD') ELSE NULL END)", {'id': id_producto, 'cant': data.cantidad_disponible, 'nmin': data.nivel_minimo, 'unidad': data.unidad_medida, 'fecha_cad': data.fecha_caducidad, 'fecha_cad2': data.fecha_caducidad, 'fecha_cad3': data.fecha_caducidad, 'fecha_cad4': data.fecha_caducidad})
+        fecha_cad_val = (
+            datetime.strptime(data.fecha_caducidad[:10], '%Y-%m-%d').date()
+            if data.fecha_caducidad else None
+        )
+        cursor.execute(
+            "MERGE INTO EXISTENCIA_PRODUCTO ex"
+            " USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src"
+            " ON (ex.ID_PRODUCTO = src.ID_PRODUCTO AND ex.ACTIVO = 'S')"
+            " WHEN MATCHED THEN UPDATE SET"
+            "     CANTIDAD_DISPONIBLE = :cant, NIVEL_MINIMO = :nmin,"
+            "     UNIDAD_MEDIDA = :unidad,"
+            "     FECHA_CADUCIDAD = :fecha_cad"
+            " WHEN NOT MATCHED THEN INSERT"
+            "     (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD)"
+            "     VALUES (:id, :cant, :nmin, :unidad, 'S', :fecha_cad)",
+            {
+                'id': id_producto,
+                'cant': data.cantidad_disponible,
+                'nmin': data.nivel_minimo,
+                'unidad': data.unidad_medida,
+                'fecha_cad': fecha_cad_val,
+            },
+        )
         conn.commit()
     return _fetch_producto(id_producto)
 
@@ -212,8 +265,9 @@ def desactivar_producto(id_producto: int, current_user: dict=None):
         conn.commit()
     return {'message': 'Producto desactivado correctamente'}
 
-def listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None):
+def listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar servicios con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = '\n        SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n               ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n               PRECIO_CUOTA_A, PRECIO_CUOTA_B\n        FROM SERVICIO WHERE 1=1\n    '
     params: dict = {}
     if activo:
@@ -222,7 +276,9 @@ def listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, c
     if busqueda:
         sql += ' AND (LOWER(NOMBRE) LIKE :busqueda OR LOWER(DESCRIPCION) LIKE :busqueda)'
         params['busqueda'] = f'%{busqueda.lower()}%'
-    sql += ' ORDER BY ID_SERVICIO'
+    sql += ' ORDER BY ID_SERVICIO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
@@ -281,8 +337,9 @@ def desactivar_servicio(id_servicio: int, current_user: dict=None):
     return {'message': 'Servicio desactivado correctamente'}
 _COMODATOS_BASE_SQL = "\n    SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.ID_EQUIPO, c.ID_PACIENTE,\n           c.ID_USUARIO_REGISTRO, c.FECHA_PRESTAMO, c.FECHA_DEVOLUCION,\n           c.ESTATUS, c.MONTO_TOTAL, c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n           c.EXENTO_PAGO, c.NOTAS,\n           pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO || ' ' || NVL(pa.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           pa.FOLIO AS FOLIO_PACIENTE,\n           pr.NOMBRE AS NOMBRE_EQUIPO\n    FROM COMODATO c\n    LEFT JOIN PACIENTE pa ON pa.ID_PACIENTE = c.ID_PACIENTE\n    LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n"
 
-def listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: dict=None):
+def listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar comodatos con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _COMODATOS_BASE_SQL + ' WHERE 1=1'
     params: dict = {}
     if estatus:
@@ -291,7 +348,9 @@ def listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, 
     if busqueda:
         sql += " AND (LOWER(pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO) LIKE :busqueda OR LOWER(pr.NOMBRE) LIKE :busqueda OR LOWER(pa.FOLIO) LIKE :busqueda OR LOWER(c.FOLIO_COMODATO) LIKE :busqueda)"
         params['busqueda'] = f'%{busqueda.lower()}%'
-    sql += ' ORDER BY c.ID_COMODATO DESC'
+    sql += ' ORDER BY c.ID_COMODATO DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
@@ -323,7 +382,7 @@ def crear_comodato(data: ComodatoCreate, current_user: dict=None):
         try:
             cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
                 data.id_equipo,
-                'SALIDA_MERMA',
+                'SALIDA_COMODATO',
                 1,
                 id_usuario,
                 None,
@@ -333,7 +392,7 @@ def crear_comodato(data: ComodatoCreate, current_user: dict=None):
         except oracledb.DatabaseError as exc:
             conn.rollback()
             raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
-                                   default_detail='No se pudo registrar el movimiento de stock')
+                                   default_detail='No se pudo registrar el movimiento de existencias')
         log_insert(conn, 'COMODATO', id_comodato, id_usuario, f'Comodato {folio} creado para paciente {data.id_paciente}')
         conn.commit()
     return _fetch_comodato(id_comodato)
@@ -366,7 +425,7 @@ def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: di
             try:
                 cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
                     id_equipo_prev,
-                    'ENTRADA',
+                    'DEVOLUCION_COMODATO',
                     1,
                     id_usuario,
                     None,
@@ -399,8 +458,9 @@ def ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current_
     return _fetch_producto(id_producto)
 
 
-def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optional[str]=None, current_user: dict=None):
+def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar movimientos de inventario con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = '\n        SELECT ID_MOVIMIENTO, ID_PRODUCTO, ID_USUARIO_REGISTRO,\n               ID_VENTA, ID_COMODATO, FECHA_MOVIMIENTO,\n               TIPO_MOVIMIENTO, CANTIDAD, OBSERVACIONES\n        FROM MOVIMIENTO_INVENTARIO WHERE 1=1\n    '
     params: dict = {}
     if id_producto:
@@ -409,7 +469,9 @@ def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optiona
     if tipo_movimiento:
         sql += ' AND TIPO_MOVIMIENTO = :tipo'
         params['tipo'] = tipo_movimiento
-    sql += ' ORDER BY FECHA_MOVIMIENTO DESC, ID_MOVIMIENTO DESC'
+    sql += ' ORDER BY FECHA_MOVIMIENTO DESC, ID_MOVIMIENTO DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)

@@ -31,6 +31,12 @@ _SP_PAGO_PARCIAL_ERRORS = {
 _VENTA_FOLIO_SEQUENCE = 'SEQ_VENTA_FOLIO'
 _VENTA_FOLIO_UNIQUE_HINT = 'UQ_VENTA_FOLIO'
 
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
+
 def _serialize(row: dict) -> dict:
     """Convert datetime values to ISO strings for JSON serialisation."""
     out = {}
@@ -203,8 +209,9 @@ def listar_metodos_pago(current_user: dict=None):
         cur.execute("\n            SELECT ID_METODO_PAGO AS id_metodo_pago,\n                   NOMBRE         AS nombre,\n                   DESCRIPCION    AS descripcion,\n                   ACTIVO         AS activo\n              FROM METODO_PAGO\n             WHERE ACTIVO = 'S'\n             ORDER BY ID_METODO_PAGO\n            ")
         return rows_to_dicts(cur)
 
-def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, id_paciente: Optional[int]=None, search: Optional[str]=None, current_user: dict=None):
+def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, id_paciente: Optional[int]=None, search: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar ventas con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
         sql = "\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE 1 = 1\n        "
         params: dict = {}
@@ -220,7 +227,9 @@ def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=Non
         if search:
             sql += " AND (UPPER(v.FOLIO_VENTA) LIKE UPPER(:search) OR UPPER(p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')) LIKE UPPER(:search))"
             params['search'] = f'%{search}%'
-        sql += ' ORDER BY v.FECHA_VENTA DESC'
+        sql += ' ORDER BY v.FECHA_VENTA DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+        params['offset'] = safe_offset
+        params['limit'] = safe_limit
         cur = conn.cursor()
         cur.execute(sql, params)
         ventas = rows_to_dicts(cur)

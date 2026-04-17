@@ -14,8 +14,16 @@ def citas_hoy(current_user: dict=Depends(get_current_user)):
     return service.citas_hoy(current_user)
 
 @router.get('')
-def listar_citas(fecha: Optional[str]=Query(None), estatus: Optional[str]=Query(None), id_paciente: Optional[int]=Query(None), busqueda: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
-    return service.listar_citas(fecha, estatus, id_paciente, busqueda, current_user)
+def listar_citas(
+    fecha: Optional[str]=Query(None),
+    estatus: Optional[str]=Query(None),
+    id_paciente: Optional[int]=Query(None, ge=1),
+    busqueda: Optional[str]=Query(None, max_length=120),
+    limit: int=Query(100, ge=1, le=500),
+    offset: int=Query(0, ge=0),
+    current_user: dict=Depends(get_current_user),
+):
+    return service.listar_citas(fecha, estatus, id_paciente, busqueda, current_user, limit, offset)
 
 @router.get('/{id_cita}')
 def obtener_cita(id_cita: int, current_user: dict=Depends(get_current_user)):

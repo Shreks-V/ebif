@@ -21,6 +21,14 @@ _SP_CANCELAR_CITA_ERRORS = {
     20306: (404, None),
     20307: (400, None),
 }
+
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
+
+
 CITA_BASE_QUERY = "\n    SELECT c.ID_CITA, c.ID_PACIENTE, c.ID_USUARIO_REGISTRO,\n           c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO,\n           p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           p.FOLIO AS FOLIO_PACIENTE\n    FROM CITA c\n    JOIN PACIENTE p ON c.ID_PACIENTE = p.ID_PACIENTE\n"
 
 def _serialize_row(row: dict) -> dict:
@@ -120,8 +128,9 @@ def citas_proximas(dias: int = 7, current_user: dict = None):
         row = cursor.fetchone()
     return {'count': int(row[0]) if row else 0, 'desde': desde, 'hasta': hasta}
 
-def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, current_user: dict=None):
+def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Listar citas con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
     conditions = []
     params: dict = {}
     if fecha:
@@ -136,8 +145,10 @@ def listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paci
     if busqueda:
         conditions.append("(UPPER(p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')) LIKE UPPER(:busqueda) OR UPPER(p.FOLIO) LIKE UPPER(:busqueda) OR UPPER(c.NOTAS) LIKE UPPER(:busqueda))")
         params['busqueda'] = f'%{busqueda}%'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
     where_clause = ' WHERE ' + ' AND '.join(conditions) if conditions else ''
-    sql = CITA_BASE_QUERY + where_clause + ' ORDER BY c.FECHA_HORA DESC'
+    sql = CITA_BASE_QUERY + where_clause + ' ORDER BY c.FECHA_HORA DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, params)
@@ -216,7 +227,22 @@ def actualizar_cita(id_cita: int, data: CitaCreate, current_user: dict=None):
         cursor.execute('SELECT ID_CITA FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         if cursor.fetchone() is None:
             raise HTTPException(status_code=404, detail='Cita no encontrada')
-        cursor.execute('\n            UPDATE CITA\n            SET ID_PACIENTE = :id_paciente,\n                FECHA_HORA = TO_TIMESTAMP(:fecha_hora, \'YYYY-MM-DD"T"HH24:MI:SS\'),\n                ESTATUS = :estatus,\n                NOTAS = :notas\n            WHERE ID_CITA = :id_cita\n            ', {'id_paciente': data.id_paciente, 'fecha_hora': data.fecha_hora, 'estatus': data.estatus, 'notas': data.notas, 'id_cita': id_cita})
+        fecha_ts = datetime.strptime(data.fecha_hora[:19], '%Y-%m-%dT%H:%M:%S') if isinstance(data.fecha_hora, str) else data.fecha_hora
+        cursor.execute(
+            'UPDATE CITA'
+            ' SET ID_PACIENTE = :id_paciente,'
+            '     FECHA_HORA  = :fecha_hora,'
+            '     ESTATUS     = :estatus,'
+            '     NOTAS       = :notas'
+            ' WHERE ID_CITA  = :id_cita',
+            {
+                'id_paciente': data.id_paciente,
+                'fecha_hora': fecha_ts,
+                'estatus': data.estatus,
+                'notas': data.notas,
+                'id_cita': id_cita,
+            },
+        )
         if data.servicios is not None:
             cursor.execute("\n                UPDATE DETALLE_CITA_SERVICIO\n                SET CANCELADO = 'S', MOTIVO_CANCELACION = 'Actualización de cita'\n                WHERE ID_CITA = :id_cita AND CANCELADO = 'N'\n                ", {'id_cita': id_cita})
             for s in data.servicios:

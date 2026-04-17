@@ -6,6 +6,12 @@ from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_
 from app.schemas.schemas import ReporteFilter
 logger = logging.getLogger(__name__)
 
+
+def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
+    safe_limit = max(1, min(int(limit or 100), 500))
+    safe_offset = max(0, int(offset or 0))
+    return safe_limit, safe_offset
+
 def _serialize(row: dict) -> dict:
     """Strip CHAR padding and convert datetimes to ISO strings."""
     result = {}
@@ -222,11 +228,12 @@ def reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=Non
         logger.exception('Error en reporte consolidado mensual')
         raise HTTPException(status_code=500, detail='Error interno del servidor')
 
-def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Historial de reportes generados (tabla REPORTE)."""
     try:
         with get_db() as conn:
             cursor = conn.cursor()
+            safe_limit, safe_offset = _normalize_pagination(limit, offset)
             clauses = ['1=1']
             params: dict = {}
             if tipo_reporte:
@@ -238,8 +245,10 @@ def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[
             if fecha_fin:
                 clauses.append("FECHA_GENERACION <= TO_DATE(:fecha_fin, 'YYYY-MM-DD') + 1")
                 params['fecha_fin'] = fecha_fin
+            params['offset'] = safe_offset
+            params['limit'] = safe_limit
             where = ' AND '.join(clauses)
-            cursor.execute(f'SELECT ID_REPORTE, ID_USUARIO, TIPO_REPORTE, FECHA_GENERACION, FECHA_INICIO, FECHA_FIN, FORMATO FROM REPORTE WHERE {where} ORDER BY FECHA_GENERACION DESC', params)
+            cursor.execute(f'SELECT ID_REPORTE, ID_USUARIO, TIPO_REPORTE, FECHA_GENERACION, FECHA_INICIO, FECHA_FIN, FORMATO FROM REPORTE WHERE {where} ORDER BY FECHA_GENERACION DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY', params)
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
     except Exception as e:

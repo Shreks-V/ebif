@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import date, datetime
 
 
@@ -195,10 +195,10 @@ class DisponibilidadResponse(BaseModel):
 class ServicioBase(BaseModel):
     nombre: str
     descripcion: Optional[str] = None
-    cuota_recuperacion: float = 0.0
-    precio_cuota_a: Optional[float] = None
-    precio_cuota_b: Optional[float] = None
-    activo: str = "S"  # S / N
+    cuota_recuperacion: float = Field(default=0.0, ge=0)
+    precio_cuota_a: Optional[float] = Field(default=None, ge=0)
+    precio_cuota_b: Optional[float] = Field(default=None, ge=0)
+    activo: Literal["S", "N"] = "S"
 
 
 class ServicioCreate(ServicioBase):
@@ -213,20 +213,20 @@ class ServicioResponse(ServicioBase):
 # ──────────────────────────── PRODUCTOS / PRODUCTO ────────────────────────────
 
 class ProductoBase(BaseModel):
-    clave_interna: str
+    clave_interna: str = Field(min_length=1)
     nombre: str
     descripcion: Optional[str] = None
-    tipo_producto: str  # MEDICAMENTO / EQUIPO
-    precio_cuota_a: Optional[float] = None
-    precio_cuota_b: Optional[float] = None
-    activo: str = "S"  # S / N
+    tipo_producto: Literal["MEDICAMENTO", "EQUIPO", "EQUIPO_MEDICO"]
+    precio_cuota_a: Optional[float] = Field(default=None, ge=0)
+    precio_cuota_b: Optional[float] = Field(default=None, ge=0)
+    activo: Literal["S", "N"] = "S"
 
 
 class ProductoCreate(ProductoBase):
     # Campos de MEDICAMENTO (si tipo_producto == MEDICAMENTO)
     presentacion: Optional[str] = None
     dosis: Optional[str] = None
-    requiere_caducidad: Optional[str] = "N"
+    requiere_caducidad: Optional[Literal["S", "N"]] = "N"
     # Campos de EQUIPO_MEDICO (si tipo_producto == EQUIPO)
     numero_serie: Optional[str] = None
     marca: Optional[str] = None
@@ -234,8 +234,8 @@ class ProductoCreate(ProductoBase):
     estatus_equipo: Optional[str] = "DISPONIBLE"
     observaciones: Optional[str] = None
     # Existencia
-    cantidad_disponible: int = 0
-    nivel_minimo: int = 5
+    cantidad_disponible: int = Field(default=0, ge=0)
+    nivel_minimo: int = Field(default=5, ge=0)
     unidad_medida: Optional[str] = None
     fecha_caducidad: Optional[str] = None
 
@@ -356,8 +356,8 @@ class PagoParcialCreate(BaseModel):
 
 
 class AjusteExistenciaRequest(BaseModel):
-    stock_nuevo: int
-    motivo: str
+    stock_nuevo: int = Field(ge=0)
+    motivo: str = Field(min_length=1, max_length=300)
 
 
 class VentaResponse(VentaBase):
@@ -382,8 +382,13 @@ class MovimientoInventario(BaseModel):
     id_venta: Optional[int] = None
     id_comodato: Optional[int] = None
     fecha_movimiento: Optional[str] = None
-    tipo_movimiento: str  # ENTRADA / SALIDA / AJUSTE
-    cantidad: int
+    tipo_movimiento: Literal[
+        "ENTRADA", "SALIDA_VENTA", "SALIDA_COMODATO",
+        "DEVOLUCION_COMODATO", "SALIDA_MERMA", "AJUSTE_POS", "AJUSTE_NEG",
+        # valores legacy del schema original
+        "SALIDA", "AJUSTE",
+    ]
+    cantidad: int = Field(ge=0)
     observaciones: Optional[str] = None
 
 

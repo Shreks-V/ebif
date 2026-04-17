@@ -59,10 +59,13 @@ def sp_error_to_http(
     """Map an oracledb error to a fastapi HTTPException.
 
     ``code_map`` maps ORA-20xxx codes to ``(http_status, override_detail)``.
-    ``override_detail`` can be None to reuse the DB message.
+    ``override_detail`` can be None to use a safe generic message.
     """
-    code, message = parse_ora_error(exc)
+    code, _ = parse_ora_error(exc)
     if code is not None and code in code_map:
         status, detail = code_map[code]
-        return HTTPException(status_code=status, detail=detail or message)
+        return HTTPException(
+            status_code=status,
+            detail=detail or "No se pudo completar la operación solicitada",
+        )
     return HTTPException(status_code=default_status, detail=default_detail)
