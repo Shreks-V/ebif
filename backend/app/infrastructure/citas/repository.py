@@ -227,7 +227,22 @@ def actualizar_cita(id_cita: int, data: CitaCreate, current_user: dict=None):
         cursor.execute('SELECT ID_CITA FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         if cursor.fetchone() is None:
             raise HTTPException(status_code=404, detail='Cita no encontrada')
-        cursor.execute('\n            UPDATE CITA\n            SET ID_PACIENTE = :id_paciente,\n                FECHA_HORA = TO_TIMESTAMP(:fecha_hora, \'YYYY-MM-DD"T"HH24:MI:SS\'),\n                ESTATUS = :estatus,\n                NOTAS = :notas\n            WHERE ID_CITA = :id_cita\n            ', {'id_paciente': data.id_paciente, 'fecha_hora': data.fecha_hora, 'estatus': data.estatus, 'notas': data.notas, 'id_cita': id_cita})
+        fecha_ts = datetime.strptime(data.fecha_hora[:19], '%Y-%m-%dT%H:%M:%S') if isinstance(data.fecha_hora, str) else data.fecha_hora
+        cursor.execute(
+            'UPDATE CITA'
+            ' SET ID_PACIENTE = :id_paciente,'
+            '     FECHA_HORA  = :fecha_hora,'
+            '     ESTATUS     = :estatus,'
+            '     NOTAS       = :notas'
+            ' WHERE ID_CITA  = :id_cita',
+            {
+                'id_paciente': data.id_paciente,
+                'fecha_hora': fecha_ts,
+                'estatus': data.estatus,
+                'notas': data.notas,
+                'id_cita': id_cita,
+            },
+        )
         if data.servicios is not None:
             cursor.execute("\n                UPDATE DETALLE_CITA_SERVICIO\n                SET CANCELADO = 'S', MOTIVO_CANCELACION = 'Actualización de cita'\n                WHERE ID_CITA = :id_cita AND CANCELADO = 'N'\n                ", {'id_cita': id_cita})
             for s in data.servicios:

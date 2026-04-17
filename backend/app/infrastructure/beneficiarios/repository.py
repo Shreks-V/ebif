@@ -145,7 +145,7 @@ def stats_beneficiarios(current_user: dict=None):
     """Conteo total de beneficiarios."""
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND ESTATUS_REGISTRO = 'APROBADO'")
+        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'")
         total_activos = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ESTATUS_REGISTRO = 'APROBADO'")
         total = cur.fetchone()[0]
