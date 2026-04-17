@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Literal
 from datetime import date, datetime
 
@@ -72,6 +72,42 @@ class BeneficiarioBase(BaseModel):
     membresia_estatus: str = "ACTIVO"  # ACTIVO / VENCIDO / SUSPENDIDO
     tipo_cuota: Optional[str] = None  # A / B
     activo: str = "S"  # S / N
+
+    @field_validator("correo_electronico", mode="before")
+    @classmethod
+    def _correo_vacio_a_none(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
+    @field_validator("correo_electronico")
+    @classmethod
+    def _correo_formato_simple(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        s = str(v).strip()
+        if "@" not in s or "." not in s.rsplit("@", 1)[-1]:
+            raise ValueError("correo_electronico no tiene un formato válido")
+        return s
+
+    @field_validator("fecha_nacimiento", mode="before")
+    @classmethod
+    def _fecha_nacimiento_iso(cls, v):
+        if v is None or v == "":
+            return None
+        if isinstance(v, str):
+            s = v.strip()
+            if len(s) < 10:
+                raise ValueError("fecha_nacimiento debe ser YYYY-MM-DD")
+            head = s[:10]
+            try:
+                date.fromisoformat(head)
+            except ValueError as exc:
+                raise ValueError("fecha_nacimiento debe ser YYYY-MM-DD") from exc
+            return head
+        return v
 
 
 class BeneficiarioCreate(BeneficiarioBase):
