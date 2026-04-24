@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
-from app.schemas.schemas import CitaCreate
+from app.application.citas.dtos import CitaCreate
 from app.application.citas import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()

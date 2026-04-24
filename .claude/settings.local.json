@@ -111,7 +111,13 @@
       "Bash(find . -name \"*.pyc\" -not -path \"*/.git/*\" -not -path \"*/node_modules/*\" -not -path \"*/.venv/*\" -not -path \"*/venv/*\" -exec rm -f {} +)",
       "Bash(find . -name \".DS_Store\" -not -path \"*/.git/*\" -exec rm -f {} +)",
       "Bash(rm -rf frontend/.angular)",
-      "Bash(rm -rf frontend/dist)"
+      "Bash(rm -rf frontend/dist)",
+      "WebFetch(domain:docs.google.com)",
+      "WebFetch(domain:shreksv.atlassian.net)",
+      "Bash(pip3 install *)",
+      "Bash(rsync -a --exclude=node_modules --exclude=.venv --exclude=frontend/dist --exclude=.git --exclude=__pycache__ '--exclude=*.pyc' '--exclude=*.pyo' --exclude=.pytest_cache --exclude=Sprint1_Portafolio_EBIF.docx --exclude=generar_portafolio.py '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif_sprint1/')",
+      "Bash(rm -rf \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif_sprint1/frontend/src/app/pages/almacen\")",
+      "Bash(rm -rf \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif_sprint1/frontend/src/app/pages/reportes\")"
     ]
   },
   "enableAllProjectMcpServers": true,

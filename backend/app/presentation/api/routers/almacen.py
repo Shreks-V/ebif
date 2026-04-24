@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional, List, Literal
-from app.schemas.schemas import ProductoCreate, ProductoResponse, ServicioCreate, ServicioResponse, ComodatoCreate, ComodatoResponse, MovimientoInventario, AjusteExistenciaRequest
+from app.application.almacen.dtos import ProductoCreate, ServicioCreate, ComodatoCreate, AjusteExistenciaRequest
+from app.schemas.schemas import ProductoResponse, ServicioResponse, ComodatoResponse, MovimientoInventario
 from app.application.almacen import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()

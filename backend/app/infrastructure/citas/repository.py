@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta
-from fastapi import HTTPException
+from app.domain.exceptions import NotFoundError, ValidationError
 from typing import Optional
 
 import oracledb
@@ -7,7 +7,7 @@ import oracledb
 from app.infrastructure.audit.bitacora import log_insert, log_cancelacion
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
-from app.schemas.schemas import CitaCreate
+from app.application.citas.dtos import CitaCreate
 
 _SP_CREAR_CITA_ERRORS = {
     20301: (400, None),
@@ -164,7 +164,7 @@ def obtener_cita(id_cita: int, current_user: dict=None):
         cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
         cita = row_to_dict(cursor)
         if cita is None:
-            raise HTTPException(status_code=404, detail='Cita no encontrada')
+            raise NotFoundError('Cita no encontrada')
         cita = _enrich_cita(conn, cita)
     return cita
 
@@ -175,18 +175,18 @@ def crear_cita(data: CitaCreate, current_user: dict=None):
         cursor.execute('SELECT MEMBRESIA_ESTATUS, ACTIVO FROM PACIENTE WHERE ID_PACIENTE = :id_paciente', {'id_paciente': data.id_paciente})
         paciente_row = cursor.fetchone()
         if paciente_row is None:
-            raise HTTPException(status_code=404, detail='Paciente no encontrado')
+            raise NotFoundError('Paciente no encontrado')
         membresia_estatus = (paciente_row[0] or '').strip()
         activo = (paciente_row[1] or '').strip()
         if activo != 'S':
-            raise HTTPException(status_code=400, detail='El paciente no se encuentra activo en el sistema')
+            raise ValidationError('El paciente no se encuentra activo en el sistema')
         if membresia_estatus != 'ACTIVO':
-            raise HTTPException(status_code=400, detail='El paciente no tiene membresía activa. Actualice su estatus antes de agendar una cita')
+            raise ValidationError('El paciente no tiene membresía activa. Actualice su estatus antes de agendar una cita')
 
         id_usuario = data.id_usuario_registro or current_user.get('id_usuario', 1)
         servicios_list = list(data.servicios or [])
         if not servicios_list:
-            raise HTTPException(status_code=400, detail='La cita requiere al menos un servicio')
+            raise ValidationError('La cita requiere al menos un servicio')
 
         servicios_ids = [int(s['id_servicio']) for s in servicios_list]
         doctores_ids = [int(s['id_doctor']) if s.get('id_doctor') is not None else None for s in servicios_list]
@@ -226,7 +226,7 @@ def actualizar_cita(id_cita: int, data: CitaCreate, current_user: dict=None):
         cursor = conn.cursor()
         cursor.execute('SELECT ID_CITA FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         if cursor.fetchone() is None:
-            raise HTTPException(status_code=404, detail='Cita no encontrada')
+            raise NotFoundError('Cita no encontrada')
         fecha_ts = datetime.strptime(data.fecha_hora[:19], '%Y-%m-%dT%H:%M:%S') if isinstance(data.fecha_hora, str) else data.fecha_hora
         cursor.execute(
             'UPDATE CITA'
@@ -260,7 +260,7 @@ def completar_cita(id_cita: int, current_user: dict=None):
         cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         row = cursor.fetchone()
         if row is None:
-            raise HTTPException(status_code=404, detail='Cita no encontrada')
+            raise NotFoundError('Cita no encontrada')
         cursor.execute("UPDATE CITA SET ESTATUS = 'COMPLETADA' WHERE ID_CITA = :id_cita", {'id_cita': id_cita})
         conn.commit()
         cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
@@ -295,7 +295,7 @@ def eliminar_cita(id_cita: int, current_user: dict=None):
         cursor = conn.cursor()
         cursor.execute('SELECT ID_CITA FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         if cursor.fetchone() is None:
-            raise HTTPException(status_code=404, detail='Cita no encontrada')
+            raise NotFoundError('Cita no encontrada')
         cursor.execute('DELETE FROM DETALLE_CITA_SERVICIO WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         cursor.execute('DELETE FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         conn.commit()
@@ -303,32 +303,32 @@ def eliminar_cita(id_cita: int, current_user: dict=None):
 
 
 class OracleCitasRepository:
-    def citas_stats(self, *args, **kwargs):
-        return citas_stats(*args, **kwargs)
+    def citas_stats(self, current_user=None):
+        return citas_stats(current_user)
 
-    def citas_hoy(self, *args, **kwargs):
-        return citas_hoy(*args, **kwargs)
+    def citas_hoy(self, current_user=None):
+        return citas_hoy(current_user)
 
-    def listar_citas(self, *args, **kwargs):
-        return listar_citas(*args, **kwargs)
+    def listar_citas(self, fecha=None, estatus=None, id_paciente=None, busqueda=None, current_user=None, limit=100, offset=0):
+        return listar_citas(fecha, estatus, id_paciente, busqueda, current_user, limit, offset)
 
-    def obtener_cita(self, *args, **kwargs):
-        return obtener_cita(*args, **kwargs)
+    def obtener_cita(self, id_cita, current_user=None):
+        return obtener_cita(id_cita, current_user)
 
-    def crear_cita(self, *args, **kwargs):
-        return crear_cita(*args, **kwargs)
+    def crear_cita(self, data, current_user=None):
+        return crear_cita(data, current_user)
 
-    def actualizar_cita(self, *args, **kwargs):
-        return actualizar_cita(*args, **kwargs)
+    def actualizar_cita(self, id_cita, data, current_user=None):
+        return actualizar_cita(id_cita, data, current_user)
 
-    def completar_cita(self, *args, **kwargs):
-        return completar_cita(*args, **kwargs)
+    def completar_cita(self, id_cita, current_user=None):
+        return completar_cita(id_cita, current_user)
 
-    def cancelar_cita(self, *args, **kwargs):
-        return cancelar_cita(*args, **kwargs)
+    def cancelar_cita(self, id_cita, current_user=None):
+        return cancelar_cita(id_cita, current_user)
 
-    def eliminar_cita(self, *args, **kwargs):
-        return eliminar_cita(*args, **kwargs)
+    def eliminar_cita(self, id_cita, current_user=None):
+        return eliminar_cita(id_cita, current_user)
 
-    def citas_proximas(self, *args, **kwargs):
-        return citas_proximas(*args, **kwargs)
+    def citas_proximas(self, dias=7, current_user=None):
+        return citas_proximas(dias, current_user)

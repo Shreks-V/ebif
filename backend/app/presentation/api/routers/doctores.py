@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from app.schemas.schemas import DoctorCreate, DisponibilidadCreate
+from app.application.doctores.dtos import DoctorCreate, DisponibilidadCreate
 from app.application.doctores import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()

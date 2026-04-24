@@ -1,9 +1,9 @@
 from datetime import datetime
 import logging
-from fastapi import HTTPException
+from app.domain.exceptions import InternalError
 from typing import Optional
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
-from app.schemas.schemas import ReporteFilter
+from app.application.reportes.dtos import ReporteFilter
 logger = logging.getLogger(__name__)
 
 
@@ -60,7 +60,7 @@ def reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, t
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except Exception as e:
         logger.exception('Error en reporte por genero')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Distribucion por grupo de edad calculado desde PACIENTE.FECHA_NACIMIENTO."""
@@ -77,7 +77,7 @@ def reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=Non
             return {'labels': etapas_orden, 'values': values, 'total': sum(values)}
     except Exception as e:
         logger.exception('Error en reporte por etapa de vida')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Distribucion por tipo de espina bifida (TIPO_ESPINA_BIFIDA table)."""
@@ -93,7 +93,7 @@ def reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=No
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except Exception as e:
         logger.exception('Error en reporte por tipo espina')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Distribucion de pacientes por estado/region (PACIENTE.ESTADO)."""
@@ -109,7 +109,7 @@ def reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, t
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except Exception as e:
         logger.exception('Error en reporte por estado')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Resumen general de estadisticas del sistema."""
@@ -133,7 +133,7 @@ def reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo
             return {'total_pacientes': totals['total'] or 0, 'activos': totals['activos'] or 0, 'inactivos': totals['inactivos'] or 0, 'por_genero': por_genero, 'edad_promedio': float(age_row['edad_promedio'] or 0), 'edad_minima': int(age_row['edad_minima'] or 0), 'edad_maxima': int(age_row['edad_maxima'] or 0), 'por_tipo_espina': por_tipo_espina, 'estados_representados': estados_row['cnt'] or 0, 'fecha_generacion': datetime.now().isoformat()}
     except Exception as e:
         logger.exception('Error en reporte resumen')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Total de servicios brindados por tipo de servicio (RF-ER-08)."""
@@ -157,7 +157,7 @@ def reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Opti
             return {'labels': labels, 'values': values, 'montos': montos, 'total': sum(values)}
     except Exception:
         logger.exception('Error en reporte servicios por tipo')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Número de estudios (servicios de tipo estudio) realizados (RF-ER-09)."""
@@ -180,7 +180,7 @@ def reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optio
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except Exception:
         logger.exception('Error en reporte estudios por tipo')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Total de pagos exentos y cuotas de recuperación (RF-ER-10)."""
@@ -201,7 +201,7 @@ def reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
             return {'total_exentos': int(row['total_exentos'] or 0), 'total_cuotas': int(row['total_cuotas'] or 0), 'monto_exentos': float(row['monto_exentos'] or 0), 'monto_cuotas': float(row['monto_cuotas'] or 0), 'monto_total': float(row['monto_total'] or 0)}
     except Exception:
         logger.exception('Error en reporte pagos exentos')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=None, current_user: dict=None):
     """Reporte mensual consolidado con resumen de servicios y demografía (RF-ER-07)."""
@@ -226,7 +226,7 @@ def reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=Non
             return {'mes': m, 'anio': a, 'pacientes_atendidos': int(r1['pacientes_atendidos'] or 0), 'total_servicios': int(r2['total_servicios'] or 0), 'monto_servicios': float(r2['monto_servicios'] or 0), 'total_ventas': int(r3['total_ventas'] or 0), 'monto_ventas': float(r3['monto_ventas'] or 0), 'citas_por_estatus': citas_status, 'por_genero': por_genero, 'fecha_generacion': datetime.now().isoformat()}
     except Exception:
         logger.exception('Error en reporte consolidado mensual')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
     """Historial de reportes generados (tabla REPORTE)."""
@@ -253,36 +253,36 @@ def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[
             return [_serialize(r) for r in rows]
     except Exception as e:
         logger.exception('Error al consultar historial de reportes')
-        raise HTTPException(status_code=500, detail='Error interno del servidor')
+        raise InternalError('Error interno del servidor')
 
 
 class OracleReportesRepository:
-    def reporte_por_genero(self, *args, **kwargs):
-        return reporte_por_genero(*args, **kwargs)
+    def reporte_por_genero(self, genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_por_genero(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
 
-    def reporte_por_etapa_vida(self, *args, **kwargs):
-        return reporte_por_etapa_vida(*args, **kwargs)
+    def reporte_por_etapa_vida(self, genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_por_etapa_vida(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
 
-    def reporte_por_tipo_espina(self, *args, **kwargs):
-        return reporte_por_tipo_espina(*args, **kwargs)
+    def reporte_por_tipo_espina(self, genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_por_tipo_espina(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
 
-    def reporte_por_estado(self, *args, **kwargs):
-        return reporte_por_estado(*args, **kwargs)
+    def reporte_por_estado(self, genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_por_estado(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
 
-    def reporte_resumen(self, *args, **kwargs):
-        return reporte_resumen(*args, **kwargs)
+    def reporte_resumen(self, genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_resumen(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
 
-    def reporte_servicios_por_tipo(self, *args, **kwargs):
-        return reporte_servicios_por_tipo(*args, **kwargs)
+    def reporte_servicios_por_tipo(self, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_servicios_por_tipo(fecha_inicio, fecha_fin, current_user)
 
-    def reporte_estudios_por_tipo(self, *args, **kwargs):
-        return reporte_estudios_por_tipo(*args, **kwargs)
+    def reporte_estudios_por_tipo(self, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_estudios_por_tipo(fecha_inicio, fecha_fin, current_user)
 
-    def reporte_pagos_exentos(self, *args, **kwargs):
-        return reporte_pagos_exentos(*args, **kwargs)
+    def reporte_pagos_exentos(self, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_pagos_exentos(fecha_inicio, fecha_fin, current_user)
 
-    def reporte_consolidado_mensual(self, *args, **kwargs):
-        return reporte_consolidado_mensual(*args, **kwargs)
+    def reporte_consolidado_mensual(self, mes=None, anio=None, current_user=None):
+        return reporte_consolidado_mensual(mes, anio, current_user)
 
-    def historial_reportes(self, *args, **kwargs):
-        return historial_reportes(*args, **kwargs)
+    def historial_reportes(self, tipo_reporte=None, fecha_inicio=None, fecha_fin=None, current_user=None, limit=100, offset=0):
+        return historial_reportes(tipo_reporte, fecha_inicio, fecha_fin, current_user, limit, offset)

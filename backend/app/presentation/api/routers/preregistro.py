@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Depends, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from typing import Optional
-from app.schemas.schemas import PreRegistroCreate, AprobarPreRegistroData
+from app.application.preregistro.dtos import PreRegistroCreate, AprobarPreRegistroData
 from app.application.preregistro import use_cases as service
 from app.presentation.api.security import (
     ensure_preregistro_access,

@@ -5,7 +5,7 @@ workspace "Arquitectura de la Plataforma EBIF" "Modelo C4 de la plataforma EBIF,
         applicant = person "Solicitante de Pre-registro" "Persona externa que completa el flujo público de pre-registro."
 
         ebif = softwareSystem "Plataforma EBIF" "Plataforma operativa para la asociación de Espina Bífida." {
-            frontend = container "Frontend SPA" "Aplicación de página única para el pre-registro público y los flujos operativos internos." "Angular 18, TypeScript" {
+            frontend = container "Frontend SPA" "Aplicación de página única para el pre-registro público y los flujos operativos internos." "Angular 21, TypeScript" {
                 shell = component "Shell de la Aplicación y Enrutamiento" "Inicializa la SPA, resuelve rutas y separa la navegación pública de la protegida." "Angular standalone app, router"
                 authSession = component "Autenticación y Gestión de Sesión" "Gestiona el estado de login, persistencia del JWT, guards de rutas y solicitudes autenticadas." "AuthService, authGuard, authInterceptor"
                 apiClient = component "Cliente API" "Cliente HTTP central para la comunicación REST con el backend." "HttpClient, ApiService"

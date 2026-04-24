@@ -1,5 +1,5 @@
 import logging
-from fastapi import HTTPException
+from app.domain.exceptions import InternalError, NotFoundError, ValidationError
 from typing import Optional
 from datetime import date, datetime, timedelta
 
@@ -8,7 +8,7 @@ import oracledb
 from app.infrastructure.audit.bitacora import log_insert, log_cancelacion
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
-from app.schemas.schemas import VentaCreate
+from app.application.recibos.dtos import VentaCreate
 
 logger = logging.getLogger(__name__)
 
@@ -298,13 +298,13 @@ def crear_venta(data: VentaCreate, current_user: dict=None):
             cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': new_id})
             venta = row_to_dict(cur)
             if venta is None:
-                raise HTTPException(status_code=500, detail='Error al recuperar la venta creada')
+                raise InternalError('Error al recuperar la venta creada')
             return _enrich_venta(conn, venta)
-    except HTTPException:
+    except (NotFoundError, ValidationError, InternalError):
         raise
     except Exception as exc:
         logger.exception('Error al crear venta para paciente %s: %s', data.id_paciente, exc)
-        raise HTTPException(status_code=500, detail='Error interno al crear la venta')
+        raise InternalError('Error interno al crear la venta')
 
 def obtener_venta(id_venta: int, current_user: dict=None):
     """Obtener detalle de una venta."""
@@ -313,7 +313,7 @@ def obtener_venta(id_venta: int, current_user: dict=None):
         cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': id_venta})
         venta = row_to_dict(cur)
         if venta is None:
-            raise HTTPException(status_code=404, detail='Venta no encontrada')
+            raise NotFoundError('Venta no encontrada')
         return _enrich_venta(conn, venta)
 
 def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_user: dict=None):
@@ -343,9 +343,9 @@ def cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: dict
         cur.execute('SELECT CANCELADA FROM VENTA WHERE ID_VENTA = :id_venta', {'id_venta': id_venta})
         row = row_to_dict(cur)
         if row is None:
-            raise HTTPException(status_code=404, detail='Venta no encontrada')
+            raise NotFoundError('Venta no encontrada')
         if row['cancelada'] == 'S':
-            raise HTTPException(status_code=400, detail='La venta ya esta cancelada')
+            raise ValidationError('La venta ya esta cancelada')
         motivo_final = motivo or 'Sin motivo especificado'
         cur.execute("\n            UPDATE VENTA\n               SET CANCELADA = 'S',\n                   MOTIVO_CANCELACION = :motivo\n             WHERE ID_VENTA = :id_venta\n            ", {'motivo': motivo_final, 'id_venta': id_venta})
         log_cancelacion(conn, 'VENTA', id_venta, current_user.get('id_usuario', 1), motivo_final)
@@ -356,23 +356,23 @@ def cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: dict
 
 
 class OracleRecibosRepository:
-    def stats_ventas(self, *args, **kwargs):
-        return stats_ventas(*args, **kwargs)
+    def stats_ventas(self, current_user=None):
+        return stats_ventas(current_user)
 
-    def listar_metodos_pago(self, *args, **kwargs):
-        return listar_metodos_pago(*args, **kwargs)
+    def listar_metodos_pago(self, current_user=None):
+        return listar_metodos_pago(current_user)
 
-    def listar_ventas(self, *args, **kwargs):
-        return listar_ventas(*args, **kwargs)
+    def listar_ventas(self, fecha_inicio=None, fecha_fin=None, id_paciente=None, search=None, current_user=None, limit=100, offset=0):
+        return listar_ventas(fecha_inicio, fecha_fin, id_paciente, search, current_user, limit, offset)
 
-    def crear_venta(self, *args, **kwargs):
-        return crear_venta(*args, **kwargs)
+    def crear_venta(self, data, current_user=None):
+        return crear_venta(data, current_user)
 
-    def obtener_venta(self, *args, **kwargs):
-        return obtener_venta(*args, **kwargs)
+    def obtener_venta(self, id_venta, current_user=None):
+        return obtener_venta(id_venta, current_user)
 
-    def cancelar_venta(self, *args, **kwargs):
-        return cancelar_venta(*args, **kwargs)
+    def cancelar_venta(self, id_venta, motivo=None, current_user=None):
+        return cancelar_venta(id_venta, motivo, current_user)
 
-    def registrar_pago(self, *args, **kwargs):
-        return registrar_pago(*args, **kwargs)
+    def registrar_pago(self, id_venta, id_metodo_pago, monto, current_user=None):
+        return registrar_pago(id_venta, id_metodo_pago, monto, current_user)

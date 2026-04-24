@@ -1,5 +1,5 @@
 import logging
-from fastapi import HTTPException
+from app.domain.exceptions import ConflictError, NotFoundError, ValidationError
 from typing import Optional
 from datetime import date, datetime
 
@@ -8,7 +8,7 @@ import oracledb
 from app.infrastructure.audit.bitacora import log_insert
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.sp_helpers import sp_error_to_http
-from app.schemas.schemas import ProductoCreate, ServicioCreate, ComodatoCreate
+from app.application.almacen.dtos import ProductoCreate, ServicioCreate, ComodatoCreate
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ def obtener_producto(id_producto: int, current_user: dict=None):
         cursor.execute(sql, {'id_producto': id_producto})
         row = row_to_dict(cursor)
     if not row:
-        raise HTTPException(status_code=404, detail='Producto no encontrado')
+        raise NotFoundError('Producto no encontrado')
     return _serialize(row)
 
 def crear_producto(data: ProductoCreate, current_user: dict=None):
@@ -173,7 +173,7 @@ def crear_producto(data: ProductoCreate, current_user: dict=None):
                                        default_detail='No se pudo crear el producto')
 
         if id_producto is None:
-            raise HTTPException(status_code=409, detail='No se pudo generar una clave interna unica para el producto')
+            raise ConflictError('No se pudo generar una clave interna unica para el producto')
 
         # Stock inicial vía SP (si aplica)
         cantidad_inicial = data.cantidad_disponible or 0
@@ -212,7 +212,7 @@ def _fetch_producto(id_producto: int) -> dict:
         cursor.execute(sql, {'id_producto': id_producto})
         row = row_to_dict(cursor)
     if not row:
-        raise HTTPException(status_code=404, detail='Producto no encontrado')
+        raise NotFoundError('Producto no encontrado')
     return _serialize(row)
 
 def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: dict=None):
@@ -223,7 +223,7 @@ def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: di
         cursor.execute('SELECT ID_PRODUCTO, TIPO_PRODUCTO FROM PRODUCTO WHERE ID_PRODUCTO = :id', {'id': id_producto})
         existing = cursor.fetchone()
         if not existing:
-            raise HTTPException(status_code=404, detail='Producto no encontrado')
+            raise NotFoundError('Producto no encontrado')
         cursor.execute('UPDATE PRODUCTO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                TIPO_PRODUCTO = :tipo, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b\n               WHERE ID_PRODUCTO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'tipo': tipo_producto_db, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id': id_producto})
         if tipo_producto_db == 'MEDICAMENTO':
             cursor.execute('MERGE INTO MEDICAMENTO m\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (m.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       PRESENTACION = :presentacion, DOSIS = :dosis,\n                       REQUIERE_CADUCIDAD = :requiere\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)\n                       VALUES (:id, :presentacion, :dosis, :requiere)', {'id': id_producto, 'presentacion': data.presentacion, 'dosis': data.dosis, 'requiere': data.requiere_caducidad or 'N'})
@@ -261,7 +261,7 @@ def desactivar_producto(id_producto: int, current_user: dict=None):
         cursor = conn.cursor()
         cursor.execute("UPDATE PRODUCTO SET ACTIVO = 'N' WHERE ID_PRODUCTO = :id", {'id': id_producto})
         if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail='Producto no encontrado')
+            raise NotFoundError('Producto no encontrado')
         conn.commit()
     return {'message': 'Producto desactivado correctamente'}
 
@@ -292,7 +292,7 @@ def obtener_servicio(id_servicio: int, current_user: dict=None):
         cursor.execute('SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n                      ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                      PRECIO_CUOTA_A, PRECIO_CUOTA_B\n               FROM SERVICIO WHERE ID_SERVICIO = :id', {'id': id_servicio})
         row = row_to_dict(cursor)
     if not row:
-        raise HTTPException(status_code=404, detail='Servicio no encontrado')
+        raise NotFoundError('Servicio no encontrado')
     return _serialize(row)
 
 def crear_servicio(data: ServicioCreate, current_user: dict=None):
@@ -313,7 +313,7 @@ def _fetch_servicio(id_servicio: int) -> dict:
         cursor.execute('SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n                      ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                      PRECIO_CUOTA_A, PRECIO_CUOTA_B\n               FROM SERVICIO WHERE ID_SERVICIO = :id', {'id': id_servicio})
         row = row_to_dict(cursor)
     if not row:
-        raise HTTPException(status_code=404, detail='Servicio no encontrado')
+        raise NotFoundError('Servicio no encontrado')
     return _serialize(row)
 
 def actualizar_servicio(id_servicio: int, data: ServicioCreate, current_user: dict=None):
@@ -322,7 +322,7 @@ def actualizar_servicio(id_servicio: int, data: ServicioCreate, current_user: di
         cursor = conn.cursor()
         cursor.execute('UPDATE SERVICIO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                CUOTA_RECUPERACION = :cuota, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b\n               WHERE ID_SERVICIO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'cuota': data.cuota_recuperacion, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id': id_servicio})
         if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail='Servicio no encontrado')
+            raise NotFoundError('Servicio no encontrado')
         conn.commit()
     return _fetch_servicio(id_servicio)
 
@@ -332,7 +332,7 @@ def desactivar_servicio(id_servicio: int, current_user: dict=None):
         cursor = conn.cursor()
         cursor.execute("UPDATE SERVICIO SET ACTIVO = 'N' WHERE ID_SERVICIO = :id", {'id': id_servicio})
         if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail='Servicio no encontrado')
+            raise NotFoundError('Servicio no encontrado')
         conn.commit()
     return {'message': 'Servicio desactivado correctamente'}
 _COMODATOS_BASE_SQL = "\n    SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.ID_EQUIPO, c.ID_PACIENTE,\n           c.ID_USUARIO_REGISTRO, c.FECHA_PRESTAMO, c.FECHA_DEVOLUCION,\n           c.ESTATUS, c.MONTO_TOTAL, c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n           c.EXENTO_PAGO, c.NOTAS,\n           pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO || ' ' || NVL(pa.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           pa.FOLIO AS FOLIO_PACIENTE,\n           pr.NOMBRE AS NOMBRE_EQUIPO\n    FROM COMODATO c\n    LEFT JOIN PACIENTE pa ON pa.ID_PACIENTE = c.ID_PACIENTE\n    LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n"
@@ -365,7 +365,7 @@ def obtener_comodato(id_comodato: int, current_user: dict=None):
         cursor.execute(sql, {'id': id_comodato})
         row = row_to_dict(cursor)
     if not row:
-        raise HTTPException(status_code=404, detail='Comodato no encontrado')
+        raise NotFoundError('Comodato no encontrado')
     return _serialize(row)
 
 def crear_comodato(data: ComodatoCreate, current_user: dict=None):
@@ -405,7 +405,7 @@ def _fetch_comodato(id_comodato: int) -> dict:
         cursor.execute(sql, {'id': id_comodato})
         row = row_to_dict(cursor)
     if not row:
-        raise HTTPException(status_code=404, detail='Comodato no encontrado')
+        raise NotFoundError('Comodato no encontrado')
     return _serialize(row)
 
 def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: dict=None):
@@ -416,7 +416,7 @@ def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: di
         cursor.execute('SELECT ESTATUS, ID_EQUIPO FROM COMODATO WHERE ID_COMODATO = :id', {'id': id_comodato})
         prev = cursor.fetchone()
         if prev is None:
-            raise HTTPException(status_code=404, detail='Comodato no encontrado')
+            raise NotFoundError('Comodato no encontrado')
         prev_estatus = prev[0].strip() if prev[0] else ''
         id_equipo_prev = prev[1]
         cursor.execute("UPDATE COMODATO SET\n                ID_EQUIPO = :id_equipo, ID_PACIENTE = :id_paciente,\n                FECHA_PRESTAMO = TO_DATE(:fecha_prest, 'YYYY-MM-DD'),\n                FECHA_DEVOLUCION = CASE WHEN :fecha_dev IS NOT NULL\n                                        THEN TO_DATE(:fecha_dev, 'YYYY-MM-DD')\n                                        ELSE NULL END,\n                ESTATUS = :estatus, MONTO_TOTAL = :monto_total,\n                MONTO_PAGADO = :monto_pagado, SALDO_PENDIENTE = :saldo,\n                EXENTO_PAGO = :exento, NOTAS = :notas\n               WHERE ID_COMODATO = :id", {'id_equipo': data.id_equipo, 'id_paciente': data.id_paciente, 'fecha_prest': data.fecha_prestamo, 'fecha_dev': data.fecha_devolucion, 'estatus': data.estatus, 'monto_total': data.monto_total, 'monto_pagado': data.monto_pagado, 'saldo': data.saldo_pendiente, 'exento': data.exento_pago, 'notas': data.notas, 'id': id_comodato})
@@ -506,53 +506,53 @@ def almacen_stats(current_user: dict=None):
 
 
 class OracleAlmacenRepository:
-    def listar_productos(self, *args, **kwargs):
-        return listar_productos(*args, **kwargs)
+    def listar_productos(self, tipo_producto=None, busqueda=None, activo=None, current_user=None, limit=100, offset=0):
+        return listar_productos(tipo_producto, busqueda, activo, current_user, limit, offset)
 
-    def obtener_producto(self, *args, **kwargs):
-        return obtener_producto(*args, **kwargs)
+    def obtener_producto(self, id_producto, current_user=None):
+        return obtener_producto(id_producto, current_user)
 
-    def crear_producto(self, *args, **kwargs):
-        return crear_producto(*args, **kwargs)
+    def crear_producto(self, data, current_user=None):
+        return crear_producto(data, current_user)
 
-    def actualizar_producto(self, *args, **kwargs):
-        return actualizar_producto(*args, **kwargs)
+    def actualizar_producto(self, id_producto, data, current_user=None):
+        return actualizar_producto(id_producto, data, current_user)
 
-    def desactivar_producto(self, *args, **kwargs):
-        return desactivar_producto(*args, **kwargs)
+    def desactivar_producto(self, id_producto, current_user=None):
+        return desactivar_producto(id_producto, current_user)
 
-    def listar_servicios(self, *args, **kwargs):
-        return listar_servicios(*args, **kwargs)
+    def listar_servicios(self, busqueda=None, activo=None, current_user=None, limit=100, offset=0):
+        return listar_servicios(busqueda, activo, current_user, limit, offset)
 
-    def obtener_servicio(self, *args, **kwargs):
-        return obtener_servicio(*args, **kwargs)
+    def obtener_servicio(self, id_servicio, current_user=None):
+        return obtener_servicio(id_servicio, current_user)
 
-    def crear_servicio(self, *args, **kwargs):
-        return crear_servicio(*args, **kwargs)
+    def crear_servicio(self, data, current_user=None):
+        return crear_servicio(data, current_user)
 
-    def actualizar_servicio(self, *args, **kwargs):
-        return actualizar_servicio(*args, **kwargs)
+    def actualizar_servicio(self, id_servicio, data, current_user=None):
+        return actualizar_servicio(id_servicio, data, current_user)
 
-    def desactivar_servicio(self, *args, **kwargs):
-        return desactivar_servicio(*args, **kwargs)
+    def desactivar_servicio(self, id_servicio, current_user=None):
+        return desactivar_servicio(id_servicio, current_user)
 
-    def listar_comodatos(self, *args, **kwargs):
-        return listar_comodatos(*args, **kwargs)
+    def listar_comodatos(self, estatus=None, busqueda=None, current_user=None, limit=100, offset=0):
+        return listar_comodatos(estatus, busqueda, current_user, limit, offset)
 
-    def obtener_comodato(self, *args, **kwargs):
-        return obtener_comodato(*args, **kwargs)
+    def obtener_comodato(self, id_comodato, current_user=None):
+        return obtener_comodato(id_comodato, current_user)
 
-    def crear_comodato(self, *args, **kwargs):
-        return crear_comodato(*args, **kwargs)
+    def crear_comodato(self, data, current_user=None):
+        return crear_comodato(data, current_user)
 
-    def actualizar_comodato(self, *args, **kwargs):
-        return actualizar_comodato(*args, **kwargs)
+    def actualizar_comodato(self, id_comodato, data, current_user=None):
+        return actualizar_comodato(id_comodato, data, current_user)
 
-    def listar_movimientos(self, *args, **kwargs):
-        return listar_movimientos(*args, **kwargs)
+    def listar_movimientos(self, id_producto=None, tipo_movimiento=None, current_user=None, limit=100, offset=0):
+        return listar_movimientos(id_producto, tipo_movimiento, current_user, limit, offset)
 
-    def almacen_stats(self, *args, **kwargs):
-        return almacen_stats(*args, **kwargs)
+    def almacen_stats(self, current_user=None):
+        return almacen_stats(current_user)
 
-    def ajustar_existencia(self, *args, **kwargs):
-        return ajustar_existencia(*args, **kwargs)
+    def ajustar_existencia(self, id_producto, stock_nuevo, motivo, current_user=None):
+        return ajustar_existencia(id_producto, stock_nuevo, motivo, current_user)
