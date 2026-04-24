@@ -1,6 +1,11 @@
 venv/
 __pycache__/
 *.pyc
+*.pyo
 .env
 .env.*
+.git/
+.pytest_cache/
+tests/
+*.md
 migrate_preregistro.py
