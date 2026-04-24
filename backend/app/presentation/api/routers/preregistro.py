@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Depends, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from typing import Optional
-from app.application.preregistro.dtos import PreRegistroCreate, AprobarPreRegistroData
+from app.application.preregistro.dtos import PreRegistroCreate, AprobarPreRegistroData, UploadedFile
 from app.application.preregistro import use_cases as service
 from app.presentation.api.security import (
     ensure_preregistro_access,
@@ -57,7 +57,12 @@ async def subir_documento(
     _access=Depends(ensure_preregistro_access),
     current_user: dict | None = Depends(get_optional_current_user),
 ):
-    return await service.subir_documento(id_paciente, id_tipo_documento, archivo, current_user)
+    uploaded = UploadedFile(
+        filename=archivo.filename or "",
+        content=await archivo.read(),
+        content_type=archivo.content_type or "application/octet-stream",
+    )
+    return await service.subir_documento(id_paciente, id_tipo_documento, uploaded, current_user)
 
 @router.get('/{id_paciente}/documentos')
 def listar_documentos(

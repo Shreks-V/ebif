@@ -1,5 +1,13 @@
+from dataclasses import dataclass
 from pydantic import BaseModel
 from typing import Optional, List
+
+
+@dataclass(frozen=True)
+class UploadedFile:
+    filename: str
+    content: bytes
+    content_type: str
 
 
 class PreRegistroCreate(BaseModel):

@@ -1,6 +1,7 @@
 from typing import Optional, Protocol
 
 from app.application.exportaciones.dtos import FilePayload
+from app.domain.shared.current_user import CurrentUser
 
 
 class ExportacionesRepository(Protocol):
@@ -12,7 +13,7 @@ class ExportacionesRepository(Protocol):
         tipo_espina: Optional[int] = None,
         fecha_inicio: Optional[str] = None,
         fecha_fin: Optional[str] = None,
-        current_user: dict | None = None,
+        current_user: CurrentUser | None = None,
     ) -> FilePayload: ...
 
     def exportar_beneficiario_pdf(self, folio: str, current_user: dict | None = None) -> FilePayload: ...
@@ -29,7 +30,7 @@ class ExportacionesRepository(Protocol):
         estado: Optional[str] = None,
         membresia_estatus: Optional[str] = None,
         busqueda: Optional[str] = None,
-        current_user: dict | None = None,
+        current_user: CurrentUser | None = None,
     ) -> FilePayload: ...
 
     def exportar_reporte_excel(
@@ -39,5 +40,5 @@ class ExportacionesRepository(Protocol):
         fecha_fin: Optional[str] = None,
         mes: Optional[int] = None,
         anio: Optional[int] = None,
-        current_user: dict | None = None,
+        current_user: CurrentUser | None = None,
     ) -> FilePayload: ...

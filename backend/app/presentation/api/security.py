@@ -6,6 +6,7 @@ from jose import JWTError
 
 from app.core.session_context import clear_current_user_id, set_current_user_id
 from app.domain.auth.roles import normalize_role
+from app.domain.shared.current_user import CurrentUser
 from app.infrastructure.security.auth import create_access_token, decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -14,7 +15,7 @@ optional_oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
-def _build_user_from_token(token: str) -> dict:
+def _build_user_from_token(token: str) -> CurrentUser:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciales inválidas",
@@ -116,7 +117,7 @@ async def ensure_preregistro_access(
 
 
 def require_role(*allowed_roles: str):
-    def _check(current_user: dict = Depends(get_current_user)):
+    def _check(current_user: CurrentUser = Depends(get_current_user)):
         current_role = normalize_role(current_user.get("rol"))
         allowed_normalized = {normalize_role(r) for r in allowed_roles}
         if current_role not in allowed_normalized:

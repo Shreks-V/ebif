@@ -4,7 +4,7 @@ import mimetypes
 import os
 import uuid
 from pathlib import Path
-from fastapi import UploadFile
+from app.application.preregistro.dtos import PreRegistroCreate, UploadedFile
 from app.domain.exceptions import NotFoundError, ValidationError
 from typing import Optional
 
@@ -14,7 +14,6 @@ from app.core.config import settings
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
 from app.infrastructure.privacy.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS
-from app.application.preregistro.dtos import PreRegistroCreate
 
 _SP_PACIENTE_ERRORS = {
     20201: (400, None),
@@ -247,8 +246,8 @@ def aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: 
 
 async def subir_documento(
     id_paciente: int,
-    id_tipo_documento: int = ...,
-    archivo: UploadFile = ...,
+    id_tipo_documento: int,
+    archivo: UploadedFile,
     current_user: dict | None = None,
 ):
     """Subir un documento para un pre-registro."""
@@ -261,7 +260,7 @@ async def subir_documento(
     ext = os.path.splitext(original_name)[1].lower()
     if ext not in settings.ALLOWED_UPLOAD_EXTENSIONS:
         raise ValidationError(f"Tipo de archivo no permitido. Extensiones válidas: {', '.join(settings.ALLOWED_UPLOAD_EXTENSIONS)}")
-    content = await archivo.read()
+    content = archivo.content
     if len(content) > settings.MAX_UPLOAD_SIZE:
         raise ValidationError(f'El archivo excede el tamaño máximo permitido ({settings.MAX_UPLOAD_SIZE // (1024 * 1024)} MB)')
     allowed_content_types = {'.pdf': ['application/pdf'], '.jpg': ['image/jpeg'], '.jpeg': ['image/jpeg'], '.png': ['image/png'], '.doc': ['application/msword'], '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document']}
