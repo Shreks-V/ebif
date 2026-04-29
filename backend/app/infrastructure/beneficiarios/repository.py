@@ -5,7 +5,6 @@ from datetime import date, datetime, timedelta
 from app.infrastructure.audit.bitacora import log_insert, log_delete
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.privacy.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS
-from app.application.beneficiarios.dtos import BeneficiarioCreate
 
 logger = logging.getLogger(__name__)
 

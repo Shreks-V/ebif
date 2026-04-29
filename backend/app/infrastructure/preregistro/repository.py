@@ -4,7 +4,7 @@ import mimetypes
 import os
 import uuid
 from pathlib import Path
-from app.application.preregistro.dtos import PreRegistroCreate, UploadedFile
+from app.domain.preregistro.entities import UploadedFile
 from app.domain.exceptions import NotFoundError, ValidationError
 from typing import Optional
 
@@ -13,7 +13,7 @@ import oracledb
 from app.core.config import settings
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
-from app.infrastructure.privacy.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS
+from app.infrastructure.privacy.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS, encrypt_bytes, decrypt_bytes
 
 _SP_PACIENTE_ERRORS = {
     20201: (400, None),
@@ -106,9 +106,17 @@ def crear_preregistro(data: PreRegistroCreate):
         raise ValidationError('Debe especificar al menos un tipo de espina bífida')
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE')
-        next_id = cursor.fetchone()[0]
-        folio = f'PRE-{next_id:06d}'
+        cursor.execute(
+            "SELECT NVL(MAX(TO_NUMBER(REGEXP_SUBSTR(FOLIO, '[0-9]+$'))), 0) + 1 "
+            "FROM PACIENTE WHERE REGEXP_LIKE(FOLIO, '^PRE-[0-9]+')"
+        )
+        next_num = int(cursor.fetchone()[0])
+        folio = f'PRE-{next_num:06d}'
+        # Ensure uniqueness in case of gap/collision
+        cursor.execute('SELECT COUNT(*) FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
+        if cursor.fetchone()[0] > 0:
+            cursor.execute('SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE')
+            folio = f'PRE-{int(cursor.fetchone()[0]):06d}'
         fecha_nac = datetime.strptime(str(data.fecha_nacimiento)[:10], '%Y-%m-%d') if data.fecha_nacimiento else None
         tipos_arr = make_number_list(conn, [int(t) for t in data.tipos_espina])
         id_out = cursor.var(int)
@@ -270,7 +278,7 @@ async def subir_documento(
     unique_name = f'{id_paciente}_{uuid.uuid4().hex}{ext}'
     file_path = UPLOAD_DIR / unique_name
     with open(file_path, 'wb') as f:
-        f.write(content)
+        f.write(encrypt_bytes(content))
     with get_db() as conn:
         cursor = conn.cursor()
         id_usuario = _resolve_usuario_registro_id(conn, current_user)
@@ -314,7 +322,7 @@ def listar_documentos(id_paciente: int, limit: int=100, offset: int=0):
     return [_serialize(r) for r in rows]
 
 def obtener_documento_archivo(id_paciente: int, id_documento: int):
-    """Obtener metadata del archivo físico de un documento activo."""
+    """Leer y desencriptar el archivo físico de un documento activo."""
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -336,11 +344,16 @@ def obtener_documento_archivo(id_paciente: int, id_documento: int):
     if not file_path.exists() or not file_path.is_file():
         raise NotFoundError('Archivo no encontrado en almacenamiento')
 
-    content_type, _ = mimetypes.guess_type(row.get('nombre_archivo') or file_path.name)
+    with open(file_path, 'rb') as f:
+        raw = f.read()
+    content = decrypt_bytes(raw)
+
+    filename = row.get('nombre_archivo') or file_path.name
+    content_type, _ = mimetypes.guess_type(filename)
     return {
-        'file_path': str(file_path),
+        'content': content,
         'content_type': content_type or 'application/octet-stream',
-        'filename': row.get('nombre_archivo') or file_path.name,
+        'filename': filename,
     }
 
 def eliminar_documento(id_paciente: int, id_documento: int):

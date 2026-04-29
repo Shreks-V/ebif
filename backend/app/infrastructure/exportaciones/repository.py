@@ -15,7 +15,7 @@ import logging
 from datetime import datetime, date
 from pathlib import Path
 from typing import Optional
-from app.application.exportaciones.dtos import FilePayload
+from app.domain.exportaciones.entities import FilePayload
 from app.domain.exceptions import InternalError, NotFoundError, ValidationError
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.privacy.crypto import decrypt_row, PACIENTE_ENCRYPTED_FIELDS

@@ -3,7 +3,6 @@ import logging
 from app.domain.exceptions import InternalError
 from typing import Optional
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
-from app.application.reportes.dtos import ReporteFilter
 logger = logging.getLogger(__name__)
 
 

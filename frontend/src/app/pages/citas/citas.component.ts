@@ -1160,6 +1160,94 @@ interface TableSortState {
               {{ guardandoSlot ? 'Guardando...' : 'Agregar' }}
             </button>
           </div>
+
+          <!-- ── Casos Especiales ── -->
+          <div class="border-t border-slate-200 mt-6 pt-6">
+            <h3 class="text-base font-bold text-slate-900 mb-4">Casos Especiales (no semanales)</h3>
+
+            <!-- List -->
+            @if (disponibilidadEspecial.length === 0) {
+              <p class="text-xs text-slate-400 italic mb-4">Sin casos especiales registrados.</p>
+            }
+            <div class="space-y-2 mb-4">
+              @for (de of disponibilidadEspecial; track de) {
+                <div class="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                  <div class="flex-1 flex items-center gap-2 flex-wrap">
+                    <span class="font-mono text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-bold">{{ de.fecha_inicio }}</span>
+                    <span class="text-sm font-semibold text-slate-700">{{ de.hora_inicio }} - {{ de.hora_fin }}</span>
+                    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">{{ tipoRecurrenciaLabel(de.tipo_recurrencia) }}</span>
+                    @if (de.descripcion) {
+                      <span class="text-xs text-slate-500 truncate max-w-[180px]">{{ de.descripcion }}</span>
+                    }
+                  </div>
+                  <button (click)="eliminarDispEspecial(de)" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors shrink-0" title="Eliminar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              }
+            </div>
+
+            <!-- Error -->
+            @if (dispEspecialError) {
+              <div class="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{{ dispEspecialError }}</div>
+            }
+
+            <!-- Add form -->
+            <h4 class="text-sm font-semibold text-slate-600 mb-3">Agregar Caso Especial</h4>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Fecha</label>
+                <input type="date" [(ngModel)]="nuevoDispEspecial.fecha_inicio"
+                  class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
+                <select [(ngModel)]="nuevoDispEspecial.hora_inicio"
+                  class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm">
+                  <option value="" disabled>Seleccionar...</option>
+                  @for (h of horasDisponibles; track h) {
+                    <option [value]="h">{{ h }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
+                <select [(ngModel)]="nuevoDispEspecial.hora_fin"
+                  class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm">
+                  <option value="" disabled>Seleccionar...</option>
+                  @for (h of horasDisponibles; track h) {
+                    <option [value]="h" [disabled]="nuevoDispEspecial.hora_inicio !== '' && h <= nuevoDispEspecial.hora_inicio">{{ h }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Recurrencia</label>
+                <select [(ngModel)]="nuevoDispEspecial.tipo_recurrencia"
+                  class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm">
+                  <option value="UNICA">&Uacute;nica vez</option>
+                  <option value="QUINCENAL">Quincenal</option>
+                  <option value="CADA_3_SEMANAS">Cada 3 semanas</option>
+                  <option value="MENSUAL">Mensual</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Descripci&oacute;n (opcional)</label>
+                <input type="text" [(ngModel)]="nuevoDispEspecial.descripcion" maxlength="200"
+                  placeholder="Ej: Consulta extraordinaria enero"
+                  class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" />
+              </div>
+            </div>
+            <button (click)="agregarDispEspecial()"
+              [disabled]="guardandoDispEspecial || !nuevoDispEspecial.fecha_inicio || !nuevoDispEspecial.hora_inicio || !nuevoDispEspecial.hora_fin"
+              class="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+              </svg>
+              {{ guardandoDispEspecial ? 'Guardando...' : 'Agregar Caso Especial' }}
+            </button>
+          </div>
         </div>
       </div>
     }
@@ -1264,6 +1352,13 @@ export class CitasComponent implements OnInit, OnDestroy {
   })();
   guardandoSlot = false;
   guardandoMedico = false;
+
+  // Disponibilidad especial
+  disponibilidadEspecial: any[] = [];
+  guardandoDispEspecial = false;
+  dispEspecialError = '';
+  nuevoDispEspecial = { fecha_inicio: '', hora_inicio: '', hora_fin: '', tipo_recurrencia: 'UNICA', descripcion: '' };
+
   diasSemana = [
     { num: 1, nombre: 'Lunes' },
     { num: 2, nombre: 'Martes' },
@@ -1898,11 +1993,14 @@ export class CitasComponent implements OnInit, OnDestroy {
   abrirDisponibilidad(medico: any): void {
     this.disponibilidadDoctor = medico;
     this.disponibilidadSlots = [];
+    this.disponibilidadEspecial = [];
     this.disponibilidadError = '';
+    this.dispEspecialError = '';
     this.nuevoSlot = { dia_semana: 0, hora_inicio: '', hora_fin: '' };
+    this.nuevoDispEspecial = { fecha_inicio: '', hora_inicio: '', hora_fin: '', tipo_recurrencia: 'UNICA', descripcion: '' };
     this.showDisponibilidadModal = true;
     this.cargarDisponibilidad(medico.idDoctor);
-    // Load all doctors' availability for conflict checking
+    this.cargarDisponibilidadEspecial(medico.idDoctor);
     this.api.getDisponibilidadSemana().subscribe({
       next: (data) => { this.disponibilidadSemana = data; },
       error: () => { this.disponibilidadSemana = []; },
@@ -1957,6 +2055,59 @@ export class CitasComponent implements OnInit, OnDestroy {
         this.guardandoSlot = false;
         this.disponibilidadError = err.error?.detail || 'Error al crear disponibilidad';
       },
+    });
+  }
+
+  cargarDisponibilidadEspecial(idDoctor: number): void {
+    this.api.getDoctorDisponibilidadEspecial(idDoctor).subscribe({
+      next: (data) => { this.disponibilidadEspecial = data; },
+      error: (err) => console.error('Error al cargar disponibilidad especial:', err),
+    });
+  }
+
+  tipoRecurrenciaLabel(tipo: string): string {
+    const labels: Record<string, string> = {
+      'UNICA': 'Única vez',
+      'QUINCENAL': 'Quincenal',
+      'CADA_3_SEMANAS': 'Cada 3 sem.',
+      'MENSUAL': 'Mensual',
+    };
+    return labels[tipo] || tipo;
+  }
+
+  agregarDispEspecial(): void {
+    if (!this.nuevoDispEspecial.fecha_inicio || !this.nuevoDispEspecial.hora_inicio || !this.nuevoDispEspecial.hora_fin) return;
+    this.dispEspecialError = '';
+    if (this.nuevoDispEspecial.hora_inicio >= this.nuevoDispEspecial.hora_fin) {
+      this.dispEspecialError = 'La hora de inicio debe ser anterior a la hora de fin.';
+      return;
+    }
+    this.guardandoDispEspecial = true;
+    const payload = {
+      fecha_inicio: this.nuevoDispEspecial.fecha_inicio,
+      hora_inicio: this.nuevoDispEspecial.hora_inicio,
+      hora_fin: this.nuevoDispEspecial.hora_fin,
+      tipo_recurrencia: this.nuevoDispEspecial.tipo_recurrencia,
+      descripcion: this.nuevoDispEspecial.descripcion || null,
+    };
+    this.api.createDoctorDisponibilidadEspecial(this.disponibilidadDoctor.idDoctor, payload).subscribe({
+      next: () => {
+        this.guardandoDispEspecial = false;
+        this.nuevoDispEspecial = { fecha_inicio: '', hora_inicio: '', hora_fin: '', tipo_recurrencia: 'UNICA', descripcion: '' };
+        this.cargarDisponibilidadEspecial(this.disponibilidadDoctor.idDoctor);
+      },
+      error: (err) => {
+        this.guardandoDispEspecial = false;
+        this.dispEspecialError = err?.error?.detail || 'Error al guardar la disponibilidad especial.';
+      },
+    });
+  }
+
+  eliminarDispEspecial(de: any): void {
+    if (!this.disponibilidadDoctor) return;
+    this.api.deleteDoctorDisponibilidadEspecial(this.disponibilidadDoctor.idDoctor, de.id_disp_especial).subscribe({
+      next: () => { this.cargarDisponibilidadEspecial(this.disponibilidadDoctor.idDoctor); },
+      error: (err) => { console.error('Error al eliminar disponibilidad especial:', err); },
     });
   }
 

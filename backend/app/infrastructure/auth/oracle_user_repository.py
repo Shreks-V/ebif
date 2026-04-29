@@ -6,7 +6,7 @@ import oracledb
 
 from app.domain.auth.entities import SeedUser, User
 from app.domain.auth.ports import PasswordHasher, UserRepository
-from app.infrastructure.persistence.oracle import get_db, row_to_dict
+from app.infrastructure.persistence.oracle import get_db, row_to_dict, rows_to_dicts
 from app.infrastructure.persistence.sp_helpers import parse_ora_error
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,44 @@ logger = logging.getLogger(__name__)
 class OracleUserRepository(UserRepository):
     def __init__(self, password_hasher: PasswordHasher) -> None:
         self._password_hasher = password_hasher
+
+    def find_by_id(self, id_usuario: int) -> User | None:
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT ID_USUARIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, "
+                    "CORREO, CONTRASENA_HASH, ROL, ESTATUS, FECHA_CREACION "
+                    "FROM USUARIO_SISTEMA WHERE ID_USUARIO = :1",
+                    [id_usuario],
+                )
+                row = row_to_dict(cursor)
+                return self._to_user(row) if row is not None else None
+        except Exception:
+            return None
+
+    def list_all(self) -> list[User]:
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT ID_USUARIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, "
+                    "CORREO, CONTRASENA_HASH, ROL, ESTATUS, FECHA_CREACION "
+                    "FROM USUARIO_SISTEMA ORDER BY ID_USUARIO"
+                )
+                rows = rows_to_dicts(cursor)
+                return [self._to_user(r) for r in rows]
+        except Exception:
+            return []
+
+    def update_password(self, id_usuario: int, new_hash: str) -> None:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE USUARIO_SISTEMA SET CONTRASENA_HASH = :1 WHERE ID_USUARIO = :2",
+                [new_hash, id_usuario],
+            )
+            conn.commit()
 
     def find_by_email(self, correo: str) -> User | None:
         try:

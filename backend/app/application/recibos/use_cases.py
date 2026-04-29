@@ -31,6 +31,9 @@ class RecibosService:
     def registrar_pago(self, id_venta: int, id_metodo_pago: int, monto: float, current_user: CurrentUser | None = None):
         return self._repository.registrar_pago(id_venta, id_metodo_pago, monto, current_user)
 
+    def listar_items_venta(self, id_venta: int, current_user: CurrentUser | None = None):
+        return self._repository.listar_items_venta(id_venta, current_user)
+
 
 def configure_service(service: RecibosService) -> None:
     global _service
@@ -63,3 +66,6 @@ def cancelar_venta(id_venta: int, motivo: Optional[str] = None, current_user: Cu
 
 def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_user: CurrentUser | None = None):
     return _svc().registrar_pago(id_venta, id_metodo_pago, monto, current_user)
+
+def listar_items_venta(id_venta: int, current_user: CurrentUser | None = None):
+    return _svc().listar_items_venta(id_venta, current_user)

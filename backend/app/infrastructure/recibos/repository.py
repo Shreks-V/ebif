@@ -7,8 +7,7 @@ import oracledb
 
 from app.infrastructure.audit.bitacora import log_insert, log_cancelacion
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
-from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
-from app.application.recibos.dtos import VentaCreate
+from app.infrastructure.persistence.sp_helpers import make_number_list, make_varchar_list, make_decimal_list, sp_error_to_http
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +52,33 @@ def _fetch_metodos_pago(conn, id_venta: int) -> list[dict]:
     cur.execute('\n        SELECT vmp.ID_METODO_PAGO  AS id_metodo_pago,\n               mp.NOMBRE           AS nombre,\n               vmp.MONTO           AS monto\n          FROM VENTA_METODO_PAGO vmp\n          JOIN METODO_PAGO mp ON mp.ID_METODO_PAGO = vmp.ID_METODO_PAGO\n         WHERE vmp.ID_VENTA = :id_venta\n        ', {'id_venta': id_venta})
     return rows_to_dicts(cur)
 
-def _enrich_venta(conn, venta: dict, mp_map: dict | None=None) -> dict:
-    """Add metodos_pago list and serialise dates."""
+def _fetch_items_venta(conn, id_venta: int) -> list[dict]:
+    """Return itemized lines for a single venta."""
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT ID_LINEA, ID_VENTA, TIPO, ID_REFERENCIA,
+               DESCRIPCION, PRECIO_UNITARIO, CANTIDAD, SUBTOTAL
+          FROM VENTA_LINEA
+         WHERE ID_VENTA = :id_venta
+         ORDER BY ID_LINEA
+        """,
+        {'id_venta': id_venta},
+    )
+    return rows_to_dicts(cur)
+
+
+def _enrich_venta(conn, venta: dict, mp_map: dict | None = None, include_items: bool = False) -> dict:
+    """Add metodos_pago, optionally items, and serialise dates."""
     venta = _serialize(venta)
     if mp_map is not None:
         venta['metodos_pago'] = mp_map.get(venta['id_venta'], [])
     else:
         venta['metodos_pago'] = _fetch_metodos_pago(conn, venta['id_venta'])
+    if include_items:
+        venta['items'] = _fetch_items_venta(conn, venta['id_venta'])
+    else:
+        venta['items'] = []
     return venta
 
 def _batch_fetch_metodos_pago(conn, venta_ids: list[int]) -> dict[int, list[dict]]:
@@ -162,8 +181,11 @@ def _call_registrar_venta_completa(
     cur,
     data: VentaCreate,
     id_usuario: int,
-    productos_arr,
-    cantidades_arr,
+    linea_tipos_arr,
+    linea_ids_arr,
+    linea_descs_arr,
+    linea_precios_arr,
+    linea_cantidades_arr,
     metodos_arr,
     montos_arr,
 ) -> tuple[int, str]:
@@ -174,8 +196,11 @@ def _call_registrar_venta_completa(
         id_usuario,
         float(data.monto_total),
         data.exento_pago or 'N',
-        productos_arr,
-        cantidades_arr,
+        linea_tipos_arr,
+        linea_ids_arr,
+        linea_descs_arr,
+        linea_precios_arr,
+        linea_cantidades_arr,
         metodos_arr,
         montos_arr,
         id_venta_out,
@@ -242,23 +267,31 @@ def crear_venta(data: VentaCreate, current_user: dict=None):
     """Crear nueva venta vía SP_REGISTRAR_VENTA_COMPLETA."""
     try:
         with get_db() as conn:
-            id_usuario = current_user.get('id_usuario', 1)
+            id_usuario = current_user.get('id_usuario', 1) if current_user else 1
             cur = conn.cursor()
 
+            items = data.items or []
             metodos_ids = [int(mp['id_metodo_pago']) for mp in (data.metodos_pago or [])]
             metodos_montos = [float(mp['monto']) for mp in (data.metodos_pago or [])]
-            productos_arr = make_number_list(conn, [])
-            cantidades_arr = make_number_list(conn, [])
-            metodos_arr = make_number_list(conn, metodos_ids)
-            montos_arr = make_number_list(conn, metodos_montos)
+
+            linea_tipos_arr   = make_varchar_list(conn, [it.tipo for it in items])
+            linea_ids_arr     = make_number_list(conn, [it.id_referencia for it in items])
+            linea_descs_arr   = make_varchar_list(conn, [it.descripcion for it in items])
+            linea_precios_arr = make_decimal_list(conn, [it.precio_unitario for it in items])
+            linea_cant_arr    = make_number_list(conn, [it.cantidad for it in items])
+            metodos_arr       = make_number_list(conn, metodos_ids)
+            montos_arr        = make_decimal_list(conn, metodos_montos)
 
             try:
                 new_id, folio = _call_registrar_venta_completa(
                     cur,
                     data,
                     id_usuario,
-                    productos_arr,
-                    cantidades_arr,
+                    linea_tipos_arr,
+                    linea_ids_arr,
+                    linea_descs_arr,
+                    linea_precios_arr,
+                    linea_cant_arr,
                     metodos_arr,
                     montos_arr,
                 )
@@ -281,8 +314,11 @@ def crear_venta(data: VentaCreate, current_user: dict=None):
                         cur,
                         data,
                         id_usuario,
-                        productos_arr,
-                        cantidades_arr,
+                        linea_tipos_arr,
+                        linea_ids_arr,
+                        linea_descs_arr,
+                        linea_precios_arr,
+                        linea_cant_arr,
                         metodos_arr,
                         montos_arr,
                     )
@@ -299,7 +335,7 @@ def crear_venta(data: VentaCreate, current_user: dict=None):
             venta = row_to_dict(cur)
             if venta is None:
                 raise InternalError('Error al recuperar la venta creada')
-            return _enrich_venta(conn, venta)
+            return _enrich_venta(conn, venta, include_items=True)
     except (NotFoundError, ValidationError, InternalError):
         raise
     except Exception as exc:
@@ -307,14 +343,24 @@ def crear_venta(data: VentaCreate, current_user: dict=None):
         raise InternalError('Error interno al crear la venta')
 
 def obtener_venta(id_venta: int, current_user: dict=None):
-    """Obtener detalle de una venta."""
+    """Obtener detalle de una venta (incluye items)."""
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': id_venta})
         venta = row_to_dict(cur)
         if venta is None:
             raise NotFoundError('Venta no encontrada')
-        return _enrich_venta(conn, venta)
+        return _enrich_venta(conn, venta, include_items=True)
+
+
+def listar_items_venta(id_venta: int, current_user: dict=None):
+    """Listar ítems (líneas) de una venta."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT ID_VENTA FROM VENTA WHERE ID_VENTA = :id_venta', {'id_venta': id_venta})
+        if row_to_dict(cur) is None:
+            raise NotFoundError('Venta no encontrada')
+        return _fetch_items_venta(conn, id_venta)
 
 def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_user: dict=None):
     """Agregar un pago parcial a una venta vía SP_REGISTRAR_PAGO_PARCIAL."""
@@ -376,3 +422,6 @@ class OracleRecibosRepository:
 
     def registrar_pago(self, id_venta, id_metodo_pago, monto, current_user=None):
         return registrar_pago(id_venta, id_metodo_pago, monto, current_user)
+
+    def listar_items_venta(self, id_venta, current_user=None):
+        return listar_items_venta(id_venta, current_user)

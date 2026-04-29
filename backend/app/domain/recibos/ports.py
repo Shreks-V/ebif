@@ -1,6 +1,6 @@
 from typing import Any, Optional, Protocol
 
-from app.domain.recibos.entities import MetodoPago, Venta
+from app.domain.recibos.entities import MetodoPago, Venta, VentaLinea
 from app.domain.shared.current_user import CurrentUser
 
 
@@ -38,3 +38,9 @@ class RecibosRepository(Protocol):
         monto: float,
         current_user: CurrentUser | None = None,
     ) -> dict: ...
+
+    def listar_items_venta(
+        self,
+        id_venta: int,
+        current_user: CurrentUser | None = None,
+    ) -> list[VentaLinea]: ...

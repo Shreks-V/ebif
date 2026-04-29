@@ -7,7 +7,6 @@ import oracledb
 from app.infrastructure.audit.bitacora import log_insert, log_cancelacion
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
-from app.application.citas.dtos import CitaCreate
 
 _SP_CREAR_CITA_ERRORS = {
     20301: (400, None),
@@ -253,6 +252,21 @@ def actualizar_cita(id_cita: int, data: CitaCreate, current_user: dict=None):
         cita = _enrich_cita(conn, cita)
     return cita
 
+def iniciar_cita(id_cita: int, current_user: dict=None):
+    """Marcar una cita como EN_CURSO."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
+        row = cursor.fetchone()
+        if row is None:
+            raise NotFoundError('Cita no encontrada')
+        cursor.execute("UPDATE CITA SET ESTATUS = 'EN_CURSO' WHERE ID_CITA = :id_cita", {'id_cita': id_cita})
+        conn.commit()
+        cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
+        cita = row_to_dict(cursor)
+        cita = _enrich_cita(conn, cita)
+    return cita
+
 def completar_cita(id_cita: int, current_user: dict=None):
     """Marcar una cita como COMPLETADA."""
     with get_db() as conn:
@@ -320,6 +334,9 @@ class OracleCitasRepository:
 
     def actualizar_cita(self, id_cita, data, current_user=None):
         return actualizar_cita(id_cita, data, current_user)
+
+    def iniciar_cita(self, id_cita, current_user=None):
+        return iniciar_cita(id_cita, current_user)
 
     def completar_cita(self, id_cita, current_user=None):
         return completar_cita(id_cita, current_user)

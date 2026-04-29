@@ -30,5 +30,14 @@ class Settings(BaseModel):
     # Cifrado de datos personales (AES-256-GCM) - LFPDPPP
     DATA_ENCRYPTION_KEY: str = os.getenv("DATA_ENCRYPTION_KEY", "")
 
+    # SMTP — recuperación de contraseña por correo (Opción C)
+    # Configurar estas variables en .env para activar el flujo de "olvidé mi contraseña"
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM: str = os.getenv("SMTP_FROM", "")
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("PASSWORD_RESET_TOKEN_EXPIRE_MINUTES", "30"))
+
 
 settings = Settings()

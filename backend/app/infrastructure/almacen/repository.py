@@ -8,7 +8,6 @@ import oracledb
 from app.infrastructure.audit.bitacora import log_insert
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.sp_helpers import sp_error_to_http
-from app.application.almacen.dtos import ProductoCreate, ServicioCreate, ComodatoCreate
 
 logger = logging.getLogger(__name__)
 

@@ -1,13 +1,14 @@
 from datetime import timedelta
 
-from fastapi import Depends, HTTPException, Header, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError
 
 from app.core.session_context import clear_current_user_id, set_current_user_id
+from app.domain.auth.exceptions import TokenDecodeError
+from app.domain.auth.ports import AccessTokenIssuer
 from app.domain.auth.roles import normalize_role
 from app.domain.shared.current_user import CurrentUser
-from app.infrastructure.security.auth import create_access_token, decode_access_token
+from app.presentation.api.dependencies import get_token_decoder
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 optional_oauth2_scheme = OAuth2PasswordBearer(
@@ -15,14 +16,14 @@ optional_oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
-def _build_user_from_token(token: str) -> CurrentUser:
+def _build_user_from_token(token: str, token_decoder: AccessTokenIssuer) -> CurrentUser:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Credenciales inválidas",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = decode_access_token(token)
+        payload = token_decoder.decode(token)
         correo = payload.get("sub")
         if correo is None:
             raise credentials_exception
@@ -34,7 +35,7 @@ def _build_user_from_token(token: str) -> CurrentUser:
             "id_usuario": payload.get("id_usuario"),
             "nombre": str(payload.get("nombre") or "").strip(),
         }
-    except JWTError:
+    except TokenDecodeError:
         raise credentials_exception
 
 
@@ -45,10 +46,10 @@ def _prereg_token_error() -> HTTPException:
     )
 
 
-def _build_preregistro_from_token(token: str) -> dict:
+def _build_preregistro_from_token(token: str, token_decoder: AccessTokenIssuer) -> dict:
     credentials_exception = _prereg_token_error()
     try:
-        payload = decode_access_token(token)
+        payload = token_decoder.decode(token)
         if payload.get("scope") != "PREREGISTRO":
             raise credentials_exception
         id_paciente = payload.get("id_paciente")
@@ -58,23 +59,26 @@ def _build_preregistro_from_token(token: str) -> dict:
             "scope": "PREREGISTRO",
             "id_paciente": int(id_paciente),
         }
-    except (JWTError, ValueError, TypeError):
+    except (TokenDecodeError, ValueError, TypeError):
         raise credentials_exception
 
 
-def issue_preregistro_token(id_paciente: int, hours: int = 12) -> str:
-    return create_access_token(
-        {
-            "scope": "PREREGISTRO",
-            "id_paciente": int(id_paciente),
-        },
+def issue_preregistro_token(
+    id_paciente: int,
+    token_issuer: AccessTokenIssuer,
+    hours: int = 12,
+) -> str:
+    return token_issuer.issue(
+        {"scope": "PREREGISTRO", "id_paciente": int(id_paciente)},
         expires_delta=timedelta(hours=hours),
     )
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = _build_user_from_token(token)
-
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    token_decoder: AccessTokenIssuer = Depends(get_token_decoder),
+):
+    user = _build_user_from_token(token, token_decoder)
     set_current_user_id(user.get("id_usuario"))
     try:
         yield user
@@ -82,13 +86,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         clear_current_user_id()
 
 
-async def get_optional_current_user(token: str | None = Depends(optional_oauth2_scheme)):
+async def get_optional_current_user(
+    token: str | None = Depends(optional_oauth2_scheme),
+    token_decoder: AccessTokenIssuer = Depends(get_token_decoder),
+):
     if not token:
         clear_current_user_id()
         yield None
         return
 
-    user = _build_user_from_token(token)
+    user = _build_user_from_token(token, token_decoder)
     set_current_user_id(user.get("id_usuario"))
     try:
         yield user
@@ -100,6 +107,7 @@ async def ensure_preregistro_access(
     id_paciente: int,
     current_user: dict | None = Depends(get_optional_current_user),
     x_preregistro_token: str | None = Header(default=None, alias="X-Preregistro-Token"),
+    token_decoder: AccessTokenIssuer = Depends(get_token_decoder),
 ):
     if current_user is not None:
         return current_user
@@ -107,7 +115,7 @@ async def ensure_preregistro_access(
     if not x_preregistro_token:
         raise _prereg_token_error()
 
-    prereg_claims = _build_preregistro_from_token(x_preregistro_token)
+    prereg_claims = _build_preregistro_from_token(x_preregistro_token, token_decoder)
     if prereg_claims["id_paciente"] != int(id_paciente):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

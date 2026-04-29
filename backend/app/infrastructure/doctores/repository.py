@@ -9,7 +9,6 @@ from app.infrastructure.persistence.sp_helpers import (
     sp_error_to_http,
 )
 from app.infrastructure.privacy.crypto import encrypt, decrypt_row, DOCTOR_ENCRYPTED_FIELDS
-from app.application.doctores.dtos import DoctorCreate, DisponibilidadCreate
 logger = logging.getLogger(__name__)
 
 _SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS = {
@@ -58,13 +57,75 @@ def _sync_doctor_servicios(conn, id_doctor: int, servicio_ids: list[int]):
     except oracledb.DatabaseError as exc:
         raise sp_error_to_http(exc, _SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS)
 
+def _match_especial_hoy(fecha_inicio_date: date, tipo: str) -> bool:
+    """Determina si una disponibilidad especial aplica para hoy."""
+    hoy = date.today()
+    if hoy < fecha_inicio_date:
+        return False
+    if tipo == 'UNICA':
+        return hoy == fecha_inicio_date
+    delta = (hoy - fecha_inicio_date).days
+    if tipo == 'QUINCENAL':
+        return delta % 14 == 0
+    if tipo == 'CADA_3_SEMANAS':
+        return delta % 21 == 0
+    if tipo == 'MENSUAL':
+        return hoy.day == fecha_inicio_date.day
+    return False
+
+
 def doctor_del_dia(current_user: dict=None):
-    """Obtener el doctor asignado para hoy según DIA_SEMANA en DISPONIBILIDAD_DOCTOR."""
-    dia_semana = date.today().weekday() + 1
+    """Doctor asignado hoy: primero busca en disponibilidad especial, luego en semanal."""
+    hoy = date.today()
+    dia_semana = hoy.weekday() + 1
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT d.ID_DOCTOR, d.NOMBRE, d.APELLIDO_PATERNO, d.APELLIDO_MATERNO, d.ESPECIALIDAD, d.TELEFONO, d.CORREO, d.ACTIVO, d.FECHA_REGISTRO, dd.HORA_INICIO, dd.HORA_FIN FROM DISPONIBILIDAD_DOCTOR dd JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR WHERE dd.DIA_SEMANA = :dia AND dd.DISPONIBLE = 'S' AND d.ACTIVO = 'S' ORDER BY dd.HORA_INICIO FETCH FIRST 1 ROWS ONLY", {'dia': dia_semana})
+
+            # 1. Buscar en disponibilidades especiales activas
+            cursor.execute(
+                """
+                SELECT de.ID_DISP_ESPECIAL, de.ID_DOCTOR, de.FECHA_INICIO,
+                       de.HORA_INICIO, de.HORA_FIN, de.TIPO_RECURRENCIA,
+                       d.NOMBRE, d.APELLIDO_PATERNO, d.APELLIDO_MATERNO,
+                       d.ESPECIALIDAD, d.TELEFONO, d.CORREO, d.ACTIVO, d.FECHA_REGISTRO
+                  FROM DISPONIBILIDAD_ESPECIAL_DOCTOR de
+                  JOIN DOCTOR d ON d.ID_DOCTOR = de.ID_DOCTOR
+                 WHERE de.ACTIVO = 'S' AND d.ACTIVO = 'S'
+                   AND de.FECHA_INICIO <= :hoy
+                 ORDER BY de.HORA_INICIO
+                """,
+                {'hoy': hoy},
+            )
+            rows_esp = rows_to_dicts(cursor)
+            for r in rows_esp:
+                fi = r.get('fecha_inicio')
+                fi_date = fi.date() if isinstance(fi, datetime) else (fi if isinstance(fi, date) else None)
+                if fi_date and _match_especial_hoy(fi_date, str(r.get('tipo_recurrencia', 'UNICA')).strip()):
+                    hora_inicio = r.get('hora_inicio', '')
+                    hora_fin = r.get('hora_fin', '')
+                    doctor_row = {
+                        'id_doctor': r['id_doctor'],
+                        'nombre': r['nombre'],
+                        'apellido_paterno': r['apellido_paterno'],
+                        'apellido_materno': r['apellido_materno'],
+                        'especialidad': r['especialidad'],
+                        'telefono': r['telefono'],
+                        'correo': r['correo'],
+                        'activo': r['activo'],
+                        'fecha_registro': r['fecha_registro'],
+                    }
+                    doctor = _doctor_with_servicios(conn, doctor_row)
+                    doctor['hora_inicio'] = hora_inicio
+                    doctor['hora_fin'] = hora_fin
+                    doctor['fuente'] = 'especial'
+                    return {'doctor': doctor, 'hora_inicio': hora_inicio, 'hora_fin': hora_fin}
+
+            # 2. Fallback: disponibilidad semanal normal
+            cursor.execute(
+                "SELECT d.ID_DOCTOR, d.NOMBRE, d.APELLIDO_PATERNO, d.APELLIDO_MATERNO, d.ESPECIALIDAD, d.TELEFONO, d.CORREO, d.ACTIVO, d.FECHA_REGISTRO, dd.HORA_INICIO, dd.HORA_FIN FROM DISPONIBILIDAD_DOCTOR dd JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR WHERE dd.DIA_SEMANA = :dia AND dd.DISPONIBLE = 'S' AND d.ACTIVO = 'S' ORDER BY dd.HORA_INICIO FETCH FIRST 1 ROWS ONLY",
+                {'dia': dia_semana},
+            )
             row = row_to_dict(cursor)
             if row is None:
                 return {'doctor': None, 'hora_inicio': None, 'hora_fin': None}
@@ -73,8 +134,9 @@ def doctor_del_dia(current_user: dict=None):
             doctor = _doctor_with_servicios(conn, row)
             doctor['hora_inicio'] = hora_inicio.isoformat() if isinstance(hora_inicio, datetime) else str(hora_inicio) if hora_inicio else None
             doctor['hora_fin'] = hora_fin.isoformat() if isinstance(hora_fin, datetime) else str(hora_fin) if hora_fin else None
+            doctor['fuente'] = 'semanal'
             return {'doctor': doctor, 'hora_inicio': doctor['hora_inicio'], 'hora_fin': doctor['hora_fin']}
-    except Exception as e:
+    except Exception:
         logger.exception('Error al consultar doctor del día')
         raise InternalError('Error interno del servidor')
 
@@ -260,6 +322,108 @@ def obtener_servicios_doctor(id_doctor: int, current_user: dict=None):
         raise InternalError('Error interno del servidor')
 
 
+def listar_disponibilidad_especial(id_doctor: int, current_user: dict=None):
+    """Listar todos los slots de disponibilidad especial de un doctor."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            if cursor.fetchone() is None:
+                raise NotFoundError('Doctor no encontrado')
+            cursor.execute(
+                """
+                SELECT ID_DISP_ESPECIAL, ID_DOCTOR,
+                       TO_CHAR(FECHA_INICIO, 'YYYY-MM-DD') AS FECHA_INICIO,
+                       HORA_INICIO, HORA_FIN, TIPO_RECURRENCIA, DESCRIPCION, ACTIVO,
+                       TO_CHAR(FECHA_REGISTRO, 'YYYY-MM-DD') AS FECHA_REGISTRO
+                  FROM DISPONIBILIDAD_ESPECIAL_DOCTOR
+                 WHERE ID_DOCTOR = :id_doctor AND ACTIVO = 'S'
+                 ORDER BY FECHA_INICIO, HORA_INICIO
+                """,
+                {'id_doctor': id_doctor},
+            )
+            return [_serialize(r) for r in rows_to_dicts(cursor)]
+    except (NotFoundError, ValidationError, ConflictError, InternalError):
+        raise
+    except Exception:
+        logger.exception('Error al listar disponibilidad especial')
+        raise InternalError('Error interno del servidor')
+
+
+def crear_disponibilidad_especial(id_doctor: int, data: DisponibilidadEspecialCreate, current_user: dict=None):
+    """Crear un slot de disponibilidad especial para un doctor."""
+    tipos_validos = ('UNICA', 'QUINCENAL', 'CADA_3_SEMANAS', 'MENSUAL')
+    if data.tipo_recurrencia not in tipos_validos:
+        raise ValidationError(f"tipo_recurrencia debe ser uno de: {', '.join(tipos_validos)}")
+    if data.hora_inicio >= data.hora_fin:
+        raise ValidationError('hora_inicio debe ser anterior a hora_fin')
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            if cursor.fetchone() is None:
+                raise NotFoundError('Doctor no encontrado')
+            id_var = cursor.var(int)
+            cursor.execute(
+                """
+                INSERT INTO DISPONIBILIDAD_ESPECIAL_DOCTOR
+                  (ID_DOCTOR, FECHA_INICIO, HORA_INICIO, HORA_FIN, TIPO_RECURRENCIA, DESCRIPCION, ACTIVO)
+                VALUES
+                  (:id_doctor, TO_DATE(:fecha_inicio, 'YYYY-MM-DD'), :hora_inicio, :hora_fin,
+                   :tipo_recurrencia, :descripcion, 'S')
+                RETURNING ID_DISP_ESPECIAL INTO :id_out
+                """,
+                {
+                    'id_doctor': id_doctor,
+                    'fecha_inicio': data.fecha_inicio,
+                    'hora_inicio': data.hora_inicio,
+                    'hora_fin': data.hora_fin,
+                    'tipo_recurrencia': data.tipo_recurrencia,
+                    'descripcion': data.descripcion,
+                    'id_out': id_var,
+                },
+            )
+            new_id = id_var.getvalue()[0]
+            conn.commit()
+            cursor.execute(
+                """
+                SELECT ID_DISP_ESPECIAL, ID_DOCTOR,
+                       TO_CHAR(FECHA_INICIO, 'YYYY-MM-DD') AS FECHA_INICIO,
+                       HORA_INICIO, HORA_FIN, TIPO_RECURRENCIA, DESCRIPCION, ACTIVO,
+                       TO_CHAR(FECHA_REGISTRO, 'YYYY-MM-DD') AS FECHA_REGISTRO
+                  FROM DISPONIBILIDAD_ESPECIAL_DOCTOR
+                 WHERE ID_DISP_ESPECIAL = :id_disp
+                """,
+                {'id_disp': new_id},
+            )
+            return _serialize(row_to_dict(cursor))
+    except (NotFoundError, ValidationError, ConflictError, InternalError):
+        raise
+    except Exception:
+        logger.exception('Error al crear disponibilidad especial')
+        raise InternalError('Error interno del servidor')
+
+
+def eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, current_user: dict=None):
+    """Eliminar (soft-delete) un slot de disponibilidad especial."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE DISPONIBILIDAD_ESPECIAL_DOCTOR SET ACTIVO = 'N' WHERE ID_DISP_ESPECIAL = :id_disp AND ID_DOCTOR = :id_doctor",
+                {'id_disp': id_disp_especial, 'id_doctor': id_doctor},
+            )
+            if cursor.rowcount == 0:
+                raise NotFoundError('Disponibilidad especial no encontrada')
+            conn.commit()
+            return {'message': 'Disponibilidad especial eliminada'}
+    except (NotFoundError, ValidationError, ConflictError, InternalError):
+        raise
+    except Exception:
+        logger.exception('Error al eliminar disponibilidad especial')
+        raise InternalError('Error interno del servidor')
+
+
 class OracleDoctoresRepository:
     def doctor_del_dia(self, current_user=None):
         return doctor_del_dia(current_user)
@@ -293,3 +457,12 @@ class OracleDoctoresRepository:
 
     def obtener_servicios_doctor(self, id_doctor, current_user=None):
         return obtener_servicios_doctor(id_doctor, current_user)
+
+    def listar_disponibilidad_especial(self, id_doctor, current_user=None):
+        return listar_disponibilidad_especial(id_doctor, current_user)
+
+    def crear_disponibilidad_especial(self, id_doctor, data, current_user=None):
+        return crear_disponibilidad_especial(id_doctor, data, current_user)
+
+    def eliminar_disponibilidad_especial(self, id_doctor, id_disp_especial, current_user=None):
+        return eliminar_disponibilidad_especial(id_doctor, id_disp_especial, current_user)

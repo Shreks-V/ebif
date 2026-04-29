@@ -37,6 +37,15 @@ class UserLogin(BaseModel):
     password: str
 
 
+class CambiarContrasenaRequest(BaseModel):
+    contrasena_actual: str
+    contrasena_nueva: str
+
+
+class AdminResetContrasenaRequest(BaseModel):
+    contrasena_nueva: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"

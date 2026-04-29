@@ -1,6 +1,6 @@
 from typing import Any, Protocol
 
-from app.domain.doctores.entities import Disponibilidad, Doctor
+from app.domain.doctores.entities import Disponibilidad, DisponibilidadEspecial, Doctor
 from app.domain.shared.current_user import CurrentUser
 
 
@@ -47,3 +47,23 @@ class DoctoresRepository(Protocol):
     ) -> None: ...
 
     def obtener_servicios_doctor(self, id_doctor: int, current_user: CurrentUser | None = None) -> list[dict]: ...
+
+    def listar_disponibilidad_especial(
+        self,
+        id_doctor: int,
+        current_user: CurrentUser | None = None,
+    ) -> list[DisponibilidadEspecial]: ...
+
+    def crear_disponibilidad_especial(
+        self,
+        id_doctor: int,
+        data: Any,
+        current_user: CurrentUser | None = None,
+    ) -> DisponibilidadEspecial: ...
+
+    def eliminar_disponibilidad_especial(
+        self,
+        id_doctor: int,
+        id_disp_especial: int,
+        current_user: CurrentUser | None = None,
+    ) -> None: ...

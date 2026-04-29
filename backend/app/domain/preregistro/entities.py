@@ -1,5 +1,13 @@
+from dataclasses import dataclass
 from typing import Optional, List
 from typing_extensions import TypedDict
+
+
+@dataclass(frozen=True)
+class UploadedFile:
+    filename: str
+    content: bytes
+    content_type: str
 
 
 class Preregistro(TypedDict, total=False):

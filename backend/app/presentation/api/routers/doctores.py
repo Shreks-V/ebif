@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from app.application.doctores.dtos import DoctorCreate, DisponibilidadCreate
+from app.application.doctores.dtos import DoctorCreate, DisponibilidadCreate, DisponibilidadEspecialCreate
 from app.application.doctores import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()
@@ -60,3 +60,15 @@ def eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_user
 @router.get('/{id_doctor}/servicios')
 def obtener_servicios_doctor(id_doctor: int, current_user: dict=Depends(get_current_user)):
     return service.obtener_servicios_doctor(id_doctor, current_user)
+
+@router.get('/{id_doctor}/disponibilidad-especial')
+def listar_disponibilidad_especial(id_doctor: int, current_user: dict=Depends(get_current_user)):
+    return service.listar_disponibilidad_especial(id_doctor, current_user)
+
+@router.post('/{id_doctor}/disponibilidad-especial', status_code=201)
+def crear_disponibilidad_especial(id_doctor: int, data: DisponibilidadEspecialCreate, current_user: dict=Depends(get_current_user)):
+    return service.crear_disponibilidad_especial(id_doctor, data, current_user)
+
+@router.delete('/{id_doctor}/disponibilidad-especial/{id_disp_especial}')
+def eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, current_user: dict=Depends(get_current_user)):
+    return service.eliminar_disponibilidad_especial(id_doctor, id_disp_especial, current_user)

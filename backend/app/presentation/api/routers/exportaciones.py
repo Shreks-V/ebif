@@ -14,7 +14,7 @@ import io
 from typing import Optional
 from fastapi import APIRouter, Query, Depends
 from fastapi.responses import StreamingResponse
-from app.application.exportaciones.dtos import FilePayload
+from app.domain.exportaciones.entities import FilePayload
 from app.application.exportaciones import use_cases as service
 from app.presentation.api.security import get_current_user
 

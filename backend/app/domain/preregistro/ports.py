@@ -1,7 +1,6 @@
 from typing import Any, Optional, Protocol
 
-from app.application.preregistro.dtos import UploadedFile
-from app.domain.preregistro.entities import DocumentoPaciente, Preregistro
+from app.domain.preregistro.entities import DocumentoPaciente, Preregistro, UploadedFile
 from app.domain.shared.current_user import CurrentUser
 
 

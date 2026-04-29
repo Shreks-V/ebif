@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
@@ -27,7 +28,7 @@ const ROLE_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <nav class="bg-gradient-to-r from-[#00328b] via-[#0052cc] to-[#00328b] shadow-2xl sticky top-0 z-50 border-b-4 border-[#f3ad1c]">
       <div class="max-w-[1400px] mx-auto px-8">
@@ -269,7 +270,19 @@ const ROLE_LABELS: Record<string, string> = {
                     <p class="text-xs text-slate-500 mt-1">{{ userEmail }}</p>
                   </div>
                   <div class="p-2">
-                    <button (click)="auth.logout()" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                    <button (click)="openCambiarPass(); userMenuOpen=false" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      Cambiar contrase&ntilde;a
+                    </button>
+                    @if (isAdmin) {
+                      <button (click)="openGestionAccesos(); userMenuOpen=false" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Gesti&oacute;n de accesos
+                      </button>
+                    }
+                    <div class="border-t border-slate-100 my-1"></div>
+                    <button (click)="auth.logout()" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
                       Cerrar sesi&oacute;n
                     </button>
                   </div>
@@ -369,6 +382,126 @@ const ROLE_LABELS: Record<string, string> = {
         }
       </div>
     </nav>
+
+    <!-- Modal: Cambiar contraseña -->
+    @if (showCambiarPass) {
+      <div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" (click)="closeCambiarPass()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 bg-[#00328b] rounded-xl flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <h2 class="text-base font-bold text-slate-900">Cambiar contrase&ntilde;a</h2>
+            </div>
+            <button (click)="closeCambiarPass()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 transition-all cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+          <div class="px-6 py-5 space-y-4">
+            @if (cambiarPassSuccess) {
+              <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-semibold text-emerald-700 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Contrase&ntilde;a actualizada correctamente.
+              </div>
+            }
+            @if (cambiarPassError) {
+              <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">{{ cambiarPassError }}</div>
+            }
+            @if (!cambiarPassSuccess) {
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Contrase&ntilde;a actual</label>
+                <input type="password" [(ngModel)]="cambiarPassData.actual" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Tu contrase&ntilde;a actual">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Nueva contrase&ntilde;a</label>
+                <input type="password" [(ngModel)]="cambiarPassData.nueva" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="M&iacute;nimo 8 caracteres">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Confirmar nueva contrase&ntilde;a</label>
+                <input type="password" [(ngModel)]="cambiarPassData.confirmar" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Repite la nueva contrase&ntilde;a">
+              </div>
+            }
+          </div>
+          <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+            <button (click)="closeCambiarPass()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">Cancelar</button>
+            @if (!cambiarPassSuccess) {
+              <button (click)="submitCambiarPass()" [disabled]="cambiarPassLoading" class="px-5 py-2 text-sm font-bold text-white bg-[#00328b] hover:bg-[#00246d] rounded-xl transition-all disabled:opacity-50">
+                {{ cambiarPassLoading ? 'Guardando...' : 'Guardar' }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Modal: Gestión de accesos (solo admin) -->
+    @if (showGestionAccesos) {
+      <div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" (click)="closeGestionAccesos()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50 shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 bg-[#00328b] rounded-xl flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <h2 class="text-base font-bold text-slate-900">Gesti&oacute;n de accesos</h2>
+            </div>
+            <button (click)="closeGestionAccesos()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 transition-all cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+          <div class="px-6 py-4 overflow-y-auto flex-1">
+            @if (gestionAccesosLoading) {
+              <div class="space-y-3">
+                @for (i of [1,2,3]; track i) {
+                  <div class="h-16 bg-slate-100 rounded-xl animate-pulse"></div>
+                }
+              </div>
+            }
+            @if (!gestionAccesosLoading) {
+              <div class="space-y-3">
+                @for (u of usuariosSistema; track u.id_usuario) {
+                  <div class="border border-slate-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                      <div>
+                        <p class="text-sm font-bold text-slate-900">{{ u.nombre }} {{ u.apellido_paterno }}</p>
+                        <p class="text-xs text-slate-500">{{ u.correo }} &middot; <span class="font-semibold text-[#00328b]">{{ u.rol }}</span></p>
+                      </div>
+                      <span class="text-xs px-2 py-0.5 rounded-full font-bold" [ngClass]="u.estatus === 'ACTIVO' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'">{{ u.estatus }}</span>
+                    </div>
+                    @if (resetPassId === u.id_usuario) {
+                      <div class="space-y-2">
+                        @if (resetPassSuccess === u.id_usuario) {
+                          <p class="text-xs font-semibold text-emerald-600">&#10003; Contrase&ntilde;a restablecida</p>
+                        }
+                        @if (resetPassError) {
+                          <p class="text-xs font-semibold text-red-600">{{ resetPassError }}</p>
+                        }
+                        @if (resetPassSuccess !== u.id_usuario) {
+                          <input type="password" [(ngModel)]="resetPassNueva" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none" placeholder="Nueva contrase&ntilde;a (m&iacute;n. 8 chars)">
+                          <div class="flex gap-2">
+                            <button (click)="submitResetPass(u.id_usuario)" [disabled]="resetPassLoading" class="px-3 py-1.5 text-xs font-bold text-white bg-[#00328b] hover:bg-[#00246d] rounded-lg transition-all disabled:opacity-50">
+                              {{ resetPassLoading ? 'Guardando...' : 'Confirmar' }}
+                            </button>
+                            <button (click)="resetPassId=null; resetPassNueva=''; resetPassError=''" class="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all">Cancelar</button>
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (resetPassId !== u.id_usuario) {
+                      <button (click)="openResetPass(u.id_usuario)" class="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1 transition-colors cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2H3v16h5v4l4-4h5l4-4V2zM11 11V7"/><circle cx="11" cy="14" r=".5" fill="currentColor"/></svg>
+                        Restablecer contrase&ntilde;a
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
     `,
   styles: []
 })
@@ -382,6 +515,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
   notificationsOpen = false;
   notifications: NavbarNotification[] = [];
   notifLoading = false;
+
+  // Cambiar contraseña
+  showCambiarPass = false;
+  cambiarPassData = { actual: '', nueva: '', confirmar: '' };
+  cambiarPassError = '';
+  cambiarPassSuccess = false;
+  cambiarPassLoading = false;
+
+  // Gestión de accesos (admin)
+  showGestionAccesos = false;
+  usuariosSistema: any[] = [];
+  gestionAccesosLoading = false;
+  resetPassId: number | null = null;
+  resetPassNueva = '';
+  resetPassError = '';
+  resetPassSuccess: number | null = null;
+  resetPassLoading = false;
   lastRefresh = '';
   private refreshInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -433,6 +583,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
     return (first + second).toUpperCase();
   }
 
+  get isAdmin(): boolean {
+    return ['ADMINISTRADOR', 'ADMIN'].includes(
+      (this.auth.getUser()?.rol || '').toString().toUpperCase()
+    );
+  }
+
   toggleUserMenu(): void {
     this.userMenuOpen = !this.userMenuOpen;
     this.notificationsOpen = false;
@@ -472,5 +628,92 @@ export class NavbarComponent implements OnInit, OnDestroy {
       return this.router.url === '/dashboard' || this.router.url === '/';
     }
     return this.router.url.startsWith(path);
+  }
+
+  // ── Cambiar contraseña ─────────────────────────────────────────────────────
+
+  openCambiarPass(): void {
+    this.cambiarPassData = { actual: '', nueva: '', confirmar: '' };
+    this.cambiarPassError = '';
+    this.cambiarPassSuccess = false;
+    this.showCambiarPass = true;
+  }
+
+  closeCambiarPass(): void {
+    this.showCambiarPass = false;
+  }
+
+  submitCambiarPass(): void {
+    this.cambiarPassError = '';
+    const { actual, nueva, confirmar } = this.cambiarPassData;
+    if (!actual || !nueva || !confirmar) {
+      this.cambiarPassError = 'Completa todos los campos.';
+      return;
+    }
+    if (nueva.length < 8) {
+      this.cambiarPassError = 'La nueva contraseña debe tener al menos 8 caracteres.';
+      return;
+    }
+    if (nueva !== confirmar) {
+      this.cambiarPassError = 'Las contraseñas no coinciden.';
+      return;
+    }
+    this.cambiarPassLoading = true;
+    this.api.cambiarContrasena({ contrasena_actual: actual, contrasena_nueva: nueva }).subscribe({
+      next: () => {
+        this.cambiarPassLoading = false;
+        this.cambiarPassSuccess = true;
+      },
+      error: (err) => {
+        this.cambiarPassLoading = false;
+        this.cambiarPassError = err?.error?.detail || 'Error al cambiar la contraseña.';
+      },
+    });
+  }
+
+  // ── Gestión de accesos (admin) ─────────────────────────────────────────────
+
+  openGestionAccesos(): void {
+    this.showGestionAccesos = true;
+    this.resetPassId = null;
+    this.resetPassNueva = '';
+    this.resetPassError = '';
+    this.resetPassSuccess = null;
+    this.gestionAccesosLoading = true;
+    this.api.listarUsuariosSistema().subscribe({
+      next: (data) => { this.usuariosSistema = data; this.gestionAccesosLoading = false; },
+      error: () => { this.gestionAccesosLoading = false; },
+    });
+  }
+
+  closeGestionAccesos(): void {
+    this.showGestionAccesos = false;
+  }
+
+  openResetPass(idUsuario: number): void {
+    this.resetPassId = idUsuario;
+    this.resetPassNueva = '';
+    this.resetPassError = '';
+    this.resetPassSuccess = null;
+  }
+
+  submitResetPass(idUsuario: number): void {
+    this.resetPassError = '';
+    if (this.resetPassNueva.length < 8) {
+      this.resetPassError = 'Mínimo 8 caracteres.';
+      return;
+    }
+    this.resetPassLoading = true;
+    this.api.adminResetContrasena(idUsuario, { contrasena_nueva: this.resetPassNueva }).subscribe({
+      next: () => {
+        this.resetPassLoading = false;
+        this.resetPassSuccess = idUsuario;
+        this.resetPassNueva = '';
+      },
+      error: (err) => {
+        this.resetPassLoading = false;
+        this.resetPassError = err?.error?.detail || 'Error al restablecer.';
+      },
+    });
   }
 }

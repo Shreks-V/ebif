@@ -37,6 +37,10 @@ def crear_cita(data: CitaCreate, current_user: dict=Depends(require_role('ADMINI
 def actualizar_cita(id_cita: int, data: CitaCreate, current_user: dict=Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))):
     return service.actualizar_cita(id_cita, data, current_user)
 
+@router.put('/{id_cita}/iniciar')
+def iniciar_cita(id_cita: int, current_user: dict=Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))):
+    return service.iniciar_cita(id_cita, current_user)
+
 @router.put('/{id_cita}/completar')
 def completar_cita(id_cita: int, current_user: dict=Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))):
     return service.completar_cita(id_cita, current_user)

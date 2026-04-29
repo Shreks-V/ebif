@@ -28,6 +28,9 @@ class CitasService:
     def actualizar_cita(self, id_cita: int, data: CitaCreate, current_user: CurrentUser | None = None):
         return self._repository.actualizar_cita(id_cita, data, current_user)
 
+    def iniciar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
+        return self._repository.iniciar_cita(id_cita, current_user)
+
     def completar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
         return self._repository.completar_cita(id_cita, current_user)
 
@@ -69,6 +72,9 @@ def crear_cita(data: CitaCreate, current_user: CurrentUser | None = None):
 
 def actualizar_cita(id_cita: int, data: CitaCreate, current_user: CurrentUser | None = None):
     return _svc().actualizar_cita(id_cita, data, current_user)
+
+def iniciar_cita(id_cita: int, current_user: CurrentUser | None = None):
+    return _svc().iniciar_cita(id_cita, current_user)
 
 def completar_cita(id_cita: int, current_user: CurrentUser | None = None):
     return _svc().completar_cita(id_cita, current_user)

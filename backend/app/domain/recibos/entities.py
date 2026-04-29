@@ -17,6 +17,18 @@ class Venta(TypedDict, total=False):
     nombre_paciente: Optional[str]
     folio_paciente: Optional[str]
     metodos_pago: Optional[List[dict]]
+    items: Optional[List[dict]]
+
+
+class VentaLinea(TypedDict, total=False):
+    id_linea: int
+    id_venta: int
+    tipo: str
+    id_referencia: int
+    descripcion: str
+    precio_unitario: float
+    cantidad: int
+    subtotal: float
 
 
 class MetodoPago(TypedDict, total=False):

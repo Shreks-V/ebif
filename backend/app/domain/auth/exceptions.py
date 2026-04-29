@@ -8,3 +8,7 @@ class UserNotFoundError(Exception):
 
 class ForbiddenActionError(Exception):
     """Raised when an authenticated user cannot perform an action."""
+
+
+class TokenDecodeError(Exception):
+    """Raised when a JWT token cannot be decoded or is invalid."""

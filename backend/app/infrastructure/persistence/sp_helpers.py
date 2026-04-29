@@ -35,6 +35,15 @@ def make_varchar_list(conn, values):
     return obj
 
 
+def make_decimal_list(conn, values):
+    """Build a SYS.ODCINUMBERLIST for float/decimal values (prices, amounts)."""
+    ty = conn.gettype("SYS.ODCINUMBERLIST")
+    obj = ty.newobject()
+    if values:
+        obj.extend([round(float(v), 2) if v is not None else None for v in values])
+    return obj
+
+
 def parse_ora_error(exc: oracledb.DatabaseError) -> tuple[int | None, str]:
     """Extract (code, message) from an oracledb error.
 

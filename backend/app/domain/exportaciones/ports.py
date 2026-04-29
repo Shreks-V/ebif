@@ -1,6 +1,6 @@
 from typing import Optional, Protocol
 
-from app.application.exportaciones.dtos import FilePayload
+from app.domain.exportaciones.entities import FilePayload
 from app.domain.shared.current_user import CurrentUser
 
 

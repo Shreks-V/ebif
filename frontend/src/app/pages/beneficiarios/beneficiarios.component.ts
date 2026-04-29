@@ -99,113 +99,117 @@ interface TableSortState {
         <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
     
           <!-- Header -->
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-5">
-              <div class="w-14 h-14 bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-2xl flex items-center justify-center shadow-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <line x1="19" y1="8" x2="19" y2="14"/>
-                  <line x1="16" y1="11" x2="22" y2="11"/>
-                </svg>
-              </div>
-              <div>
-                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Registro de Beneficiarios</h1>
-                <p class="text-slate-600 font-semibold">Gestion completa de beneficiarios y membresias</p>
-              </div>
-            </div>
-            <button (click)="openNuevoModal()" class="bg-gradient-to-r from-[#f3ad1c] to-[#ffb84d] text-white shadow-xl font-bold px-6 py-3 rounded-xl flex items-center gap-2 hover:shadow-2xl transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          <div class="flex items-center gap-5">
+            <div class="w-14 h-14 bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-2xl flex items-center justify-center shadow-xl">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <line x1="19" y1="8" x2="19" y2="14"/>
+                <line x1="16" y1="11" x2="22" y2="11"/>
               </svg>
-              Nuevo Beneficiario
-            </button>
-          </div>
-    
-          <!-- Search -->
-          <div class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 p-6">
-            <div class="flex items-center gap-4">
-              <div class="relative flex-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="8"/>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                <input
-                  type="text"
-                  [(ngModel)]="searchTerm"
-                  (ngModelChange)="filterData()"
-                  placeholder="Buscar por nombre, folio, CURP o membresia..."
-                  class="w-full pl-14 h-14 bg-slate-50 border-2 border-slate-200 rounded-2xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#007BFF] focus:ring-2 focus:ring-[#007BFF]/20 transition-all"
-                  />
-              </div>
-              <button (click)="exportarCSV()" class="h-14 border-2 border-slate-200 font-bold px-6 rounded-2xl text-slate-700 bg-white hover:bg-slate-50 flex items-center gap-2 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-                Exportar
-              </button>
+            </div>
+            <div>
+              <h1 class="text-3xl font-black text-slate-900 tracking-tight">Registro de Beneficiarios</h1>
+              <p class="text-slate-600 font-semibold">Gestión completa de beneficiarios y membresías</p>
             </div>
           </div>
     
-          <!-- Tabs -->
-          <div class="bg-white border-2 border-slate-200 p-1 rounded-2xl shadow-lg flex">
-            <button
-              (click)="currentTab = 'activos'"
-              [class]="currentTab === 'activos'
-                ? 'bg-[#007BFF] text-white rounded-xl font-bold px-6 py-2 transition-all'
-                : 'text-slate-600 font-bold px-6 py-2 rounded-xl hover:bg-slate-100 transition-all'"
-              >
-              Beneficiarios Activos ({{ filteredBeneficiarios.length }})
-            </button>
-            <button
-              (click)="currentTab = 'preregistros'"
-              [class]="currentTab === 'preregistros'
-                ? 'bg-[#f3ad1c] text-white rounded-xl font-bold px-6 py-2 transition-all'
-                : 'text-slate-600 font-bold px-6 py-2 rounded-xl hover:bg-slate-100 transition-all'"
-              >
-              Aprobacion de Preregistro ({{ filteredPreregistros.length }})
-            </button>
-          </div>
-    
-          <!-- Loading Skeleton -->
-          @if (loading) {
-            <div class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-hidden p-6">
-              <div class="animate-pulse space-y-4">
-                <div class="h-4 bg-slate-200 rounded w-1/3"></div>
-                @for (_ of [1,2,3,4,5,6]; track _) {
-                  <div class="flex items-center gap-4 py-3">
-                    <div class="w-12 h-12 bg-slate-200 rounded-full"></div>
-                    <div class="flex-1 space-y-2">
-                      <div class="h-4 bg-slate-200 rounded w-2/3"></div>
-                      <div class="h-3 bg-slate-100 rounded w-1/3"></div>
-                    </div>
-                    <div class="h-4 bg-slate-200 rounded w-20"></div>
-                    <div class="h-6 bg-slate-200 rounded-full w-16"></div>
+          <!-- Main card (unified, citas-style) -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+
+            <!-- Card header + tabs (underline style) -->
+            <div class="px-6 pt-4 bg-slate-50 border-b border-slate-200">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex gap-2">
+                  <button (click)="currentTab = 'activos'" class="px-4 py-2 text-sm font-semibold transition-colors"
+                    [ngClass]="currentTab === 'activos' ? 'text-[#00328b] border-b-2 border-[#00328b]' : 'text-slate-600 hover:text-slate-800'">
+                    Beneficiarios Activos ({{ filteredBeneficiarios.length }})
+                  </button>
+                  <button (click)="currentTab = 'preregistros'" class="px-4 py-2 text-sm font-semibold transition-colors"
+                    [ngClass]="currentTab === 'preregistros' ? 'text-[#00328b] border-b-2 border-[#00328b]' : 'text-slate-600 hover:text-slate-800'">
+                    Aprobación de Preregistro ({{ filteredPreregistros.length }})
+                  </button>
+                </div>
+                @if (currentTab === 'activos') {
+                  <div class="flex items-center gap-2">
+                    <button (click)="exportarCSV()" class="px-4 py-2 border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                      </svg>
+                      Exportar
+                    </button>
+                    <button (click)="openNuevoModal()" class="px-4 py-2 bg-[#f3ad1c] text-white text-sm font-semibold rounded-lg hover:bg-[#e09c10] transition-colors flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+                      </svg>
+                      Nuevo Beneficiario
+                    </button>
                   </div>
                 }
               </div>
             </div>
-          }
-    
-          <!-- Alerta membresías próximas a vencer -->
-          @if (membresiasProximasCount > 0 && currentTab === 'activos') {
-            <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl px-5 py-3 flex items-center gap-3">
-              <div class="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                </svg>
-              </div>
-              <p class="text-sm font-bold text-amber-800">
-                {{ membresiasProximasCount }} membresía{{ membresiasProximasCount === 1 ? '' : 's' }} próxima{{ membresiasProximasCount === 1 ? '' : 's' }} a vencer en los próximos 30 días.
-                <span class="font-normal">Verifica la columna Membresía y renueva según corresponda.</span>
-              </p>
+
+            <!-- Search -->
+            <div class="px-6 py-4">
+              @if (currentTab === 'activos') {
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                  </svg>
+                  <input type="text" [(ngModel)]="searchTermBeneficiarios" (ngModelChange)="filterBeneficiarios()"
+                    placeholder="Buscar por nombre, folio, CURP o membresía..."
+                    class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00328b]/20 focus:border-[#00328b] transition-all" />
+                </div>
+              }
+              @if (currentTab === 'preregistros') {
+                <div class="relative">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                  </svg>
+                  <input type="text" [(ngModel)]="searchTermPreregistros" (ngModelChange)="filterPreregistros()"
+                    placeholder="Buscar por nombre, ID o CURP..."
+                    class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f3ad1c]/20 focus:border-[#f3ad1c] transition-all" />
+                </div>
+              }
             </div>
-          }
+
+            <!-- Alerta membresías próximas a vencer -->
+            @if (membresiasProximasCount > 0 && currentTab === 'activos') {
+              <div class="mx-6 mb-4 bg-amber-50 border border-amber-300 rounded-xl px-5 py-3 flex items-center gap-3">
+                <div class="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  </svg>
+                </div>
+                <p class="text-sm font-bold text-amber-800">
+                  {{ membresiasProximasCount }} membresía{{ membresiasProximasCount === 1 ? '' : 's' }} próxima{{ membresiasProximasCount === 1 ? '' : 's' }} a vencer en los próximos 30 días.
+                  <span class="font-normal">Verifica la columna Membresía y renueva según corresponda.</span>
+                </p>
+              </div>
+            }
+
+            <!-- Loading Skeleton -->
+            @if (loading) {
+              <div class="p-6">
+                <div class="animate-pulse space-y-4">
+                  @for (_ of [1,2,3,4,5,6]; track _) {
+                    <div class="flex items-center gap-4 py-3">
+                      <div class="w-12 h-12 bg-slate-200 rounded-full"></div>
+                      <div class="flex-1 space-y-2">
+                        <div class="h-4 bg-slate-200 rounded w-2/3"></div>
+                        <div class="h-3 bg-slate-100 rounded w-1/3"></div>
+                      </div>
+                      <div class="h-4 bg-slate-200 rounded w-20"></div>
+                      <div class="h-6 bg-slate-200 rounded-full w-16"></div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
     
-          <!-- Tab Content: Beneficiarios Activos -->
+          <!-- Table: Beneficiarios Activos -->
           @if (currentTab === 'activos' && !loading) {
-            <div class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 overflow-auto max-h-[calc(100vh-320px)]">
-              <table class="w-full">
+            <table class="w-full text-sm">
                 <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
                   <tr class="bg-slate-50 border-b border-slate-200">
                     <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -306,7 +310,7 @@ interface TableSortState {
                   }
                 </tbody>
               </table>
-              <!-- Footer -->
+              <!-- Footer activos -->
               <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
                 <span class="text-sm text-slate-500 font-medium">
                   Mostrando {{ beneficiariosStart + 1 }} a {{ beneficiariosEnd }} de {{ filteredBeneficiarios.length }} beneficiarios
@@ -328,15 +332,13 @@ interface TableSortState {
                   </button>
                 </div>
               </div>
-            </div>
           }
-    
-          <!-- Tab Content: Preregistros -->
+
+          <!-- Table: Preregistros -->
           @if (currentTab === 'preregistros') {
-            <div class="bg-white rounded-3xl shadow-xl border-2 border-slate-100">
-              <table class="w-full">
-                <thead class="sticky top-0 z-10 shadow-sm">
-                  <tr class="bg-amber-50 border-b border-amber-200">
+            <table class="w-full text-sm">
+              <thead class="sticky top-0 z-10 shadow-sm">
+                <tr class="bg-amber-50 border-b border-amber-200">
                     <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                       <button type="button" (click)="togglePreregistrosSort('id')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
                         <span>ID</span>
@@ -445,11 +447,12 @@ interface TableSortState {
                   </button>
                 </div>
               </div>
-            </div>
           }
-    
+
+          </div><!-- end unified card -->
+
         </div>
-    
+
         <app-footer />
       </main>
     </div>
@@ -1814,7 +1817,8 @@ interface TableSortState {
 })
 export class BeneficiariosComponent implements OnInit, OnDestroy {
   currentTab: 'activos' | 'preregistros' = 'activos';
-  searchTerm = '';
+  searchTermBeneficiarios = '';
+  searchTermPreregistros = '';
 
   // Pagination
   pageSize = 20;
@@ -2215,11 +2219,17 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
     }
   }
 
+  private readonly CURP_REGEX = /^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
+
   submitNuevoBeneficiario(): void {
     if (!this.formData.nombre || !this.formData.apellido_paterno || !this.formData.genero ||
         !this.formData.fecha_nacimiento || !this.formData.curp || !this.formData.tipo_cuota ||
         !this.formData.membresia_estatus) {
       this.nuevoError = 'Por favor completa todos los campos obligatorios marcados con *.';
+      return;
+    }
+    if (!this.CURP_REGEX.test(this.formData.curp.trim().toUpperCase())) {
+      this.nuevoError = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial mexicano).';
       return;
     }
 
@@ -2400,7 +2410,7 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
 
   exportarCSV(): void {
     const filters: any = {};
-    if (this.searchTerm) filters.busqueda = this.searchTerm;
+    if (this.searchTermBeneficiarios) filters.busqueda = this.searchTermBeneficiarios;
     this.api.exportarBeneficiariosExcel(filters).subscribe({
       next: (blob) => this.descargarArchivo(blob, `beneficiarios_${new Date().toISOString().slice(0, 10)}.xlsx`),
       error: () => alert('Error al exportar'),
@@ -2489,8 +2499,8 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
     return sorted.slice(this.preregistrosStart, this.preregistrosEnd);
   }
 
-  filterData(): void {
-    const term = this.searchTerm.toLowerCase().trim();
+  filterBeneficiarios(): void {
+    const term = this.searchTermBeneficiarios.toLowerCase().trim();
     this.filteredBeneficiarios = this.beneficiarios.filter(b =>
       b.nombre.toLowerCase().includes(term) ||
       b.apellidoPaterno.toLowerCase().includes(term) ||
@@ -2500,6 +2510,11 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
       b.membresiaEstatus.toLowerCase().includes(term) ||
       b.tipoCuota.toLowerCase().includes(term)
     );
+    this.beneficiariosPage = 1;
+  }
+
+  filterPreregistros(): void {
+    const term = this.searchTermPreregistros.toLowerCase().trim();
     this.filteredPreregistros = this.preregistros.filter(p =>
       p.nombre.toLowerCase().includes(term) ||
       p.apellidoPaterno.toLowerCase().includes(term) ||
@@ -2508,8 +2523,12 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
       p.curp.toLowerCase().includes(term) ||
       p.tipoCuota.toLowerCase().includes(term)
     );
-    this.beneficiariosPage = 1;
     this.preregistrosPage = 1;
+  }
+
+  filterData(): void {
+    this.filterBeneficiarios();
+    this.filterPreregistros();
   }
 
   changeBeneficiariosPage(page: number): void {
@@ -2858,6 +2877,10 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
     if (!this.editFormData.nombre || !this.editFormData.apellido_paterno || !this.editFormData.genero ||
         !this.editFormData.fecha_nacimiento || !this.editFormData.curp) {
       this.editError = 'Por favor completa todos los campos obligatorios.';
+      return;
+    }
+    if (!this.CURP_REGEX.test(this.editFormData.curp.trim().toUpperCase())) {
+      this.editError = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial mexicano).';
       return;
     }
 

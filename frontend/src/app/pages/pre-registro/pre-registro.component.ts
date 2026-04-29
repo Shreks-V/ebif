@@ -521,13 +521,19 @@ export class PreRegistroComponent implements OnInit {
       this.invalidFields.push('tiposEspinaIds');
     }
 
-    // Step 1: CURP must be 18 chars
-    if (step === 1 && this.formData.curp && this.formData.curp.trim().length !== 18) {
-      this.invalidFields.push('curp');
+    // Step 1: CURP must match official Mexican CURP format
+    if (step === 1 && this.formData.curp) {
+      const curpRegex = /^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
+      if (!curpRegex.test(this.formData.curp.trim().toUpperCase())) {
+        this.invalidFields.push('curp');
+        this.stepError = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial).';
+      }
     }
 
     if (this.invalidFields.length > 0) {
-      this.stepError = 'Por favor completa todos los campos obligatorios marcados con *';
+      if (!this.stepError) {
+        this.stepError = 'Por favor completa todos los campos obligatorios marcados con *';
+      }
       return false;
     }
 
@@ -598,7 +604,12 @@ export class PreRegistroComponent implements OnInit {
       error: (err) => {
         this.submitting = false;
         console.error('Error al crear pre-registro:', err);
-        this.stepError = 'Ocurri\u00f3 un error al guardar. Intenta de nuevo.';
+        const detail = err?.error?.detail;
+        if (detail && detail.includes('folio o CURP')) {
+          this.stepError = 'Ya existe un registro con ese CURP. Si ya enviaste un pre-registro, cont\u00e1ctanos.';
+        } else {
+          this.stepError = detail || 'Ocurri\u00f3 un error al guardar. Intenta de nuevo.';
+        }
       },
     });
   }

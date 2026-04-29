@@ -23,3 +23,15 @@ class Disponibilidad(TypedDict, total=False):
     hora_fin: str
     disponible: str
     fecha_registro: Optional[str]
+
+
+class DisponibilidadEspecial(TypedDict, total=False):
+    id_disp_especial: int
+    id_doctor: int
+    fecha_inicio: str
+    hora_inicio: str
+    hora_fin: str
+    tipo_recurrencia: str
+    descripcion: Optional[str]
+    activo: str
+    fecha_registro: Optional[str]

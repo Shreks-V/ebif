@@ -1,8 +1,3 @@
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class FilePayload:
-    content: bytes
-    media_type: str
-    filename: str
+# Los DTOs de exportaciones se definen aquí cuando sea necesario.
+# FilePayload es un tipo de dominio (usado en los puertos) — importar desde
+# app.domain.exportaciones.entities directamente.

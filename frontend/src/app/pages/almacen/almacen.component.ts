@@ -248,8 +248,10 @@ interface TableSortState {
                 >
                 <div class="flex items-center gap-4 mb-3">
                   <div [class]="selectedCategory === 'Servicios' ? 'p-3 bg-purple-600 rounded-xl shadow-lg' : 'p-3 bg-purple-100 rounded-xl'">
-                    <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Servicios'" [class.text-purple-600]="selectedCategory !== 'Servicios'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V4a.3.3 0 1 0-.6 0"/><path d="M8 2h4.5a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5H12"/><path d="M14.5 2H19a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-1"/>
+                    <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Servicios'" [class.text-purple-600]="selectedCategory !== 'Servicios'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                      <rect width="6" height="4" x="9" y="3" rx="1"/>
+                      <path d="m9 14 2 2 4-4"/>
                     </svg>
                   </div>
                   <div>
@@ -387,8 +389,10 @@ interface TableSortState {
                                   </svg>
                                 }
                                 @if (item.categoria === 'SERVICIO') {
-                                  <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2V4"/>
+                                  <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                                    <rect width="6" height="4" x="9" y="3" rx="1"/>
+                                    <path d="m9 14 2 2 4-4"/>
                                   </svg>
                                 }
                                 @if (item.categoria === 'EQUIPO') {

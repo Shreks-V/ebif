@@ -1,4 +1,4 @@
-from app.application.doctores.dtos import DoctorCreate, DisponibilidadCreate
+from app.application.doctores.dtos import DoctorCreate, DisponibilidadCreate, DisponibilidadEspecialCreate
 from app.domain.doctores.ports import DoctoresRepository
 from app.domain.shared.current_user import CurrentUser
 
@@ -41,6 +41,15 @@ class DoctoresService:
 
     def obtener_servicios_doctor(self, id_doctor: int, current_user: CurrentUser | None = None):
         return self._repository.obtener_servicios_doctor(id_doctor, current_user)
+
+    def listar_disponibilidad_especial(self, id_doctor: int, current_user: CurrentUser | None = None):
+        return self._repository.listar_disponibilidad_especial(id_doctor, current_user)
+
+    def crear_disponibilidad_especial(self, id_doctor: int, data: DisponibilidadEspecialCreate, current_user: CurrentUser | None = None):
+        return self._repository.crear_disponibilidad_especial(id_doctor, data, current_user)
+
+    def eliminar_disponibilidad_especial(self, id_doctor: int, id_disp_especial: int, current_user: CurrentUser | None = None):
+        return self._repository.eliminar_disponibilidad_especial(id_doctor, id_disp_especial, current_user)
 
 
 def configure_service(service: DoctoresService) -> None:
@@ -86,3 +95,12 @@ def eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_user
 
 def obtener_servicios_doctor(id_doctor: int, current_user: CurrentUser | None = None):
     return _svc().obtener_servicios_doctor(id_doctor, current_user)
+
+def listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | None = None):
+    return _svc().listar_disponibilidad_especial(id_doctor, current_user)
+
+def crear_disponibilidad_especial(id_doctor: int, data: DisponibilidadEspecialCreate, current_user: CurrentUser | None = None):
+    return _svc().crear_disponibilidad_especial(id_doctor, data, current_user)
+
+def eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, current_user: CurrentUser | None = None):
+    return _svc().eliminar_disponibilidad_especial(id_doctor, id_disp_especial, current_user)

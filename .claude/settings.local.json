@@ -117,7 +117,16 @@
       "Bash(pip3 install *)",
       "Bash(rsync -a --exclude=node_modules --exclude=.venv --exclude=frontend/dist --exclude=.git --exclude=__pycache__ '--exclude=*.pyc' '--exclude=*.pyo' --exclude=.pytest_cache --exclude=Sprint1_Portafolio_EBIF.docx --exclude=generar_portafolio.py '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif_sprint1/')",
       "Bash(rm -rf \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif_sprint1/frontend/src/app/pages/almacen\")",
-      "Bash(rm -rf \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif_sprint1/frontend/src/app/pages/reportes\")"
+      "Bash(rm -rf \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif_sprint1/frontend/src/app/pages/reportes\")",
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(python3.11 --version)",
+      "Bash(python3.12 --version)",
+      "Bash(python3.13 --version)",
+      "Bash(python3.12 -m pip install oracledb python-dotenv --quiet)",
+      "Bash(python3.12 -m venv /tmp/ebif_migrate)",
+      "Bash(/tmp/ebif_migrate/bin/pip install *)",
+      "Bash(/tmp/ebif_migrate/bin/python3.12 -c ' *)",
+      "WebSearch"
     ]
   },
   "enableAllProjectMcpServers": true,
