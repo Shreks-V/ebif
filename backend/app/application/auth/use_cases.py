@@ -1,4 +1,4 @@
-from app.application.auth.exceptions import ForbiddenError, LoginError, UserNotFoundError
+from app.application.auth.exceptions import ForbiddenError, LoginError, PasswordTooShortError, UserNotFoundError
 from app.domain.auth.entities import AuthenticatedUser, SeedUser, User
 from app.domain.auth.exceptions import AuthError, ForbiddenActionError
 from app.domain.auth.ports import AccessTokenIssuer, PasswordHasher, UserRepository
@@ -68,7 +68,7 @@ class AuthService:
 
     def change_password(self, current_user: dict, contrasena_actual: str, contrasena_nueva: str) -> None:
         if len(contrasena_nueva) < _MIN_PASSWORD_LENGTH:
-            raise ValueError(f"La contraseña debe tener al menos {_MIN_PASSWORD_LENGTH} caracteres")
+            raise PasswordTooShortError(f"La contraseña debe tener al menos {_MIN_PASSWORD_LENGTH} caracteres")
         user = self._user_repository.find_by_email(current_user["correo"])
         if user is None:
             raise UserNotFoundError()
@@ -80,7 +80,7 @@ class AuthService:
         if normalize_role(current_user.get("rol")) != "ADMINISTRADOR":
             raise ForbiddenError()
         if len(contrasena_nueva) < _MIN_PASSWORD_LENGTH:
-            raise ValueError(f"La contraseña debe tener al menos {_MIN_PASSWORD_LENGTH} caracteres")
+            raise PasswordTooShortError(f"La contraseña debe tener al menos {_MIN_PASSWORD_LENGTH} caracteres")
         user = self._user_repository.find_by_id(id_usuario)
         if user is None:
             raise UserNotFoundError()

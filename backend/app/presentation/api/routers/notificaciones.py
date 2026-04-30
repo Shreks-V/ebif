@@ -1,8 +1,11 @@
+import logging
 from fastapi import APIRouter, Depends
 from app.presentation.api.security import get_current_user
 from app.application.citas import use_cases as citas_svc
 from app.application.almacen import use_cases as almacen_svc
 from app.application.beneficiarios import use_cases as beneficiarios_svc
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -26,8 +29,8 @@ def get_notificaciones(current_user: dict = Depends(get_current_user)):
                 'count': programadas_hoy,
                 'link': '/citas',
             })
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("notificaciones: error al obtener citas de hoy: %s", exc)
 
     # ── Citas próximas (7 días) ───────────────────────────────────────────────
     try:
@@ -43,8 +46,8 @@ def get_notificaciones(current_user: dict = Depends(get_current_user)):
                 'count': count_prox,
                 'link': '/citas',
             })
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("notificaciones: error al obtener citas próximas: %s", exc)
 
     # ── Membresías por vencer (30 días) ──────────────────────────────────────
     try:
@@ -61,8 +64,8 @@ def get_notificaciones(current_user: dict = Depends(get_current_user)):
                 'count': count_mem,
                 'link': '/registro-usuarios',
             })
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("notificaciones: error al obtener membresías por vencer: %s", exc)
 
     # ── Almacén: existencias bajas ────────────────────────────────────────────
     try:
@@ -91,7 +94,7 @@ def get_notificaciones(current_user: dict = Depends(get_current_user)):
                 'count': caducidad,
                 'link': '/almacen',
             })
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("notificaciones: error al obtener stats de almacén: %s", exc)
 
     return notificaciones

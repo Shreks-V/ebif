@@ -126,7 +126,8 @@
       "Bash(python3.12 -m venv /tmp/ebif_migrate)",
       "Bash(/tmp/ebif_migrate/bin/pip install *)",
       "Bash(/tmp/ebif_migrate/bin/python3.12 -c ' *)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(grep -rn \"except Exception.*pass\\\\|except Exception:\\\\s*$\" app/)"
     ]
   },
   "enableAllProjectMcpServers": true,

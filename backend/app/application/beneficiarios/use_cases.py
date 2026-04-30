@@ -40,8 +40,8 @@ class BeneficiariosService:
     def listar_membresias_proximas_a_vencer(self, dias: int = 30, current_user: CurrentUser | None = None, limit: int = 500, offset: int = 0):
         return self._repository.listar_membresias_proximas_a_vencer(dias, current_user, limit, offset)
 
-    def renovar_membresia(self, folio: str, data: dict, current_user: CurrentUser | None = None):
-        return self._repository.renovar_membresia(folio, data, current_user)
+    def renovar_membresia(self, folio: str, data: RenovarMembresiaCreate, current_user: CurrentUser | None = None):
+        return self._repository.renovar_membresia(folio, data.model_dump(), current_user)
 
 
 def configure_service(service: BeneficiariosService) -> None:
@@ -85,5 +85,5 @@ def historial_beneficiario(folio: str, current_user: CurrentUser | None = None, 
 def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: CurrentUser | None = None, limit: int = 500, offset: int = 0):
     return _svc().listar_membresias_proximas_a_vencer(dias, current_user, limit, offset)
 
-def renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None = None):
+def renovar_membresia(folio: str, data: RenovarMembresiaCreate, current_user: CurrentUser | None = None):
     return _svc().renovar_membresia(folio, data, current_user)

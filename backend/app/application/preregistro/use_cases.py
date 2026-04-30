@@ -1,5 +1,6 @@
-from typing import Any, Optional
+from typing import Optional
 from app.application.preregistro.dtos import PreRegistroCreate
+from app.domain.preregistro.entities import UploadedFile
 from app.domain.preregistro.ports import PreregistroRepository
 from app.domain.shared.current_user import CurrentUser
 
@@ -31,7 +32,8 @@ class PreregistroService:
     def aprobar_preregistro(self, id_paciente: int, tipo_cuota: str = None, current_user: CurrentUser | None = None):
         return self._repository.aprobar_preregistro(id_paciente, tipo_cuota, current_user)
 
-    async def subir_documento(self, id_paciente: int, id_tipo_documento: int, archivo: Any, current_user: CurrentUser | None = None):
+    async def subir_documento(self, id_paciente: int, id_tipo_documento: int, filename: str, content: bytes, content_type: str, current_user: CurrentUser | None = None):
+        archivo = UploadedFile(filename=filename, content=content, content_type=content_type)
         return await self._repository.subir_documento(id_paciente, id_tipo_documento, archivo, current_user)
 
     def listar_documentos(self, id_paciente: int, limit: int = 100, offset: int = 0):
@@ -79,8 +81,8 @@ def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
 def aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: CurrentUser | None = None):
     return _svc().aprobar_preregistro(id_paciente, tipo_cuota, current_user)
 
-async def subir_documento(id_paciente: int, id_tipo_documento: int, archivo: Any, current_user: CurrentUser | None = None):
-    return await _svc().subir_documento(id_paciente, id_tipo_documento, archivo, current_user)
+async def subir_documento(id_paciente: int, id_tipo_documento: int, filename: str, content: bytes, content_type: str, current_user: CurrentUser | None = None):
+    return await _svc().subir_documento(id_paciente, id_tipo_documento, filename, content, content_type, current_user)
 
 def listar_documentos(id_paciente: int, limit: int = 100, offset: int = 0):
     return _svc().listar_documentos(id_paciente, limit, offset)

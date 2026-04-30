@@ -1,8 +1,11 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.application.auth.exceptions import ForbiddenError, LoginError, UserNotFoundError
+from app.application.auth.exceptions import ForbiddenError, LoginError, PasswordTooShortError, UserNotFoundError
+
+logger = logging.getLogger(__name__)
 from app.domain.auth.exceptions import AuthError
 from app.application.auth.use_cases import AuthService
 from app.presentation.api.dependencies import get_auth_service
@@ -33,7 +36,8 @@ def seed_users(
         return auth_service.seed_default_users(current_user)
     except ForbiddenError:
         raise HTTPException(status_code=403, detail="Solo administradores pueden ejecutar el seed")
-    except Exception:
+    except Exception as exc:
+        logger.exception("Error en seed_users: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al insertar usuarios en la BD",
@@ -82,7 +86,7 @@ def cambiar_contrasena(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="La contraseña actual es incorrecta")
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    except ValueError as exc:
+    except PasswordTooShortError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 
 
@@ -111,7 +115,7 @@ def reset_contrasena_admin(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    except ValueError as exc:
+    except PasswordTooShortError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 
 

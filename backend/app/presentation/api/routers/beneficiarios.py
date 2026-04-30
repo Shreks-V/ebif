@@ -81,4 +81,4 @@ def membresias_proximas_a_vencer(
 
 @router.post('/{folio}/renovar-membresia', status_code=200)
 def renovar_membresia(folio: str, data: RenovarMembresiaCreate, current_user: dict=Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))):
-    return service.renovar_membresia(folio, data.model_dump(), current_user)
+    return service.renovar_membresia(folio, data, current_user)
