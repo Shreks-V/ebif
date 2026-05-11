@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from app.domain.exceptions import InternalError, NotFoundError, ValidationError
 from typing import Optional

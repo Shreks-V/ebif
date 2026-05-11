@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from datetime import datetime
 import logging
 from app.domain.exceptions import InternalError
 from typing import Optional
+from app.application.reportes.dtos import ReporteFilter
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 logger = logging.getLogger(__name__)
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime, date, timedelta
 from app.domain.exceptions import NotFoundError, ValidationError
 from typing import Optional
