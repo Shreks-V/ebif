@@ -127,7 +127,14 @@
       "Bash(/tmp/ebif_migrate/bin/pip install *)",
       "Bash(/tmp/ebif_migrate/bin/python3.12 -c ' *)",
       "WebSearch",
-      "Bash(grep -rn \"except Exception.*pass\\\\|except Exception:\\\\s*$\" app/)"
+      "Bash(grep -rn \"except Exception.*pass\\\\|except Exception:\\\\s*$\" app/)",
+      "Read(//Users/maantora/Downloads/Wallet_SFVKC83N8A5HHPHB/**)",
+      "Bash(venv/bin/python3 db/apply_migration.py db/migrations/018_seed_data.sql)",
+      "Bash(venv/bin/python3 db/seed_dummies.py)",
+      "Bash(sed -i '' 's/\"CUOTA_A\"/\"CUOTA A\"/g; s/\"CUOTA_B\"/\"CUOTA B\"/g' db/seed_dummies.py)",
+      "Bash(sed -i '' 's/\",\"EXENTO\"\\),$/\",\"CUOTA B\"\\),/g' db/seed_dummies.py)",
+      "mcp__claude_ai_Atlassian__getAccessibleAtlassianResources",
+      "mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql"
     ]
   },
   "enableAllProjectMcpServers": true,

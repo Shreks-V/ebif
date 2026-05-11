@@ -10,5 +10,6 @@ export const routes: Routes = [
   { path: 'almacen', canActivate: [authGuard], loadComponent: () => import('./pages/almacen/almacen.component').then(m => m.AlmacenComponent) },
   { path: 'recibos', canActivate: [authGuard], loadComponent: () => import('./pages/recibos/recibos.component').then(m => m.RecibosComponent) },
   { path: 'reportes', canActivate: [authGuard], loadComponent: () => import('./pages/reportes/reportes.component').then(m => m.ReportesComponent) },
+  { path: 'perfil', canActivate: [authGuard], loadComponent: () => import('./pages/perfil/perfil.component').then(m => m.PerfilComponent) },
   { path: '**', redirectTo: '' },
 ];

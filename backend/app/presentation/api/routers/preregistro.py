@@ -84,9 +84,9 @@ def listar_documentos(
 def obtener_documento_archivo(id_paciente: int, id_documento: int, _access=Depends(ensure_preregistro_access)):
     archivo = service.obtener_documento_archivo(id_paciente, id_documento)
     return StreamingResponse(
-        iter([archivo['content']]),
-        media_type=archivo['content_type'],
-        headers={'Content-Disposition': f'inline; filename="{archivo["filename"]}"'},
+        iter([archivo.content]),
+        media_type=archivo.content_type,
+        headers={'Content-Disposition': f'inline; filename="{archivo.filename}"'},
     )
 
 @router.delete('/{id_paciente}/documentos/{id_documento}')

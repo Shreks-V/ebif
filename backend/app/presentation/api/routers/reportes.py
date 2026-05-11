@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional, List
-from app.schemas.schemas import ReporteResponse
+from app.presentation.api.schemas import ReporteResponse
 from app.application.reportes import use_cases as service
 from app.presentation.api.security import get_current_user
 router = APIRouter()

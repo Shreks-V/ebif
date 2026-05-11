@@ -1,7 +1,14 @@
-from pydantic import BaseModel
+import re
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
 
 __all__ = ["PreRegistroCreate", "AprobarPreRegistroData"]
+
+_CURP_RE = re.compile(
+    r'^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])'
+    r'[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|'
+    r'OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$'
+)
 
 
 class PreRegistroCreate(BaseModel):
@@ -11,6 +18,14 @@ class PreRegistroCreate(BaseModel):
     fecha_nacimiento: Optional[str] = None
     genero: Optional[str] = None
     curp: str
+
+    @field_validator('curp')
+    @classmethod
+    def curp_formato_valido(cls, v: str) -> str:
+        v = v.strip().upper()
+        if not _CURP_RE.match(v):
+            raise ValueError('El CURP no tiene el formato oficial mexicano (18 caracteres).')
+        return v
     estado_nacimiento: Optional[str] = None
     hospital_nacimiento: Optional[str] = None
     nombre_padre_madre: Optional[str] = None

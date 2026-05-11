@@ -116,6 +116,41 @@ interface TableSortState {
               </div>
             }
     
+            <!-- Filtros adicionales -->
+            <div class="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Filtros adicionales (opcionales)</p>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">G&eacute;nero</label>
+                  <select [(ngModel)]="filtroGenero"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white">
+                    <option value="">Todos</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
+                  <input type="text" [(ngModel)]="filtroEstado" placeholder="Ej. Jalisco"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Espina B&iacute;fida</label>
+                  <select [(ngModel)]="filtroTipoEspina"
+                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white">
+                    <option [ngValue]="null">Todos</option>
+                    <option [ngValue]="1">Espina Bífida Oculta</option>
+                    <option [ngValue]="2">Meningocele</option>
+                    <option [ngValue]="3">Mielomeningocele</option>
+                  </select>
+                </div>
+              </div>
+              @if (filtroGenero || filtroEstado || filtroTipoEspina !== null) {
+                <button (click)="filtroGenero=''; filtroEstado=''; filtroTipoEspina=null"
+                  class="mt-2 text-xs text-[#00328b] hover:underline cursor-pointer">Limpiar filtros</button>
+              }
+            </div>
+
             <!-- Error / info messages -->
             @if (reporteError) {
               <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
@@ -486,6 +521,9 @@ export class ReportesComponent {
   fechaInicio = '';
   fechaFin = '';
   tipoReporte = 'resumen';
+  filtroGenero = '';
+  filtroEstado = '';
+  filtroTipoEspina: number | null = null;
   selectedCharts: string[] = [];
   showModal = false;
 
@@ -758,6 +796,9 @@ export class ReportesComponent {
       if (this.fechaInicio) filters.fecha_inicio = this.fechaInicio;
       if (this.fechaFin) filters.fecha_fin = this.fechaFin;
     }
+    if (this.filtroGenero) filters.genero = this.filtroGenero;
+    if (this.filtroEstado) filters.estado = this.filtroEstado;
+    if (this.filtroTipoEspina !== null) filters.tipo_espina = this.filtroTipoEspina;
     return filters;
   }
 
@@ -914,6 +955,9 @@ export class ReportesComponent {
       filters.fecha_inicio = inicio;
       filters.fecha_fin = fin;
     }
+    if (this.filtroGenero) filters.genero = this.filtroGenero;
+    if (this.filtroEstado) filters.estado = this.filtroEstado;
+    if (this.filtroTipoEspina !== null) filters.tipo_espina = this.filtroTipoEspina;
     return filters;
   }
 

@@ -10,7 +10,7 @@ from app.domain.auth.exceptions import AuthError
 from app.application.auth.use_cases import AuthService
 from app.presentation.api.dependencies import get_auth_service
 from app.presentation.api.security import get_current_user
-from app.schemas.schemas import (
+from app.presentation.api.schemas import (
     AdminResetContrasenaRequest, CambiarContrasenaRequest,
     Token, UserLogin, UserResponse,
 )

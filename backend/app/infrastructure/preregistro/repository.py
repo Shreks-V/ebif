@@ -350,11 +350,11 @@ def obtener_documento_archivo(id_paciente: int, id_documento: int):
 
     filename = row.get('nombre_archivo') or file_path.name
     content_type, _ = mimetypes.guess_type(filename)
-    return {
-        'content': content,
-        'content_type': content_type or 'application/octet-stream',
-        'filename': filename,
-    }
+    return UploadedFile(
+        filename=filename,
+        content=content,
+        content_type=content_type or 'application/octet-stream',
+    )
 
 def eliminar_documento(id_paciente: int, id_documento: int):
     """Eliminar (soft delete) un documento."""

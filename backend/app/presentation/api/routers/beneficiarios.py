@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
 from app.application.beneficiarios.dtos import BeneficiarioCreate, RenovarMembresiaCreate
-from app.schemas.schemas import BeneficiarioResponse
+from app.presentation.api.schemas import BeneficiarioResponse
 from app.application.beneficiarios import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()

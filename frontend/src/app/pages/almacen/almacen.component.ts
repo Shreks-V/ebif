@@ -83,8 +83,8 @@ interface TableSortState {
               </svg>
             </div>
             <div>
-              <h1 class="text-3xl font-bold text-slate-800">Almac&eacute;n e Inventario</h1>
-              <p class="text-slate-500 text-sm">Control de medicamentos, servicios y comodatos</p>
+              <h1 class="text-3xl font-bold text-slate-800">Almac&eacute;n y Servicios</h1>
+              <p class="text-slate-500 text-sm">Control de medicamentos, equipo, servicios y comodatos</p>
             </div>
           </div>
     
@@ -162,6 +162,19 @@ interface TableSortState {
                 Inventario
               </button>
               <button
+                (click)="activeTab = 'servicios'"
+                [class]="activeTab === 'servicios'
+                  ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
+                  : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'"
+                >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                  <rect width="6" height="4" x="9" y="3" rx="1"/>
+                  <path d="m9 14 2 2 4-4"/>
+                </svg>
+                Servicios
+              </button>
+              <button
                 (click)="activeTab = 'comodatos'"
                 [class]="activeTab === 'comodatos'
                   ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
@@ -216,7 +229,7 @@ interface TableSortState {
                 <button (click)="limpiarFiltrosInventarioRapidos()" class="text-sm text-slate-500 hover:text-slate-700 cursor-pointer bg-transparent border-0">Limpiar filtros</button>
               }
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Medicamentos -->
               <button
                 (click)="toggleCategory('Medicamento')"
@@ -237,30 +250,6 @@ interface TableSortState {
                 </div>
                 <p class="text-sm font-semibold" [class]="selectedCategory === 'Medicamento' ? 'text-blue-700' : 'text-slate-500'">
                   {{ selectedCategory === 'Medicamento' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
-                </p>
-              </button>
-              <!-- Servicios -->
-              <button
-                (click)="toggleCategory('Servicios')"
-                [class]="selectedCategory === 'Servicios'
-                  ? 'bg-purple-50 rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-purple-500 text-left transition-all'
-                  : 'bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-slate-200 hover:border-purple-300 text-left transition-all'"
-                >
-                <div class="flex items-center gap-4 mb-3">
-                  <div [class]="selectedCategory === 'Servicios' ? 'p-3 bg-purple-600 rounded-xl shadow-lg' : 'p-3 bg-purple-100 rounded-xl'">
-                    <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Servicios'" [class.text-purple-600]="selectedCategory !== 'Servicios'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
-                      <rect width="6" height="4" x="9" y="3" rx="1"/>
-                      <path d="m9 14 2 2 4-4"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 class="text-lg font-bold text-slate-900">Servicios</h3>
-                    <p class="text-sm text-slate-600">{{ getCategoryCount('Servicios') }} elementos</p>
-                  </div>
-                </div>
-                <p class="text-sm font-semibold" [class]="selectedCategory === 'Servicios' ? 'text-purple-700' : 'text-slate-500'">
-                  {{ selectedCategory === 'Servicios' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
                 </p>
               </button>
               <!-- Equipo -->
@@ -447,6 +436,78 @@ interface TableSortState {
             </div>
           }
     
+          <!-- TAB: Servicios -->
+          @if (activeTab === 'servicios' && !loading) {
+            <div class="flex flex-col sm:flex-row gap-4">
+              <div class="relative flex-1">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.3-4.3"/>
+                </svg>
+                <input
+                  type="text"
+                  [(ngModel)]="searchServicios"
+                  placeholder="Buscar servicios..."
+                  class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  />
+              </div>
+              <button (click)="openNuevoProductoModal()" class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors shadow-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+                Agregar servicio
+              </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg border border-slate-200">
+              <table class="w-full text-sm">
+                <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
+                  <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="text-left px-5 py-4 font-semibold text-slate-600">ID</th>
+                    <th class="text-left px-5 py-4 font-semibold text-slate-600">Nombre</th>
+                    <th class="text-left px-5 py-4 font-semibold text-slate-600">Descripci&oacute;n</th>
+                    <th class="text-left px-5 py-4 font-semibold text-slate-600">Precio Cuota A</th>
+                    <th class="text-left px-5 py-4 font-semibold text-slate-600">Precio Cuota B</th>
+                    <th class="text-left px-5 py-4 font-semibold text-slate-600">Estado</th>
+                    <th class="text-left px-5 py-4 font-semibold text-slate-600">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of filteredServicios(); track s.idServicio) {
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      <td class="px-5 py-4 text-slate-600 font-mono">{{ s.idServicio }}</td>
+                      <td class="px-5 py-4 text-slate-800 font-medium">{{ s.nombre }}</td>
+                      <td class="px-5 py-4 text-slate-600 max-w-xs truncate">{{ s.descripcion || '—' }}</td>
+                      <td class="px-5 py-4"><span class="text-green-700 font-semibold">{{ formatCurrency(s.precioA) }}</span></td>
+                      <td class="px-5 py-4"><span class="text-blue-700 font-semibold">{{ formatCurrency(s.precioB) }}</span></td>
+                      <td class="px-5 py-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold" [ngClass]="s.activo === 'S' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'">
+                          {{ s.activo === 'S' ? 'Activo' : 'Inactivo' }}
+                        </span>
+                      </td>
+                      <td class="px-5 py-4">
+                        <button (click)="editarServicio({ id: s.idServicio })" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
+                        <button (click)="openConfirmDeleteModal({ id: s.idServicio, nombre: s.nombre, categoria: 'SERVICIO' })" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                  @if (filteredServicios().length === 0) {
+                    <tr>
+                      <td colspan="7" class="px-5 py-10 text-center text-slate-400 text-sm">No se encontraron servicios.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
           <!-- TAB: Comodatos -->
           @if (activeTab === 'comodatos') {
             <!-- Search + Nuevo Comodato -->
@@ -1080,10 +1141,11 @@ interface TableSortState {
   `],
 })
 export class AlmacenComponent implements OnInit {
-  activeTab: 'inventario' | 'comodatos' = 'inventario';
+  activeTab: 'inventario' | 'servicios' | 'comodatos' = 'inventario';
   selectedCategory: string | null = null;
   quickInventoryFilter: 'none' | 'existencias-bajas' | 'proximos-vencer' = 'none';
   searchInventario = '';
+  searchServicios = '';
   searchComodatos = '';
 
   loading = true;
@@ -1131,7 +1193,7 @@ export class AlmacenComponent implements OnInit {
 
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'];
-      if (tab === 'inventario' || tab === 'comodatos') {
+      if (tab === 'inventario' || tab === 'servicios' || tab === 'comodatos') {
         this.activeTab = tab;
       }
       const filter = String(params['filter'] || '').toLowerCase();
@@ -1625,7 +1687,6 @@ export class AlmacenComponent implements OnInit {
     let items: { id: number; categoria: string; nombre: string; unidadMedida: string; cantidadDisponible: number | null; nivelMinimo: number | null; precioA: number | null; precioB: number | null; estado: string; doctor?: string; horario?: string; fechaCaducidad?: string | null }[] = [];
 
     const showMedicamentos = !this.selectedCategory || this.selectedCategory === 'Medicamento';
-    const showServicios = !this.selectedCategory || this.selectedCategory === 'Servicios';
     const showEquipos = !this.selectedCategory || this.selectedCategory === 'Equipo';
 
     if (showMedicamentos) {
@@ -1641,18 +1702,6 @@ export class AlmacenComponent implements OnInit {
             precioA: p.precioA, precioB: p.precioB, estado, fechaCaducidad: p.fechaCaducidad
           });
         });
-    }
-
-    if (showServicios) {
-      this.servicios.forEach(s => {
-        items.push({
-          id: s.idServicio, categoria: 'SERVICIO', nombre: s.nombre, unidadMedida: 'Servicio',
-          cantidadDisponible: null, nivelMinimo: null,
-          precioA: s.precioA, precioB: s.precioB, estado: 'N/A', fechaCaducidad: null,
-          doctor: (s as any).doctor || '',
-          horario: (s as any).horario || ''
-        });
-      });
     }
 
     if (showEquipos) {
@@ -1700,6 +1749,14 @@ export class AlmacenComponent implements OnInit {
           return item.id;
       }
     });
+  }
+
+  filteredServicios(): ServicioItem[] {
+    if (!this.searchServicios.trim()) return this.servicios;
+    const q = this.searchServicios.toLowerCase();
+    return this.servicios.filter(s =>
+      s.nombre.toLowerCase().includes(q) || (s.descripcion || '').toLowerCase().includes(q)
+    );
   }
 
   private matchesQuickInventoryFilter(item: {

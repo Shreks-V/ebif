@@ -89,7 +89,7 @@ const ROLE_LABELS: Record<string, string> = {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
               </svg>
-              Almacén
+              Almac&eacute;n y Serv.
             </a>
     
             <a routerLink="/reportes"
@@ -111,13 +111,13 @@ const ROLE_LABELS: Record<string, string> = {
                 title="Notificaciones">
                 <!-- Bell icon — animated shake when there are alerts -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                  [class.animate-bounce]="notifications.length > 0 && !notificationsOpen">
+                  [class.animate-bounce]="visibleNotifications.length > 0 && !notificationsOpen">
                   <path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
                 </svg>
-                @if (notifications.length > 0) {
+                @if (visibleNotifications.length > 0) {
                   <span
                     class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#f3ad1c] text-[#00328b] text-[10px] font-black flex items-center justify-center">
-                    {{ notifications.length > 9 ? '9+' : notifications.length }}
+                    {{ visibleNotifications.length > 9 ? '9+' : visibleNotifications.length }}
                   </span>
                 }
               </button>
@@ -154,7 +154,7 @@ const ROLE_LABELS: Record<string, string> = {
                     </button>
                   </div>
                   <!-- Empty state -->
-                  @if (notifications.length === 0 && !notifLoading) {
+                  @if (visibleNotifications.length === 0 && !notifLoading) {
                     <div class="px-5 py-10 flex flex-col items-center gap-3 text-center">
                       <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
@@ -175,9 +175,9 @@ const ROLE_LABELS: Record<string, string> = {
                     </div>
                   }
                   <!-- Notification list -->
-                  @if (notifications.length > 0) {
+                  @if (visibleNotifications.length > 0) {
                     <div class="max-h-80 overflow-y-auto divide-y divide-slate-100">
-                      @for (n of notifications; track n) {
+                      @for (n of visibleNotifications; track n) {
                         <button
                           (click)="navegarNotificacion(n)"
                           class="w-full flex items-start gap-3.5 px-5 py-3.5 hover:bg-slate-50 transition-colors text-left cursor-pointer">
@@ -228,16 +228,24 @@ const ROLE_LABELS: Record<string, string> = {
                             </div>
                             <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">{{ n.detalle }}</p>
                           </div>
-                          <!-- Chevron -->
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0">
-                            <path d="m9 18 6-6-6-6"/>
-                          </svg>
+                          <!-- Chevron + dismiss -->
+                          <div class="flex items-center gap-1 mt-1 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="m9 18 6-6-6-6"/>
+                            </svg>
+                            <span (click)="dismissNotification(n.id, $event)"
+                              class="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                              </svg>
+                            </span>
+                          </div>
                         </button>
                       }
                     </div>
                   }
                   <!-- Footer -->
-                  @if (notifications.length > 0) {
+                  @if (visibleNotifications.length > 0) {
                     <div class="px-5 py-2.5 border-t border-slate-100 bg-slate-50 text-[11px] text-slate-400 text-center">
                       Última actualización: {{ lastRefresh }}
                     </div>
@@ -270,6 +278,10 @@ const ROLE_LABELS: Record<string, string> = {
                     <p class="text-xs text-slate-500 mt-1">{{ userEmail }}</p>
                   </div>
                   <div class="p-2">
+                    <a routerLink="/perfil" (click)="userMenuOpen=false" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors no-underline">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM12 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7z"/></svg>
+                      Mi Perfil
+                    </a>
                     <button (click)="openCambiarPass(); userMenuOpen=false" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
                       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                       Cambiar contrase&ntilde;a
@@ -351,7 +363,7 @@ const ROLE_LABELS: Record<string, string> = {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
               </svg>
-              Almacén
+              Almac&eacute;n y Serv.
             </a>
             <a routerLink="/reportes" (click)="mobileMenuOpen = false"
               [class]="isActive('/reportes') ? 'bg-[#f3ad1c] text-white shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/10'"
@@ -368,7 +380,7 @@ const ROLE_LABELS: Record<string, string> = {
             </div>
             <div class="px-5 py-3 rounded-xl bg-white/10 border border-white/20 text-white">
               <p class="text-xs font-bold">Notificaciones</p>
-              <p class="text-sm font-semibold">{{ notifications.length === 0 ? 'Sin alertas por ahora' : notifications.length + ' pendientes' }}</p>
+              <p class="text-sm font-semibold">{{ visibleNotifications.length === 0 ? 'Sin alertas por ahora' : visibleNotifications.length + ' pendientes' }}</p>
             </div>
             <hr class="border-white/20 my-2">
             <button (click)="auth.logout()"
@@ -514,7 +526,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
   userMenuOpen = false;
   notificationsOpen = false;
   notifications: NavbarNotification[] = [];
+  dismissedIds = new Set<string>();
   notifLoading = false;
+
+  get visibleNotifications(): NavbarNotification[] {
+    return this.notifications.filter(n => !this.dismissedIds.has(n.id));
+  }
 
   // Cambiar contraseña
   showCambiarPass = false;
@@ -606,6 +623,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
   navegarNotificacion(n: NavbarNotification): void {
     this.notificationsOpen = false;
     this.router.navigate([n.link]);
+  }
+
+  dismissNotification(id: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.dismissedIds.add(id);
   }
 
   private loadNotifications(): void {
