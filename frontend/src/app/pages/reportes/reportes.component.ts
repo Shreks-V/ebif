@@ -1,18 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
 
-interface IndicadorOption {
-  id: string;
-  nombre: string;
+interface CrossTabRow {
+  etapa: string;
+  total?: number;
+  [key: string]: string | number | undefined;
 }
 
-interface TableSortState {
-  key: string;
-  direction: 'asc' | 'desc';
+interface CrossTab {
+  titulo: string;
+  cols: string[];
+  rows: CrossTabRow[];
 }
 
 @Component({
@@ -20,974 +23,644 @@ interface TableSortState {
   standalone: true,
   imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
   template: `
-    <div class="h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff] overflow-hidden">
+    <div class="min-h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff]">
       <app-navbar></app-navbar>
-    
-      <main class="flex-1 overflow-y-auto">
+
+      <main class="flex-1">
         <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
-    
+
           <!-- Header -->
           <div class="flex items-center gap-4">
             <div class="bg-[#00328b] p-3 rounded-xl shadow-lg">
-              <!-- FileText icon -->
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
                 <polyline points="14 2 14 8 20 8"/>
                 <line x1="16" x2="8" y1="13" y2="13"/>
                 <line x1="16" x2="8" y1="17" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
               </svg>
             </div>
             <div>
               <h1 class="text-3xl font-bold text-slate-800">Reportes e Indicadores</h1>
-              <p class="text-slate-500 text-sm mt-1">Genera reportes documentales y visualiza gráficas en pantalla</p>
+              <p class="text-slate-500 text-sm mt-1">Reportes de periodo e indicadores de desempeño</p>
             </div>
           </div>
-    
-          <!-- SECTION 1: Generar Reporte Documento -->
-          <div class="bg-white rounded-xl shadow-lg border-2 border-slate-200 p-6">
+
+          <!-- ══════════════════════════════════════ -->
+          <!-- SECTION 1: RESUMEN DE PERIODO          -->
+          <!-- ══════════════════════════════════════ -->
+          <div class="bg-white rounded-2xl shadow-lg border-2 border-slate-200 overflow-hidden">
             <!-- Section header -->
-            <div class="flex items-center gap-3 mb-6">
-              <div class="bg-[#00328b] p-2 rounded-lg">
-                <!-- FileText icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                  <line x1="16" x2="8" y1="13" y2="13"/>
-                  <line x1="16" x2="8" y1="17" y2="17"/>
-                  <polyline points="10 9 9 9 8 9"/>
-                </svg>
-              </div>
+            <div class="bg-gradient-to-r from-[#00328b] to-[#0052cc] px-6 py-4 flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" x2="8" y1="13" y2="13"/>
+                <line x1="16" x2="8" y1="17" y2="17"/>
+              </svg>
               <div>
-                <h2 class="text-xl font-bold text-slate-800">Generar Reporte Documento</h2>
-                <p class="text-slate-500 text-sm">Selecciona el tipo de reporte, periodo y genera un reporte</p>
+                <h2 class="text-xl font-bold text-white">Resumen de Periodo</h2>
+                <p class="text-blue-200 text-xs">Estadísticas de servicios y beneficiarios en el rango de fechas</p>
               </div>
-            </div>
-    
-            <!-- Selector de tipo de reporte (oculto: Excel exporta todas las hojas y la vista previa usa 'resumen') -->
-            <div class="mb-6 hidden">
-              <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo de Reporte</label>
-              <select [(ngModel)]="tipoReporte"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
-                <option value="">Seleccionar tipo de reporte...</option>
-                <option value="genero">Reporte por Género</option>
-                <option value="etapa-vida">Reporte por Etapa de Vida</option>
-                <option value="tipo-espina">Reporte por Tipo de Espina</option>
-                <option value="estado">Reporte por Estado</option>
-                <option value="resumen">Reporte Resumen</option>
-              </select>
-            </div>
-    
-            <!-- Period selector grid -->
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-              @for (period of periods; track period) {
-                <button
-                  (click)="selectPeriod(period.id)"
-                  class="px-4 py-3 rounded-lg border-2 font-semibold text-sm flex flex-col items-center gap-1 transition-all cursor-pointer"
-                [ngClass]="{
-                  'bg-[#00328b] text-white border-[#00328b] shadow-lg': selectedPeriod === period.id,
-                  'bg-white text-slate-700 border-slate-300 hover:border-[#00328b]': selectedPeriod !== period.id
-                }">
-                  <!-- Calendar icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-                    <line x1="16" x2="16" y1="2" y2="6"/>
-                    <line x1="8" x2="8" y1="2" y2="6"/>
-                    <line x1="3" x2="21" y1="10" y2="10"/>
-                  </svg>
-                  {{ period.label }}
-                </button>
-              }
-            </div>
-    
-            <!-- Custom date inputs -->
-            @if (selectedPeriod === 'personalizado') {
-              <div class="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200 mb-6">
-                <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha Inicio</label>
-                  <input type="date" [(ngModel)]="fechaInicio"
-                    class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100">
-                </div>
-                <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha Fin</label>
-                  <input type="date" [(ngModel)]="fechaFin"
-                    class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100">
-                </div>
-              </div>
-            }
-    
-            <!-- Filtros adicionales -->
-            <div class="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Filtros adicionales (opcionales)</p>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-600 mb-1">G&eacute;nero</label>
-                  <select [(ngModel)]="filtroGenero"
-                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white">
-                    <option value="">Todos</option>
-                    <option value="M">Masculino</option>
-                    <option value="F">Femenino</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
-                  <input type="text" [(ngModel)]="filtroEstado" placeholder="Ej. Jalisco"
-                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white">
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Espina B&iacute;fida</label>
-                  <select [(ngModel)]="filtroTipoEspina"
-                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white">
-                    <option [ngValue]="null">Todos</option>
-                    <option [ngValue]="1">Espina Bífida Oculta</option>
-                    <option [ngValue]="2">Meningocele</option>
-                    <option [ngValue]="3">Mielomeningocele</option>
-                  </select>
-                </div>
-              </div>
-              @if (filtroGenero || filtroEstado || filtroTipoEspina !== null) {
-                <button (click)="filtroGenero=''; filtroEstado=''; filtroTipoEspina=null"
-                  class="mt-2 text-xs text-[#00328b] hover:underline cursor-pointer">Limpiar filtros</button>
-              }
             </div>
 
-            <!-- Error / info messages -->
-            @if (reporteError) {
-              <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                {{ reporteError }}
-              </div>
-            }
-    
-            <!-- Action buttons -->
-            <div class="flex gap-3 pt-4 border-t border-slate-200">
-              <button (click)="generarReporte()" [disabled]="generandoReporte" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                <!-- FileText icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                  <line x1="16" x2="8" y1="13" y2="13"/>
-                  <line x1="16" x2="8" y1="17" y2="17"/>
-                  <polyline points="10 9 9 9 8 9"/>
-                </svg>
-                {{ generandoReporte ? 'Generando...' : 'Generar Reporte' }}
-              </button>
-              <button (click)="vistaPrevia()" [disabled]="generandoReporte" class="px-6 py-2.5 border-2 border-[#00328b] text-[#00328b] hover:bg-blue-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                <!-- Eye icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                Vista Previa
-              </button>
-              <button (click)="exportarPDF()" class="px-6 py-2.5 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-                Exportar PDF
-              </button>
-              <button (click)="exportarExcel()" class="px-6 py-2.5 border-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" x2="12" y1="15" y2="3"/>
-                </svg>
-                Exportar Excel
-              </button>
-            </div>
-          </div>
-    
-          <!-- Report Results Section -->
-          @if (reporteData && reporteData.length > 0) {
-            <div class="bg-white rounded-xl shadow-lg border-2 border-slate-200 p-6">
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
-                  <div class="bg-emerald-500 p-2 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 class="text-xl font-bold text-slate-800">Resultados del Reporte</h2>
-                    <p class="text-slate-500 text-sm">{{ getReporteTipoLabel() }} - {{ reporteData.length }} registros</p>
-                  </div>
-                </div>
-                <button (click)="limpiarReporte()" class="text-sm font-semibold text-slate-500 hover:text-red-500 cursor-pointer">Limpiar</button>
-              </div>
-              <div>
-                <table class="w-full">
-                  <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
-                    <tr>
-                      @for (col of reporteColumnas; track col) {
-                        <th class="text-left px-5 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                          <button type="button" (click)="toggleReporteSort(col)" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
-                            <span>{{ col }}</span>
-                            <span class="text-[10px] font-black leading-none">{{ getSortIndicator(reporteSort, col) }}</span>
-                          </button>
-                        </th>
-                      }
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (row of reporteDataOrdenada; track row) {
-                      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                        @for (col of reporteColumnas; track col) {
-                          <td class="px-5 py-3 text-sm text-slate-700">
-                            {{ row[col] }}
-                          </td>
-                        }
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          }
-    
-          <!-- SECTION 2: Visualización de Gráficas -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border-2 border-[#00328b] p-6">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
-              <div class="flex items-center gap-3">
-                <div class="bg-[#00328b] p-2 rounded-lg">
-                  <!-- BarChart3 icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 3v18h18"/>
-                    <path d="M18 17V9"/>
-                    <path d="M13 17V5"/>
-                    <path d="M8 17v-3"/>
-                  </svg>
+            <div class="p-6">
+              <!-- Date range + query button -->
+              <div class="flex flex-wrap items-end gap-4 mb-6">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
+                  <input type="date" [(ngModel)]="sec1FechaInicio"
+                    class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all">
                 </div>
                 <div>
-                  <h2 class="text-xl font-bold text-slate-800">Visualización de Gráficas</h2>
-                  <p class="text-slate-500 text-sm">Selecciona indicadores para visualizar en pantalla</p>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
+                  <input type="date" [(ngModel)]="sec1FechaFin"
+                    class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all">
                 </div>
-              </div>
-              <div class="flex gap-2 flex-wrap">
-                <button (click)="toggleModal()" class="px-4 py-2 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
-                  <!-- Plus icon -->
+                <button (click)="cargarResumenPeriodo()" [disabled]="sec1Loading"
+                  class="px-5 py-2 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" x2="12" y1="5" y2="19"/>
-                    <line x1="5" x2="19" y1="12" y2="12"/>
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
                   </svg>
-                  Agregar gráficas
+                  {{ sec1Loading ? 'Cargando...' : 'Consultar' }}
                 </button>
-                <button (click)="limpiarGraficas()" class="px-4 py-2 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
-                  <!-- Trash icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                  </svg>
-                  Limpiar
-                </button>
-                <button (click)="imprimir()" class="px-4 py-2 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
-                  <!-- Printer icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9"/>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                    <rect width="12" height="8" x="6" y="14"/>
-                  </svg>
-                  Imprimir
-                </button>
-              </div>
-            </div>
-    
-            <!-- Added charts compact list -->
-            @if (selectedCharts.length > 0) {
-              <div class="bg-white border-2 border-blue-300 rounded-lg p-4 mb-6">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-sm font-semibold text-slate-700">Gráficas seleccionadas:</span>
-                  @for (chart of selectedCharts; track chart) {
-                    <span
-                      class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-                      {{ getChartName(chart) }}
-                      <button (click)="removeChart(chart)" class="ml-1 hover:text-red-600 transition-colors cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <line x1="18" x2="6" y1="6" y2="18"/>
-                          <line x1="6" x2="18" y1="6" y2="18"/>
-                        </svg>
-                      </button>
-                    </span>
-                  }
-                </div>
-              </div>
-            }
-    
-            <!-- Empty state -->
-            @if (selectedCharts.length === 0) {
-              <div class="text-center py-16 bg-white rounded-lg border-2 border-dashed border-slate-300">
-                <div class="flex justify-center mb-4">
-                  <!-- Big chart icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 3v18h18"/>
-                    <path d="M18 17V9"/>
-                    <path d="M13 17V5"/>
-                    <path d="M8 17v-3"/>
-                  </svg>
-                </div>
-                <h3 class="text-lg font-bold text-slate-700 mb-2">No hay gráficas para visualizar</h3>
-                <p class="text-slate-500 text-sm mb-6">Agrega indicadores para generar gráficas y visualizar los datos</p>
-                <button (click)="toggleModal()" class="px-6 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors inline-flex items-center gap-2 cursor-pointer">
-                  <!-- Plus icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" x2="12" y1="5" y2="19"/>
-                    <line x1="5" x2="19" y1="12" y2="12"/>
-                  </svg>
-                  Agregar gráficas
-                </button>
-              </div>
-            }
-    
-            <!-- Chart cards grid -->
-            @if (selectedCharts.length > 0) {
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                @for (chart of selectedCharts; track chart) {
-                  <div class="bg-white rounded-xl shadow border-2 border-slate-200 p-6">
-                    <div class="flex items-center justify-between mb-4">
-                      <h3 class="text-base font-bold text-slate-800">{{ getChartName(chart) }}</h3>
-                      <button (click)="removeChart(chart)" class="text-slate-400 hover:text-red-500 transition-colors cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <line x1="18" x2="6" y1="6" y2="18"/>
-                          <line x1="6" x2="18" y1="6" y2="18"/>
-                        </svg>
-                      </button>
-                    </div>
-                    <!-- Loading -->
-                    @if (!chartData[chart]) {
-                      <div class="h-48 flex items-center justify-center text-slate-400 text-sm">Cargando datos...</div>
-                    }
-                    <!-- No data -->
-                    @if (chartData[chart] && chartData[chart].length === 0) {
-                      <div class="h-48 flex items-center justify-center text-slate-400 text-sm">Sin datos disponibles</div>
-                    }
-                    <!-- Bar chart -->
-                    @if (chartData[chart] && chartData[chart].length > 0) {
-                      <div class="space-y-3">
-                        @for (item of chartData[chart]; track item; let i = $index) {
-                          <div class="flex items-center gap-3">
-                            <span class="text-xs text-slate-600 font-semibold w-28 truncate text-right" [title]="item.label">{{ item.label }}</span>
-                            <div class="flex-1 bg-slate-100 rounded-full h-7 relative overflow-hidden">
-                              <div class="h-full rounded-full transition-all duration-700 flex items-center justify-end pr-2"
-                                [style.width.%]="item.pct"
-                                [style.background]="chartColors[i % chartColors.length]">
-                                @if (item.pct > 12) {
-                                  <span class="text-[11px] font-bold text-white drop-shadow">{{ item.value }}</span>
-                                }
-                              </div>
-                              @if (item.pct <= 12) {
-                                <span class="text-[11px] font-bold text-slate-600 absolute left-2 top-1/2 -translate-y-1/2">{{ item.value }}</span>
-                              }
-                            </div>
-                            <span class="text-xs text-slate-400 font-semibold w-10 text-right">{{ item.pct | number:'1.0-0' }}%</span>
-                          </div>
-                        }
-                      </div>
-                    }
-                  </div>
+                @if (sec1Loaded) {
+                  <button (click)="exportarPDFResumen()" class="px-4 py-2 border-2 border-red-300 text-red-600 hover:bg-red-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+                    </svg>
+                    PDF
+                  </button>
+                  <button (click)="exportarExcelResumen()" class="px-4 py-2 border-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50 font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+                    </svg>
+                    Excel
+                  </button>
                 }
               </div>
-            }
-          </div>
-    
-        </div>
-      </main>
-    
-      <app-footer></app-footer>
-    
-      <!-- Modal: Agregar gráficas -->
-      @if (showModal) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" (click)="toggleModal()">
-          <div class="bg-white rounded-xl shadow-2xl border-2 border-slate-200 w-full max-w-md mx-4 p-6" (click)="$event.stopPropagation()">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-slate-800">Agregar gráficas</h3>
-              <button (click)="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" x2="6" y1="6" y2="18"/>
-                  <line x1="6" x2="18" y1="6" y2="18"/>
-                </svg>
-              </button>
-            </div>
-            <p class="text-slate-500 text-sm mb-4">Selecciona los indicadores que deseas visualizar</p>
-            <div class="space-y-2 max-h-72 overflow-y-auto">
-              @for (option of indicadorOptions; track option) {
-                <button
-                  (click)="toggleChart(option.id)"
-                  class="w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all flex items-center justify-between cursor-pointer"
-              [ngClass]="{
-                'bg-[#00328b] text-white border-[#00328b]': isChartSelected(option.id),
-                'bg-white text-slate-700 border-slate-200 hover:border-[#00328b] hover:bg-blue-50': !isChartSelected(option.id)
-              }">
-                  <span>{{ option.nombre }}</span>
-                  @if (isChartSelected(option.id)) {
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  }
-                </button>
+
+              @if (sec1Error) {
+                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{{ sec1Error }}</div>
+              }
+
+              @if (sec1Loading) {
+                <div class="flex items-center justify-center py-16 text-slate-400 text-sm gap-3">
+                  <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                  Cargando datos del periodo...
+                </div>
+              }
+
+              @if (!sec1Loading && sec1Loaded) {
+                <!-- ─── Resumen de servicios ─── -->
+                <div class="mb-6">
+                  <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <div class="w-1 h-4 bg-[#00328b] rounded-full"></div>
+                    Resumen de Servicios
+                  </h3>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-center">
+                      <p class="text-2xl font-black text-[#00328b]">{{ sec1Credenciales }}</p>
+                      <p class="text-xs font-semibold text-slate-600 mt-1">Credenciales activas</p>
+                    </div>
+                    <div class="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4 text-center">
+                      <p class="text-2xl font-black text-emerald-700">{{ sec1TotalServicios }}</p>
+                      <p class="text-xs font-semibold text-slate-600 mt-1">Cantidad de servicios</p>
+                    </div>
+                    <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-center">
+                      <p class="text-2xl font-black text-amber-700">{{ sec1Exentos }}</p>
+                      <p class="text-xs font-semibold text-slate-600 mt-1">Exentos</p>
+                    </div>
+                    <div class="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 text-center">
+                      <p class="text-2xl font-black text-purple-700">{{ sec1Cuotas }}</p>
+                      <p class="text-xs font-semibold text-slate-600 mt-1">Cuota de recuperación</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ─── Beneficiarios activos ─── -->
+                <div class="mb-6">
+                  <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                    Beneficiarios Activos
+                  </h3>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">H</div>
+                      <div>
+                        <p class="text-xl font-black text-slate-900">{{ sec1Hombres }}</p>
+                        <p class="text-xs text-slate-500">Hombres</p>
+                      </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-700 font-bold text-xs">M</div>
+                      <div>
+                        <p class="text-xl font-black text-slate-900">{{ sec1Mujeres }}</p>
+                        <p class="text-xs text-slate-500">Mujeres</p>
+                      </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">NL</div>
+                      <div>
+                        <p class="text-xl font-black text-slate-900">{{ sec1Nl }}</p>
+                        <p class="text-xs text-slate-500">Urbano (N.L.)</p>
+                      </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-bold text-xs">Fo</div>
+                      <div>
+                        <p class="text-xl font-black text-slate-900">{{ sec1Foraneos }}</p>
+                        <p class="text-xs text-slate-500">Rural (foráneos)</p>
+                      </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-bold text-[10px] text-center leading-tight">0-5</div>
+                      <div>
+                        <p class="text-xl font-black text-slate-900">{{ sec1Lactantes }}</p>
+                        <p class="text-xs text-slate-500">Lactantes (0-5)</p>
+                      </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-[10px] text-center leading-tight">6-11</div>
+                      <div>
+                        <p class="text-xl font-black text-slate-900">{{ sec1Ninos }}</p>
+                        <p class="text-xs text-slate-500">Niños (6-11)</p>
+                      </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-[10px] text-center leading-tight">12-17</div>
+                      <div>
+                        <p class="text-xl font-black text-slate-900">{{ sec1Adolescentes }}</p>
+                        <p class="text-xs text-slate-500">Adolescentes (12-17)</p>
+                      </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-bold text-[10px] text-center leading-tight">18+</div>
+                      <div>
+                        <p class="text-xl font-black text-slate-900">{{ sec1Adultos }}</p>
+                        <p class="text-xs text-slate-500">Adultos (18+)</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ─── Servicios del periodo ─── -->
+                @if (sec1ServiciosList.length > 0) {
+                  <div class="mb-6">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <div class="w-1 h-4 bg-amber-400 rounded-full"></div>
+                      Servicios y Productos del Periodo
+                    </h3>
+                    <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
+                      <table class="w-full">
+                        <thead class="bg-slate-50 border-b-2 border-slate-200">
+                          <tr>
+                            <th class="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">Servicio / Producto</th>
+                            <th class="text-right px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">Cantidad</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (s of sec1ServiciosList; track s; let i = $index) {
+                            <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors" [class.bg-white]="i % 2 === 0" [class.bg-slate-50]="i % 2 === 1">
+                              <td class="px-4 py-2.5 text-sm text-slate-800 font-medium">{{ s.nombre }}</td>
+                              <td class="px-4 py-2.5 text-sm text-slate-700 text-right font-mono font-bold">{{ s.cantidad }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+
+                <!-- ─── Ciudades + Estudios side by side ─── -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <!-- Ciudades -->
+                  <div>
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <div class="w-1 h-4 bg-sky-500 rounded-full"></div>
+                      Ciudades
+                    </h3>
+                    @if (sec1CiudadesList.length > 0) {
+                      <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
+                        <table class="w-full">
+                          <thead class="bg-slate-50 border-b-2 border-slate-200">
+                            <tr>
+                              <th class="text-left px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Ciudad</th>
+                              <th class="text-left px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Estado</th>
+                              <th class="text-right px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Beneficiarios</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (c of sec1CiudadesList; track c) {
+                              <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                                <td class="px-4 py-2 text-sm text-slate-800">{{ c.nombre }}</td>
+                                <td class="px-4 py-2 text-xs text-slate-500">{{ c.estado }}</td>
+                                <td class="px-4 py-2 text-sm text-right font-mono font-bold text-slate-700">{{ c.cantidad }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    } @else {
+                      <p class="text-sm text-slate-400 italic py-4">Sin datos de ciudades.</p>
+                    }
+                  </div>
+
+                  <!-- Estudios -->
+                  <div>
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <div class="w-1 h-4 bg-violet-500 rounded-full"></div>
+                      Estudios
+                    </h3>
+                    @if (sec1EstudiosList.length > 0) {
+                      <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
+                        <table class="w-full">
+                          <thead class="bg-slate-50 border-b-2 border-slate-200">
+                            <tr>
+                              <th class="text-left px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Estudio</th>
+                              <th class="text-right px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Cantidad</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (e of sec1EstudiosList; track e) {
+                              <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                                <td class="px-4 py-2 text-sm text-slate-800">{{ e.nombre }}</td>
+                                <td class="px-4 py-2 text-sm text-right font-mono font-bold text-slate-700">{{ e.cantidad }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    } @else {
+                      <p class="text-sm text-slate-400 italic py-4">Sin datos de estudios en el periodo.</p>
+                    }
+                  </div>
+                </div>
+              }
+
+              @if (!sec1Loading && !sec1Loaded && !sec1Error) {
+                <div class="text-center py-12 text-slate-400">
+                  <svg class="mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+                  </svg>
+                  <p class="text-sm font-medium">Selecciona un rango de fechas y presiona <strong>Consultar</strong></p>
+                </div>
               }
             </div>
-            <div class="flex gap-3 mt-6 pt-4 border-t border-slate-200">
-              <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 bg-[#00328b] hover:bg-[#00246d] text-white font-bold rounded-lg text-sm transition-colors cursor-pointer">
-                Aceptar
-              </button>
-              <button (click)="toggleModal()" class="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 font-bold rounded-lg text-sm transition-colors cursor-pointer">
-                Cancelar
-              </button>
-            </div>
           </div>
-        </div>
-      }
-    
-      <!-- Vista Previa Modal -->
-      @if (showVistaPrevia) {
-        <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeVistaPrevia()">
-          <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-[#00328b] rounded-xl flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
+
+          <!-- ══════════════════════════════════════════ -->
+          <!-- SECTION 2: INDICADORES DE DESEMPEÑO       -->
+          <!-- ══════════════════════════════════════════ -->
+          <div class="bg-white rounded-2xl shadow-lg border-2 border-slate-200 overflow-hidden">
+            <!-- Section header -->
+            <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-4 flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>
+              </svg>
+              <div>
+                <h2 class="text-xl font-bold text-white">Indicadores de Desempeño</h2>
+                <p class="text-slate-400 text-xs">Cruces estadísticos por etapa de vida y categoría</p>
+              </div>
+            </div>
+
+            <div class="p-6">
+              <!-- Period selector -->
+              <div class="mb-4">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Seleccionar periodo</p>
+                <div class="flex gap-2">
+                  @for (p of indicPeriodos; track p.id) {
+                    <button (click)="setIndicPeriod(p.id)"
+                      class="px-4 py-2 rounded-lg text-sm font-bold border-2 transition-all cursor-pointer"
+                      [ngClass]="{
+                        'bg-slate-800 text-white border-slate-800 shadow': indicPeriodo === p.id,
+                        'bg-white text-slate-600 border-slate-300 hover:border-slate-500': indicPeriodo !== p.id
+                      }">
+                      {{ p.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Date inputs (editable) -->
+              <div class="flex flex-wrap items-end gap-4 mb-6">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
+                  <input type="date" [(ngModel)]="indicFechaInicio" (change)="indicPeriodo = 'personalizado'"
+                    class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all">
                 </div>
                 <div>
-                  <h2 class="text-xl font-bold text-slate-900">Vista Previa del Reporte</h2>
-                  <p class="text-xs text-slate-500">{{ getReporteTipoLabel() }}</p>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
+                  <input type="date" [(ngModel)]="indicFechaFin" (change)="indicPeriodo = 'personalizado'"
+                    class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all">
                 </div>
+                <button (click)="cargarIndicadores()" [disabled]="indicLoading"
+                  class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-sm transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                  </svg>
+                  {{ indicLoading ? 'Cargando...' : 'Consultar' }}
+                </button>
               </div>
-              <button (click)="closeVistaPrevia()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-                </svg>
-              </button>
+
+              @if (indicError) {
+                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{{ indicError }}</div>
+              }
+
+              @if (indicLoading) {
+                <div class="flex items-center justify-center py-16 text-slate-400 text-sm gap-3">
+                  <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                  Cargando indicadores...
+                </div>
+              }
+
+              @if (!indicLoading && indicLoaded) {
+                <!-- Top stats row -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                  <div class="bg-[#00328b]/5 border-2 border-[#00328b]/20 rounded-xl p-4 text-center">
+                    <p class="text-3xl font-black text-[#00328b]">{{ indicActivos }}</p>
+                    <p class="text-xs font-semibold text-slate-600 mt-1">Beneficiarios activos</p>
+                  </div>
+                  <div class="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4 text-center">
+                    <p class="text-3xl font-black text-emerald-700">{{ indicNuevos }}</p>
+                    <p class="text-xs font-semibold text-slate-600 mt-1">Nuevos en el periodo</p>
+                  </div>
+                  <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-center">
+                    <p class="text-3xl font-black text-blue-700">{{ indicHombres }}</p>
+                    <p class="text-xs font-semibold text-slate-600 mt-1">Hombres</p>
+                  </div>
+                  <div class="bg-pink-50 border-2 border-pink-200 rounded-xl p-4 text-center">
+                    <p class="text-3xl font-black text-pink-700">{{ indicMujeres }}</p>
+                    <p class="text-xs font-semibold text-slate-600 mt-1">Mujeres</p>
+                  </div>
+                </div>
+
+                <!-- Municipios -->
+                @if (indicMunicipios.length > 0) {
+                  <div class="mb-6">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                      <div class="w-1 h-4 bg-sky-500 rounded-full"></div>
+                      Municipios de Monterrey
+                    </h3>
+                    <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
+                      <table class="w-full">
+                        <thead class="bg-slate-50 border-b-2 border-slate-200">
+                          <tr>
+                            <th class="text-left px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Municipio / Ciudad</th>
+                            <th class="text-right px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Beneficiarios</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (m of indicMunicipios; track m; let last = $last) {
+                            <tr class="border-b border-slate-100 transition-colors"
+                              [class.hover:bg-slate-50]="!last"
+                              [class.bg-slate-100]="last"
+                              [class.font-bold]="last">
+                              <td class="px-4 py-2.5 text-sm text-slate-800">{{ m.label }}</td>
+                              <td class="px-4 py-2.5 text-sm text-right font-mono font-bold text-slate-700">{{ m.value }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
+
+                <!-- 6 Cross-tab tables (2-column grid) -->
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  @for (tabla of indicTables; track tabla.titulo) {
+                    <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
+                      <div class="bg-slate-50 border-b-2 border-slate-200 px-4 py-3">
+                        <h4 class="text-sm font-bold text-slate-700">{{ tabla.titulo }}</h4>
+                      </div>
+                      <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                          <thead class="bg-[#00328b] text-white">
+                            <tr>
+                              <th class="text-left px-3 py-2 text-xs font-bold">Etapa de vida</th>
+                              @for (col of tabla.cols; track col) {
+                                <th class="text-right px-3 py-2 text-xs font-bold">{{ col }}</th>
+                              }
+                              <th class="text-right px-3 py-2 text-xs font-bold bg-[#001f5b]">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (row of tabla.rows; track row; let last = $last; let i = $index) {
+                              <tr [class.bg-slate-800]="last"
+                                  [class.text-white]="last"
+                                  [class.bg-white]="!last && i % 2 === 0"
+                                  [class.bg-slate-50]="!last && i % 2 === 1"
+                                  class="border-b border-slate-100 transition-colors">
+                                <td class="px-3 py-2 text-xs font-semibold">{{ row['etapa'] }}</td>
+                                @for (col of tabla.cols; track col) {
+                                  <td class="px-3 py-2 text-xs text-right font-mono">{{ row[col] ?? 0 }}</td>
+                                }
+                                <td class="px-3 py-2 text-xs text-right font-mono font-bold" [class.bg-slate-700]="last" [class.bg-slate-100]="!last">{{ row['total'] ?? 0 }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (!indicLoading && !indicLoaded && !indicError) {
+                <div class="text-center py-12 text-slate-400">
+                  <svg class="mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>
+                  </svg>
+                  <p class="text-sm font-medium">Selecciona un periodo y presiona <strong>Consultar</strong></p>
+                </div>
+              }
             </div>
-            <!-- Loading state -->
-            @if (generandoReporte) {
-              <div class="text-center py-12">
-                <p class="text-slate-500 text-sm">Cargando datos...</p>
-              </div>
-            }
-            <!-- Error de vista previa -->
-            @if (vistaPreviaError) {
-              <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-4">
-                {{ vistaPreviaError }}
-              </div>
-            }
-            <!-- Tabla de vista previa -->
-            @if (!generandoReporte && vistaPreviaData && vistaPreviaData.length > 0) {
-              <div>
-                <table class="w-full">
-                  <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
-                    <tr>
-                      @for (col of vistaPreviaColumnas; track col) {
-                        <th class="text-left px-4 py-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                          <button type="button" (click)="toggleVistaPreviaSort(col)" class="flex items-center gap-1 hover:text-slate-900 transition-colors">
-                            <span>{{ col }}</span>
-                            <span class="text-[10px] font-black leading-none">{{ getSortIndicator(vistaPreviaSort, col) }}</span>
-                          </button>
-                        </th>
-                      }
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (row of vistaPreviaDataOrdenada; track row) {
-                      <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                        @for (col of vistaPreviaColumnas; track col) {
-                          <td class="px-4 py-3 text-sm text-slate-700">
-                            {{ row[col] }}
-                          </td>
-                        }
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-                <p class="text-xs text-slate-400 mt-3 text-right">{{ vistaPreviaData.length }} registros</p>
-              </div>
-            }
-            <!-- Empty -->
-            @if (!generandoReporte && vistaPreviaData && vistaPreviaData.length === 0) {
-              <div class="text-center py-12">
-                <p class="text-slate-400 text-sm">No se encontraron datos para los filtros seleccionados.</p>
-              </div>
-            }
           </div>
+
         </div>
-      }
+      </main>
+
+      <app-footer></app-footer>
     </div>
-    `
+  `,
+  styles: [`
+    @media print {
+      app-navbar, app-footer, button { display: none !important; }
+    }
+  `]
 })
-export class ReportesComponent {
-  selectedPeriod = 'ultimo-mes';
-  fechaInicio = '';
-  fechaFin = '';
-  tipoReporte = 'resumen';
-  filtroGenero = '';
-  filtroEstado = '';
-  filtroTipoEspina: number | null = null;
-  selectedCharts: string[] = [];
-  showModal = false;
+export class ReportesComponent implements OnInit {
+  // ─── Section 1 state ───
+  sec1FechaInicio = '';
+  sec1FechaFin = '';
+  sec1Loading = false;
+  sec1Error = '';
+  sec1Loaded = false;
+  sec1Credenciales = 0;
+  sec1TotalServicios = 0;
+  sec1Exentos = 0;
+  sec1Cuotas = 0;
+  sec1Hombres = 0;
+  sec1Mujeres = 0;
+  sec1Nl = 0;
+  sec1Foraneos = 0;
+  sec1Lactantes = 0;
+  sec1Ninos = 0;
+  sec1Adolescentes = 0;
+  sec1Adultos = 0;
+  sec1ServiciosList: { nombre: string; cantidad: number }[] = [];
+  sec1CiudadesList: { nombre: string; estado: string; cantidad: number }[] = [];
+  sec1EstudiosList: { nombre: string; cantidad: number }[] = [];
 
-  // Report results
-  reporteData: any[] | null = null;
-  reporteColumnas: string[] = [];
-  reporteSort: TableSortState = { key: '', direction: 'asc' };
-  reporteError = '';
-  generandoReporte = false;
+  // ─── Section 2 state ───
+  indicPeriodo = '3m';
+  indicFechaInicio = '';
+  indicFechaFin = '';
+  indicLoading = false;
+  indicError = '';
+  indicLoaded = false;
+  indicActivos = 0;
+  indicNuevos = 0;
+  indicHombres = 0;
+  indicMujeres = 0;
+  indicMunicipios: { label: string; value: number }[] = [];
+  indicTables: CrossTab[] = [];
 
-  // Vista previa
-  showVistaPrevia = false;
-  vistaPreviaData: any[] | null = null;
-  vistaPreviaColumnas: string[] = [];
-  vistaPreviaSort: TableSortState = { key: '', direction: 'asc' };
-  vistaPreviaError = '';
-
-  periods = [
-    { id: 'ultimo-mes', label: 'Ultimo Mes' },
-    { id: 'ultimos-3-meses', label: 'Ultimos 3 Meses' },
-    { id: 'ultimo-trimestre', label: 'Ultimo Trimestre' },
-    { id: 'ultimos-6-meses', label: 'Ultimos 6 Meses' },
-    { id: 'ultimo-ano', label: 'Último Año' },
-    { id: 'personalizado', label: 'Personalizado' }
+  indicPeriodos = [
+    { id: '3m', label: '3 meses' },
+    { id: '6m', label: '6 meses' },
+    { id: '1y', label: '1 año' },
   ];
-
-  indicadorOptions: IndicadorOption[] = [
-    { id: 'beneficiarios-activos', nombre: 'Beneficiarios Activos' },
-    { id: 'beneficiarios-genero', nombre: 'Distribución por Género' },
-    { id: 'beneficiarios-estado', nombre: 'Distribución por Estado' },
-    { id: 'beneficiarios-edad', nombre: 'Distribución por Edad' },
-    { id: 'tipo-espina', nombre: 'Por Tipo de Espina Bífida' },
-    { id: 'tipo-sangre', nombre: 'Por Tipo de Sangre' },
-    { id: 'uso-valvula', nombre: 'Uso de Válvula' },
-    { id: 'membresia-estatus', nombre: 'Estatus de Membresía' },
-    { id: 'tipo-cuota', nombre: 'Por Tipo de Cuota' },
-  ];
-
-  // Chart data
-  chartData: Record<string, { label: string; value: number; pct: number }[]> = {};
-  chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316', '#14b8a6', '#6366f1'];
-  private dashboardCache: any = null;
 
   constructor(private api: ApiService) {}
 
-  selectPeriod(id: string): void {
-    this.selectedPeriod = id;
+  ngOnInit(): void {
+    const today = new Date();
+    this.sec1FechaInicio = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    this.sec1FechaFin = lastDay.toISOString().slice(0, 10);
+    this.setIndicPeriod('3m');
   }
 
-  toggleModal(): void {
-    this.showModal = !this.showModal;
+  setIndicPeriod(period: string): void {
+    this.indicPeriodo = period;
+    const today = new Date();
+    const inicio = new Date(today);
+    if (period === '3m') inicio.setMonth(today.getMonth() - 3);
+    else if (period === '6m') inicio.setMonth(today.getMonth() - 6);
+    else if (period === '1y') inicio.setFullYear(today.getFullYear() - 1);
+    this.indicFechaInicio = inicio.toISOString().slice(0, 10);
+    this.indicFechaFin = today.toISOString().slice(0, 10);
   }
 
-  toggleChart(id: string): void {
-    const index = this.selectedCharts.indexOf(id);
-    if (index === -1) {
-      this.selectedCharts.push(id);
-      this.loadChartData(id);
-    } else {
-      this.selectedCharts.splice(index, 1);
-    }
-  }
+  cargarResumenPeriodo(): void {
+    this.sec1Loading = true;
+    this.sec1Error = '';
+    this.sec1Loaded = false;
+    forkJoin({
+      servicios: this.api.getReporteServiciosPorTipo({ fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin }),
+      pagos: this.api.getReportePagosExentos({ fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin }),
+      estudios: this.api.getReporteEstudiosPorTipo({ fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin }),
+      stats: this.api.getDashboardStats(),
+      ciudades: this.api.getReportePorCiudad(),
+    }).subscribe({
+      next: ({ servicios, pagos, estudios, stats, ciudades }) => {
+        this.sec1Credenciales = stats.activos ?? 0;
+        this.sec1TotalServicios = servicios.total ?? 0;
+        this.sec1Exentos = pagos.total_exentos ?? 0;
+        this.sec1Cuotas = pagos.total_cuotas ?? 0;
 
-  isChartSelected(id: string): boolean {
-    return this.selectedCharts.includes(id);
-  }
+        const pg: Record<string, number> = stats.por_genero ?? {};
+        const pp: Record<string, number> = stats.por_procedencia ?? {};
+        const pe: Record<string, number> = stats.por_etapa_vida ?? {};
+        this.sec1Hombres = pg['Masculino'] ?? 0;
+        this.sec1Mujeres = pg['Femenino'] ?? 0;
+        this.sec1Nl = pp['Nuevo León'] ?? 0;
+        this.sec1Foraneos = pp['Foráneos'] ?? 0;
+        this.sec1Lactantes = pe['Primera Infancia (0-5)'] ?? 0;
+        this.sec1Ninos = pe['Infancia (6-11)'] ?? 0;
+        this.sec1Adolescentes = pe['Adolescencia (12-17)'] ?? 0;
+        this.sec1Adultos = (pe['Juventud (18-29)'] ?? 0) + (pe['Adultez (30-59)'] ?? 0) + (pe['Adulto Mayor (60+)'] ?? 0);
 
-  removeChart(id: string): void {
-    this.selectedCharts = this.selectedCharts.filter(c => c !== id);
-  }
+        const sLabels: string[] = servicios.labels ?? [];
+        const sValues: number[] = servicios.values ?? [];
+        this.sec1ServiciosList = sLabels.map((nombre, i) => ({ nombre, cantidad: sValues[i] ?? 0 }));
 
-  getChartName(id: string): string {
-    const option = this.indicadorOptions.find(o => o.id === id);
-    return option ? option.nombre : id;
-  }
+        const cLabels: string[] = ciudades.labels ?? [];
+        const cEstados: string[] = ciudades.estados ?? [];
+        const cValues: number[] = ciudades.values ?? [];
+        this.sec1CiudadesList = cLabels.map((nombre, i) => ({ nombre, estado: cEstados[i] ?? '', cantidad: cValues[i] ?? 0 }));
 
-  limpiarGraficas(): void {
-    this.selectedCharts = [];
-    this.chartData = {};
-  }
+        const eLabels: string[] = estudios.labels ?? [];
+        const eValues: number[] = estudios.values ?? [];
+        this.sec1EstudiosList = eLabels.map((nombre, i) => ({ nombre, cantidad: eValues[i] ?? 0 }));
 
-  private loadChartData(chartId: string): void {
-    // Charts that come from the dashboard stats endpoint
-    const dashboardCharts = [
-      'beneficiarios-activos', 'beneficiarios-genero', 'beneficiarios-estado',
-      'beneficiarios-edad', 'membresia-estatus',
-    ];
-
-    if (dashboardCharts.includes(chartId)) {
-      if (this.dashboardCache) {
-        this.chartData[chartId] = this.extractDashboardChart(chartId, this.dashboardCache);
-      } else {
-        this.api.getDashboardStats().subscribe({
-          next: (stats: any) => {
-            this.dashboardCache = stats;
-            // Process all pending dashboard charts
-            this.selectedCharts.filter(c => dashboardCharts.includes(c)).forEach(c => {
-              this.chartData[c] = this.extractDashboardChart(c, stats);
-            });
-          },
-          error: () => { this.chartData[chartId] = []; },
-        });
-      }
-      return;
-    }
-
-    // Charts that come from specific report endpoints
-    const reportMap: Record<string, any> = {
-      'tipo-espina': this.api.getReportePorTipoEspina({}),
-      'tipo-cuota': this.api.getReportePagosExentos({}),
-    };
-
-    if (reportMap[chartId]) {
-      reportMap[chartId].subscribe({
-        next: (resp: any) => {
-          this.chartData[chartId] = this.extractReportChart(chartId, resp);
-        },
-        error: () => { this.chartData[chartId] = []; },
-      });
-      return;
-    }
-
-    // Fallback: fetch from beneficiarios stats
-    if (chartId === 'tipo-sangre' || chartId === 'uso-valvula') {
-      this.api.getBeneficiariosStats().subscribe({
-        next: (stats: any) => {
-          this.chartData[chartId] = this.extractBeneficiariosChart(chartId, stats);
-        },
-        error: () => { this.chartData[chartId] = []; },
-      });
-      return;
-    }
-
-    this.chartData[chartId] = [];
-  }
-
-  private toBarData(obj: Record<string, number>): { label: string; value: number; pct: number }[] {
-    const total = Object.values(obj).reduce((s, v) => s + v, 0) || 1;
-    return Object.entries(obj).map(([label, value]) => ({
-      label,
-      value,
-      pct: (value / total) * 100,
-    }));
-  }
-
-  private extractDashboardChart(chartId: string, stats: any): { label: string; value: number; pct: number }[] {
-    switch (chartId) {
-      case 'beneficiarios-activos':
-        return this.toBarData({ Activos: stats.activos ?? 0, Inactivos: stats.inactivos ?? 0 });
-      case 'beneficiarios-genero':
-        return this.toBarData(stats.por_genero ?? {});
-      case 'beneficiarios-estado':
-        return this.toBarData(stats.por_procedencia ?? {});
-      case 'beneficiarios-edad':
-        return this.toBarData(stats.por_etapa_vida ?? {});
-      case 'membresia-estatus':
-        return this.toBarData({ Activos: stats.activos ?? 0, Inactivos: stats.inactivos ?? 0 });
-      default:
-        return [];
-    }
-  }
-
-  private extractReportChart(chartId: string, resp: any): { label: string; value: number; pct: number }[] {
-    const data = Array.isArray(resp) ? resp : (resp?.data ?? resp?.resultados ?? []);
-    if (data.length === 0) return [];
-
-    // Build a key-value map from the report data
-    const obj: Record<string, number> = {};
-    for (const row of data) {
-      const keys = Object.keys(row);
-      const labelKey = keys.find(k => typeof row[k] === 'string') ?? keys[0];
-      const valueKey = keys.find(k => typeof row[k] === 'number' && k !== labelKey) ?? keys[1];
-      if (labelKey && valueKey) {
-        obj[String(row[labelKey]).trim()] = Number(row[valueKey]) || 0;
-      }
-    }
-    return this.toBarData(obj);
-  }
-
-  private extractBeneficiariosChart(chartId: string, stats: any): { label: string; value: number; pct: number }[] {
-    // These stats may have grouped data; if not, return empty
-    if (chartId === 'tipo-sangre' && stats.por_tipo_sangre) {
-      return this.toBarData(stats.por_tipo_sangre);
-    }
-    if (chartId === 'uso-valvula' && stats.por_valvula) {
-      return this.toBarData(stats.por_valvula);
-    }
-    // Fallback: try to fetch from report endpoints
-    if (chartId === 'tipo-sangre') {
-      return this.toBarData({ 'Sin datos': 0 });
-    }
-    if (chartId === 'uso-valvula') {
-      return this.toBarData({ 'Sin datos': 0 });
-    }
-    return [];
-  }
-
-  getReporteTipoLabel(): string {
-    const labels: Record<string, string> = {
-      'genero': 'Reporte por Género',
-      'etapa-vida': 'Reporte por Etapa de Vida',
-      'tipo-espina': 'Reporte por Tipo de Espina',
-      'estado': 'Reporte por Estado',
-      'resumen': 'Reporte Resumen'
-    };
-    return labels[this.tipoReporte] || 'Reporte';
-  }
-
-  get reporteDataOrdenada(): any[] {
-    if (!this.reporteData) return [];
-    return this.sortDynamicRows(this.reporteData, this.reporteSort);
-  }
-
-  get vistaPreviaDataOrdenada(): any[] {
-    if (!this.vistaPreviaData) return [];
-    return this.sortDynamicRows(this.vistaPreviaData, this.vistaPreviaSort);
-  }
-
-  toggleReporteSort(col: string): void {
-    if (this.reporteSort.key === col) {
-      this.reporteSort.direction = this.reporteSort.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.reporteSort = { key: col, direction: 'asc' };
-    }
-  }
-
-  toggleVistaPreviaSort(col: string): void {
-    if (this.vistaPreviaSort.key === col) {
-      this.vistaPreviaSort.direction = this.vistaPreviaSort.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.vistaPreviaSort = { key: col, direction: 'asc' };
-    }
-  }
-
-  getSortIndicator(sort: TableSortState, key: string): string {
-    if (sort.key !== key) return '-';
-    return sort.direction === 'asc' ? '^' : 'v';
-  }
-
-  private sortDynamicRows(rows: any[], sort: TableSortState): any[] {
-    if (!sort.key) return [...rows];
-    const direction = sort.direction === 'asc' ? 1 : -1;
-
-    return [...rows].sort((a, b) => {
-      const left = this.toComparableValue(a?.[sort.key]);
-      const right = this.toComparableValue(b?.[sort.key]);
-      if (left < right) return -1 * direction;
-      if (left > right) return 1 * direction;
-      return 0;
-    });
-  }
-
-  private toComparableValue(value: unknown): number | string {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'number') return value;
-
-    const text = String(value).trim();
-    const maybeDate = Date.parse(text);
-    if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
-
-    const maybeNumber = Number(text);
-    if (!Number.isNaN(maybeNumber) && text !== '') return maybeNumber;
-
-    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  }
-
-  private buildFilters(): any {
-    const filters: any = { periodo: this.selectedPeriod };
-    if (this.selectedPeriod === 'personalizado') {
-      if (this.fechaInicio) filters.fecha_inicio = this.fechaInicio;
-      if (this.fechaFin) filters.fecha_fin = this.fechaFin;
-    }
-    if (this.filtroGenero) filters.genero = this.filtroGenero;
-    if (this.filtroEstado) filters.estado = this.filtroEstado;
-    if (this.filtroTipoEspina !== null) filters.tipo_espina = this.filtroTipoEspina;
-    return filters;
-  }
-
-  private getApiCall(filters: any) {
-    switch (this.tipoReporte) {
-      case 'genero': return this.api.getReportePorGenero(filters);
-      case 'etapa-vida': return this.api.getReportePorEtapaVida(filters);
-      case 'tipo-espina': return this.api.getReportePorTipoEspina(filters);
-      case 'estado': return this.api.getReportePorEstado(filters);
-      case 'resumen': return this.api.getReporteResumen(filters);
-      default: return null;
-    }
-  }
-
-  private extractColumnsAndData(response: any): { columnas: string[]; data: any[] } {
-    // Handle different response shapes
-    let data: any[] = [];
-    if (Array.isArray(response)) {
-      data = response;
-    } else if (response && Array.isArray(response.data)) {
-      data = response.data;
-    } else if (response && Array.isArray(response.resultados)) {
-      data = response.resultados;
-    } else if (response && typeof response === 'object') {
-      // Single object - wrap it
-      data = [response];
-    }
-
-    const columnas = data.length > 0 ? Object.keys(data[0]) : [];
-    return { columnas, data };
-  }
-
-  generarReporte(): void {
-    if (!this.tipoReporte) {
-      this.reporteError = 'Selecciona un tipo de reporte.';
-      return;
-    }
-    if (this.selectedPeriod === 'personalizado' && (!this.fechaInicio || !this.fechaFin)) {
-      this.reporteError = 'Ingresa ambas fechas para el periodo personalizado.';
-      return;
-    }
-
-    this.reporteError = '';
-    this.generandoReporte = true;
-    const filters = this.buildFilters();
-    const apiCall = this.getApiCall(filters);
-
-    if (!apiCall) {
-      this.reporteError = 'Tipo de reporte no valido.';
-      this.generandoReporte = false;
-      return;
-    }
-
-    apiCall.subscribe({
-      next: (response: any) => {
-        const { columnas, data } = this.extractColumnsAndData(response);
-        this.reporteColumnas = columnas;
-        this.reporteData = data;
-        this.reporteSort = { key: columnas[0] || '', direction: 'asc' };
-        this.generandoReporte = false;
+        this.sec1Loaded = true;
+        this.sec1Loading = false;
       },
       error: (err: any) => {
-        this.reporteError = err?.error?.detail || 'Error al generar el reporte. Intenta de nuevo.';
-        this.generandoReporte = false;
-        console.error('Error al generar reporte:', err);
-      }
+        this.sec1Error = err?.error?.detail || 'Error al cargar los datos del resumen.';
+        this.sec1Loading = false;
+      },
     });
   }
 
-  limpiarReporte(): void {
-    this.reporteData = null;
-    this.reporteColumnas = [];
-    this.reporteSort = { key: '', direction: 'asc' };
-  }
+  cargarIndicadores(): void {
+    this.indicLoading = true;
+    this.indicError = '';
+    this.indicLoaded = false;
+    this.api.getIndicadoresDesempeno({
+      fecha_inicio: this.indicFechaInicio,
+      fecha_fin: this.indicFechaFin,
+    }).subscribe({
+      next: (data: any) => {
+        this.indicActivos = data.beneficiarios_activos ?? 0;
+        this.indicNuevos = data.nuevos_en_periodo ?? 0;
+        this.indicHombres = data.hombres ?? 0;
+        this.indicMujeres = data.mujeres ?? 0;
+        this.indicMunicipios = data.municipios ?? [];
 
-  vistaPrevia(): void {
-    if (!this.tipoReporte) {
-      this.vistaPreviaError = 'Selecciona un tipo de reporte.';
-      this.showVistaPrevia = true;
-      this.vistaPreviaData = null;
-      return;
-    }
-    if (this.selectedPeriod === 'personalizado' && (!this.fechaInicio || !this.fechaFin)) {
-      this.vistaPreviaError = 'Ingresa ambas fechas para el periodo personalizado.';
-      this.showVistaPrevia = true;
-      this.vistaPreviaData = null;
-      return;
-    }
+        const tablas = data.tablas ?? {};
+        this.indicTables = [
+          { titulo: 'Sujetos de derecho por CURP', cols: ['CURP N.L.', 'CURP Foráneo'], rows: tablas.por_curp ?? [] },
+          { titulo: 'Sujetos de derecho por CURP N.L.', cols: ['Hombre', 'Mujer'], rows: tablas.curp_nl_genero ?? [] },
+          { titulo: 'Sujetos de derecho foráneos', cols: ['Hombre', 'Mujer'], rows: tablas.curp_foraneo_genero ?? [] },
+          { titulo: 'Sujetos de derecho por lugar de residencia', cols: ['Viven en N.L.', 'Viven en otros estados'], rows: tablas.residencia ?? [] },
+          { titulo: 'Sujetos de derecho por nacimiento', cols: ['Mexicanos', 'Nac. extranjera'], rows: tablas.nacimiento ?? [] },
+          { titulo: 'Sujetos de derecho por etapa de vida', cols: ['Hombre', 'Mujer'], rows: tablas.etapa_vida_genero ?? [] },
+        ];
 
-    this.vistaPreviaError = '';
-    this.generandoReporte = true;
-    this.showVistaPrevia = true;
-    this.vistaPreviaData = null;
-
-    const filters = this.buildFilters();
-    const apiCall = this.getApiCall(filters);
-
-    if (!apiCall) {
-      this.vistaPreviaError = 'Tipo de reporte no valido.';
-      this.generandoReporte = false;
-      return;
-    }
-
-    apiCall.subscribe({
-      next: (response: any) => {
-        const { columnas, data } = this.extractColumnsAndData(response);
-        this.vistaPreviaColumnas = columnas;
-        this.vistaPreviaData = data;
-        this.vistaPreviaSort = { key: columnas[0] || '', direction: 'asc' };
-        this.generandoReporte = false;
+        this.indicLoaded = true;
+        this.indicLoading = false;
       },
       error: (err: any) => {
-        this.vistaPreviaError = err?.error?.detail || 'Error al cargar vista previa.';
-        this.generandoReporte = false;
-        console.error('Error en vista previa:', err);
-      }
+        this.indicError = err?.error?.detail || 'Error al cargar los indicadores.';
+        this.indicLoading = false;
+      },
     });
   }
 
-  closeVistaPrevia(): void {
-    this.showVistaPrevia = false;
-    this.vistaPreviaData = null;
-    this.vistaPreviaColumnas = [];
-    this.vistaPreviaSort = { key: '', direction: 'asc' };
-    this.vistaPreviaError = '';
+  exportarPDFResumen(): void {
+    this.api.exportarReportePdf('resumen', { fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin })
+      .subscribe({
+        next: (blob) => this.descargar(blob, `reporte_resumen_${this.sec1FechaInicio}.pdf`),
+        error: () => alert('Error al generar PDF'),
+      });
   }
 
-  exportarPDF(): void {
-    const tipo = this.tipoReporte || 'resumen';
-    const filters = this.buildExportFilters();
-
-    this.api.exportarReportePdf(tipo, filters).subscribe({
-      next: (blob) => this.descargarArchivo(blob, `reporte_${tipo}_${new Date().toISOString().slice(0, 10)}.pdf`),
-      error: () => alert('Error al generar PDF'),
-    });
+  exportarExcelResumen(): void {
+    this.api.exportarReporteExcel('all', { fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin })
+      .subscribe({
+        next: (blob) => this.descargar(blob, `reportes_${this.sec1FechaInicio}_${this.sec1FechaFin}.xlsx`),
+        error: () => alert('Error al generar Excel'),
+      });
   }
 
-  exportarExcel(): void {
-    const filters = this.buildExportFilters();
-    // 'all' generates one workbook with every report type as a separate sheet
-    this.api.exportarReporteExcel('all', filters).subscribe({
-      next: (blob) => this.descargarArchivo(blob, `reportes_completo_${new Date().toISOString().slice(0, 10)}.xlsx`),
-      error: () => alert('Error al generar Excel'),
-    });
-  }
-
-  private buildExportFilters(): any {
-    const filters: any = {};
-    if (this.selectedPeriod === 'personalizado') {
-      if (this.fechaInicio) filters.fecha_inicio = this.fechaInicio;
-      if (this.fechaFin) filters.fecha_fin = this.fechaFin;
-    } else {
-      const { inicio, fin } = this.calcularRangoFechas(this.selectedPeriod);
-      filters.fecha_inicio = inicio;
-      filters.fecha_fin = fin;
-    }
-    if (this.filtroGenero) filters.genero = this.filtroGenero;
-    if (this.filtroEstado) filters.estado = this.filtroEstado;
-    if (this.filtroTipoEspina !== null) filters.tipo_espina = this.filtroTipoEspina;
-    return filters;
-  }
-
-  private calcularRangoFechas(periodo: string): { inicio: string; fin: string } {
-    const hoy = new Date();
-    const fin = hoy.toISOString().slice(0, 10);
-    let inicio = new Date(hoy);
-
-    switch (periodo) {
-      case 'ultimo-mes': inicio.setMonth(hoy.getMonth() - 1); break;
-      case 'ultimos-3-meses': inicio.setMonth(hoy.getMonth() - 3); break;
-      case 'ultimo-trimestre': inicio.setMonth(hoy.getMonth() - 3); break;
-      case 'ultimos-6-meses': inicio.setMonth(hoy.getMonth() - 6); break;
-      case 'ultimo-ano': inicio.setFullYear(hoy.getFullYear() - 1); break;
-      default: inicio.setMonth(hoy.getMonth() - 1);
-    }
-
-    return { inicio: inicio.toISOString().slice(0, 10), fin };
-  }
-
-  private descargarArchivo(blob: Blob, filename: string): void {
+  private descargar(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
     URL.revokeObjectURL(url);
-  }
-
-  imprimir(): void {
-    window.print();
   }
 }

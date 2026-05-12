@@ -4,7 +4,7 @@ from datetime import datetime
 import logging
 from app.domain.exceptions import InternalError
 from typing import Optional
-from app.application.reportes.dtos import ReporteFilter
+from app.domain.reportes.entities import ReporteFilter
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 logger = logging.getLogger(__name__)
 
@@ -258,6 +258,189 @@ def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[
         raise InternalError('Error interno del servidor')
 
 
+def reporte_por_ciudad(current_user: dict=None):
+    """Distribución por ciudad/municipio de residencia de pacientes activos."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT NVL(CIUDAD, 'Sin dato') AS label, NVL(ESTADO, 'Sin dato') AS estado, COUNT(*) AS cnt "
+                "FROM PACIENTE WHERE ACTIVO='S' GROUP BY CIUDAD, ESTADO ORDER BY cnt DESC"
+            )
+            rows = rows_to_dicts(cursor)
+            return {
+                'labels': [(r.get('label') or 'Sin dato').strip() for r in rows],
+                'estados': [(r.get('estado') or 'Sin dato').strip() for r in rows],
+                'values': [int(r.get('cnt') or 0) for r in rows],
+                'total': sum(int(r.get('cnt') or 0) for r in rows),
+            }
+    except Exception:
+        logger.exception('Error en reporte por ciudad')
+        raise InternalError('Error interno del servidor')
+
+
+def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+    """Indicadores de desempeño cruzados por etapa de vida (RF-ER)."""
+    ETAPAS = [
+        'Primera Infancia (0-5)', 'Infancia (6-11)', 'Adolescencia (12-17)',
+        'Juventud (18-29)', 'Adultez (30-59)', 'Adulto Mayor (60+)',
+    ]
+    ETAPA_EXPR = (
+        "CASE "
+        "WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, FECHA_NACIMIENTO)/12) <= 5 THEN 'Primera Infancia (0-5)' "
+        "WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, FECHA_NACIMIENTO)/12) <= 11 THEN 'Infancia (6-11)' "
+        "WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, FECHA_NACIMIENTO)/12) <= 17 THEN 'Adolescencia (12-17)' "
+        "WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, FECHA_NACIMIENTO)/12) <= 29 THEN 'Juventud (18-29)' "
+        "WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, FECHA_NACIMIENTO)/12) <= 59 THEN 'Adultez (30-59)' "
+        "ELSE 'Adulto Mayor (60+)' END"
+    )
+
+    periodo_params: dict = {}
+    periodo_clause = '1=1'
+    if fecha_inicio and fecha_fin:
+        periodo_clause = "FECHA_REGISTRO >= TO_DATE(:fi,'YYYY-MM-DD') AND FECHA_REGISTRO <= TO_DATE(:ff,'YYYY-MM-DD') + 1"
+        periodo_params = {'fi': fecha_inicio, 'ff': fecha_fin}
+    elif fecha_inicio:
+        periodo_clause = "FECHA_REGISTRO >= TO_DATE(:fi,'YYYY-MM-DD')"
+        periodo_params = {'fi': fecha_inicio}
+    elif fecha_fin:
+        periodo_clause = "FECHA_REGISTRO <= TO_DATE(:ff,'YYYY-MM-DD') + 1"
+        periodo_params = {'ff': fecha_fin}
+
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S'")
+            activos = int((row_to_dict(cursor) or {}).get('cnt') or 0)
+
+            cursor.execute(f"SELECT COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' AND {periodo_clause}", periodo_params)
+            nuevos = int((row_to_dict(cursor) or {}).get('cnt') or 0)
+
+            cursor.execute("SELECT NVL(GENERO,'') AS genero, COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY GENERO")
+            gd = {(r.get('genero') or '').strip(): int(r.get('cnt') or 0) for r in rows_to_dicts(cursor)}
+            hombres = gd.get('M', 0)
+            mujeres = gd.get('F', 0)
+
+            cursor.execute(
+                "SELECT NVL(CIUDAD,'Sin dato') AS ciudad, COUNT(*) AS cnt FROM PACIENTE "
+                "WHERE ACTIVO='S' AND UPPER(NVL(ESTADO,'')) LIKE '%NUEVO%LEON%' GROUP BY CIUDAD ORDER BY cnt DESC"
+            )
+            municipios = [{'label': (r.get('ciudad') or 'Sin dato').strip(), 'value': int(r.get('cnt') or 0)}
+                          for r in rows_to_dicts(cursor)]
+            nl_total = sum(m['value'] for m in municipios)
+            foraneos_cnt = activos - nl_total
+            if foraneos_cnt > 0:
+                municipios.append({'label': 'Viven en otro estado', 'value': foraneos_cnt})
+
+            def run_cross(extra_sql):
+                cursor.execute(extra_sql)
+                result: dict = {}
+                for r in rows_to_dicts(cursor):
+                    etapa = (r.get('etapa') or '').strip()
+                    col_val = str(r.get('col_val') or 'Sin dato').strip()
+                    result.setdefault(etapa, {})[col_val] = int(r.get('cnt') or 0)
+                return result
+
+            def build_rows(cross: dict, col_keys: list, col_labels: list | None = None) -> list:
+                labels = col_labels or col_keys
+                col_totals: dict = {k: 0 for k in col_keys}
+                out = []
+                for etapa in ETAPAS:
+                    row: dict = {'etapa': etapa, 'total': 0}
+                    row_total = 0
+                    for key, label in zip(col_keys, labels):
+                        v = cross.get(etapa, {}).get(key, 0)
+                        row[label] = v
+                        col_totals[key] = col_totals.get(key, 0) + v
+                        row_total += v
+                    row['total'] = row_total
+                    out.append(row)
+                totals_row: dict = {'etapa': 'Total', 'total': 0}
+                grand = 0
+                for key, label in zip(col_keys, labels):
+                    totals_row[label] = col_totals[key]
+                    grand += col_totals[key]
+                totals_row['total'] = grand
+                out.append(totals_row)
+                return out
+
+            t1_cross = run_cross(
+                f"SELECT {ETAPA_EXPR} AS etapa, "
+                "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%NUEVO%LEON%' THEN 'CURP N.L.' ELSE 'CURP Foráneo' END AS col_val, "
+                f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
+                "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%NUEVO%LEON%' THEN 'CURP N.L.' ELSE 'CURP Foráneo' END"
+            )
+            t1 = build_rows(t1_cross, ['CURP N.L.', 'CURP Foráneo'])
+
+            t2_cross = run_cross(
+                f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS col_val, COUNT(*) AS cnt FROM PACIENTE "
+                f"WHERE ACTIVO='S' AND UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%NUEVO%LEON%' GROUP BY {ETAPA_EXPR}, GENERO"
+            )
+            t2 = build_rows(t2_cross, ['M', 'F'], ['Hombre', 'Mujer'])
+
+            t3_cross = run_cross(
+                f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS col_val, COUNT(*) AS cnt FROM PACIENTE "
+                f"WHERE ACTIVO='S' AND UPPER(NVL(ESTADO_NACIMIENTO,'')) NOT LIKE '%NUEVO%LEON%' GROUP BY {ETAPA_EXPR}, GENERO"
+            )
+            t3 = build_rows(t3_cross, ['M', 'F'], ['Hombre', 'Mujer'])
+
+            t4_cross = run_cross(
+                f"SELECT {ETAPA_EXPR} AS etapa, "
+                "CASE WHEN UPPER(NVL(ESTADO,'')) LIKE '%NUEVO%LEON%' THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END AS col_val, "
+                f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
+                "CASE WHEN UPPER(NVL(ESTADO,'')) LIKE '%NUEVO%LEON%' THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END"
+            )
+            t4 = build_rows(t4_cross, ['Viven en N.L.', 'Viven en otros estados'])
+
+            t5_cross = run_cross(
+                f"SELECT {ETAPA_EXPR} AS etapa, "
+                "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%EXTRAN%' THEN 'Nac. extranjera' ELSE 'Mexicanos' END AS col_val, "
+                f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
+                "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%EXTRAN%' THEN 'Nac. extranjera' ELSE 'Mexicanos' END"
+            )
+            t5 = build_rows(t5_cross, ['Mexicanos', 'Nac. extranjera'])
+
+            cursor.execute(
+                f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS genero, COUNT(*) AS cnt "
+                f"FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, GENERO"
+            )
+            genero_etapa: dict = {}
+            for r in rows_to_dicts(cursor):
+                et = (r.get('etapa') or '').strip()
+                gn = (r.get('genero') or '').strip()
+                genero_etapa.setdefault(et, {})[gn] = int(r.get('cnt') or 0)
+            t6 = []
+            t6_totals = {'total': 0, 'Mujer': 0, 'Hombre': 0}
+            for etapa in ETAPAS:
+                m = genero_etapa.get(etapa, {}).get('M', 0)
+                f = genero_etapa.get(etapa, {}).get('F', 0)
+                t6.append({'etapa': etapa, 'Hombre': m, 'Mujer': f, 'total': m + f})
+                t6_totals['total'] += m + f
+                t6_totals['Mujer'] += f
+                t6_totals['Hombre'] += m
+            t6.append({'etapa': 'Total', 'Hombre': t6_totals['Hombre'], 'Mujer': t6_totals['Mujer'], 'total': t6_totals['total']})
+
+            return {
+                'beneficiarios_activos': activos,
+                'nuevos_en_periodo': nuevos,
+                'hombres': hombres,
+                'mujeres': mujeres,
+                'municipios': municipios,
+                'tablas': {
+                    'por_curp': t1,
+                    'curp_nl_genero': t2,
+                    'curp_foraneo_genero': t3,
+                    'residencia': t4,
+                    'nacimiento': t5,
+                    'etapa_vida_genero': t6,
+                },
+            }
+    except Exception:
+        logger.exception('Error en indicadores de desempeno')
+        raise InternalError('Error interno del servidor')
+
+
 class OracleReportesRepository:
     def reporte_por_genero(self, genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
         return reporte_por_genero(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
@@ -288,3 +471,9 @@ class OracleReportesRepository:
 
     def historial_reportes(self, tipo_reporte=None, fecha_inicio=None, fecha_fin=None, current_user=None, limit=100, offset=0):
         return historial_reportes(tipo_reporte, fecha_inicio, fecha_fin, current_user, limit, offset)
+
+    def reporte_por_ciudad(self, current_user=None):
+        return reporte_por_ciudad(current_user)
+
+    def indicadores_desempeno(self, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return indicadores_desempeno(fecha_inicio, fecha_fin, current_user)

@@ -41,6 +41,14 @@ def reporte_pagos_exentos(fecha_inicio: Optional[str]=Query(None), fecha_fin: Op
 def reporte_consolidado_mensual(mes: Optional[int]=Query(None, description='Mes (1-12)'), anio: Optional[int]=Query(None, description='Año'), current_user: dict=Depends(get_current_user)):
     return service.reporte_consolidado_mensual(mes, anio, current_user)
 
+@router.get('/por-ciudad')
+def reporte_por_ciudad(current_user: dict=Depends(get_current_user)):
+    return service.reporte_por_ciudad(current_user)
+
+@router.get('/indicadores-desempeno')
+def indicadores_desempeno(fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
+    return service.indicadores_desempeno(fecha_inicio, fecha_fin, current_user)
+
 @router.get('/historial', response_model=List[ReporteResponse])
 def historial_reportes(
     tipo_reporte: Optional[str]=Query(None, max_length=60),

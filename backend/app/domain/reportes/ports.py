@@ -92,3 +92,12 @@ class ReportesRepository(Protocol):
         limit: int = 100,
         offset: int = 0,
     ) -> list[HistorialReporte]: ...
+
+    def reporte_por_ciudad(self, current_user: CurrentUser | None = None) -> dict: ...
+
+    def indicadores_desempeno(
+        self,
+        fecha_inicio: Optional[str] = None,
+        fecha_fin: Optional[str] = None,
+        current_user: CurrentUser | None = None,
+    ) -> dict: ...

@@ -450,6 +450,20 @@ export class ApiService {
     return this.http.get<any[]>(`${this.apiUrl}/reportes/historial`, { params });
   }
 
+  getReportePorCiudad(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/reportes/por-ciudad`);
+  }
+
+  getIndicadoresDesempeno(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params = params.set(key, filters[key]);
+      });
+    }
+    return this.http.get<any>(`${this.apiUrl}/reportes/indicadores-desempeno`, { params });
+  }
+
   // ──────────────── Pre-registro ────────────────
 
   getPreRegistros(): Observable<any[]> {

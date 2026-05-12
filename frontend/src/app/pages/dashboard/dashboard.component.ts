@@ -215,12 +215,12 @@ interface CatalogoItem {
                     Siguiente en Cola
                   </h3>
                   <div class="flex items-center gap-2">
-                    <button (click)="openWalkInModal()" class="text-xs text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-md font-bold cursor-pointer border-0 flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
-                      Atención sin cita
+                    <button (click)="openWalkInModal()" class="text-sm text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-md font-bold cursor-pointer border-0 flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                      Agregar a la lista
                     </button>
                     <button (click)="navigateTo('/citas')" class="text-xs text-[#00328b] font-bold hover:underline cursor-pointer bg-transparent border-0 flex items-center gap-1">
-                      Ver todas
+                      Ver citas
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
                   </div>
@@ -1148,10 +1148,21 @@ export class DashboardComponent implements OnInit {
       this.api.getServicios().subscribe({
         next: (data) => {
           this.walkInServicios = (data || []).filter((s: any) => String(s?.activo ?? 'S').toUpperCase() === 'S');
+          this.setDefaultWalkInServicio();
         },
         error: () => { this.walkInError = 'No se pudieron cargar los servicios'; },
       });
+    } else {
+      this.setDefaultWalkInServicio();
     }
+  }
+
+  private setDefaultWalkInServicio(): void {
+    const consulta = this.walkInServicios.find((s: any) => {
+      const n = (s.nombre ?? '').toLowerCase();
+      return n.includes('consulta') && (n.includes('médica') || n.includes('medica'));
+    }) ?? this.walkInServicios.find((s: any) => (s.nombre ?? '').toLowerCase().includes('consulta'));
+    if (consulta) this.walkInServicioSeleccionadoId = consulta.id_servicio ?? null;
   }
 
   closeWalkInModal(): void {

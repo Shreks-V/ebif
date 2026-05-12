@@ -13,7 +13,7 @@ from app.application.almacen.dtos import (
 from app.application.doctores.dtos import DoctorBase, DoctorCreate, DisponibilidadCreate
 from app.application.preregistro.dtos import PreRegistroCreate, AprobarPreRegistroData
 from app.application.recibos.dtos import VentaBase, VentaCreate, PagoParcialCreate
-from app.application.reportes.dtos import ReporteFilter
+from app.domain.reportes.entities import ReporteFilter
 
 __all__ = [
     # re-exported input DTOs (kept for backward compat with any direct schemas import)
