@@ -151,10 +151,10 @@ def beneficiarios_client_factory(
         repo: InMemoryBeneficiariosRepository | None = None,
         user_repo: InMemoryUserRepository | None = None,
     ) -> TestClient:
-        from app.application.beneficiarios import use_cases as ben_uc
+        from app.application.beneficiarios.use_cases import BeneficiariosService, configure_service as configure_beneficiarios
 
         ben_repo = repo or InMemoryBeneficiariosRepository(default_seed_patients())
-        ben_uc.configure_repository(ben_repo)
+        configure_beneficiarios(BeneficiariosService(ben_repo))
         urepo = user_repo or _default_beneficiarios_user_repo(password_hasher)
         auth_service = AuthService(
             user_repository=urepo,
@@ -178,10 +178,10 @@ def preregistro_client_factory(
         repo: InMemoryPreregistroRepository | None = None,
         user_repo: InMemoryUserRepository | None = None,
     ) -> TestClient:
-        from app.application.preregistro import use_cases as pre_uc
+        from app.application.preregistro.use_cases import PreregistroService, configure_service as configure_preregistro
 
         pre_repo = repo or InMemoryPreregistroRepository()
-        pre_uc.configure_repository(pre_repo)
+        configure_preregistro(PreregistroService(pre_repo))
         urepo = user_repo or _default_beneficiarios_user_repo(password_hasher)
         auth_service = AuthService(
             user_repository=urepo,
@@ -205,10 +205,10 @@ def citas_client_factory(
         repo: InMemoryCitasRepository | None = None,
         user_repo: InMemoryUserRepository | None = None,
     ) -> TestClient:
-        from app.application.citas import use_cases as citas_uc
+        from app.application.citas.use_cases import CitasService, configure_service as configure_citas
 
         c_repo = repo or InMemoryCitasRepository()
-        citas_uc.configure_repository(c_repo)
+        configure_citas(CitasService(c_repo))
         urepo = user_repo or _default_beneficiarios_user_repo(password_hasher)
         auth_service = AuthService(
             user_repository=urepo,
@@ -232,10 +232,10 @@ def recibos_client_factory(
         repo: InMemoryRecibosRepository | None = None,
         user_repo: InMemoryUserRepository | None = None,
     ) -> TestClient:
-        from app.application.recibos import use_cases as recibos_uc
+        from app.application.recibos.use_cases import RecibosService, configure_service as configure_recibos
 
         r_repo = repo or InMemoryRecibosRepository()
-        recibos_uc.configure_repository(r_repo)
+        configure_recibos(RecibosService(r_repo))
         urepo = user_repo or _default_beneficiarios_user_repo(password_hasher)
         auth_service = AuthService(
             user_repository=urepo,

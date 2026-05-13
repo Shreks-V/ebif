@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from app.schemas.schemas import CitaCreate
+from app.presentation.api.schemas import CitaCreate
 
 
 def _fecha_iso_dia(fecha_hora: str) -> str:
@@ -113,6 +113,8 @@ class InMemoryCitasRepository:
         id_paciente: int | None = None,
         busqueda: str | None = None,
         current_user: dict | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[dict[str, Any]]:
         del current_user
         rows = [self._enriquecer(dict(c)) for c in self._citas.values()]

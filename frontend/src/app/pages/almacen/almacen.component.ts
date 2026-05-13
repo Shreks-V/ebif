@@ -5,6 +5,8 @@ import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
+import { ConfigService } from '../../services/config.service';
 
 interface ProductoItem {
   idProducto: number;
@@ -365,6 +367,14 @@ interface TableSortState {
                     </tr>
                   </thead>
                   <tbody>
+                    @if (filteredInventario().length === 0) {
+                      <tr><td colspan="9" class="px-6 py-14 text-center">
+                        <div class="flex flex-col items-center gap-2 text-slate-400">
+                          <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16ZM3.3 7l8.7 5 8.7-5M12 22V12"/></svg>
+                          <p class="text-sm font-semibold">Sin productos en inventario</p>
+                        </div>
+                      </td></tr>
+                    }
                     @for (item of filteredInventario(); track item.id + '-' + item.categoria) {
                       <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                         <td class="px-5 py-4 text-slate-600 font-mono">{{ item.id }}</td>
@@ -421,11 +431,13 @@ interface TableSortState {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                               </svg>
                             </button>
-                            <button (click)="openConfirmDeleteModal(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
-                              </svg>
-                            </button>
+                            @if (isAdmin) {
+                              <button (click)="openConfirmDeleteModal(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+                                </svg>
+                              </button>
+                            }
                           </div>
                         </td>
                       </tr>
@@ -490,11 +502,13 @@ interface TableSortState {
                             <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                           </svg>
                         </button>
-                        <button (click)="openConfirmDeleteModal({ id: s.idServicio, nombre: s.nombre, categoria: 'SERVICIO' })" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
-                          </svg>
-                        </button>
+                        @if (isAdmin) {
+                          <button (click)="openConfirmDeleteModal({ id: s.idServicio, nombre: s.nombre, categoria: 'SERVICIO' })" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+                            </svg>
+                          </button>
+                        }
                       </td>
                     </tr>
                   }
@@ -576,6 +590,14 @@ interface TableSortState {
                     </tr>
                   </thead>
                   <tbody>
+                    @if (filteredComodatos().length === 0) {
+                      <tr><td colspan="7" class="px-6 py-14 text-center">
+                        <div class="flex flex-col items-center gap-2 text-slate-400">
+                          <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+                          <p class="text-sm font-semibold">No hay comodatos registrados</p>
+                        </div>
+                      </td></tr>
+                    }
                     @for (com of filteredComodatos(); track com) {
                       <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                         <td class="px-5 py-4">
@@ -597,6 +619,12 @@ interface TableSortState {
                         </td>
                         <td class="px-5 py-4">
                           <div class="flex items-center gap-1">
+                            @if (debugMode && com.estatus === 'PRESTADO') {
+                              <button (click)="openConfirmDevolucionModal(com)"
+                                class="px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors" title="Registrar devolución">
+                                Devolver
+                              </button>
+                            }
                             <button (click)="openEditComodatoModal(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
                               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -867,6 +895,46 @@ interface TableSortState {
       </div>
     }
     
+    <!-- ==================== MODAL: Confirmar Devolución ==================== -->
+    @if (showConfirmDevolucionModal && comodatoToDevolver) {
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeConfirmDevolucionModal()">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-slate-800">Registrar Devolución</h2>
+            <button (click)="closeConfirmDevolucionModal()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="mb-6">
+            <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </div>
+            <p class="text-center text-slate-700 text-base font-semibold">¿Confirmar devolución del equipo?</p>
+            <p class="text-center text-slate-500 text-sm mt-2">
+              <span class="font-semibold text-slate-700">{{ comodatoToDevolver.nombreEquipo }}</span><br/>
+              Paciente: {{ comodatoToDevolver.nombrePaciente }}<br/>
+              Folio: <span class="font-mono font-semibold text-emerald-700">{{ comodatoToDevolver.folioComodato }}</span>
+            </p>
+            <p class="text-center text-xs text-slate-400 mt-3">Se marcará como devuelto con fecha de hoy y el stock del producto se actualizará automáticamente.</p>
+          </div>
+          <div class="flex items-center justify-end gap-3">
+            <button (click)="closeConfirmDevolucionModal()"
+              class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+              Cancelar
+            </button>
+            <button (click)="confirmDevolucion()" [disabled]="submittingDevolucion"
+              class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ submittingDevolucion ? 'Registrando...' : 'Confirmar devolución' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- ==================== MODAL: Nuevo Comodato ==================== -->
     @if (showNuevoComodatoModal) {
       <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeComodatoModal()">
@@ -1183,7 +1251,11 @@ export class AlmacenComponent implements OnInit {
   beneficiariosList: { id: number; nombre: string }[] = [];
   equiposList: ProductoItem[] = [];
 
-  constructor(private api: ApiService, private route: ActivatedRoute) {}
+  get isAdmin(): boolean { return this.auth.isAdmin(); }
+  get isAdminOrAlmacen(): boolean { return this.auth.hasRole('ADMINISTRADOR', 'ENCARGADO_ALMACEN'); }
+  get debugMode(): boolean { return this.config.debug; }
+
+  constructor(private api: ApiService, private route: ActivatedRoute, private auth: AuthService, private config: ConfigService) {}
 
   ngOnInit(): void {
     this.loadProductos();
@@ -1605,8 +1677,10 @@ export class AlmacenComponent implements OnInit {
         const link = document.createElement('a');
         link.href = url;
         link.download = `contrato_${com.folioComodato}.pdf`;
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 150);
       },
       error: () => alert('Error al generar contrato de comodato'),
     });
@@ -1985,6 +2059,11 @@ export class AlmacenComponent implements OnInit {
   submittingEditComodato = false;
   private editComodatoOriginal: ComodatoItem | null = null;
 
+  // Confirmar devolución
+  showConfirmDevolucionModal = false;
+  comodatoToDevolver: ComodatoItem | null = null;
+  submittingDevolucion = false;
+
   openEditComodatoModal(com: ComodatoItem): void {
     this.editComodatoOriginal = com;
     this.editComodatoId = com.idComodato;
@@ -2021,19 +2100,45 @@ export class AlmacenComponent implements OnInit {
     });
   }
 
-  // ──────────────── Marcar Devuelto ────────────────
+  // ──────────────── Devolver Comodato ────────────────
 
-  marcarDevuelto(com: ComodatoItem): void {
+  openConfirmDevolucionModal(com: ComodatoItem): void {
+    this.comodatoToDevolver = com;
+    this.submittingDevolucion = false;
+    this.showConfirmDevolucionModal = true;
+  }
+
+  closeConfirmDevolucionModal(): void {
+    this.showConfirmDevolucionModal = false;
+    this.comodatoToDevolver = null;
+  }
+
+  confirmDevolucion(): void {
+    const com = this.comodatoToDevolver;
+    if (!com) return;
+    this.submittingDevolucion = true;
     const today = new Date().toISOString().split('T')[0];
     this.api.updateComodato(com.idComodato, {
       id_paciente: com.idPaciente,
       id_equipo: com.idEquipo,
-      fecha_prestamo: com.fechaPrestamo,
+      fecha_prestamo: com.fechaPrestamo ? com.fechaPrestamo.substring(0, 10) : today,
       fecha_devolucion: today,
       estatus: 'DEVUELTO',
+      monto_total: com.montoTotal,
+      monto_pagado: com.montoPagado,
+      saldo_pendiente: com.saldoPendiente,
+      exento_pago: com.exentoPago,
+      notas: com.notas || null,
     }).subscribe({
-      next: () => this.loadComodatos(),
-      error: (err) => console.error('Error al marcar devuelto:', err),
+      next: () => {
+        this.submittingDevolucion = false;
+        this.closeConfirmDevolucionModal();
+        this.loadComodatos();
+      },
+      error: (err) => {
+        console.error('Error al registrar devolución:', err);
+        this.submittingDevolucion = false;
+      },
     });
   }
 }

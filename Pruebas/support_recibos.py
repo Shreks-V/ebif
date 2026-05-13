@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from fastapi import HTTPException
 
-from app.schemas.schemas import VentaCreate
+from app.presentation.api.schemas import VentaCreate
 
 from Pruebas.support_beneficiarios import default_seed_patients
 
@@ -171,6 +171,8 @@ class InMemoryRecibosRepository:
         id_paciente: Optional[int] = None,
         search: Optional[str] = None,
         current_user: dict | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[dict[str, Any]]:
         rows = list(self._ventas.values())
         filtered: list[dict[str, Any]] = []

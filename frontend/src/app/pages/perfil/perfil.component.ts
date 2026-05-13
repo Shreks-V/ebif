@@ -11,10 +11,10 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
   template: `
-    <div class="h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff] overflow-hidden">
+    <div class="min-h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff]">
       <app-navbar />
 
-      <main class="flex-1 overflow-y-auto">
+      <main class="flex-1">
         <div class="max-w-3xl mx-auto px-8 py-8 space-y-6">
 
           <!-- Header -->

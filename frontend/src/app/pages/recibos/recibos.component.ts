@@ -1156,6 +1156,10 @@ export class RecibosComponent implements OnInit {
       this.nuevoCobroError = 'Selecciona un paciente.';
       return;
     }
+    if (this.nuevoCobro.monto_total <= 0) {
+      this.nuevoCobroError = 'El monto total debe ser mayor a 0.';
+      return;
+    }
     if (this.itemsNuevoCobro.length === 0) {
       this.nuevoCobroError = 'Agrega al menos un concepto al cobro.';
       return;

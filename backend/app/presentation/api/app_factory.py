@@ -12,6 +12,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app.core.config import settings
 from app.domain.exceptions import ConflictError, InternalError, NotFoundError, ValidationError
 from app.infrastructure.persistence.oracle import close_pool, init_pool
+from app.infrastructure.scheduler.membresias import start_expiry_scheduler
 from app.infrastructure.startup.migrations import run_startup_migrations
 from app.presentation.api.bootstrap import wire_application
 from app.presentation.api.router import build_api_router
@@ -25,6 +26,7 @@ MAX_BODY_SIZE = settings.MAX_UPLOAD_SIZE
 async def lifespan(app: FastAPI):
     init_pool()
     run_startup_migrations()
+    start_expiry_scheduler()
     yield
     close_pool()
 

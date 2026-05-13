@@ -134,7 +134,13 @@
       "Bash(sed -i '' 's/\"CUOTA_A\"/\"CUOTA A\"/g; s/\"CUOTA_B\"/\"CUOTA B\"/g' db/seed_dummies.py)",
       "Bash(sed -i '' 's/\",\"EXENTO\"\\),$/\",\"CUOTA B\"\\),/g' db/seed_dummies.py)",
       "mcp__claude_ai_Atlassian__getAccessibleAtlassianResources",
-      "mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql"
+      "mcp__claude_ai_Atlassian__searchJiraIssuesUsingJql",
+      "Bash(xargs cat)",
+      "Bash(grep -n 'TODO\\\\|FIXME\\\\|placeholder\\\\|pendiente\\\\|NotImplemented\\\\|pass$\\\\|raise NotImplemented' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/application/reportes/use_cases.py' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/application/exportaciones/use_cases.py' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/application/notificaciones/use_cases.py')",
+      "Bash(grep -n '\\\\${{' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/reportes/reportes.component.ts\")",
+      "Bash(sed -n '160,185p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/Pruebas/support_recibos.py\")",
+      "Bash(sed -n '70,100p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/Pruebas/support_beneficiarios.py\")",
+      "Bash(sed -n '160,185p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/Pruebas/support_beneficiarios.py\")"
     ]
   },
   "enableAllProjectMcpServers": true,

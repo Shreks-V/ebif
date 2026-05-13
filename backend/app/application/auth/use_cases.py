@@ -1,6 +1,6 @@
-from app.application.auth.exceptions import ForbiddenError, LoginError, PasswordTooShortError, UserNotFoundError
-from app.domain.auth.entities import AuthenticatedUser, SeedUser, User
-from app.domain.auth.exceptions import AuthError, ForbiddenActionError
+from app.application.auth.exceptions import ForbiddenError, LoginError, PasswordTooShortError
+from app.domain.auth.entities import AuthenticatedUser, NewUser, SeedUser, UpdateUser, User
+from app.domain.auth.exceptions import AuthError, ForbiddenActionError, UserNotFoundError
 from app.domain.auth.ports import AccessTokenIssuer, PasswordHasher, UserRepository
 from app.domain.auth.roles import normalize_role
 
@@ -90,6 +90,41 @@ class AuthService:
         if normalize_role(current_user.get("rol")) != "ADMINISTRADOR":
             raise ForbiddenError()
         return [self._to_user_response(u) for u in self._user_repository.list_all()]
+
+    def create_user(self, current_user: dict, data: dict) -> dict:
+        if normalize_role(current_user.get("rol")) != "ADMINISTRADOR":
+            raise ForbiddenError()
+        contrasena = data.get("contrasena", "")
+        if len(contrasena) < _MIN_PASSWORD_LENGTH:
+            raise PasswordTooShortError(f"La contraseña debe tener al menos {_MIN_PASSWORD_LENGTH} caracteres")
+        rol = normalize_role(data.get("rol", ""))
+        new_user = NewUser(
+            nombre=(data.get("nombre") or "").strip(),
+            apellido_paterno=(data.get("apellido_paterno") or "").strip() or None,
+            apellido_materno=(data.get("apellido_materno") or "").strip() or None,
+            correo=(data.get("correo") or "").strip(),
+            contrasena=contrasena,
+            rol=rol,
+            estatus=data.get("estatus", "ACTIVO"),
+        )
+        created = self._user_repository.create_user(new_user, self._password_hasher.hash(contrasena))
+        return self._to_user_response(created)
+
+    def update_user(self, current_user: dict, id_usuario: int, data: dict) -> dict:
+        if normalize_role(current_user.get("rol")) != "ADMINISTRADOR":
+            raise ForbiddenError()
+        user = self._user_repository.find_by_id(id_usuario)
+        if user is None:
+            raise UserNotFoundError()
+        update_data = UpdateUser(
+            nombre=(data.get("nombre") or "").strip(),
+            apellido_paterno=(data.get("apellido_paterno") or "").strip() or None,
+            apellido_materno=(data.get("apellido_materno") or "").strip() or None,
+            rol=normalize_role(data.get("rol", user.rol)),
+            estatus=data.get("estatus", user.estatus),
+        )
+        updated = self._user_repository.update_user(id_usuario, update_data)
+        return self._to_user_response(updated)
 
     # ── Stubs para Opción C: recuperación por correo ───────────────────────────
     # Para activarlos, configurar SMTP_HOST/SMTP_USER/SMTP_PASSWORD en .env y

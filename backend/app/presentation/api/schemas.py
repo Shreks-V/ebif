@@ -74,6 +74,14 @@ class UsuarioCreate(UsuarioBase):
     contrasena: str
 
 
+class UsuarioUpdate(BaseModel):
+    nombre: str
+    apellido_paterno: Optional[str] = None
+    apellido_materno: Optional[str] = None
+    rol: str
+    estatus: str = "ACTIVO"
+
+
 class UsuarioResponse(UsuarioBase):
     id_usuario: int
     fecha_creacion: Optional[str] = None

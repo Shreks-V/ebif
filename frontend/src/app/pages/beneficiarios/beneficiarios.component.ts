@@ -6,6 +6,7 @@ import { catchError, forkJoin, map, of } from 'rxjs';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 
 interface Beneficiario {
   idPaciente: number;
@@ -252,6 +253,14 @@ interface TableSortState {
                   </tr>
                 </thead>
                 <tbody>
+                  @if (paginatedBeneficiarios.length === 0) {
+                    <tr><td colspan="7" class="px-6 py-14 text-center">
+                      <div class="flex flex-col items-center gap-2 text-slate-400">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <p class="text-sm font-semibold">No se encontraron beneficiarios</p>
+                      </div>
+                    </td></tr>
+                  }
                   @for (b of paginatedBeneficiarios; track b; let i = $index) {
                     <tr class="group border-b border-slate-100 hover:bg-slate-50/70 transition-colors cursor-default">
                       <td class="px-6 py-4 text-sm font-semibold text-slate-700">{{ b.folio }}</td>
@@ -373,6 +382,14 @@ interface TableSortState {
                   </tr>
                 </thead>
                 <tbody>
+                  @if (paginatedPreregistros.length === 0) {
+                    <tr><td colspan="6" class="px-6 py-14 text-center">
+                      <div class="flex flex-col items-center gap-2 text-slate-400">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+                        <p class="text-sm font-semibold">No hay pre-registros pendientes</p>
+                      </div>
+                    </td></tr>
+                  }
                   @for (p of paginatedPreregistros; track p; let i = $index) {
                     <tr class="border-b border-slate-100 hover:bg-amber-50/30 transition-colors">
                       <td class="px-6 py-4 text-sm font-semibold text-slate-700">{{ p.id }}</td>
@@ -1509,14 +1526,16 @@ interface TableSortState {
         </button>
         <!-- Divider -->
         <div class="border-t border-slate-100 my-1"></div>
-        <!-- Desactivar -->
-        <button (click)="confirmarDesactivar(menuBeneficiario!); closeActionMenu()"
-          class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
-          </svg>
-          <span class="font-medium">Desactivar</span>
-        </button>
+        <!-- Desactivar (solo ADMINISTRADOR) -->
+        @if (isAdmin) {
+          <button (click)="confirmarDesactivar(menuBeneficiario!); closeActionMenu()"
+            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+            </svg>
+            <span class="font-medium">Desactivar</span>
+          </button>
+        }
       </div>
     }
     
@@ -1932,7 +1951,9 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
   filteredBeneficiarios: Beneficiario[] = [];
   filteredPreregistros: Preregistro[] = [];
 
-  constructor(private api: ApiService, private route: ActivatedRoute) {}
+  get isAdmin(): boolean { return this.auth.isAdmin(); }
+
+  constructor(private api: ApiService, private route: ActivatedRoute, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.loadBeneficiarios();
@@ -2451,8 +2472,10 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 150);
   }
 
   // ──────────── Pagination ────────────

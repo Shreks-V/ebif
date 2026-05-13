@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from app.schemas.schemas import BeneficiarioCreate
+from app.presentation.api.schemas import BeneficiarioCreate
 
 
 def _visible(p: dict[str, Any]) -> bool:
@@ -80,6 +80,8 @@ class InMemoryBeneficiariosRepository:
         membresia_estatus: str | None = None,
         tipo_cuota: str | None = None,
         current_user: dict | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[dict[str, Any]]:
         del current_user
         rows = [p for p in self._all() if _visible(p)]
@@ -168,7 +170,7 @@ class InMemoryBeneficiariosRepository:
         self._by_folio[folio]["activo"] = "N"
         return {"detail": "Beneficiario eliminado correctamente"}
 
-    def historial_beneficiario(self, folio: str, current_user: dict | None = None) -> dict[str, Any]:
+    def historial_beneficiario(self, folio: str, current_user: dict | None = None, limit_citas: int = 100, offset_citas: int = 0, limit_pagos: int = 100, offset_pagos: int = 0, limit_comodatos: int = 100, offset_comodatos: int = 0) -> dict[str, Any]:
         del current_user
         if folio not in self._by_folio:
             raise HTTPException(status_code=404, detail="Beneficiario no encontrado")

@@ -4,7 +4,8 @@ import logging
 
 import oracledb
 
-from app.domain.auth.entities import SeedUser, User
+from app.domain.auth.entities import NewUser, SeedUser, UpdateUser, User
+from app.domain.auth.exceptions import UserAlreadyExistsError, UserNotFoundError
 from app.domain.auth.ports import PasswordHasher, UserRepository
 from app.infrastructure.persistence.oracle import get_db, row_to_dict, rows_to_dicts
 from app.infrastructure.persistence.sp_helpers import parse_ora_error
@@ -44,6 +45,58 @@ class OracleUserRepository(UserRepository):
                 return [self._to_user(r) for r in rows]
         except Exception:
             return []
+
+    def create_user(self, user: NewUser, hashed_password: str) -> User:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT ID_USUARIO FROM USUARIO_SISTEMA WHERE CORREO = :1",
+                [user.correo],
+            )
+            if cursor.fetchone() is not None:
+                raise UserAlreadyExistsError(user.correo)
+            id_out = cursor.var(int)
+            cursor.callproc(
+                "SP_CREAR_USUARIO_SISTEMA",
+                [
+                    user.nombre,
+                    user.apellido_paterno,
+                    user.apellido_materno,
+                    user.correo,
+                    hashed_password,
+                    user.rol,
+                    id_out,
+                ],
+            )
+            conn.commit()
+            new_id = int(id_out.getvalue())
+        created = self.find_by_id(new_id)
+        if created is None:
+            raise RuntimeError("No se pudo recuperar el usuario recién creado")
+        return created
+
+    def update_user(self, id_usuario: int, data: UpdateUser) -> User:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE USUARIO_SISTEMA "
+                "SET NOMBRE = :1, APELLIDO_PATERNO = :2, APELLIDO_MATERNO = :3, "
+                "    ROL = :4, ESTATUS = :5 "
+                "WHERE ID_USUARIO = :6",
+                [
+                    data.nombre,
+                    data.apellido_paterno,
+                    data.apellido_materno,
+                    data.rol,
+                    data.estatus,
+                    id_usuario,
+                ],
+            )
+            conn.commit()
+        updated = self.find_by_id(id_usuario)
+        if updated is None:
+            raise UserNotFoundError()
+        return updated
 
     def update_password(self, id_usuario: int, new_hash: str) -> None:
         with get_db() as conn:

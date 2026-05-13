@@ -536,4 +536,12 @@ export class ApiService {
   adminResetContrasena(idUsuario: number, data: { contrasena_nueva: string }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/auth/usuarios/${idUsuario}/reset-contrasena`, data);
   }
+
+  crearUsuarioSistema(data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/usuarios`, data);
+  }
+
+  actualizarUsuarioSistema(idUsuario: number, data: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/auth/usuarios/${idUsuario}`, data);
+  }
 }

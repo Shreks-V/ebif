@@ -3,16 +3,16 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.application.auth.exceptions import ForbiddenError, LoginError, PasswordTooShortError, UserNotFoundError
+from app.application.auth.exceptions import ForbiddenError, LoginError, PasswordTooShortError
+from app.domain.auth.exceptions import AuthError, UserAlreadyExistsError, UserNotFoundError
 
 logger = logging.getLogger(__name__)
-from app.domain.auth.exceptions import AuthError
 from app.application.auth.use_cases import AuthService
 from app.presentation.api.dependencies import get_auth_service
 from app.presentation.api.security import get_current_user
 from app.presentation.api.schemas import (
     AdminResetContrasenaRequest, CambiarContrasenaRequest,
-    Token, UserLogin, UserResponse,
+    Token, UserLogin, UserResponse, UsuarioCreate, UsuarioUpdate,
 )
 
 router = APIRouter()
@@ -99,6 +99,43 @@ def listar_usuarios(
         return auth_service.list_users(current_user)
     except ForbiddenError:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
+
+
+@router.post("/usuarios", response_model=UserResponse, status_code=201)
+def crear_usuario(
+    body: UsuarioCreate,
+    current_user: dict = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    try:
+        return auth_service.create_user(current_user, body.model_dump())
+    except ForbiddenError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
+    except PasswordTooShortError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    except UserAlreadyExistsError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ya existe un usuario con ese correo")
+    except Exception as exc:
+        logger.exception("Error al crear usuario: %s", exc)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al crear el usuario")
+
+
+@router.put("/usuarios/{id_usuario}", response_model=UserResponse, status_code=200)
+def actualizar_usuario(
+    id_usuario: int,
+    body: UsuarioUpdate,
+    current_user: dict = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    try:
+        return auth_service.update_user(current_user, id_usuario, body.model_dump())
+    except ForbiddenError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
+    except UserNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    except Exception as exc:
+        logger.exception("Error al actualizar usuario: %s", exc)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al actualizar el usuario")
 
 
 @router.post("/usuarios/{id_usuario}/reset-contrasena", status_code=200)

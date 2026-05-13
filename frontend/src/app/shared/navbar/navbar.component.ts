@@ -287,10 +287,10 @@ const ROLE_LABELS: Record<string, string> = {
                       Cambiar contrase&ntilde;a
                     </button>
                     @if (isAdmin) {
-                      <button (click)="openGestionAccesos(); userMenuOpen=false" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer">
+                      <a routerLink="/usuarios-sistema" (click)="userMenuOpen=false" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors no-underline">
                         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        Gesti&oacute;n de accesos
-                      </button>
+                        Gesti&oacute;n de usuarios
+                      </a>
                     }
                     <div class="border-t border-slate-100 my-1"></div>
                     <button (click)="auth.logout()" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">

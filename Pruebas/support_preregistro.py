@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import HTTPException, UploadFile
 
-from app.schemas.schemas import PreRegistroCreate
+from app.presentation.api.schemas import PreRegistroCreate
 
 
 def _serialize(row: dict[str, Any]) -> dict[str, Any]:
@@ -39,7 +39,7 @@ class InMemoryPreregistroRepository:
         return d
 
     def listar_preregistros(
-        self, estatus: str | None = None, current_user: dict | None = None
+        self, estatus: str | None = None, current_user: dict | None = None, limit: int = 100, offset: int = 0
     ) -> list[dict[str, Any]]:
         del current_user
         rows = []
