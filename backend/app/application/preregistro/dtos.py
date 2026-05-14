@@ -46,6 +46,31 @@ class PreRegistroCreate(BaseModel):
     paso_actual: int = 1
     tipos_espina: Optional[List[int]] = None
 
+    @field_validator('tipo_cuota')
+    @classmethod
+    def tipo_cuota_valida(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_tipo_cuota(v)
+
 
 class AprobarPreRegistroData(BaseModel):
     tipo_cuota: Optional[str] = None
+
+    @field_validator('tipo_cuota')
+    @classmethod
+    def tipo_cuota_valida(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_tipo_cuota(v)
+
+
+def normalize_tipo_cuota(v: Optional[str]) -> Optional[str]:
+    if v is None:
+        return None
+    value = v.strip().upper()
+    aliases = {
+        'A': 'CUOTA A',
+        'B': 'CUOTA B',
+        'CUOTA A': 'CUOTA A',
+        'CUOTA B': 'CUOTA B',
+    }
+    if value not in aliases:
+        raise ValueError('tipo_cuota debe ser CUOTA A o CUOTA B.')
+    return aliases[value]
