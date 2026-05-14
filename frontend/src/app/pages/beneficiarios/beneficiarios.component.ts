@@ -477,8 +477,8 @@ interface TableSortState {
     <!-- ==================== MODAL: Nuevo Beneficiario ==================== -->
     <!-- No click-outside-to-close: the form has too much data to lose accidentally -->
     @if (showNuevoModal) {
-      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
           <!-- Header -->
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-black text-slate-900">Nuevo Beneficiario</h2>
@@ -688,8 +688,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Detalle Beneficiario ==================== -->
     @if (showDetalleModal && beneficiarioSeleccionado) {
-      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeDetalleModal()">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" (click)="closeDetalleModal()">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
           <!-- Header -->
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
@@ -790,8 +790,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Detalle Preregistro ==================== -->
     @if (showDetallePreregistroModal && preregistroSeleccionado) {
-      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeDetallePreregistroModal()">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full mx-4 max-h-[92vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" (click)="closeDetallePreregistroModal()">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full mx-4 max-h-[92vh] flex flex-col" (click)="$event.stopPropagation()">
           <!-- Header sticky -->
           <div class="flex items-center justify-between px-8 pt-8 pb-5 border-b border-slate-100 shrink-0">
             <div class="flex items-center gap-4">
@@ -896,8 +896,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Confirmar Aprobacion ==================== -->
     @if (showAprobarModal && preregistroAProbar) {
-      <div class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center" (click)="showAprobarModal = false">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-950/50 backdrop-blur-md backdrop-saturate-75 z-[60] flex items-center justify-center" (click)="showAprobarModal = false">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
           <!-- Icon + Title -->
           <div class="flex flex-col items-center text-center mb-6">
             <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
@@ -952,8 +952,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Editar Preregistro ==================== -->
     @if (showEditPreregistroModal && preregistroEditData) {
-      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditPreregistroModal = false">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" (click)="showEditPreregistroModal = false">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-black text-slate-900">Editar Pre-registro</h2>
             <button (click)="showEditPreregistroModal = false" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
@@ -1094,8 +1094,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Editar Beneficiario ==================== -->
     @if (showEditModal && editFormData) {
-      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showEditModal = false">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" (click)="showEditModal = false">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-black text-slate-900">Editar Beneficiario</h2>
             <button (click)="showEditModal = false" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
@@ -1286,8 +1286,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Historial ==================== -->
     @if (showHistorialModal) {
-      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="showHistorialModal = false">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" (click)="showHistorialModal = false">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-black text-slate-900">Historial - {{ historialData?.nombre }}</h2>
             <button (click)="showHistorialModal = false" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
@@ -1541,8 +1541,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Renovar Membresía ==================== -->
     @if (showRenovarModal && beneficiarioARenovar) {
-      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between mb-5">
             <div>
               <h2 class="text-xl font-black text-slate-900">Renovar Membresía</h2>
@@ -1636,8 +1636,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Confirmar Desactivar ==================== -->
     @if (showConfirmDesactivar) {
-      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center">
+      <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 max-w-sm w-full mx-4 text-center">
           <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
@@ -1656,8 +1656,8 @@ interface TableSortState {
     
     <!-- ==================== MODAL: Vista previa de credencial ==================== -->
     @if (showCredencialModal && credencialBeneficiario) {
-      <div class="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4" (click)="showCredencialModal = false">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-md backdrop-saturate-75 z-[70] flex items-center justify-center p-4" (click)="showCredencialModal = false">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden" (click)="$event.stopPropagation()">
           <!-- Modal header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
             <h2 class="text-lg font-black text-slate-900">Vista previa de Credencial</h2>

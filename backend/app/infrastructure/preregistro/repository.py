@@ -102,7 +102,7 @@ def listar_preregistros(estatus: Optional[str]=None, current_user: dict=None, li
         rows = rows_to_dicts(cursor)
     return [_serialize(decrypt_row(r, PACIENTE_ENCRYPTED_FIELDS)) for r in rows]
 
-def crear_preregistro(data: PreRegistroCreate):
+def crear_preregistro(data):
     """Enviar un nuevo pre-registro vía SP_REGISTRAR_PACIENTE_COMPLETO."""
     if not data.tipos_espina:
         raise ValidationError('Debe especificar al menos un tipo de espina bífida')
@@ -204,7 +204,7 @@ def obtener_preregistro(id_paciente: int):
     """Obtener detalle de un pre-registro."""
     return _fetch_preregistro(id_paciente)
 
-def actualizar_preregistro(id_paciente: int, data: PreRegistroCreate):
+def actualizar_preregistro(id_paciente: int, data):
     """Actualizar un pre-registro existente (formulario multi-paso)."""
     with get_db() as conn:
         cursor = conn.cursor()

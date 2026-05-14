@@ -181,7 +181,7 @@ def _is_unique_constraint_error(exc: Exception, hint: str='') -> bool:
 
 def _call_registrar_venta_completa(
     cur,
-    data: VentaCreate,
+    data,
     id_usuario: int,
     linea_tipos_arr,
     linea_ids_arr,
@@ -216,16 +216,15 @@ def stats_ventas(current_user: dict=None):
         cur = conn.cursor()
         cur.execute("\n            SELECT NVL(SUM(v.MONTO_TOTAL), 0) AS monto_total_sum,\n                   COUNT(*)                     AS count\n              FROM VENTA v\n             WHERE v.CANCELADA = 'N'\n            ")
         totals = row_to_dict(cur)
-        from datetime import date as date_type
-        hoy_str = date_type.today().isoformat()
-        cur.execute("\n            SELECT COUNT(*) AS total_hoy\n              FROM VENTA v\n             WHERE v.CANCELADA = 'N' AND TRUNC(v.FECHA_VENTA) = TO_DATE(:fecha, 'YYYY-MM-DD')\n            ", {'fecha': hoy_str})
+        hoy_str = date.today().isoformat()
+        cur.execute("\n            SELECT COUNT(*) AS total_hoy\n              FROM VENTA v\n             WHERE v.CANCELADA = 'N'\n               AND v.FECHA_VENTA >= TO_DATE(:fecha, 'YYYY-MM-DD')\n               AND v.FECHA_VENTA < TO_DATE(:fecha, 'YYYY-MM-DD') + 1\n            ", {'fecha': hoy_str})
         hoy = row_to_dict(cur)
         cur.execute("\n            SELECT COUNT(*) AS pendientes\n              FROM VENTA v\n             WHERE v.CANCELADA = 'N' AND v.SALDO_PENDIENTE > 0\n            ")
         pend = row_to_dict(cur)
         cur.execute("\n            SELECT NVL(SUM(CASE WHEN UPPER(mp.NOMBRE) = 'EFECTIVO'       THEN vmp.MONTO ELSE 0 END), 0) AS monto_efectivo,\n                   NVL(SUM(CASE WHEN UPPER(mp.NOMBRE) = 'TARJETA'        THEN vmp.MONTO ELSE 0 END), 0) AS monto_tarjeta,\n                   NVL(SUM(CASE WHEN UPPER(mp.NOMBRE) = 'TRANSFERENCIA'  THEN vmp.MONTO ELSE 0 END), 0) AS monto_transferencia\n              FROM VENTA_METODO_PAGO vmp\n              JOIN METODO_PAGO mp ON mp.ID_METODO_PAGO = vmp.ID_METODO_PAGO\n              JOIN VENTA v         ON v.ID_VENTA       = vmp.ID_VENTA\n             WHERE v.CANCELADA = 'N'\n            ")
         by_method = row_to_dict(cur)
         ayer_str = (date.today() - timedelta(days=1)).isoformat()
-        cur.execute("\n            SELECT COUNT(*) AS total_ayer\n              FROM VENTA v\n             WHERE v.CANCELADA = 'N' AND TRUNC(v.FECHA_VENTA) = TO_DATE(:fecha, 'YYYY-MM-DD')\n            ", {'fecha': ayer_str})
+        cur.execute("\n            SELECT COUNT(*) AS total_ayer\n              FROM VENTA v\n             WHERE v.CANCELADA = 'N'\n               AND v.FECHA_VENTA >= TO_DATE(:fecha, 'YYYY-MM-DD')\n               AND v.FECHA_VENTA < TO_DATE(:fecha, 'YYYY-MM-DD') + 1\n            ", {'fecha': ayer_str})
         ayer = row_to_dict(cur)
     return {'monto_total_sum': float(totals['monto_total_sum']), 'monto_efectivo': float(by_method['monto_efectivo']), 'monto_tarjeta': float(by_method['monto_tarjeta']), 'monto_transferencia': float(by_method['monto_transferencia']), 'count': int(totals['count']), 'total_hoy': int(hoy['total_hoy']), 'total_ayer': int(ayer['total_ayer']) if ayer else 0, 'pendientes': int(pend['pendientes'])}
 
@@ -265,7 +264,7 @@ def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=Non
         results = [_enrich_venta(conn, v, mp_map=mp_map) for v in ventas]
     return results
 
-def crear_venta(data: VentaCreate, current_user: dict=None):
+def crear_venta(data, current_user: dict=None):
     """Crear nueva venta vía SP_REGISTRAR_VENTA_COMPLETA."""
     try:
         with get_db() as conn:

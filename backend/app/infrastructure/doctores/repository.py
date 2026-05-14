@@ -184,7 +184,7 @@ def obtener_doctor(id_doctor: int, current_user: dict=None):
         logger.exception('Error al consultar doctor')
         raise InternalError('Error interno del servidor')
 
-def crear_doctor(data: DoctorCreate, current_user: dict=None):
+def crear_doctor(data, current_user: dict=None):
     """Crear nuevo doctor con servicios asociados."""
     try:
         with get_db() as conn:
@@ -202,7 +202,7 @@ def crear_doctor(data: DoctorCreate, current_user: dict=None):
         logger.exception('Error al crear doctor')
         raise InternalError('Error interno del servidor')
 
-def actualizar_doctor(id_doctor: int, data: DoctorCreate, current_user: dict=None):
+def actualizar_doctor(id_doctor: int, data, current_user: dict=None):
     """Actualizar doctor existente y sus servicios."""
     try:
         with get_db() as conn:
@@ -258,7 +258,7 @@ def obtener_disponibilidad(id_doctor: int, current_user: dict=None, limit: int=5
         logger.exception('Error al consultar disponibilidad')
         raise InternalError('Error interno del servidor')
 
-def crear_disponibilidad(id_doctor: int, data: DisponibilidadCreate, current_user: dict=None):
+def crear_disponibilidad(id_doctor: int, data, current_user: dict=None):
     """Crear un slot de disponibilidad semanal para un doctor (por día de la semana)."""
     if data.dia_semana < 1 or data.dia_semana > 7:
         raise ValidationError('dia_semana debe ser entre 1 (Lunes) y 7 (Domingo)')
@@ -352,7 +352,7 @@ def listar_disponibilidad_especial(id_doctor: int, current_user: dict=None):
         raise InternalError('Error interno del servidor')
 
 
-def crear_disponibilidad_especial(id_doctor: int, data: DisponibilidadEspecialCreate, current_user: dict=None):
+def crear_disponibilidad_especial(id_doctor: int, data, current_user: dict=None):
     """Crear un slot de disponibilidad especial para un doctor."""
     tipos_validos = ('UNICA', 'QUINCENAL', 'CADA_3_SEMANAS', 'MENSUAL')
     if data.tipo_recurrencia not in tipos_validos:

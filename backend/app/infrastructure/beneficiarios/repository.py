@@ -178,9 +178,9 @@ def dashboard_stats(current_user: dict=None):
         hoy = date.today()
         inicio_semana = hoy - timedelta(days=hoy.weekday())
         inicio_semana_ant = inicio_semana - timedelta(days=7)
-        cur.execute("SELECT COUNT(*) FROM PACIENTE\n               WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'\n                 AND TRUNC(FECHA_REGISTRO) >= TO_DATE(:inicio, 'YYYY-MM-DD')", {'inicio': inicio_semana.isoformat()})
+        cur.execute("SELECT COUNT(*) FROM PACIENTE\n               WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'\n                 AND FECHA_REGISTRO >= TO_DATE(:inicio, 'YYYY-MM-DD')", {'inicio': inicio_semana.isoformat()})
         nuevos_esta_semana = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM PACIENTE\n               WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'\n                 AND TRUNC(FECHA_REGISTRO) >= TO_DATE(:inicio, 'YYYY-MM-DD')\n                 AND TRUNC(FECHA_REGISTRO) < TO_DATE(:fin, 'YYYY-MM-DD')", {'inicio': inicio_semana_ant.isoformat(), 'fin': inicio_semana.isoformat()})
+        cur.execute("SELECT COUNT(*) FROM PACIENTE\n               WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'\n                 AND FECHA_REGISTRO >= TO_DATE(:inicio, 'YYYY-MM-DD')\n                 AND FECHA_REGISTRO < TO_DATE(:fin, 'YYYY-MM-DD')", {'inicio': inicio_semana_ant.isoformat(), 'fin': inicio_semana.isoformat()})
         nuevos_semana_anterior = cur.fetchone()[0]
         return {'total': total, 'activos': activos, 'inactivos': inactivos, 'por_genero': {'Masculino': masculino, 'Femenino': femenino}, 'por_procedencia': {'Nuevo León': nuevo_leon, 'Foráneos': foraneos}, 'por_etapa_vida': etapas, 'nuevos_esta_semana': nuevos_esta_semana, 'nuevos_semana_anterior': nuevos_semana_anterior}
 
@@ -246,7 +246,7 @@ def obtener_beneficiario(folio: str, current_user: dict=None):
             raise NotFoundError('Beneficiario no encontrado')
         return _patient_row_to_response(row, conn)
 
-def crear_beneficiario(data: BeneficiarioCreate, current_user: dict=None):
+def crear_beneficiario(data, current_user: dict=None):
     """Crear nuevo beneficiario con folio auto-generado."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -266,7 +266,7 @@ def crear_beneficiario(data: BeneficiarioCreate, current_user: dict=None):
         row = row_to_dict(cur)
         return _patient_row_to_response(row, conn)
 
-def actualizar_beneficiario(folio: str, data: BeneficiarioCreate, current_user: dict=None):
+def actualizar_beneficiario(folio: str, data, current_user: dict=None):
     """Actualizar beneficiario existente."""
     with get_db() as conn:
         cur = conn.cursor()

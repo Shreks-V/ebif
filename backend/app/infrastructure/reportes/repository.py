@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 import logging
 from app.domain.exceptions import InternalError
 from typing import Optional
-from app.domain.reportes.entities import ReporteFilter
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 logger = logging.getLogger(__name__)
 
@@ -26,32 +25,41 @@ def _serialize(row: dict) -> dict:
             result[key] = value
     return result
 
-def _build_where_clauses(filtro: ReporteFilter) -> tuple[str, dict]:
-    """Build WHERE clause fragments and bind params from ReporteFilter."""
-    clauses = ["p.ACTIVO = 'S'"]
+def _build_patient_where(
+    genero: Optional[str] = None,
+    estado: Optional[str] = None,
+    tipo_espina: Optional[int] = None,
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    *,
+    solo_activos: bool = True,
+) -> tuple[str, dict]:
+    """Build WHERE clause fragments and bind params for patient reports."""
+    clauses = []
     params: dict = {}
-    if filtro.genero:
+    if solo_activos:
+        clauses.append("p.ACTIVO = 'S'")
+    if genero:
         clauses.append('p.GENERO = :genero')
-        params['genero'] = filtro.genero.upper()
-    if filtro.estado:
+        params['genero'] = genero.upper()
+    if estado:
         clauses.append('p.ESTADO = :estado')
-        params['estado'] = filtro.estado
-    if filtro.tipo_espina is not None:
+        params['estado'] = estado
+    if tipo_espina is not None:
         clauses.append('EXISTS (SELECT 1 FROM PACIENTE_TIPO_ESPINA pte WHERE pte.ID_PACIENTE = p.ID_PACIENTE AND pte.ID_TIPO_ESPINA = :tipo_espina)')
-        params['tipo_espina'] = filtro.tipo_espina
-    if filtro.fecha_inicio:
+        params['tipo_espina'] = tipo_espina
+    if fecha_inicio:
         clauses.append("p.FECHA_NACIMIENTO >= TO_DATE(:fecha_inicio, 'YYYY-MM-DD')")
-        params['fecha_inicio'] = filtro.fecha_inicio
-    if filtro.fecha_fin:
+        params['fecha_inicio'] = fecha_inicio
+    if fecha_fin:
         clauses.append("p.FECHA_NACIMIENTO <= TO_DATE(:fecha_fin, 'YYYY-MM-DD')")
-        params['fecha_fin'] = filtro.fecha_fin
-    where = ' AND '.join(clauses)
+        params['fecha_fin'] = fecha_fin
+    where = ' AND '.join(clauses) if clauses else '1=1'
     return (where, params)
 
 def reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Distribucion de pacientes por genero (PACIENTE.GENERO)."""
-    filtro = ReporteFilter(genero=genero, estado=estado, tipo_espina=tipo_espina, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin)
-    where, params = _build_where_clauses(filtro)
+    where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
         with get_db() as conn:
             cursor = conn.cursor()
@@ -66,8 +74,7 @@ def reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, t
 
 def reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Distribucion por grupo de edad calculado desde PACIENTE.FECHA_NACIMIENTO."""
-    filtro = ReporteFilter(genero=genero, estado=estado, tipo_espina=tipo_espina, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin)
-    where, params = _build_where_clauses(filtro)
+    where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     etapas_orden = ['Primera Infancia (0-5)', 'Infancia (6-11)', 'Adolescencia (12-17)', 'Juventud (18-29)', 'Adultez (30-59)', 'Adulto Mayor (60+)']
     try:
         with get_db() as conn:
@@ -83,8 +90,7 @@ def reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=Non
 
 def reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Distribucion por tipo de espina bifida (TIPO_ESPINA_BIFIDA table)."""
-    filtro = ReporteFilter(genero=genero, estado=estado, tipo_espina=tipo_espina, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin)
-    where, params = _build_where_clauses(filtro)
+    where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
         with get_db() as conn:
             cursor = conn.cursor()
@@ -99,8 +105,7 @@ def reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=No
 
 def reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Distribucion de pacientes por estado/region (PACIENTE.ESTADO)."""
-    filtro = ReporteFilter(genero=genero, estado=estado, tipo_espina=tipo_espina, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin)
-    where, params = _build_where_clauses(filtro)
+    where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
         with get_db() as conn:
             cursor = conn.cursor()
@@ -115,24 +120,42 @@ def reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, t
 
 def reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
     """Resumen general de estadisticas del sistema."""
-    filtro = ReporteFilter(genero=genero, estado=estado, tipo_espina=tipo_espina, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin)
-    where, params = _build_where_clauses(filtro)
+    where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin, solo_activos=False)
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute(f"SELECT COUNT(*) AS total,   SUM(CASE WHEN p.ACTIVO = 'S' THEN 1 ELSE 0 END) AS activos,   SUM(CASE WHEN p.ACTIVO = 'N' THEN 1 ELSE 0 END) AS inactivos FROM PACIENTE p WHERE {where}", params)
-            totals = row_to_dict(cursor) or {'total': 0, 'activos': 0, 'inactivos': 0}
+            cursor.execute(
+                f"""
+                SELECT
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN p.ACTIVO = 'S' THEN 1 ELSE 0 END) AS activos,
+                    SUM(CASE WHEN p.ACTIVO = 'N' THEN 1 ELSE 0 END) AS inactivos,
+                    ROUND(AVG(CASE
+                        WHEN p.FECHA_NACIMIENTO IS NOT NULL
+                        THEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)
+                    END), 1) AS edad_promedio,
+                    MIN(CASE
+                        WHEN p.FECHA_NACIMIENTO IS NOT NULL
+                        THEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)
+                    END) AS edad_minima,
+                    MAX(CASE
+                        WHEN p.FECHA_NACIMIENTO IS NOT NULL
+                        THEN FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)
+                    END) AS edad_maxima,
+                    COUNT(DISTINCT p.ESTADO) AS estados_representados
+                FROM PACIENTE p
+                WHERE {where}
+                """,
+                params,
+            )
+            totals = row_to_dict(cursor) or {}
             cursor.execute(f'SELECT p.GENERO, COUNT(*) AS cnt FROM PACIENTE p WHERE {where} GROUP BY p.GENERO', params)
             genero_rows = rows_to_dicts(cursor)
             por_genero = {r['genero'].strip() if r['genero'] else 'SIN DATO': r['cnt'] for r in genero_rows}
-            cursor.execute(f'SELECT   ROUND(AVG(FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)), 1) AS edad_promedio,   MIN(FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)) AS edad_minima,   MAX(FLOOR(MONTHS_BETWEEN(SYSDATE, p.FECHA_NACIMIENTO) / 12)) AS edad_maxima FROM PACIENTE p WHERE {where} AND p.FECHA_NACIMIENTO IS NOT NULL', params)
-            age_row = row_to_dict(cursor) or {'edad_promedio': 0, 'edad_minima': 0, 'edad_maxima': 0}
             cursor.execute(f'SELECT t.NOMBRE, COUNT(*) AS cnt FROM PACIENTE p JOIN PACIENTE_TIPO_ESPINA pte ON p.ID_PACIENTE = pte.ID_PACIENTE JOIN TIPO_ESPINA_BIFIDA t ON pte.ID_TIPO_ESPINA = t.ID_TIPO_ESPINA WHERE {where} GROUP BY t.NOMBRE', params)
             tipo_rows = rows_to_dicts(cursor)
             por_tipo_espina = {r['nombre'].strip(): r['cnt'] for r in tipo_rows}
-            cursor.execute(f'SELECT COUNT(DISTINCT p.ESTADO) AS cnt FROM PACIENTE p WHERE {where}', params)
-            estados_row = row_to_dict(cursor) or {'cnt': 0}
-            return {'total_pacientes': totals['total'] or 0, 'activos': totals['activos'] or 0, 'inactivos': totals['inactivos'] or 0, 'por_genero': por_genero, 'edad_promedio': float(age_row['edad_promedio'] or 0), 'edad_minima': int(age_row['edad_minima'] or 0), 'edad_maxima': int(age_row['edad_maxima'] or 0), 'por_tipo_espina': por_tipo_espina, 'estados_representados': estados_row['cnt'] or 0, 'fecha_generacion': datetime.now().isoformat()}
+            return {'total_pacientes': totals.get('total') or 0, 'activos': totals.get('activos') or 0, 'inactivos': totals.get('inactivos') or 0, 'por_genero': por_genero, 'edad_promedio': float(totals.get('edad_promedio') or 0), 'edad_minima': int(totals.get('edad_minima') or 0), 'edad_maxima': int(totals.get('edad_maxima') or 0), 'por_tipo_espina': por_tipo_espina, 'estados_representados': totals.get('estados_representados') or 0, 'fecha_generacion': datetime.now().isoformat()}
     except Exception as e:
         logger.exception('Error en reporte resumen')
         raise InternalError('Error interno del servidor')
@@ -207,23 +230,24 @@ def reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
 
 def reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=None, current_user: dict=None):
     """Reporte mensual consolidado con resumen de servicios y demografía (RF-ER-07)."""
-    from datetime import date as date_type
-    hoy = date_type.today()
+    hoy = date.today()
     m = mes or hoy.month
     a = anio or hoy.year
+    fecha_inicio = date(a, m, 1)
+    fecha_fin = date(a + 1, 1, 1) if m == 12 else date(a, m + 1, 1)
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            params = {'mes': m, 'anio': a}
-            cursor.execute("SELECT COUNT(DISTINCT c.ID_PACIENTE) AS pacientes_atendidos\n                   FROM CITA c\n                   WHERE c.ESTATUS = 'COMPLETADA'\n                     AND EXTRACT(MONTH FROM c.FECHA_HORA) = :mes\n                     AND EXTRACT(YEAR FROM c.FECHA_HORA) = :anio", params)
+            params = {'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin}
+            cursor.execute("SELECT COUNT(DISTINCT c.ID_PACIENTE) AS pacientes_atendidos\n                   FROM CITA c\n                   WHERE c.ESTATUS = 'COMPLETADA'\n                     AND c.FECHA_HORA >= :fecha_inicio\n                     AND c.FECHA_HORA < :fecha_fin", params)
             r1 = row_to_dict(cursor)
-            cursor.execute("SELECT COUNT(*) AS total_servicios,\n                          NVL(SUM(d.MONTO_PAGADO), 0) AS monto_servicios\n                   FROM DETALLE_CITA_SERVICIO d\n                   JOIN CITA c ON c.ID_CITA = d.ID_CITA\n                   WHERE d.CANCELADO = 'N'\n                     AND EXTRACT(MONTH FROM c.FECHA_HORA) = :mes\n                     AND EXTRACT(YEAR FROM c.FECHA_HORA) = :anio", params)
+            cursor.execute("SELECT COUNT(*) AS total_servicios,\n                          NVL(SUM(d.MONTO_PAGADO), 0) AS monto_servicios\n                   FROM DETALLE_CITA_SERVICIO d\n                   JOIN CITA c ON c.ID_CITA = d.ID_CITA\n                   WHERE d.CANCELADO = 'N'\n                     AND c.FECHA_HORA >= :fecha_inicio\n                     AND c.FECHA_HORA < :fecha_fin", params)
             r2 = row_to_dict(cursor)
-            cursor.execute("SELECT COUNT(*) AS total_ventas,\n                          NVL(SUM(v.MONTO_TOTAL), 0) AS monto_ventas\n                   FROM VENTA v\n                   WHERE v.CANCELADA = 'N'\n                     AND EXTRACT(MONTH FROM v.FECHA_VENTA) = :mes\n                     AND EXTRACT(YEAR FROM v.FECHA_VENTA) = :anio", params)
+            cursor.execute("SELECT COUNT(*) AS total_ventas,\n                          NVL(SUM(v.MONTO_TOTAL), 0) AS monto_ventas\n                   FROM VENTA v\n                   WHERE v.CANCELADA = 'N'\n                     AND v.FECHA_VENTA >= :fecha_inicio\n                     AND v.FECHA_VENTA < :fecha_fin", params)
             r3 = row_to_dict(cursor)
-            cursor.execute('SELECT ESTATUS, COUNT(*) AS cnt\n                   FROM CITA\n                   WHERE EXTRACT(MONTH FROM FECHA_HORA) = :mes\n                     AND EXTRACT(YEAR FROM FECHA_HORA) = :anio\n                   GROUP BY ESTATUS', params)
+            cursor.execute('SELECT ESTATUS, COUNT(*) AS cnt\n                   FROM CITA\n                   WHERE FECHA_HORA >= :fecha_inicio\n                     AND FECHA_HORA < :fecha_fin\n                   GROUP BY ESTATUS', params)
             citas_status = {r['estatus'].strip(): int(r['cnt']) for r in rows_to_dicts(cursor)}
-            cursor.execute("SELECT p.GENERO, COUNT(DISTINCT c.ID_PACIENTE) AS cnt\n                   FROM CITA c\n                   JOIN PACIENTE p ON p.ID_PACIENTE = c.ID_PACIENTE\n                   WHERE c.ESTATUS = 'COMPLETADA'\n                     AND EXTRACT(MONTH FROM c.FECHA_HORA) = :mes\n                     AND EXTRACT(YEAR FROM c.FECHA_HORA) = :anio\n                   GROUP BY p.GENERO", params)
+            cursor.execute("SELECT p.GENERO, COUNT(DISTINCT c.ID_PACIENTE) AS cnt\n                   FROM CITA c\n                   JOIN PACIENTE p ON p.ID_PACIENTE = c.ID_PACIENTE\n                   WHERE c.ESTATUS = 'COMPLETADA'\n                     AND c.FECHA_HORA >= :fecha_inicio\n                     AND c.FECHA_HORA < :fecha_fin\n                   GROUP BY p.GENERO", params)
             por_genero = {r['genero'].strip() if r['genero'] else 'SIN DATO': int(r['cnt']) for r in rows_to_dicts(cursor)}
             return {'mes': m, 'anio': a, 'pacientes_atendidos': int(r1['pacientes_atendidos'] or 0), 'total_servicios': int(r2['total_servicios'] or 0), 'monto_servicios': float(r2['monto_servicios'] or 0), 'total_ventas': int(r3['total_ventas'] or 0), 'monto_ventas': float(r3['monto_ventas'] or 0), 'citas_por_estatus': citas_status, 'por_genero': por_genero, 'fecha_generacion': datetime.now().isoformat()}
     except Exception:

@@ -131,7 +131,7 @@ def obtener_producto(id_producto: int, current_user: dict=None):
         raise NotFoundError('Producto no encontrado')
     return _serialize(row)
 
-def crear_producto(data: ProductoCreate, current_user: dict=None):
+def crear_producto(data, current_user: dict=None):
     """Crear un nuevo producto vía SP_CREAR_PRODUCTO_CON_EXISTENCIA."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -216,7 +216,7 @@ def _fetch_producto(id_producto: int) -> dict:
         raise NotFoundError('Producto no encontrado')
     return _serialize(row)
 
-def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: dict=None):
+def actualizar_producto(id_producto: int, data, current_user: dict=None):
     """Actualizar un producto existente."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -296,7 +296,7 @@ def obtener_servicio(id_servicio: int, current_user: dict=None):
         raise NotFoundError('Servicio no encontrado')
     return _serialize(row)
 
-def crear_servicio(data: ServicioCreate, current_user: dict=None):
+def crear_servicio(data, current_user: dict=None):
     """Crear un nuevo servicio."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -317,7 +317,7 @@ def _fetch_servicio(id_servicio: int) -> dict:
         raise NotFoundError('Servicio no encontrado')
     return _serialize(row)
 
-def actualizar_servicio(id_servicio: int, data: ServicioCreate, current_user: dict=None):
+def actualizar_servicio(id_servicio: int, data, current_user: dict=None):
     """Actualizar un servicio existente."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -369,7 +369,7 @@ def obtener_comodato(id_comodato: int, current_user: dict=None):
         raise NotFoundError('Comodato no encontrado')
     return _serialize(row)
 
-def crear_comodato(data: ComodatoCreate, current_user: dict=None):
+def crear_comodato(data, current_user: dict=None):
     """Registrar un nuevo comodato (RF-PS-06). Stock vía SP_REGISTRAR_MOVIMIENTO_STOCK."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -409,7 +409,7 @@ def _fetch_comodato(id_comodato: int) -> dict:
         raise NotFoundError('Comodato no encontrado')
     return _serialize(row)
 
-def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: dict=None):
+def actualizar_comodato(id_comodato: int, data, current_user: dict=None):
     """Actualizar un comodato existente (RF-PS-07: auto-update stock on return)."""
     with get_db() as conn:
         cursor = conn.cursor()
