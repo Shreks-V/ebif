@@ -15,14 +15,21 @@ from Pruebas.qase_decorators import qase_case
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DASHBOARD_TS = _REPO_ROOT / "frontend" / "src" / "app" / "pages" / "dashboard" / "dashboard.component.ts"
+_DASHBOARD_HTML = (
+    _REPO_ROOT / "frontend" / "src" / "app" / "pages" / "dashboard" / "dashboard.component.html"
+)
 _APP_ROUTES_TS = _REPO_ROOT / "frontend" / "src" / "app" / "app.routes.ts"
 
 
 @pytest.fixture(scope="module")
 def dashboard_source() -> str:
+    """TS + HTML: las Acciones Rápidas están en la plantilla, navigateTo/queryParams en .ts."""
     if not _DASHBOARD_TS.is_file():
         pytest.skip(f"No se encontró {_DASHBOARD_TS}")
-    return _DASHBOARD_TS.read_text(encoding="utf-8")
+    parts = [_DASHBOARD_TS.read_text(encoding="utf-8")]
+    if _DASHBOARD_HTML.is_file():
+        parts.append(_DASHBOARD_HTML.read_text(encoding="utf-8"))
+    return "\n".join(parts)
 
 
 @pytest.fixture(scope="module")

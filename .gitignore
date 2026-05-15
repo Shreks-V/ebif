@@ -39,6 +39,10 @@ env/
 .env/
 ENV/
 .venv-ci/
+backend/.venv/
+frontend/.venv/
+.venv-ebif-tests/
+
 
 # Testing y dependencias
 .pytest_cache/

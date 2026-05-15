@@ -203,9 +203,13 @@ class InMemoryBeneficiariosRepository:
         }
 
     def listar_membresias_proximas_a_vencer(
-        self, dias: int = 30, current_user: dict | None = None
+        self,
+        dias: int = 30,
+        current_user: dict | None = None,
+        limit: int = 500,
+        offset: int = 0,
     ) -> list[dict[str, Any]]:
-        del dias, current_user
+        del dias, current_user, limit, offset
         return []
 
     def renovar_membresia(

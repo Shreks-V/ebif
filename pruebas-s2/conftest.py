@@ -5,7 +5,8 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from collections.abc import Callable
+import types
+from collections.abc import Callable, Generator
 from pathlib import Path
 
 import pytest
@@ -64,6 +65,15 @@ def pytest_sessionstart(session: pytest.Session) -> None:
 @pytest.fixture(autouse=True)
 def stable_jwt_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "SECRET_KEY", "pytest-jwt-secret-key-exactly-32bytes!")
+
+
+@pytest.fixture(autouse=True)
+def _reset_auth_login_rate_limits() -> Generator[None, None, None]:
+    """El limiter de login vive en el módulo auth; reiniciarlo evita 429 entre tests."""
+    from app.presentation.api.routers import auth as auth_router
+
+    auth_router.limiter.reset()
+    yield
 
 
 def _register_domain_errors(app: FastAPI) -> None:
@@ -214,11 +224,11 @@ def s2_client_notificaciones_rich(
     """Almacén con alertas y citas hoy para validar payload de notificaciones."""
     alm = InMemoryAlmacenRepository()
 
-    def stats_override(current_user=None):
-        del current_user
+    def _rich_stats(_self, current_user=None):
+        del _self, current_user
         return {"total_productos": 5, "alertas_stock_bajo": 2, "alertas_caducidad": 1}
 
-    alm.almacen_stats = stats_override  # type: ignore[method-assign]
+    alm.almacen_stats = types.MethodType(_rich_stats, alm)  # type: ignore[method-assign]
 
     hoy = seed_cita_hoy(id_cita=10, id_paciente=1, hora="09:00:00", estatus="PROGRAMADA")
     app = build_s2_memory_app(password_hasher, almacen_repo=alm, cita_seed=[hoy])
@@ -236,4 +246,4 @@ def s2_oracle_client():
         pytest.skip("Defina EBIF_S2_USE_ORACLE=1 y ORACLE_* para pruebas de integración S2")
     from app.presentation.api.app_factory import create_app
 
-    return TestClient(create_app())
+    return TestClient(create_app(), base_url="http://localhost")
