@@ -140,7 +140,10 @@
       "Bash(grep -n '\\\\${{' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/reportes/reportes.component.ts\")",
       "Bash(sed -n '160,185p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/Pruebas/support_recibos.py\")",
       "Bash(sed -n '70,100p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/Pruebas/support_beneficiarios.py\")",
-      "Bash(sed -n '160,185p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/Pruebas/support_beneficiarios.py\")"
+      "Bash(sed -n '160,185p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/Pruebas/support_beneficiarios.py\")",
+      "WebFetch(domain:www.geeksforgeeks.org)",
+      "Bash(pandoc --version)",
+      "Bash(pandoc Avance_Proyecto.md -o Avance_Proyecto.docx --from markdown --to docx)"
     ]
   },
   "enableAllProjectMcpServers": true,
