@@ -278,7 +278,7 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
 
   private loadBeneficiarios(): void {
     this.loading = true;
-    this.api.getBeneficiarios().subscribe({
+    this.api.getBeneficiarios({ membresia_estatus: 'ACTIVO' }).subscribe({
       next: (data) => {
         this.beneficiarios = data.map((item: any, index: number) => ({
           idPaciente: item.id_paciente,

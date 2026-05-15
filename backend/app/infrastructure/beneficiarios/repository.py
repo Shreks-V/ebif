@@ -49,6 +49,23 @@ def _strip_char(val) -> str | None:
         return None
     return str(val).strip()
 
+def _genero_label(value: str | None) -> str | None:
+    genero = (value or '').strip().upper()
+    if genero in {'H', 'HOMBRE', 'MASCULINO'}:
+        return 'Hombre'
+    if genero in {'M', 'MUJER', 'F', 'FEMENINO'}:
+        return 'Mujer'
+    return None
+
+def _estado_es_nuevo_leon(value: str | None) -> bool:
+    normalized = (
+        (value or '')
+        .strip()
+        .upper()
+        .translate(str.maketrans('ÁÉÍÓÚÜ', 'AEIOUU'))
+    )
+    return 'NUEVO' in normalized and 'LEON' in normalized
+
 def _safe_rows_query(cur, sql: str, params: dict, context: str) -> list[dict]:
     """Execute a read query and return an empty list if it fails."""
     try:
@@ -119,17 +136,17 @@ def _calculate_age(fecha_nac) -> int:
 
 def _etapa_vida(edad: int) -> str:
     if edad <= 5:
-        return 'Primera Infancia'
+        return 'Primera Infancia (0-5)'
     elif edad <= 11:
-        return 'Infancia'
+        return 'Infancia (6-11)'
     elif edad <= 17:
-        return 'Adolescencia'
+        return 'Adolescencia (12-17)'
     elif edad <= 29:
-        return 'Juventud'
+        return 'Juventud (18-29)'
     elif edad <= 59:
-        return 'Adultez'
+        return 'Adultez (30-59)'
     else:
-        return 'Adulto Mayor'
+        return 'Adulto Mayor (60+)'
 
 def listar_tipos_espina(current_user: dict=None):
     """Listar todos los tipos de espina bífida."""
@@ -161,12 +178,22 @@ def dashboard_stats(current_user: dict=None):
         cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND MEMBRESIA_ESTATUS = 'ACTIVO'")
         activos = cur.fetchone()[0]
         inactivos = total - activos
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND GENERO = 'Masculino'")
-        masculino = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND GENERO = 'Femenino'")
-        femenino = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND ESTADO = 'Nuevo León'")
-        nuevo_leon = cur.fetchone()[0]
+        cur.execute("""
+            SELECT GENERO, COUNT(*) AS cnt
+              FROM PACIENTE
+             WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'
+             GROUP BY GENERO
+        """)
+        por_genero = {'Hombre': 0, 'Mujer': 0}
+        for row in rows_to_dicts(cur):
+            genero = _genero_label(row.get('genero'))
+            if genero:
+                por_genero[genero] += int(row.get('cnt') or 0)
+        cur.execute("SELECT ESTADO, COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' GROUP BY ESTADO")
+        nuevo_leon = 0
+        for row in rows_to_dicts(cur):
+            if _estado_es_nuevo_leon(row.get('estado')):
+                nuevo_leon += int(row.get('cnt') or 0)
         foraneos = total - nuevo_leon
         cur.execute("SELECT FECHA_NACIMIENTO FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'")
         fechas = [row[0] for row in cur.fetchall()]
@@ -182,7 +209,31 @@ def dashboard_stats(current_user: dict=None):
         nuevos_esta_semana = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM PACIENTE\n               WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'\n                 AND FECHA_REGISTRO >= TO_DATE(:inicio, 'YYYY-MM-DD')\n                 AND FECHA_REGISTRO < TO_DATE(:fin, 'YYYY-MM-DD')", {'inicio': inicio_semana_ant.isoformat(), 'fin': inicio_semana.isoformat()})
         nuevos_semana_anterior = cur.fetchone()[0]
-        return {'total': total, 'activos': activos, 'inactivos': inactivos, 'por_genero': {'Masculino': masculino, 'Femenino': femenino}, 'por_procedencia': {'Nuevo León': nuevo_leon, 'Foráneos': foraneos}, 'por_etapa_vida': etapas, 'nuevos_esta_semana': nuevos_esta_semana, 'nuevos_semana_anterior': nuevos_semana_anterior}
+        por_genero_compat = {
+            'Hombre': por_genero['Hombre'],
+            'Mujer': por_genero['Mujer'],
+            'Masculino': por_genero['Hombre'],
+            'Femenino': por_genero['Mujer'],
+        }
+        etapas_compat = {
+            **etapas,
+            'Primera Infancia': etapas.get('Primera Infancia (0-5)', 0),
+            'Infancia': etapas.get('Infancia (6-11)', 0),
+            'Adolescencia': etapas.get('Adolescencia (12-17)', 0),
+            'Juventud': etapas.get('Juventud (18-29)', 0),
+            'Adultez': etapas.get('Adultez (30-59)', 0),
+            'Adulto Mayor': etapas.get('Adulto Mayor (60+)', 0),
+        }
+        return {
+            'total': total,
+            'activos': activos,
+            'inactivos': inactivos,
+            'por_genero': por_genero_compat,
+            'por_procedencia': {'Nuevo León': nuevo_leon, 'Foráneos': foraneos},
+            'por_etapa_vida': etapas_compat,
+            'nuevos_esta_semana': nuevos_esta_semana,
+            'nuevos_semana_anterior': nuevos_semana_anterior,
+        }
 
 def _sync_membresias_vencidas(conn) -> int:
     """Marca como VENCIDO las membresías cuya fecha de vencimiento ya pasó."""

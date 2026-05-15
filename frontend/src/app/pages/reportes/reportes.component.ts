@@ -141,14 +141,19 @@ export class ReportesComponent implements OnInit {
         const pg: Record<string, number> = stats.por_genero ?? {};
         const pp: Record<string, number> = stats.por_procedencia ?? {};
         const pe: Record<string, number> = stats.por_etapa_vida ?? {};
+        const getVal = (source: Record<string, number>, ...keys: string[]) =>
+          keys.reduce<number | null>((found, key) => found ?? source[key] ?? null, null) ?? 0;
         this.sec1Hombres = pg['Hombre'] ?? pg['Masculino'] ?? pg['H'] ?? 0;
         this.sec1Mujeres = pg['Mujer'] ?? pg['Femenino'] ?? pg['M'] ?? 0;
-        this.sec1Nl = pp['Nuevo León'] ?? 0;
-        this.sec1Foraneos = pp['Foráneos'] ?? 0;
-        this.sec1Lactantes = pe['Primera Infancia (0-5)'] ?? 0;
-        this.sec1Ninos = pe['Infancia (6-11)'] ?? 0;
-        this.sec1Adolescentes = pe['Adolescencia (12-17)'] ?? 0;
-        this.sec1Adultos = (pe['Juventud (18-29)'] ?? 0) + (pe['Adultez (30-59)'] ?? 0) + (pe['Adulto Mayor (60+)'] ?? 0);
+        this.sec1Nl = getVal(pp, 'Nuevo León', 'N.L.', 'NL');
+        this.sec1Foraneos = getVal(pp, 'Foráneos', 'Foraneos', 'Viven en otros estados');
+        this.sec1Lactantes = getVal(pe, 'Primera Infancia (0-5)', 'Primera Infancia');
+        this.sec1Ninos = getVal(pe, 'Infancia (6-11)', 'Infancia');
+        this.sec1Adolescentes = getVal(pe, 'Adolescencia (12-17)', 'Adolescencia');
+        this.sec1Adultos =
+          getVal(pe, 'Juventud (18-29)', 'Juventud') +
+          getVal(pe, 'Adultez (30-59)', 'Adultez') +
+          getVal(pe, 'Adulto Mayor (60+)', 'Adulto Mayor');
 
         const sLabels: string[] = servicios.labels ?? [];
         const sValues: number[] = servicios.values ?? [];
