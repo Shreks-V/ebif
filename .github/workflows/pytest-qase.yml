@@ -23,5 +23,10 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r backend/requirements-dev.txt
 
+      - name: Sync Sprint 2 cases in Qase
+        run: python scripts/qase_sync_sprint2.py
+        env:
+          QASE_TESTOPS_PROJECT: FJ26SV
+
       - name: Run pytest (report to Qase)
         run: pytest -q
