@@ -146,7 +146,14 @@
       "Bash(pandoc Avance_Proyecto.md -o Avance_Proyecto.docx --from markdown --to docx)",
       "Bash(cp \"/Users/maantora/.claude/image-cache/4c10ea67-bcd7-4988-a6af-8fb8aefd0f83/1.png\" \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/uploads/logo.png\")",
       "Bash(cp '/Users/maantora/Downloads/logo_transparent.png' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/public/logo.png')",
-      "Bash(cp '/Users/maantora/Downloads/logo_transparent.png' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/uploads/logo.png')"
+      "Bash(cp '/Users/maantora/Downloads/logo_transparent.png' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/uploads/logo.png')",
+      "Bash(python -c \"from app.application.recibos.dtos import ExentarVentaBody; from app.infrastructure.recibos.repository import exentar_venta; from app.application.recibos import use_cases; print\\('OK'\\)\")",
+      "Bash(venv/bin/python -c \"from app.application.recibos.dtos import ExentarVentaBody; from app.infrastructure.recibos.repository import exentar_venta; print\\('OK'\\)\")",
+      "Bash(venv/bin/python -c \"from app.presentation.api.routers.recibos import router; print\\('Router OK'\\)\")",
+      "Bash(venv/bin/python -c \"from app.infrastructure.doctores.repository import crear_doctor; print\\('OK'\\)\")",
+      "Bash(venv/bin/python -c \"from app.presentation.api.routers.preregistro import router; print\\('Backend OK'\\)\")",
+      "Bash(read -r LINES_627_628)",
+      "Bash(sed -n '625,635p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/almacen/almacen.component.html\")"
     ]
   },
   "enableAllProjectMcpServers": true,

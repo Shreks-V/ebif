@@ -412,7 +412,11 @@ def historial_beneficiario(
             ci['servicios'] = servicios
             doctores = _safe_rows_query(
                 cur,
-                "\n                SELECT d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS nombre_doctor,\n                       d.ESPECIALIDAD, cd.ROL_DOCTOR\n                FROM CITA_DOCTOR cd\n                JOIN DOCTOR d ON d.ID_DOCTOR = cd.ID_DOCTOR\n                WHERE cd.ID_CITA = :id_cita\n                ",
+                'SELECT DISTINCT dr.NOMBRE || \' \' || dr.APELLIDO_PATERNO AS nombre_doctor,'
+                ' dr.ESPECIALIDAD, NULL AS rol_doctor'
+                ' FROM DETALLE_CITA_SERVICIO d'
+                ' JOIN DOCTOR dr ON dr.ID_DOCTOR = d.ID_DOCTOR'
+                ' WHERE d.ID_CITA = :id_cita AND d.ID_DOCTOR IS NOT NULL',
                 {'id_cita': ci['id_cita']},
                 f"doctores de cita {ci['id_cita']}",
             )

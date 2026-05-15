@@ -190,7 +190,25 @@ def crear_doctor(data, current_user: dict=None):
         with get_db() as conn:
             cursor = conn.cursor()
             id_var = cursor.var(int)
-            cursor.execute('INSERT INTO DOCTOR (NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO) VALUES (:nombre, :ap, :am, :esp, :tel, :correo, :activo) RETURNING ID_DOCTOR INTO :id_out', {'nombre': data.nombre, 'ap': data.apellido_paterno, 'am': data.apellido_materno, 'esp': data.especialidad, 'tel': encrypt(data.telefono), 'correo': encrypt(data.correo), 'activo': data.activo, 'id_out': id_var})
+            id_usuario = current_user.get('id_usuario', 1) if current_user else 1
+            cursor.execute(
+                'INSERT INTO DOCTOR'
+                ' (NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD,'
+                '  TELEFONO, CORREO, ACTIVO, ID_USUARIO_REGISTRO)'
+                ' VALUES (:nombre, :ap, :am, :esp, :tel, :correo, :activo, :id_usr)'
+                ' RETURNING ID_DOCTOR INTO :id_out',
+                {
+                    'nombre': data.nombre,
+                    'ap': data.apellido_paterno,
+                    'am': data.apellido_materno,
+                    'esp': data.especialidad,
+                    'tel': encrypt(data.telefono),
+                    'correo': encrypt(data.correo),
+                    'activo': data.activo,
+                    'id_usr': id_usuario,
+                    'id_out': id_var,
+                },
+            )
             new_id = id_var.getvalue()[0]
             if data.servicios:
                 _sync_doctor_servicios(conn, new_id, data.servicios)

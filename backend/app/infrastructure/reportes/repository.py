@@ -1,12 +1,82 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from difflib import SequenceMatcher
 import logging
+import unicodedata
 from app.domain.exceptions import InternalError
 from typing import Optional
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.privacy.crypto import decrypt
 logger = logging.getLogger(__name__)
+
+
+def _normalize_key(s: str) -> str:
+    """Uppercase, trim whitespace, strip diacritics/accents, collapse inner spaces."""
+    if not s:
+        return ''
+    text = s.upper().strip()
+    # Decompose Unicode into base chars + combining marks, then drop the marks
+    nfkd = unicodedata.normalize('NFKD', text)
+    text = ''.join(c for c in nfkd if not unicodedata.combining(c))
+    return ' '.join(text.split())
+
+
+def _aggregate_normalized(
+    rows: list[dict],
+    key_fields: list[str],
+    count_field: str = 'cnt',
+    fuzzy_threshold: float = 0.90,
+) -> list[dict]:
+    """Re-aggregate rows whose key fields normalize to the same value.
+
+    Handles: case differences, accents, extra spaces (exact after normalization),
+    and likely typos (fuzzy match at fuzzy_threshold).
+    Display labels are title-cased from the normalized form.
+    """
+    NULL_SEP = '\x00'
+
+    # Step 1 — group by normalized composite key
+    groups: dict[str, dict] = {}
+    for r in rows:
+        norm_parts = tuple(_normalize_key(r.get(f) or '') or 'SIN DATO' for f in key_fields)
+        composite = NULL_SEP.join(norm_parts)
+        cnt = int(r.get(count_field) or 0)
+        if composite not in groups:
+            groups[composite] = {'_norm': norm_parts, count_field: cnt,
+                                 **{f: r.get(f) for f in key_fields}}
+        else:
+            if cnt > groups[composite][count_field]:
+                for f in key_fields:
+                    groups[composite][f] = r.get(f)
+            groups[composite][count_field] += cnt
+
+    # Step 2 — fuzzy merge remaining groups (typos)
+    items = sorted(groups.values(), key=lambda x: x[count_field], reverse=True)
+    absorbed: set[tuple] = set()
+    merged: list[dict] = []
+    for i, item_i in enumerate(items):
+        if item_i['_norm'] in absorbed:
+            continue
+        combined = dict(item_i)
+        for item_j in items[i + 1:]:
+            if item_j['_norm'] in absorbed:
+                continue
+            ratios = [
+                SequenceMatcher(None, a, b).ratio()
+                for a, b in zip(item_i['_norm'], item_j['_norm'])
+            ]
+            if all(r >= fuzzy_threshold for r in ratios):
+                combined[count_field] += item_j[count_field]
+                absorbed.add(item_j['_norm'])
+
+        # Format display labels: title-case the normalized (accent-free) form
+        for f, norm_val in zip(key_fields, combined['_norm']):
+            combined[f] = norm_val.title() if norm_val != 'SIN DATO' else 'Sin dato'
+        del combined['_norm']
+        merged.append(combined)
+
+    return sorted(merged, key=lambda x: x[count_field], reverse=True)
 
 
 def _genero_label(value: str | None) -> str | None:
@@ -65,7 +135,7 @@ def _build_patient_where(
         clauses.append('p.GENERO = :genero')
         params['genero'] = genero.upper()
     if estado:
-        clauses.append('p.ESTADO = :estado')
+        clauses.append('UPPER(TRIM(p.ESTADO)) = UPPER(TRIM(:estado))')
         params['estado'] = estado
     if tipo_espina is not None:
         clauses.append('EXISTS (SELECT 1 FROM PACIENTE_TIPO_ESPINA pte WHERE pte.ID_PACIENTE = p.ID_PACIENTE AND pte.ID_TIPO_ESPINA = :tipo_espina)')
@@ -136,10 +206,16 @@ def reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, t
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute(f'SELECT p.ESTADO AS label, COUNT(*) AS cnt FROM PACIENTE p WHERE {where} GROUP BY p.ESTADO ORDER BY cnt DESC', params)
+            cursor.execute(
+                f"SELECT UPPER(TRIM(NVL(p.ESTADO,'Sin dato'))) AS label, COUNT(*) AS cnt "
+                f"FROM PACIENTE p WHERE {where} "
+                f"GROUP BY UPPER(TRIM(NVL(p.ESTADO,'Sin dato'))) ORDER BY cnt DESC",
+                params,
+            )
             rows = rows_to_dicts(cursor)
-            labels = [r['label'].strip() if r['label'] else 'SIN DATO' for r in rows]
-            values = [r['cnt'] for r in rows]
+            merged = _aggregate_normalized(rows, ['label'])
+            labels = [r['label'] for r in merged]
+            values = [r['cnt'] for r in merged]
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except Exception as e:
         logger.exception('Error en reporte por estado')
@@ -319,15 +395,20 @@ def reporte_por_ciudad(current_user: dict=None):
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT NVL(CIUDAD, 'Sin dato') AS label, NVL(ESTADO, 'Sin dato') AS estado, COUNT(*) AS cnt "
-                "FROM PACIENTE WHERE ACTIVO='S' GROUP BY CIUDAD, ESTADO ORDER BY cnt DESC"
+                "SELECT UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) AS label, "
+                "UPPER(TRIM(NVL(ESTADO,'Sin dato'))) AS estado, COUNT(*) AS cnt "
+                "FROM PACIENTE WHERE ACTIVO='S' "
+                "GROUP BY UPPER(TRIM(NVL(CIUDAD,'Sin dato'))), UPPER(TRIM(NVL(ESTADO,'Sin dato'))) "
+                "ORDER BY cnt DESC"
             )
             rows = rows_to_dicts(cursor)
+            # Normalize with composite key so "San Luis, NL" != "San Luis, SLP"
+            merged = _aggregate_normalized(rows, ['label', 'estado'])
             return {
-                'labels': [(r.get('label') or 'Sin dato').strip() for r in rows],
-                'estados': [(r.get('estado') or 'Sin dato').strip() for r in rows],
-                'values': [int(r.get('cnt') or 0) for r in rows],
-                'total': sum(int(r.get('cnt') or 0) for r in rows),
+                'labels': [r['label'] for r in merged],
+                'estados': [r['estado'] for r in merged],
+                'values': [r['cnt'] for r in merged],
+                'total': sum(r['cnt'] for r in merged),
             }
     except Exception:
         logger.exception('Error en reporte por ciudad')
@@ -386,11 +467,16 @@ def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
                     mujeres += cnt
 
             cursor.execute(
-                "SELECT NVL(CIUDAD,'Sin dato') AS ciudad, COUNT(*) AS cnt FROM PACIENTE "
-                f"WHERE ACTIVO='S' AND {RESIDE_NL_EXPR} GROUP BY CIUDAD ORDER BY cnt DESC"
+                "SELECT UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) AS ciudad, COUNT(*) AS cnt FROM PACIENTE "
+                f"WHERE ACTIVO='S' AND {RESIDE_NL_EXPR} "
+                "GROUP BY UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) ORDER BY cnt DESC"
             )
-            municipios = [{'label': (r.get('ciudad') or 'Sin dato').strip(), 'value': int(r.get('cnt') or 0)}
-                          for r in rows_to_dicts(cursor)]
+            mun_rows = rows_to_dicts(cursor)
+            mun_merged = _aggregate_normalized(
+                [{'label': r.get('ciudad'), 'cnt': r.get('cnt')} for r in mun_rows],
+                ['label'],
+            )
+            municipios = [{'label': r['label'], 'value': r['cnt']} for r in mun_merged]
             nl_total = sum(m['value'] for m in municipios)
             foraneos_cnt = activos - nl_total
             if foraneos_cnt > 0:

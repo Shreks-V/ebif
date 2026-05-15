@@ -102,6 +102,15 @@ export class RecibosComponent implements OnInit {
   motivoCancelacion = '';
   cancelandoRecibo = false;
 
+  showPagoModal = false;
+  pagoRecibo: Recibo | null = null;
+  pagoTipo: 'abono' | 'liquidar' | 'exentar' = 'abono';
+  pagoMonto = 0;
+  pagoMetodo = 0;
+  pagoNota = '';
+  pagoError = '';
+  guardandoPago = false;
+
   showNuevoCobro = false;
   guardandoCobro = false;
   nuevoCobroError = '';
@@ -743,5 +752,115 @@ export class RecibosComponent implements OnInit {
       'PENDIENTE': 'text-amber-600',
     };
     return map[label] || 'text-slate-700';
+  }
+
+  abrirPagoModal(recibo: Recibo, tipo: 'abono' | 'liquidar' | 'exentar' = 'abono'): void {
+    this.pagoRecibo = recibo;
+    this.pagoTipo = tipo;
+    this.pagoMonto = tipo === 'liquidar' ? recibo.saldoPendiente : 0;
+    this.pagoMetodo = this.metodosPagoCatalogo[0]?.id || 0;
+    this.pagoNota = '';
+    this.pagoError = '';
+    this.guardandoPago = false;
+    if (this.metodosPagoCatalogo.length === 0) {
+      this.api.getMetodosPago().subscribe({
+        next: (data: any[]) => {
+          this.metodosPagoCatalogo = data.map((m: any) => ({ id: m.id_metodo_pago || m.id, nombre: m.nombre }));
+          this.pagoMetodo = this.metodosPagoCatalogo[0]?.id || 0;
+        }
+      });
+    }
+    this.showPagoModal = true;
+  }
+
+  closePagoModal(): void {
+    this.showPagoModal = false;
+    this.pagoRecibo = null;
+  }
+
+  guardarPago(): void {
+    if (!this.pagoRecibo) return;
+    this.pagoError = '';
+
+    if (this.pagoTipo === 'exentar') {
+      this.guardandoPago = true;
+      this.api.exentarVenta(this.pagoRecibo.idVenta, this.pagoNota || undefined).subscribe({
+        next: (updated: any) => {
+          this.guardandoPago = false;
+          this.showPagoModal = false;
+          this._actualizarReciboEnLista(updated);
+          if (this.reciboSeleccionado?.idVenta === updated.id_venta) {
+            this._mapearRecibo(updated);
+          }
+          this.cargarStats();
+        },
+        error: (err: any) => {
+          this.guardandoPago = false;
+          this.pagoError = err?.error?.detail || 'Error al exentar la venta.';
+        }
+      });
+      return;
+    }
+
+    if (!this.pagoMetodo) {
+      this.pagoError = 'Selecciona un método de pago.';
+      return;
+    }
+    if (!this.pagoMonto || this.pagoMonto <= 0) {
+      this.pagoError = 'Ingresa un monto válido.';
+      return;
+    }
+    if (this.pagoMonto > (this.pagoRecibo.saldoPendiente || 0)) {
+      this.pagoError = 'El monto no puede superar el saldo pendiente.';
+      return;
+    }
+
+    this.guardandoPago = true;
+    this.api.registrarPagoParcial(this.pagoRecibo.idVenta, { id_metodo_pago: this.pagoMetodo, monto: this.pagoMonto }).subscribe({
+      next: (updated: any) => {
+        this.guardandoPago = false;
+        this.showPagoModal = false;
+        this._actualizarReciboEnLista(updated);
+        if (this.reciboSeleccionado?.idVenta === updated.id_venta) {
+          this._mapearRecibo(updated);
+        }
+        this.cargarStats();
+      },
+      error: (err: any) => {
+        this.guardandoPago = false;
+        this.pagoError = err?.error?.detail || 'Error al registrar el pago.';
+      }
+    });
+  }
+
+  private _mapearRecibo(r: any): Recibo {
+    return {
+      idVenta: r.id_venta,
+      folioVenta: r.folio_venta,
+      idPaciente: r.id_paciente,
+      nombrePaciente: r.nombre_paciente,
+      folioPaciente: r.folio_paciente,
+      fechaVenta: r.fecha_venta,
+      montoTotal: r.monto_total,
+      montoPagado: r.monto_pagado,
+      saldoPendiente: r.saldo_pendiente,
+      exentoPago: r.exento_pago,
+      cancelada: r.cancelada,
+      motivoCancelacion: r.motivo_cancelacion,
+      metodosPago: (r.metodos_pago || []).map((mp: any) => ({ idMetodoPago: mp.id_metodo_pago, nombre: mp.nombre, monto: mp.monto }))
+    };
+  }
+
+  private _actualizarReciboEnLista(raw: any): void {
+    const mapped = this._mapearRecibo(raw);
+    const idx = this.recibos.findIndex(r => r.idVenta === mapped.idVenta);
+    if (idx !== -1) {
+      this.recibos[idx] = mapped;
+    }
+    if (this.reciboSeleccionado?.idVenta === mapped.idVenta) {
+      this.reciboSeleccionado = mapped;
+    }
+    this.filtrarRecibos();
+    this.calcularEstadisticas();
   }
 }

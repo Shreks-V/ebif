@@ -286,6 +286,14 @@ export class ApiService {
     return this.http.get<any[]>(`${this.apiUrl}/recibos/${id}/items`);
   }
 
+  registrarPagoParcial(idVenta: number, data: { id_metodo_pago: number; monto: number }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/recibos/${idVenta}/pagos`, data);
+  }
+
+  exentarVenta(idVenta: number, nota?: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/recibos/${idVenta}/exentar`, { nota: nota || null });
+  }
+
   // ──────────────── Exportaciones (PDF / Excel) ────────────────
 
   exportarReportePdf(tipo: string, filters?: any): Observable<Blob> {
@@ -496,6 +504,12 @@ export class ApiService {
 
   getTiposDocumentoPublic(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/preregistro/tipos-documento`);
+  }
+
+  checkCurpDisponible(curp: string): Observable<{ disponible: boolean }> {
+    return this.http.get<{ disponible: boolean }>(`${this.apiUrl}/preregistro/check-curp`, {
+      params: new HttpParams().set('curp', curp),
+    });
   }
 
   uploadDocumento(idPaciente: number, idTipoDocumento: number, file: File): Observable<any> {

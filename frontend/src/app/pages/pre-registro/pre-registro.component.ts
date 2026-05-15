@@ -28,6 +28,9 @@ export class PreRegistroComponent implements OnInit {
   stepError = '';
   validationAttempted = false;
   invalidFields: string[] = [];
+  fieldErrors: { [key: string]: string } = {};
+  checkingCurp = false;
+  curpDisponible: boolean | null = null;
 
   // Created paciente ID (for document upload in step 5)
   createdPacienteId: number | null = null;
@@ -35,6 +38,19 @@ export class PreRegistroComponent implements OnInit {
   steps = ['Datos Personales', 'Direcci\u00f3n', 'Contacto', 'Info. M\u00e9dica', 'Documentos'];
 
   tiposSangre = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+
+  paises = [
+    { bandera: '🇲🇽', nombre: 'México',         codigo: '+52'  },
+    { bandera: '🇺🇸', nombre: 'Estados Unidos',  codigo: '+1'   },
+    { bandera: '🇨🇦', nombre: 'Canadá',          codigo: '+1'   },
+    { bandera: '🇪🇸', nombre: 'España',           codigo: '+34'  },
+    { bandera: '🇦🇷', nombre: 'Argentina',        codigo: '+54'  },
+    { bandera: '🇨🇴', nombre: 'Colombia',         codigo: '+57'  },
+    { bandera: '🇬🇹', nombre: 'Guatemala',        codigo: '+502' },
+    { bandera: '🇭🇳', nombre: 'Honduras',         codigo: '+504' },
+    { bandera: '🇸🇻', nombre: 'El Salvador',      codigo: '+503' },
+    { bandera: '🇨🇷', nombre: 'Costa Rica',       codigo: '+506' },
+  ];
 
   tiposEspinaList: any[] = [];
   tiposDocumento: any[] = [];
@@ -52,9 +68,13 @@ export class PreRegistroComponent implements OnInit {
     fechaNacimiento: '', sexo: '', curp: '', nombrePadreMadre: '',
     calle: '', numeroExterior: '', numeroInterior: '',
     colonia: '', municipio: '', ciudad: '', estado: '', codigoPostal: '',
-    telefonoCasa: '', telefonoCelular: '', correoElectronico: '',
-    enEmergenciaAvisarA: '', telefonoEmergencia: '',
-    requiereTutor: false, nombreTutor: '', telefonoTutor: '', relacionTutor: '',
+    telefonoCasaCodigo: '+52', telefonoCasa: '',
+    telefonoCelularCodigo: '+52', telefonoCelular: '',
+    correoElectronico: '',
+    enEmergenciaAvisarA: '',
+    telefonoEmergenciaCodigo: '+52', telefonoEmergencia: '',
+    requiereTutor: false, nombreTutor: '',
+    telefonoTutorCodigo: '+52', telefonoTutor: '', relacionTutor: '',
     tipoSangre: '', usaValvula: false,
     tiposEspinaIds: [] as number[],
     alergias: '', medicamentosActuales: '', notasAdicionales: ''
@@ -85,6 +105,76 @@ export class PreRegistroComponent implements OnInit {
     });
   }
 
+  // ── Computed ───────────────────────────────────────────────
+  get esMenorDeEdad(): boolean {
+    if (!this.formData.fechaNacimiento) return false;
+    const nac = new Date(this.formData.fechaNacimiento + 'T12:00:00');
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - nac.getFullYear();
+    const m = hoy.getMonth() - nac.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+    return edad < 18;
+  }
+
+  // ── Event handlers ─────────────────────────────────────────
+  onFechaNacimientoChange(): void {
+    if (this.esMenorDeEdad) {
+      this.formData.requiereTutor = true;
+    }
+  }
+
+  onCurpChange(val: string): void {
+    this.formData.curp = (val || '').toUpperCase();
+    this.curpDisponible = null;
+    this.invalidFields = this.invalidFields.filter(f => f !== 'curp');
+    delete this.fieldErrors['curp'];
+  }
+
+  onCurpBlur(): void {
+    const curp = (this.formData.curp || '').trim().toUpperCase();
+    if (curp.length !== 18) return;
+    const curpRegex = /^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
+    if (!curpRegex.test(curp)) return;
+    this.checkingCurp = true;
+    this.curpDisponible = null;
+    this.api.checkCurpDisponible(curp).subscribe({
+      next: (res) => {
+        this.checkingCurp = false;
+        this.curpDisponible = res.disponible;
+        if (!res.disponible) {
+          if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
+          this.fieldErrors['curp'] = 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.';
+        } else {
+          this.invalidFields = this.invalidFields.filter(f => f !== 'curp');
+          delete this.fieldErrors['curp'];
+        }
+      },
+      error: () => { this.checkingCurp = false; },
+    });
+  }
+
+  getFieldError(field: string): string {
+    return this.fieldErrors[field] || '';
+  }
+
+  // ── Validators ─────────────────────────────────────────────
+  private _soloLetras(s: string): boolean {
+    return /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s'\-]+$/.test(s.trim());
+  }
+
+  private _soloDigitos(s: string): string {
+    return (s || '').replace(/\D/g, '');
+  }
+
+  private _esTelefono(s: string, codigo: string = '+52'): boolean {
+    const n = this._soloDigitos(s).length;
+    return codigo === '+52' ? n === 10 : n >= 6 && n <= 15;
+  }
+
+  maxTelefono(codigo: string): number {
+    return codigo === '+52' ? 10 : 15;
+  }
+
   getFieldClass(field: string): string {
     const base = 'w-full px-4 py-3 border-2 rounded-xl focus:ring-4 transition-all';
     if (this.invalidFields.includes(field)) {
@@ -108,6 +198,7 @@ export class PreRegistroComponent implements OnInit {
 
   validateStep(step: number): boolean {
     this.invalidFields = [];
+    this.fieldErrors = {};
     this.stepError = '';
     this.validationAttempted = true;
 
@@ -119,11 +210,75 @@ export class PreRegistroComponent implements OnInit {
       }
     }
 
-    // Step 3: tutor fields if requiereTutor
-    if (step === 3 && this.formData.requiereTutor) {
-      for (const f of ['nombreTutor', 'telefonoTutor', 'relacionTutor']) {
-        if (!this.formData[f] || this.formData[f].trim() === '') {
-          this.invalidFields.push(f);
+    if (step === 1) {
+      // Name fields: letters only
+      for (const f of ['nombre', 'apellidoPaterno', 'apellidoMaterno', 'nombrePadreMadre']) {
+        const v = (this.formData[f] || '').trim();
+        if (v && !this._soloLetras(v)) {
+          if (!this.invalidFields.includes(f)) this.invalidFields.push(f);
+          this.fieldErrors[f] = 'Solo se permiten letras en este campo.';
+        }
+      }
+
+      // CURP format
+      if (this.formData.curp) {
+        const curpRegex = /^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
+        if (!curpRegex.test(this.formData.curp.trim().toUpperCase())) {
+          if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
+          this.fieldErrors['curp'] = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial).';
+        }
+      }
+
+      // CURP uniqueness
+      if (this.checkingCurp) {
+        if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
+        this.stepError = 'Espera a que se verifique la disponibilidad del CURP.';
+        return false;
+      }
+      if (this.curpDisponible === false) {
+        if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
+        this.fieldErrors['curp'] = 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.';
+      }
+    }
+
+    if (step === 3) {
+      // Phone format validations
+      const phoneFields: [string, string][] = [
+        ['telefonoCelular', 'telefonoCelularCodigo'],
+        ['telefonoEmergencia', 'telefonoEmergenciaCodigo'],
+      ];
+      for (const [f, cf] of phoneFields) {
+        if (this.formData[f] && !this._esTelefono(this.formData[f], this.formData[cf])) {
+          if (!this.invalidFields.includes(f)) this.invalidFields.push(f);
+          this.fieldErrors[f] = this.formData[cf] === '+52'
+            ? 'El teléfono debe tener exactamente 10 dígitos.'
+            : 'Número de teléfono inválido.';
+        }
+      }
+      if (this.formData.telefonoCasa && !this._esTelefono(this.formData.telefonoCasa, this.formData.telefonoCasaCodigo)) {
+        if (!this.invalidFields.includes('telefonoCasa')) this.invalidFields.push('telefonoCasa');
+        this.fieldErrors['telefonoCasa'] = this.formData.telefonoCasaCodigo === '+52'
+          ? 'El teléfono debe tener exactamente 10 dígitos.'
+          : 'Número de teléfono inválido.';
+      }
+
+      // Tutor fields
+      if (this.formData.requiereTutor) {
+        for (const f of ['nombreTutor', 'telefonoTutor', 'relacionTutor']) {
+          if (!this.formData[f] || this.formData[f].trim() === '') {
+            this.invalidFields.push(f);
+          }
+        }
+        const nombreTutor = (this.formData.nombreTutor || '').trim();
+        if (nombreTutor && !this._soloLetras(nombreTutor)) {
+          if (!this.invalidFields.includes('nombreTutor')) this.invalidFields.push('nombreTutor');
+          this.fieldErrors['nombreTutor'] = 'Solo se permiten letras en este campo.';
+        }
+        if (this.formData.telefonoTutor && !this._esTelefono(this.formData.telefonoTutor, this.formData.telefonoTutorCodigo)) {
+          if (!this.invalidFields.includes('telefonoTutor')) this.invalidFields.push('telefonoTutor');
+          this.fieldErrors['telefonoTutor'] = this.formData.telefonoTutorCodigo === '+52'
+            ? 'El teléfono debe tener exactamente 10 dígitos.'
+            : 'Número de teléfono inválido.';
         }
       }
     }
@@ -131,15 +286,6 @@ export class PreRegistroComponent implements OnInit {
     // Step 4: at least one tipo de espina
     if (step === 4 && this.formData.tiposEspinaIds.length === 0) {
       this.invalidFields.push('tiposEspinaIds');
-    }
-
-    // Step 1: CURP must match official Mexican CURP format
-    if (step === 1 && this.formData.curp) {
-      const curpRegex = /^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
-      if (!curpRegex.test(this.formData.curp.trim().toUpperCase())) {
-        this.invalidFields.push('curp');
-        this.stepError = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial).';
-      }
     }
 
     if (this.invalidFields.length > 0) {
@@ -190,11 +336,13 @@ export class PreRegistroComponent implements OnInit {
       ciudad: this.formData.ciudad,
       estado: this.formData.estado,
       codigo_postal: this.formData.codigoPostal,
-      telefono_casa: this.formData.telefonoCasa,
-      telefono_celular: this.formData.telefonoCelular,
+      telefono_casa: this.formData.telefonoCasa
+        ? `${this.formData.telefonoCasaCodigo} ${this.formData.telefonoCasa}`
+        : '',
+      telefono_celular: `${this.formData.telefonoCelularCodigo} ${this.formData.telefonoCelular}`,
       correo_electronico: this.formData.correoElectronico,
       en_emergencia_avisar_a: this.formData.enEmergenciaAvisarA,
-      telefono_emergencia: this.formData.telefonoEmergencia,
+      telefono_emergencia: `${this.formData.telefonoEmergenciaCodigo} ${this.formData.telefonoEmergencia}`,
       tipo_sangre: this.formData.tipoSangre,
       usa_valvula: this.formData.usaValvula ? 'S' : 'N',
       tipo_cuota: 'CUOTA A',

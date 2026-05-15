@@ -40,3 +40,7 @@ class VentaCreate(VentaBase):
 class PagoParcialCreate(BaseModel):
     id_metodo_pago: int
     monto: float
+
+
+class ExentarVentaBody(BaseModel):
+    nota: Optional[str] = None

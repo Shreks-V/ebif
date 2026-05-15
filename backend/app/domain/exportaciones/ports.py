@@ -13,6 +13,8 @@ class ExportacionesRepository(Protocol):
         tipo_espina: Optional[int] = None,
         fecha_inicio: Optional[str] = None,
         fecha_fin: Optional[str] = None,
+        mes: Optional[int] = None,
+        anio: Optional[int] = None,
         current_user: CurrentUser | None = None,
     ) -> FilePayload: ...
 

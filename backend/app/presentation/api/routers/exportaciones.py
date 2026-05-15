@@ -30,8 +30,18 @@ def _payload_response(payload: FilePayload) -> StreamingResponse:
 
 
 @router.get('/reportes/pdf')
-def exportar_reporte_pdf(tipo: str=Query('resumen', description='resumen | por-genero | por-etapa-vida | por-estado | por-tipo-espina'), genero: Optional[str]=Query(None), estado: Optional[str]=Query(None), tipo_espina: Optional[int]=Query(None), fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
-    return _payload_response(service.exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user))
+def exportar_reporte_pdf(
+    tipo: str = Query('resumen', description='resumen | por-genero | por-etapa-vida | por-estado | por-tipo-espina | consolidado-mensual | indicadores'),
+    genero: Optional[str] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_espina: Optional[int] = Query(None),
+    fecha_inicio: Optional[str] = Query(None),
+    fecha_fin: Optional[str] = Query(None),
+    mes: Optional[int] = Query(None),
+    anio: Optional[int] = Query(None),
+    current_user: dict = Depends(get_current_user),
+):
+    return _payload_response(service.exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user))
 
 @router.get('/beneficiario/{folio}/pdf')
 def exportar_beneficiario_pdf(folio: str, current_user: dict=Depends(get_current_user)):

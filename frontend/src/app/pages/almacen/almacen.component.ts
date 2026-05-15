@@ -7,6 +7,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ConfigService } from '../../services/config.service';
+import { AutoGrowDirective } from '../../shared/directives/auto-grow.directive';
 
 interface ProductoItem {
   idProducto: number;
@@ -69,7 +70,7 @@ interface TableSortState {
 @Component({
   selector: 'app-almacen',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent, AutoGrowDirective],
   templateUrl: './almacen.component.html',
   styles: [`
     @media print {
@@ -529,6 +530,8 @@ export class AlmacenComponent implements OnInit {
     this.api.createComodato(payload).subscribe({
       next: () => {
         this.loadComodatos();
+        this.loadProductos();
+        this.loadAlmacenStats();
         this.closeComodatoModal();
         this.submittingComodato = false;
       },
@@ -971,6 +974,8 @@ export class AlmacenComponent implements OnInit {
         this.showEditComodatoModal = false;
         this.submittingEditComodato = false;
         this.loadComodatos();
+        this.loadProductos();
+        this.loadAlmacenStats();
       },
       error: (err) => {
         console.error('Error al actualizar comodato:', err);
@@ -1013,6 +1018,8 @@ export class AlmacenComponent implements OnInit {
         this.submittingDevolucion = false;
         this.closeConfirmDevolucionModal();
         this.loadComodatos();
+        this.loadProductos();
+        this.loadAlmacenStats();
       },
       error: (err) => {
         console.error('Error al registrar devolución:', err);

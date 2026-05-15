@@ -173,6 +173,13 @@
                           <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>
                         </svg>
                       </button>
+                      @if (recibo.cancelada !== 'S' && recibo.saldoPendiente > 0) {
+                        <button (click)="abrirPagoModal(recibo)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-500 hover:text-amber-700 transition-all cursor-pointer" title="Registrar pago / exentar">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+                          </svg>
+                        </button>
+                      }
                       @if (recibo.cancelada !== 'S') {
                         <button (click)="confirmarCancelarRecibo(recibo)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 transition-all cursor-pointer" title="Cancelar recibo">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -359,11 +366,19 @@
         </div>
       </div>
       <!-- Modal Footer -->
-      <div class="px-6 py-4 border-t border-slate-200 shrink-0 flex items-center justify-between bg-slate-50">
+      <div class="px-6 py-4 border-t border-slate-200 shrink-0 flex items-center justify-between bg-slate-50 flex-wrap gap-2">
         <button (click)="printRecibo()" class="flex items-center gap-2 px-4 py-2 border-2 border-slate-200 bg-white text-slate-600 hover:border-[#00328b] hover:text-[#00328b] rounded-xl font-semibold text-sm transition-all">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
           Imprimir / PDF
         </button>
+        @if (reciboSeleccionado.cancelada !== 'S' && reciboSeleccionado.saldoPendiente > 0) {
+          <button (click)="abrirPagoModal(reciboSeleccionado)" class="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold text-sm transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+            Registrar Pago
+          </button>
+        }
         <button (click)="closeDetalle()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-semibold text-sm transition-all">
           Cerrar
         </button>
@@ -630,6 +645,109 @@
         <button (click)="showConfirmCancelarRecibo = false"
           class="px-6 py-3 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all cursor-pointer">
           Volver
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showPagoModal && pagoRecibo) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" (click)="closePagoModal()">
+    <div class="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Gestionar Saldo</h2>
+          <p class="text-xs text-slate-500 mt-0.5">{{ pagoRecibo.folioVenta }} — Saldo: <span class="font-bold text-amber-600">${{ pagoRecibo.saldoPendiente | number:'1.2-2' }}</span></p>
+        </div>
+        <button (click)="closePagoModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <!-- Tabs -->
+      <div class="flex border-b border-slate-100">
+        <button (click)="pagoTipo='abono'; pagoMonto=0; pagoError=''"
+          class="flex-1 py-3 text-sm font-semibold transition-all"
+          [ngClass]="pagoTipo==='abono' ? 'border-b-2 border-[#00328b] text-[#00328b]' : 'text-slate-500 hover:text-slate-700'">
+          Abono
+        </button>
+        <button (click)="pagoTipo='liquidar'; pagoMonto=pagoRecibo.saldoPendiente; pagoError=''"
+          class="flex-1 py-3 text-sm font-semibold transition-all"
+          [ngClass]="pagoTipo==='liquidar' ? 'border-b-2 border-emerald-600 text-emerald-600' : 'text-slate-500 hover:text-slate-700'">
+          Liquidar
+        </button>
+        <button (click)="pagoTipo='exentar'; pagoError=''"
+          class="flex-1 py-3 text-sm font-semibold transition-all"
+          [ngClass]="pagoTipo==='exentar' ? 'border-b-2 border-violet-600 text-violet-600' : 'text-slate-500 hover:text-slate-700'">
+          Perdonar deuda
+        </button>
+      </div>
+      <!-- Body -->
+      <div class="px-6 py-5 space-y-4">
+        @if (pagoTipo === 'abono' || pagoTipo === 'liquidar') {
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Método de pago</label>
+            <select [(ngModel)]="pagoMetodo" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-all">
+              <option [value]="0">— Seleccionar —</option>
+              @for (m of metodosPagoCatalogo; track m.id) {
+                <option [value]="m.id">{{ m.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+              Monto a pagar
+              @if (pagoTipo === 'liquidar') {
+                <span class="ml-1 text-xs font-normal text-emerald-600">(total del saldo pendiente)</span>
+              }
+            </label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">$</span>
+              <input type="number" [(ngModel)]="pagoMonto" min="0.01" [max]="pagoRecibo.saldoPendiente" step="0.01"
+                class="w-full pl-8 pr-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-all"
+                [readOnly]="pagoTipo === 'liquidar'">
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Máximo: ${{ pagoRecibo.saldoPendiente | number:'1.2-2' }}</p>
+          </div>
+        }
+        @if (pagoTipo === 'exentar') {
+          <div class="flex flex-col items-center text-center py-2 gap-3">
+            <div class="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div>
+              <p class="font-bold text-slate-800">Perdonar saldo de <span class="text-violet-600">${{ pagoRecibo.saldoPendiente | number:'1.2-2' }}</span></p>
+              <p class="text-sm text-slate-500 mt-1">Esta acción marca el recibo como exento de pago y cierra el saldo pendiente.</p>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nota (opcional)</label>
+            <textarea [(ngModel)]="pagoNota" rows="2" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-violet-500 focus:outline-none text-sm resize-none transition-all" placeholder="Motivo del perdón de deuda..."></textarea>
+          </div>
+        }
+        @if (pagoError) {
+          <p class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">{{ pagoError }}</p>
+        }
+      </div>
+      <!-- Footer -->
+      <div class="px-6 py-4 border-t border-slate-100 flex gap-3">
+        @if (pagoTipo === 'abono' || pagoTipo === 'liquidar') {
+          <button (click)="guardarPago()" [disabled]="guardandoPago"
+            class="flex-1 py-3 font-bold text-sm rounded-xl text-white transition-all disabled:opacity-50 cursor-pointer"
+            [ngClass]="pagoTipo==='liquidar' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-[#00328b] hover:bg-[#00267a]'">
+            {{ guardandoPago ? 'Guardando...' : (pagoTipo === 'liquidar' ? 'Liquidar recibo' : 'Registrar abono') }}
+          </button>
+        }
+        @if (pagoTipo === 'exentar') {
+          <button (click)="guardarPago()" [disabled]="guardandoPago"
+            class="flex-1 py-3 font-bold text-sm rounded-xl text-white bg-violet-600 hover:bg-violet-700 transition-all disabled:opacity-50 cursor-pointer">
+            {{ guardandoPago ? 'Procesando...' : 'Confirmar perdón de deuda' }}
+          </button>
+        }
+        <button (click)="closePagoModal()" class="px-5 py-3 border-2 border-slate-200 text-slate-600 font-semibold text-sm rounded-xl hover:bg-slate-50 transition-all cursor-pointer">
+          Cancelar
         </button>
       </div>
     </div>

@@ -80,18 +80,27 @@
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Nombre <span class="text-red-500">*</span></label>
                   <input type="text" [(ngModel)]="formData.nombre" [class]="getFieldClass('nombre')" placeholder="Nombre(s)">
+                  @if (getFieldError('nombre')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombre') }}</p>
+                  }
                 </div>
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
                   <input type="text" [(ngModel)]="formData.apellidoPaterno" [class]="getFieldClass('apellidoPaterno')">
+                  @if (getFieldError('apellidoPaterno')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('apellidoPaterno') }}</p>
+                  }
                 </div>
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Apellido Materno <span class="text-red-500">*</span></label>
                   <input type="text" [(ngModel)]="formData.apellidoMaterno" [class]="getFieldClass('apellidoMaterno')">
+                  @if (getFieldError('apellidoMaterno')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('apellidoMaterno') }}</p>
+                  }
                 </div>
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Fecha de Nacimiento <span class="text-red-500">*</span></label>
-                  <input type="date" [(ngModel)]="formData.fechaNacimiento" [class]="getFieldClass('fechaNacimiento')">
+                  <input type="date" [(ngModel)]="formData.fechaNacimiento" [class]="getFieldClass('fechaNacimiento')" (change)="onFechaNacimientoChange()">
                 </div>
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Sexo <span class="text-red-500">*</span></label>
@@ -103,11 +112,34 @@
                 </div>
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">CURP <span class="text-red-500">*</span></label>
-                  <input type="text" [(ngModel)]="formData.curp" [class]="getFieldClass('curp') + ' uppercase'" maxlength="18" placeholder="18 caracteres">
+                  <div class="relative">
+                    <input type="text" [ngModel]="formData.curp" (ngModelChange)="onCurpChange($event)" (blur)="onCurpBlur()" [class]="getFieldClass('curp') + ' uppercase pr-10'" maxlength="18" placeholder="18 caracteres">
+                    @if (checkingCurp) {
+                      <span class="absolute right-3 top-1/2 -translate-y-1/2">
+                        <svg class="animate-spin w-5 h-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                      </span>
+                    }
+                    @if (!checkingCurp && curpDisponible === true) {
+                      <span class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      </span>
+                    }
+                    @if (!checkingCurp && curpDisponible === false) {
+                      <span class="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </span>
+                    }
+                  </div>
+                  @if (getFieldError('curp')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('curp') }}</p>
+                  }
                 </div>
                 <div class="md:col-span-2">
                   <label class="block text-sm font-bold text-slate-700 mb-1">Nombre del Padre/Madre <span class="text-red-500">*</span></label>
                   <input type="text" [(ngModel)]="formData.nombrePadreMadre" [class]="getFieldClass('nombrePadreMadre')">
+                  @if (getFieldError('nombrePadreMadre')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombrePadreMadre') }}</p>
+                  }
                 </div>
                 <div class="md:col-span-2">
                   <label class="block text-sm font-bold text-slate-700 mb-1">Fotograf&iacute;a</label>
@@ -183,11 +215,31 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Casa</label>
-                  <input type="tel" [(ngModel)]="formData.telefonoCasa" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all">
+                  <div class="flex gap-2">
+                    <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                      @for (p of paises; track p.nombre) {
+                        <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                      }
+                    </select>
+                    <input type="tel" [(ngModel)]="formData.telefonoCasa" [class]="getFieldClass('telefonoCasa') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCasaCodigo)" placeholder="{{ formData.telefonoCasaCodigo === '+52' ? '10 dígitos' : 'Número' }}">
+                  </div>
+                  @if (getFieldError('telefonoCasa')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoCasa') }}</p>
+                  }
                 </div>
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Celular <span class="text-red-500">*</span></label>
-                  <input type="tel" [(ngModel)]="formData.telefonoCelular" [class]="getFieldClass('telefonoCelular')">
+                  <div class="flex gap-2">
+                    <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                      @for (p of paises; track p.nombre) {
+                        <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                      }
+                    </select>
+                    <input type="tel" [(ngModel)]="formData.telefonoCelular" [class]="getFieldClass('telefonoCelular') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCelularCodigo)" placeholder="{{ formData.telefonoCelularCodigo === '+52' ? '10 dígitos' : 'Número' }}">
+                  </div>
+                  @if (getFieldError('telefonoCelular')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoCelular') }}</p>
+                  }
                 </div>
                 <div class="md:col-span-2">
                   <label class="block text-sm font-bold text-slate-700 mb-1">Correo Electr&oacute;nico</label>
@@ -205,22 +257,51 @@
                 </div>
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono de Emergencia <span class="text-red-500">*</span></label>
-                  <input type="tel" [(ngModel)]="formData.telefonoEmergencia" [class]="getFieldClass('telefonoEmergencia')">
+                  <div class="flex gap-2">
+                    <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                      @for (p of paises; track p.nombre) {
+                        <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                      }
+                    </select>
+                    <input type="tel" [(ngModel)]="formData.telefonoEmergencia" [class]="getFieldClass('telefonoEmergencia') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoEmergenciaCodigo)" placeholder="{{ formData.telefonoEmergenciaCodigo === '+52' ? '10 dígitos' : 'Número' }}">
+                  </div>
+                  @if (getFieldError('telefonoEmergencia')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoEmergencia') }}</p>
+                  }
                 </div>
                 <div class="md:col-span-2 mt-4">
-                  <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" [(ngModel)]="formData.requiereTutor" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]">
+                  <label class="flex items-center gap-3" [class.cursor-pointer]="!esMenorDeEdad" [class.cursor-not-allowed]="esMenorDeEdad">
+                    <input type="checkbox" [(ngModel)]="formData.requiereTutor" [disabled]="esMenorDeEdad" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]">
                     <span class="text-sm font-bold text-slate-700">&iquest;Requiere tutor?</span>
                   </label>
+                  @if (esMenorDeEdad) {
+                    <p class="text-xs text-amber-600 font-semibold mt-1 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      El beneficiario es menor de edad, se requiere tutor obligatoriamente.
+                    </p>
+                  }
                 </div>
                 @if (formData.requiereTutor) {
                   <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Nombre del Tutor <span class="text-red-500">*</span></label>
                     <input type="text" [(ngModel)]="formData.nombreTutor" [class]="getFieldClass('nombreTutor')">
+                    @if (getFieldError('nombreTutor')) {
+                      <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombreTutor') }}</p>
+                    }
                   </div>
                   <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono del Tutor <span class="text-red-500">*</span></label>
-                    <input type="tel" [(ngModel)]="formData.telefonoTutor" [class]="getFieldClass('telefonoTutor')">
+                    <div class="flex gap-2">
+                      <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                        @for (p of paises; track p.nombre) {
+                          <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                        }
+                      </select>
+                      <input type="tel" [(ngModel)]="formData.telefonoTutor" [class]="getFieldClass('telefonoTutor') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoTutorCodigo)" placeholder="{{ formData.telefonoTutorCodigo === '+52' ? '10 dígitos' : 'Número' }}">
+                    </div>
+                    @if (getFieldError('telefonoTutor')) {
+                      <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoTutor') }}</p>
+                    }
                   </div>
                   <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Relaci&oacute;n con el beneficiario <span class="text-red-500">*</span></label>

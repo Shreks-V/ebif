@@ -9,8 +9,8 @@ class ExportacionesService:
     def __init__(self, repository: ExportacionesRepository) -> None:
         self._repository = repository
 
-    def exportar_reporte_pdf(self, tipo: str = "resumen", genero: Optional[str] = None, estado: Optional[str] = None, tipo_espina: Optional[int] = None, fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, current_user: CurrentUser | None = None):
-        return self._repository.exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
+    def exportar_reporte_pdf(self, tipo: str = "resumen", genero: Optional[str] = None, estado: Optional[str] = None, tipo_espina: Optional[int] = None, fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, mes: Optional[int] = None, anio: Optional[int] = None, current_user: CurrentUser | None = None):
+        return self._repository.exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user)
 
     def exportar_beneficiario_pdf(self, folio: str, current_user: CurrentUser | None = None):
         return self._repository.exportar_beneficiario_pdf(folio, current_user)
@@ -42,8 +42,8 @@ def _svc() -> ExportacionesService:
     return _service
 
 
-def exportar_reporte_pdf(tipo: str = "resumen", genero: Optional[str] = None, estado: Optional[str] = None, tipo_espina: Optional[int] = None, fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, current_user: CurrentUser | None = None):
-    return _svc().exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
+def exportar_reporte_pdf(tipo: str = "resumen", genero: Optional[str] = None, estado: Optional[str] = None, tipo_espina: Optional[int] = None, fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, mes: Optional[int] = None, anio: Optional[int] = None, current_user: CurrentUser | None = None):
+    return _svc().exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user)
 
 def exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = None):
     return _svc().exportar_beneficiario_pdf(folio, current_user)

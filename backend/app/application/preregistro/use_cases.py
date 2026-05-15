@@ -23,6 +23,9 @@ class PreregistroService:
     def listar_tipos_documento_publico(self):
         return self._repository.listar_tipos_documento_publico()
 
+    def check_curp_disponible(self, curp: str):
+        return self._repository.check_curp_disponible(curp)
+
     def obtener_preregistro(self, id_paciente: int):
         return self._repository.obtener_preregistro(id_paciente)
 
@@ -71,6 +74,9 @@ def listar_tipos_espina_publico():
 
 def listar_tipos_documento_publico():
     return _svc().listar_tipos_documento_publico()
+
+def check_curp_disponible(curp: str):
+    return _svc().check_curp_disponible(curp)
 
 def obtener_preregistro(id_paciente: int):
     return _svc().obtener_preregistro(id_paciente)

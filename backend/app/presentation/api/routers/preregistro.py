@@ -41,6 +41,10 @@ def listar_tipos_espina_publico():
 def listar_tipos_documento_publico():
     return service.listar_tipos_documento_publico()
 
+@router.get('/check-curp')
+def check_curp_disponible(curp: str = Query(..., max_length=18, min_length=1)):
+    return service.check_curp_disponible(curp)
+
 @router.get('/{id_paciente}')
 def obtener_preregistro(id_paciente: int, _access=Depends(ensure_preregistro_access)):
     return service.obtener_preregistro(id_paciente)

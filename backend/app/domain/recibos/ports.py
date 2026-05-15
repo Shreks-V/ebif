@@ -39,6 +39,13 @@ class RecibosRepository(Protocol):
         current_user: CurrentUser | None = None,
     ) -> dict: ...
 
+    def exentar_venta(
+        self,
+        id_venta: int,
+        nota: Optional[str] = None,
+        current_user: CurrentUser | None = None,
+    ) -> dict: ...
+
     def listar_items_venta(
         self,
         id_venta: int,

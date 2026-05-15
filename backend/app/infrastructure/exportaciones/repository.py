@@ -44,50 +44,469 @@ def _excel_payload(buffer: io.BytesIO, filename: str) -> FilePayload:
     buffer.seek(0)
     return FilePayload(content=buffer.read(), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=filename)
 
-def exportar_reporte_pdf(tipo: str='resumen', genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def exportar_reporte_pdf(  # noqa: C901
+    tipo: str = 'resumen',
+    genero: Optional[str] = None,
+    estado: Optional[str] = None,
+    tipo_espina: Optional[int] = None,
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    mes: Optional[int] = None,
+    anio: Optional[int] = None,
+    current_user: dict = None,
+):
     """Generar reporte estadístico en PDF (RF-ER-05)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
-    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch
+    from reportlab.platypus import (
+        SimpleDocTemplate, Table, TableStyle, Paragraph,
+        Spacer, Image as RLImage, HRFlowable, KeepTogether,
+    )
+    from app.infrastructure.reportes.repository import (
+        reporte_resumen, reporte_por_genero, reporte_por_etapa_vida,
+        reporte_por_estado, reporte_por_tipo_espina, reporte_servicios_por_tipo,
+        reporte_estudios_por_tipo, reporte_pagos_exentos, reporte_por_ciudad,
+        reporte_consolidado_mensual, indicadores_desempeno,
+    )
+
+    NAVY     = colors.HexColor('#1e3a5f')
+    NAVY_LT  = colors.HexColor('#f0f4f8')
+    BORDER   = colors.HexColor('#e2e8f0')
+    GRAY     = colors.HexColor('#64748b')
+    ROW_ALT  = colors.HexColor('#f8fafc')
+    WHITE    = colors.white
+
+    PAGE_W, PAGE_H = letter
+    L_MARGIN = R_MARGIN = 0.75 * inch
+    COL = PAGE_W - L_MARGIN - R_MARGIN   # ~7 inches usable
+
     try:
-        from app.infrastructure.reportes.repository import reporte_resumen, reporte_por_genero, reporte_por_etapa_vida, reporte_por_estado, reporte_por_tipo_espina
-        kwargs = {'genero': genero, 'estado': estado, 'tipo_espina': tipo_espina, 'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, 'current_user': current_user}
-        buf = io.BytesIO()
-        doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=40, bottomMargin=40)
         styles = getSampleStyleSheet()
-        elements = []
+        h1 = ParagraphStyle('H1', parent=styles['Title'], fontSize=16, leading=20, spaceAfter=2)
+        h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=11, textColor=NAVY,
+                             spaceBefore=14, spaceAfter=4)
+        note = ParagraphStyle('Note', parent=styles['Normal'], fontSize=8, textColor=GRAY)
+
+        def _pct(v, total):
+            return f'{v / total * 100:.1f}%' if total else '—'
+
+        def _money(v):
+            return f'${float(v or 0):,.2f}'
+
+        def _data_table(rows, widths, has_totals=False):
+            t = Table(rows, colWidths=widths)
+            cmds = [
+                ('BACKGROUND',   (0, 0),  (-1, 0),  NAVY),
+                ('TEXTCOLOR',    (0, 0),  (-1, 0),  WHITE),
+                ('FONTNAME',     (0, 0),  (-1, 0),  'Helvetica-Bold'),
+                ('FONTSIZE',     (0, 0),  (-1, -1), 9),
+                ('GRID',         (0, 0),  (-1, -1), 0.4, BORDER),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -2 if has_totals else -1), [WHITE, ROW_ALT]),
+                ('TOPPADDING',   (0, 0),  (-1, -1), 5),
+                ('BOTTOMPADDING',(0, 0),  (-1, -1), 5),
+                ('LEFTPADDING',  (0, 0),  (-1, -1), 7),
+                ('RIGHTPADDING', (0, 0),  (-1, -1), 7),
+            ]
+            if has_totals:
+                cmds += [
+                    ('BACKGROUND', (0, -1), (-1, -1), NAVY_LT),
+                    ('FONTNAME',   (0, -1), (-1, -1), 'Helvetica-Bold'),
+                    ('LINEABOVE',  (0, -1), (-1, -1), 1, NAVY),
+                ]
+            t.setStyle(TableStyle(cmds))
+            return t
+
+        def _kpi_table(headers, values):
+            n = len(headers)
+            w = COL / n
+            t = Table([headers, values], colWidths=[w] * n)
+            t.setStyle(TableStyle([
+                ('BACKGROUND',    (0, 0), (-1, 0),  NAVY),
+                ('TEXTCOLOR',     (0, 0), (-1, 0),  WHITE),
+                ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
+                ('BACKGROUND',    (0, 1), (-1, 1),  NAVY_LT),
+                ('FONTNAME',      (0, 1), (-1, 1),  'Helvetica-Bold'),
+                ('FONTSIZE',      (0, 0), (-1, -1), 9),
+                ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
+                ('GRID',          (0, 0), (-1, -1), 0.5, BORDER),
+                ('TOPPADDING',    (0, 0), (-1, -1), 7),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            return t
+
+        def _page_footer(cv, doc):
+            cv.saveState()
+            cv.setFont('Helvetica', 7)
+            cv.setFillColor(GRAY)
+            cv.drawString(L_MARGIN, 0.4 * inch,
+                          'Confidencial — Asociación de Espina Bífida de Nuevo León A.B.P.')
+            cv.drawRightString(PAGE_W - R_MARGIN, 0.4 * inch, f'Pág. {doc.page}')
+            cv.restoreStore()
+
+        def _page_footer(cv, doc):
+            cv.saveState()
+            cv.setFont('Helvetica', 7)
+            cv.setFillColor(GRAY)
+            cv.drawString(L_MARGIN, 0.4 * inch,
+                          'Confidencial — Asociación de Espina Bífida de Nuevo León A.B.P.')
+            cv.drawRightString(PAGE_W - R_MARGIN, 0.4 * inch, f'Pág. {doc.page}')
+            cv.restoreState()
+
+        buf = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buf, pagesize=letter,
+            topMargin=0.6 * inch, bottomMargin=0.75 * inch,
+            leftMargin=L_MARGIN, rightMargin=R_MARGIN,
+        )
+        els = []
+
+        # ── Shared header ──────────────────────────────────────
         if LOGO_PATH.exists():
-            logo = RLImage(str(LOGO_PATH), width=2.5*inch, height=1.05*inch)
+            logo = RLImage(str(LOGO_PATH), width=2.2 * inch, height=0.93 * inch)
             logo.hAlign = 'CENTER'
-            elements.append(logo)
-            elements.append(Spacer(1, 6))
-        elements.append(Paragraph('Asociación de Espina Bífida — Reporte', styles['Title']))
-        elements.append(Paragraph(f'Tipo: {tipo} | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}', styles['Normal']))
-        elements.append(Spacer(1, 20))
+            els.append(logo)
+            els.append(Spacer(1, 4))
+
+        tipo_labels = {
+            'resumen':             'Reporte de Resumen de Período',
+            'por-genero':          'Distribución por Género',
+            'por-etapa-vida':      'Distribución por Etapa de Vida',
+            'por-estado':          'Distribución por Estado de Residencia',
+            'por-tipo-espina':     'Distribución por Tipo de Espina Bífida',
+            'consolidado-mensual': 'Reporte Consolidado Mensual',
+            'indicadores':         'Indicadores de Desempeño',
+        }
+        els.append(Paragraph('Asociación de Espina Bífida', h1))
+        els.append(Paragraph(tipo_labels.get(tipo, f'Reporte: {tipo}'), styles['Heading2']))
+        periodo_str = ''
+        if fecha_inicio or fecha_fin:
+            periodo_str = f'Período: {fecha_inicio or "—"} al {fecha_fin or "—"}   |   '
+        elif mes and anio:
+            meses_n = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+            periodo_str = f'Período: {meses_n[mes]} {anio}   |   '
+        els.append(Paragraph(
+            f'{periodo_str}Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}', note))
+        els.append(HRFlowable(width='100%', thickness=1, color=NAVY, spaceAfter=10, spaceBefore=6))
+
+        kwargs = dict(genero=genero, estado=estado, tipo_espina=tipo_espina,
+                      fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+
+        # ═══════════════════════════════════════════════════════
+        # RESUMEN DE PERÍODO — multi-sección completo
+        # ═══════════════════════════════════════════════════════
         if tipo == 'resumen':
-            data = reporte_resumen(**kwargs)
-            table_data = [['Métrica', 'Valor'], ['Total Pacientes', str(data['total_pacientes'])], ['Activos', str(data['activos'])], ['Inactivos', str(data['inactivos'])], ['Edad Promedio', str(data['edad_promedio'])], ['Estados Representados', str(data['estados_representados'])]]
-            for gen, cnt in data.get('por_genero', {}).items():
-                table_data.append([f'Género: {gen}', str(cnt)])
-            for tip, cnt in data.get('por_tipo_espina', {}).items():
-                table_data.append([f'Tipo Espina: {tip}', str(cnt)])
+            d_res   = reporte_resumen(**kwargs)
+            d_gen   = reporte_por_genero(**kwargs)
+            d_etapa = reporte_por_etapa_vida(**kwargs)
+            d_esp   = reporte_por_tipo_espina(**kwargs)
+            d_est_r = reporte_por_estado(**kwargs)
+            d_svc   = reporte_servicios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+            d_estu  = reporte_estudios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+            d_pag   = reporte_pagos_exentos(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+            d_ciu   = reporte_por_ciudad(current_user=current_user)
+
+            total_p = d_res.get('total_pacientes', 0)
+            activos = d_res.get('activos', 0)
+            hombres = d_res.get('por_genero', {}).get('Hombre', 0)
+            mujeres = d_res.get('por_genero', {}).get('Mujer', 0)
+            edad_p  = d_res.get('edad_promedio', 0)
+            estados_r = d_res.get('estados_representados', 0)
+
+            # KPI
+            els.append(Paragraph('Resumen Ejecutivo', h2))
+            els.append(_kpi_table(
+                ['Total Pacientes', 'Activos', 'Hombres', 'Mujeres', 'Edad Promedio', 'Estados'],
+                [str(total_p), str(activos), str(hombres), str(mujeres),
+                 f'{edad_p:.1f} años', str(estados_r)],
+            ))
+            els.append(Spacer(1, 10))
+
+            # Género
+            if d_gen.get('labels'):
+                tot = d_gen.get('total', 0)
+                rows = [['Género', 'Pacientes', '%']]
+                for l, v in zip(d_gen['labels'], d_gen['values']):
+                    rows.append([l, str(v), _pct(v, tot)])
+                rows.append(['Total', str(tot), '100%'])
+                els.append(KeepTogether([
+                    Paragraph('Distribución por Género', h2),
+                    _data_table(rows, [COL * .55, COL * .22, COL * .23], has_totals=True),
+                ]))
+                els.append(Spacer(1, 8))
+
+            # Etapa de vida
+            if d_etapa.get('labels'):
+                tot = d_etapa.get('total', 0)
+                rows = [['Etapa de Vida', 'Pacientes', '%']]
+                for l, v in zip(d_etapa['labels'], d_etapa['values']):
+                    rows.append([l, str(v), _pct(v, tot)])
+                rows.append(['Total', str(tot), '100%'])
+                els.append(KeepTogether([
+                    Paragraph('Distribución por Etapa de Vida', h2),
+                    _data_table(rows, [COL * .60, COL * .20, COL * .20], has_totals=True),
+                ]))
+                els.append(Spacer(1, 8))
+
+            # Tipo de espina
+            if d_esp.get('labels'):
+                tot = d_esp.get('total', 0)
+                rows = [['Tipo de Espina Bífida', 'Pacientes', '%']]
+                for l, v in zip(d_esp['labels'], d_esp['values']):
+                    rows.append([l, str(v), _pct(v, tot)])
+                rows.append(['Total', str(tot), '100%'])
+                els.append(KeepTogether([
+                    Paragraph('Distribución por Tipo de Espina Bífida', h2),
+                    _data_table(rows, [COL * .60, COL * .20, COL * .20], has_totals=True),
+                ]))
+                els.append(Spacer(1, 8))
+
+            # Por estado
+            if d_est_r.get('labels'):
+                tot = d_est_r.get('total', 0)
+                labels_e = d_est_r['labels'][:20]
+                values_e = d_est_r['values'][:20]
+                rows = [['Estado de Residencia', 'Pacientes', '%']]
+                for l, v in zip(labels_e, values_e):
+                    rows.append([l, str(v), _pct(v, tot)])
+                if len(d_est_r['labels']) > 20:
+                    resto = tot - sum(values_e)
+                    rows.append([f'Otros ({len(d_est_r["labels"]) - 20} estados)', str(resto), _pct(resto, tot)])
+                rows.append(['Total', str(tot), '100%'])
+                els.append(KeepTogether([
+                    Paragraph('Distribución por Estado de Residencia', h2),
+                    _data_table(rows, [COL * .58, COL * .21, COL * .21], has_totals=True),
+                ]))
+                els.append(Spacer(1, 8))
+
+            # Servicios
+            if d_svc.get('labels'):
+                montos = d_svc.get('montos', [0] * len(d_svc['labels']))
+                rows = [['Servicio', 'Cantidad', 'Monto']]
+                for l, v, m in zip(d_svc['labels'], d_svc['values'], montos):
+                    rows.append([l, str(v), _money(m)])
+                rows.append(['Total', str(d_svc.get('total', 0)), _money(sum(montos))])
+                els.append(KeepTogether([
+                    Paragraph('Servicios Brindados en el Período', h2),
+                    _data_table(rows, [COL * .55, COL * .18, COL * .27], has_totals=True),
+                ]))
+                els.append(Spacer(1, 8))
+
+            # Estudios
+            if d_estu.get('labels'):
+                rows = [['Estudio / Servicio', 'Cantidad']]
+                for l, v in zip(d_estu['labels'], d_estu['values']):
+                    rows.append([l, str(v)])
+                rows.append(['Total', str(d_estu.get('total', 0))])
+                els.append(KeepTogether([
+                    Paragraph('Estudios Realizados en el Período', h2),
+                    _data_table(rows, [COL * .75, COL * .25], has_totals=True),
+                ]))
+                els.append(Spacer(1, 8))
+
+            # Pagos exentos
+            els.append(Paragraph('Pagos Exentos vs Cuotas de Recuperación', h2))
+            pg_rows = [
+                ['Concepto', 'Cantidad', 'Monto Total'],
+                ['Pagos Exentos',
+                 str(d_pag.get('total_exentos', 0)),
+                 _money(d_pag.get('monto_exentos', 0))],
+                ['Cuotas de Recuperación',
+                 str(d_pag.get('total_cuotas', 0)),
+                 _money(d_pag.get('monto_cuotas', 0))],
+                ['Total General',
+                 str(d_pag.get('total_exentos', 0) + d_pag.get('total_cuotas', 0)),
+                 _money(d_pag.get('monto_total', 0))],
+            ]
+            els.append(_data_table(pg_rows, [COL * .55, COL * .18, COL * .27], has_totals=True))
+            els.append(Spacer(1, 8))
+
+            # Ciudades
+            if d_ciu.get('labels'):
+                top = 25
+                ci_tot = d_ciu.get('total', 0)
+                rows = [['Ciudad', 'Estado', 'Pacientes', '%']]
+                for l, e, v in zip(
+                    d_ciu['labels'][:top],
+                    d_ciu.get('estados', [''] * top)[:top],
+                    d_ciu['values'][:top],
+                ):
+                    rows.append([l, e, str(v), _pct(v, ci_tot)])
+                if len(d_ciu['labels']) > top:
+                    resto = ci_tot - sum(d_ciu['values'][:top])
+                    rows.append([f'Otras ciudades', '', str(resto), _pct(resto, ci_tot)])
+                rows.append(['Total', '', str(ci_tot), '100%'])
+                els.append(KeepTogether([
+                    Paragraph(f'Distribución por Ciudad de Residencia (Top {top})', h2),
+                    _data_table(rows, [COL * .34, COL * .29, COL * .19, COL * .18], has_totals=True),
+                ]))
+
+        # ═══════════════════════════════════════════════════════
+        # CONSOLIDADO MENSUAL
+        # ═══════════════════════════════════════════════════════
+        elif tipo == 'consolidado-mensual':
+            from datetime import date as _date
+            _mes  = mes  or _date.today().month
+            _anio = anio or _date.today().year
+            d = reporte_consolidado_mensual(mes=_mes, anio=_anio, current_user=current_user)
+            meses_n = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+            els.append(Paragraph(f'Período: {meses_n[_mes]} {_anio}', h2))
+            els.append(_kpi_table(
+                ['Pacientes Atendidos', 'Total Servicios', 'Monto Servicios', 'Total Ventas', 'Monto Ventas'],
+                [str(d.get('pacientes_atendidos', 0)),
+                 str(d.get('total_servicios', 0)),
+                 _money(d.get('monto_servicios', 0)),
+                 str(d.get('total_ventas', 0)),
+                 _money(d.get('monto_ventas', 0))],
+            ))
+            els.append(Spacer(1, 12))
+
+            citas_est = d.get('citas_por_estatus', {})
+            if citas_est:
+                rows = [['Estatus', 'Cantidad']]
+                tot_c = 0
+                for k, v in citas_est.items():
+                    rows.append([k, str(v)])
+                    tot_c += v
+                rows.append(['Total', str(tot_c)])
+                els.append(KeepTogether([
+                    Paragraph('Citas por Estatus', h2),
+                    _data_table(rows, [COL * .65, COL * .35], has_totals=True),
+                ]))
+                els.append(Spacer(1, 8))
+
+            pg = d.get('por_genero', {})
+            if pg:
+                rows = [['Género', 'Pacientes Atendidos']]
+                tot_g = 0
+                for k, v in pg.items():
+                    rows.append([k, str(v)])
+                    tot_g += v
+                rows.append(['Total', str(tot_g)])
+                els.append(KeepTogether([
+                    Paragraph('Pacientes Atendidos por Género', h2),
+                    _data_table(rows, [COL * .65, COL * .35], has_totals=True),
+                ]))
+
+        # ═══════════════════════════════════════════════════════
+        # INDICADORES DE DESEMPEÑO
+        # ═══════════════════════════════════════════════════════
+        elif tipo == 'indicadores':
+            d = indicadores_desempeno(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+
+            els.append(_kpi_table(
+                ['Beneficiarios Activos', 'Nuevos en Período', 'Hombres', 'Mujeres'],
+                [str(d.get('beneficiarios_activos', 0)),
+                 str(d.get('nuevos_en_periodo', 0)),
+                 str(d.get('hombres', 0)),
+                 str(d.get('mujeres', 0))],
+            ))
+            els.append(Spacer(1, 10))
+
+            municipios = d.get('municipios', [])
+            if municipios:
+                mun_tot = sum(m.get('value', 0) for m in municipios)
+                rows = [['Municipio / Lugar', 'Beneficiarios', '%']]
+                for m in municipios:
+                    rows.append([m.get('label', ''), str(m.get('value', 0)), _pct(m.get('value', 0), mun_tot)])
+                rows.append(['Total', str(mun_tot), '100%'])
+                els.append(KeepTogether([
+                    Paragraph('Beneficiarios por Municipio (Nuevo León)', h2),
+                    _data_table(rows, [COL * .58, COL * .22, COL * .20], has_totals=True),
+                ]))
+                els.append(Spacer(1, 10))
+
+            tablas = d.get('tablas', {})
+            tabla_cfgs = [
+                ('por_curp',           'Sujetos por CURP',                    ['CURP N.L.',          'CURP Foráneo'         ]),
+                ('curp_nl_genero',     'CURP N.L. por Género',                ['Hombre',             'Mujer'                ]),
+                ('curp_foraneo_genero','CURP Foráneo por Género',             ['Hombre',             'Mujer'                ]),
+                ('residencia',         'Lugar de Residencia por Etapa',        ['Viven en N.L.',      'Viven en otros estados']),
+                ('nacimiento',         'País de Nacimiento por Etapa',         ['Mexicanos',          'Nac. extranjera'      ]),
+                ('etapa_vida_genero',  'Etapa de Vida por Género',             ['Hombre',             'Mujer'                ]),
+            ]
+            for key, titulo_t, cols in tabla_cfgs:
+                t_rows = tablas.get(key, [])
+                if not t_rows:
+                    continue
+                rows = [['Etapa de Vida', cols[0], cols[1], 'Total']]
+                for r in t_rows:
+                    rows.append([
+                        r.get('etapa', ''),
+                        str(r.get(cols[0], 0) or 0),
+                        str(r.get(cols[1], 0) or 0),
+                        str(r.get('total', 0) or 0),
+                    ])
+                els.append(KeepTogether([
+                    Paragraph(titulo_t, h2),
+                    _data_table(rows, [COL * .44, COL * .18, COL * .20, COL * .18], has_totals=True),
+                ]))
+                els.append(Spacer(1, 8))
+
+        # ═══════════════════════════════════════════════════════
+        # REPORTES SIMPLES: por-genero, por-etapa-vida, etc.
+        # ═══════════════════════════════════════════════════════
         else:
-            report_funcs = {'por-genero': reporte_por_genero, 'por-etapa-vida': reporte_por_etapa_vida, 'por-estado': reporte_por_estado, 'por-tipo-espina': reporte_por_tipo_espina}
+            report_funcs = {
+                'por-genero':      reporte_por_genero,
+                'por-etapa-vida':  reporte_por_etapa_vida,
+                'por-estado':      reporte_por_estado,
+                'por-tipo-espina': reporte_por_tipo_espina,
+            }
             func = report_funcs.get(tipo)
             if not func:
                 raise ValidationError(f'Tipo de reporte no válido: {tipo}')
-            data = func(**kwargs)
-            table_data = [['Categoría', 'Cantidad']]
-            for label, value in zip(data['labels'], data['values']):
-                table_data.append([str(label), str(value)])
-            table_data.append(['Total', str(data['total'])])
-        t = Table(table_data, colWidths=[300, 150])
-        t.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a5f')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('FONTSIZE', (0, 0), (-1, -1), 10), ('GRID', (0, 0), (-1, -1), 0.5, colors.grey), ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f4f8')]), ('ALIGN', (1, 0), (1, -1), 'CENTER'), ('TOPPADDING', (0, 0), (-1, -1), 6), ('BOTTOMPADDING', (0, 0), (-1, -1), 6)]))
-        elements.append(t)
-        doc.build(elements)
-        return _pdf_payload(buf, f'reporte_{tipo}_{datetime.now().strftime('%Y%m%d')}.pdf')
+            data  = func(**kwargs)
+            d_res = reporte_resumen(**kwargs)
+
+            # Context strip
+            ctx = Table(
+                [['Pacientes Activos', 'Período', 'Generado'],
+                 [str(d_res.get('activos', 0)),
+                  f'{fecha_inicio or "—"} al {fecha_fin or "—"}',
+                  datetime.now().strftime('%d/%m/%Y')]],
+                colWidths=[COL / 3] * 3,
+            )
+            ctx.setStyle(TableStyle([
+                ('BACKGROUND',    (0, 0), (-1, 0), NAVY),
+                ('TEXTCOLOR',     (0, 0), (-1, 0), WHITE),
+                ('FONTNAME',      (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('BACKGROUND',    (0, 1), (-1, 1), NAVY_LT),
+                ('FONTSIZE',      (0, 0), (-1, -1), 9),
+                ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
+                ('GRID',          (0, 0), (-1, -1), 0.5, BORDER),
+                ('TOPPADDING',    (0, 0), (-1, -1), 7),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+            ]))
+            els.append(ctx)
+            els.append(Spacer(1, 12))
+
+            col_names = {
+                'por-genero': 'Género', 'por-etapa-vida': 'Etapa de Vida',
+                'por-estado': 'Estado', 'por-tipo-espina': 'Tipo de Espina',
+            }
+            tot = data.get('total', 0)
+            rows = [[col_names.get(tipo, 'Categoría'), 'Cantidad', '%']]
+            for l, v in zip(data['labels'], data['values']):
+                rows.append([l, str(v), _pct(v, tot)])
+            rows.append(['Total', str(tot), '100%'])
+            els.append(_data_table(rows, [COL * .60, COL * .20, COL * .20], has_totals=True))
+
+        doc.build(els, onFirstPage=_page_footer, onLaterPages=_page_footer)
+
+        ts = datetime.now().strftime('%Y%m%d')
+        if tipo == 'consolidado-mensual':
+            fname = f'consolidado_{mes or ""}_{anio or ""}_{ts}.pdf'
+        elif tipo == 'indicadores':
+            fname = f'indicadores_{fecha_inicio or ts}_{fecha_fin or ts}.pdf'
+        else:
+            fname = f'reporte_{tipo}_{fecha_inicio or ts}.pdf'
+        return _pdf_payload(buf, fname)
+
     except (NotFoundError, ValidationError, InternalError):
         raise
     except Exception:
@@ -351,7 +770,14 @@ def exportar_comprobante_cita(id_cita: int, current_user: dict=None):
                 raise NotFoundError('Cita no encontrada')
             cur.execute('SELECT s.NOMBRE, d.CANTIDAD, d.MONTO_PAGADO, d.CANCELADO\n                   FROM DETALLE_CITA_SERVICIO d\n                   JOIN SERVICIO s ON s.ID_SERVICIO = d.ID_SERVICIO\n                   WHERE d.ID_CITA = :id_cita', {'id_cita': id_cita})
             servicios = rows_to_dicts(cur)
-            cur.execute("SELECT d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS nombre_doctor,\n                          d.ESPECIALIDAD, cd.ROL_DOCTOR\n                   FROM CITA_DOCTOR cd\n                   JOIN DOCTOR d ON d.ID_DOCTOR = cd.ID_DOCTOR\n                   WHERE cd.ID_CITA = :id_cita", {'id_cita': id_cita})
+            cur.execute(
+                'SELECT DISTINCT dr.NOMBRE || \' \' || dr.APELLIDO_PATERNO AS nombre_doctor,'
+                ' dr.ESPECIALIDAD'
+                ' FROM DETALLE_CITA_SERVICIO d'
+                ' JOIN DOCTOR dr ON dr.ID_DOCTOR = d.ID_DOCTOR'
+                ' WHERE d.ID_CITA = :id_cita AND d.ID_DOCTOR IS NOT NULL',
+                {'id_cita': id_cita}
+            )
             doctores = rows_to_dicts(cur)
         buf = io.BytesIO()
         doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=40, bottomMargin=40)
@@ -644,8 +1070,8 @@ def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None
 
 
 class OracleExportacionesRepository:
-    def exportar_reporte_pdf(self, tipo='resumen', genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
-        return exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
+    def exportar_reporte_pdf(self, tipo='resumen', genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, mes=None, anio=None, current_user=None):
+        return exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user)
 
     def exportar_beneficiario_pdf(self, folio, current_user=None):
         return exportar_beneficiario_pdf(folio, current_user)

@@ -291,6 +291,26 @@ export class ReportesComponent implements OnInit {
     return this.consol4Meses.find(m => m.value === mes)?.label ?? String(mes);
   }
 
+  exportarPDFIndicadores(): void {
+    this.api.exportarReportePdf('indicadores', {
+      fecha_inicio: this.indicFechaInicio,
+      fecha_fin: this.indicFechaFin,
+    }).subscribe({
+      next: (blob) => this.descargar(blob, `indicadores_${this.indicFechaInicio}_${this.indicFechaFin}.pdf`),
+      error: () => alert('Error al generar PDF de indicadores'),
+    });
+  }
+
+  exportarPDFConsolidado(): void {
+    this.api.exportarReportePdf('consolidado-mensual', {
+      mes: this.consol4Mes,
+      anio: this.consol4Anio,
+    }).subscribe({
+      next: (blob) => this.descargar(blob, `consolidado_${this.consol4NombreMes(this.consol4Mes)}_${this.consol4Anio}.pdf`),
+      error: () => alert('Error al generar PDF del consolidado'),
+    });
+  }
+
   exportarConsolidadoExcel(): void {
     this.api.exportarReporteExcel('consolidado-mensual', { mes: this.consol4Mes, anio: this.consol4Anio })
       .subscribe({

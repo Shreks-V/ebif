@@ -383,6 +383,33 @@ def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_use
     return obtener_venta(id_venta, current_user)
 
 
+def exentar_venta(id_venta: int, nota: Optional[str]=None, current_user: dict=None):
+    """Perdonar el saldo pendiente de una venta (marcar como exento de pago)."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            'SELECT CANCELADA, SALDO_PENDIENTE, EXENTO_PAGO FROM VENTA WHERE ID_VENTA = :id',
+            {'id': id_venta},
+        )
+        row = row_to_dict(cur)
+        if row is None:
+            raise NotFoundError('Venta no encontrada')
+        if row['cancelada'] == 'S':
+            raise ValidationError('La venta está cancelada y no puede modificarse')
+        if row['exento_pago'] == 'S':
+            raise ValidationError('La venta ya está marcada como exenta de pago')
+        if (row['saldo_pendiente'] or 0) <= 0:
+            raise ValidationError('Esta venta no tiene saldo pendiente')
+        cur.execute(
+            "UPDATE VENTA SET EXENTO_PAGO='S', SALDO_PENDIENTE=0, MONTO_PAGADO=MONTO_TOTAL WHERE ID_VENTA=:id",
+            {'id': id_venta},
+        )
+        id_usuario = current_user.get('id_usuario', 1) if current_user else 1
+        log_insert(conn, 'VENTA', id_venta, id_usuario, nota or 'Saldo perdonado')
+        conn.commit()
+    return obtener_venta(id_venta, current_user)
+
+
 def cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: dict=None):
     """Cancelar una venta."""
     with get_db() as conn:
@@ -423,6 +450,9 @@ class OracleRecibosRepository:
 
     def registrar_pago(self, id_venta, id_metodo_pago, monto, current_user=None):
         return registrar_pago(id_venta, id_metodo_pago, monto, current_user)
+
+    def exentar_venta(self, id_venta, nota=None, current_user=None):
+        return exentar_venta(id_venta, nota, current_user)
 
     def listar_items_venta(self, id_venta, current_user=None):
         return listar_items_venta(id_venta, current_user)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
-from app.application.recibos.dtos import VentaCreate, PagoParcialCreate
+from app.application.recibos.dtos import VentaCreate, PagoParcialCreate, ExentarVentaBody
 from app.application.recibos import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()
@@ -40,6 +40,10 @@ def cancelar_venta(id_venta: int, motivo: Optional[str]=Query(None), current_use
 @router.post('/{id_venta}/pagos', status_code=201)
 def registrar_pago(id_venta: int, data: PagoParcialCreate, current_user: dict=Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))):
     return service.registrar_pago(id_venta, data.id_metodo_pago, data.monto, current_user)
+
+@router.put('/{id_venta}/exentar')
+def exentar_venta(id_venta: int, body: ExentarVentaBody, current_user: dict=Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))):
+    return service.exentar_venta(id_venta, body.nota, current_user)
 
 @router.get('/{id_venta}/items')
 def listar_items_venta(id_venta: int, current_user: dict=Depends(get_current_user)):

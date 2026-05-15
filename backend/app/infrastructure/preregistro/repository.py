@@ -184,6 +184,31 @@ def _fetch_preregistro(id_paciente: int) -> dict:
         raise NotFoundError('Pre-registro no encontrado')
     return _serialize(decrypt_row(row, PACIENTE_ENCRYPTED_FIELDS))
 
+def check_curp_disponible(curp: str) -> dict:
+    """Verificar si un CURP ya está registrado. Endpoint público sin auth."""
+    from app.infrastructure.privacy.crypto import decrypt
+    normalized = (curp or '').strip().upper()
+    if not normalized:
+        return {'disponible': True}
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            # CURP is stored with AES-GCM (non-deterministic) → must decrypt each row to compare
+            cursor.execute('SELECT CURP FROM PACIENTE WHERE CURP IS NOT NULL')
+            for (raw,) in cursor:
+                try:
+                    decrypted = decrypt(raw)
+                    if decrypted and decrypted.strip().upper() == normalized:
+                        return {'disponible': False}
+                except Exception:
+                    continue
+        return {'disponible': True}
+    except Exception:
+        logger.exception('Error al verificar disponibilidad de CURP')
+        # On error, allow the form to proceed; server-side insert will still enforce uniqueness
+        return {'disponible': True}
+
+
 def listar_tipos_espina_publico():
     """Listar tipos de espina bífida (endpoint público para pre-registro)."""
     with get_db() as conn:

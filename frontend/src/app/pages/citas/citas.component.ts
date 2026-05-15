@@ -153,6 +153,8 @@ export class CitasComponent implements OnInit, OnDestroy {
   })();
   guardandoSlot = false;
   guardandoMedico = false;
+  nuevoMedicoError = '';
+  editMedicoError = '';
 
   // Disponibilidad especial
   disponibilidadEspecial: any[] = [];
@@ -572,6 +574,7 @@ export class CitasComponent implements OnInit, OnDestroy {
   abrirNuevoMedico(): void {
     this.nuevoMedico = { nombre: '', apellido_paterno: '', apellido_materno: '', especialidad: '', telefono: '', correo: '', activo: 'S' };
     this.medicoServiciosSeleccionados = [];
+    this.nuevoMedicoError = '';
     this.showNuevoMedicoModal = true;
   }
 
@@ -603,11 +606,13 @@ export class CitasComponent implements OnInit, OnDestroy {
       next: () => {
         this.showNuevoMedicoModal = false;
         this.guardandoMedico = false;
+        this.nuevoMedicoError = '';
         this.cargarDoctores();
       },
       error: (err) => {
         console.error('Error al crear médico:', err);
         this.guardandoMedico = false;
+        this.nuevoMedicoError = err?.error?.detail || 'Error al guardar el médico. Intenta de nuevo.';
       },
     });
   }
@@ -743,6 +748,7 @@ export class CitasComponent implements OnInit, OnDestroy {
       activo: medico.activo,
     };
     this.editMedicoServiciosSeleccionados = medico.servicios.map((s: any) => s.idServicio);
+    this.editMedicoError = '';
     this.showEditMedicoModal = true;
   }
 
@@ -772,11 +778,13 @@ export class CitasComponent implements OnInit, OnDestroy {
       next: () => {
         this.showEditMedicoModal = false;
         this.guardandoEdicionMedico = false;
+        this.editMedicoError = '';
         this.cargarDoctores();
       },
       error: (err) => {
         console.error('Error al actualizar médico:', err);
         this.guardandoEdicionMedico = false;
+        this.editMedicoError = err?.error?.detail || 'Error al actualizar el médico.';
       },
     });
   }
