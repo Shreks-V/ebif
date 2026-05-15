@@ -73,8 +73,17 @@ interface TableSortState {
   templateUrl: './almacen.component.html',
   styles: [`
     @media print {
-      app-navbar, app-footer, main, .fixed { display: none !important; }
-      #print-comodato { display: block !important; }
+      @page { margin: 14mm; }
+
+      :host > div:first-child,
+      .fixed {
+        display: none !important;
+      }
+
+      #print-comodato {
+        display: block !important;
+        padding: 0 !important;
+      }
     }
   `],
 })
