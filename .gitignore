@@ -38,6 +38,7 @@ env/
 .venv/
 .env/
 ENV/
+.venv-ci/
 
 # Testing y dependencias
 .pytest_cache/

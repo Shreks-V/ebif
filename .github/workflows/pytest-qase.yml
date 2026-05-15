@@ -1,0 +1,27 @@
+name: pytest to Qase
+
+# Publica resultados a Qase TestOps. Requiere secretos del repositorio.
+on:
+  workflow_dispatch:
+
+jobs:
+  tests-with-qase:
+    runs-on: ubuntu-latest
+    if: secrets.QASE_TESTOPS_API_TOKEN != ''
+    env:
+      QASE_MODE: testops
+      QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dev dependencies
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Run pytest (report to Qase)
+        run: pytest -q
