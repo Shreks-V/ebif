@@ -665,12 +665,23 @@ export class RecibosComponent implements OnInit {
       ${r.cancelada === 'S' ? `<div class="cancelada"><strong>CANCELADA</strong> — ${r.motivoCancelacion ?? ''}</div>` : ''}
     </body></html>`;
 
-    const win = window.open('', '_blank', 'width=820,height=700');
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const win = window.open(blobUrl, '_blank');
     if (win) {
-      win.document.write(html);
-      win.document.close();
       win.focus();
-      setTimeout(() => win.print(), 600);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } else {
+      // Fallback cuando el navegador bloquea la pestaña: descarga como HTML imprimible
+      URL.revokeObjectURL(blobUrl);
+      const fallback = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(fallback);
+      a.download = `comprobante_${r.folioVenta}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 150);
     }
   }
 

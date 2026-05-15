@@ -40,6 +40,39 @@ export class CitasComponent implements OnInit, OnDestroy {
   citasSort: TableSortState = { key: 'fechaHora', direction: 'asc' };
   medicosSort: TableSortState = { key: 'nombre', direction: 'asc' };
 
+  // Paginación citas
+  readonly citasPageSize = 20;
+  citasPaginaActual = 1;
+
+  get citasTotalPaginas(): number {
+    return Math.max(1, Math.ceil(this.citasFiltradas.length / this.citasPageSize));
+  }
+
+  get citasPaginadas(): any[] {
+    const start = (this.citasPaginaActual - 1) * this.citasPageSize;
+    return this.citasFiltradas.slice(start, start + this.citasPageSize);
+  }
+
+  get citasPaginasVisibles(): (number | '...')[] {
+    const total = this.citasTotalPaginas;
+    const current = this.citasPaginaActual;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | '...')[] = [1];
+    if (current > 3) pages.push('...');
+    for (let p = Math.max(2, current - 1); p <= Math.min(total - 1, current + 1); p++) pages.push(p);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+  }
+
+  get citasPaginaFin(): number {
+    return Math.min(this.citasPaginaActual * this.citasPageSize, this.citasFiltradas.length);
+  }
+
+  irAPagina(pagina: number): void {
+    this.citasPaginaActual = Math.max(1, Math.min(pagina, this.citasTotalPaginas));
+  }
+
   // Modal visibility
   showNuevaCitaModal = false;
   showNuevoMedicoModal = false;
@@ -312,6 +345,7 @@ export class CitasComponent implements OnInit, OnDestroy {
       );
     }
 
+    this.citasPaginaActual = 1;
     this.citasFiltradas = this.sortRows(resultado, this.citasSort, (cita, key) => {
       switch (key) {
         case 'fechaHora':
@@ -656,18 +690,23 @@ export class CitasComponent implements OnInit, OnDestroy {
 
   descargarComprobante(cita: any): void {
     this.api.exportarComprobanteCitaPdf(cita.idCita).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `comprobante_cita_${cita.idCita}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(url), 150);
-      },
+      next: (blob) => this.abrirPdfEnNuevaTab(blob, `comprobante_cita_${cita.idCita}.pdf`),
       error: () => alert('Error al generar comprobante'),
     });
+  }
+
+  private abrirPdfEnNuevaTab(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    // Abre el PDF en el visor del navegador (el usuario puede imprimir desde ahí con Ctrl+P)
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Si el navegador descarga en vez de abrir, también ofrecer descarga nominal
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
   confirmarEliminarCita(cita: any): void {

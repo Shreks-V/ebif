@@ -35,14 +35,10 @@ const ROLE_LABELS: Record<string, string> = {
         <div class="flex items-center justify-between h-16">
     
           <!-- Left: Logo -->
-          <a routerLink="/dashboard" class="flex items-center gap-3 text-white no-underline flex-shrink-0">
-            <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-[#0052cc]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
-              </svg>
+          <a routerLink="/dashboard" class="flex items-center no-underline flex-shrink-0">
+            <div class="bg-white rounded-xl px-3 py-1.5 shadow-lg border border-white/20 flex items-center">
+              <img src="/logo.png" alt="Asociación de Espina Bífida de Nuevo León" class="h-9 w-auto">
             </div>
-            <span class="font-bold text-white text-lg hidden sm:block">Espina Bífida</span>
           </a>
     
           <!-- Center: Navigation (desktop) -->

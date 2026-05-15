@@ -22,6 +22,7 @@ from app.infrastructure.privacy.crypto import decrypt_row, PACIENTE_ENCRYPTED_FI
 logger = logging.getLogger(__name__)
 
 UPLOAD_DOCUMENTOS_DIR = Path(__file__).resolve().parents[3] / 'uploads' / 'documentos'
+LOGO_PATH = Path(__file__).resolve().parents[3] / 'uploads' / 'logo.png'
 
 def _strip(val):
     return val.strip() if isinstance(val, str) else val
@@ -47,8 +48,9 @@ def exportar_reporte_pdf(tipo: str='resumen', genero: Optional[str]=None, estado
     """Generar reporte estadístico en PDF (RF-ER-05)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
     from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import inch
     try:
         from app.infrastructure.reportes.repository import reporte_resumen, reporte_por_genero, reporte_por_etapa_vida, reporte_por_estado, reporte_por_tipo_espina
         kwargs = {'genero': genero, 'estado': estado, 'tipo_espina': tipo_espina, 'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, 'current_user': current_user}
@@ -56,6 +58,11 @@ def exportar_reporte_pdf(tipo: str='resumen', genero: Optional[str]=None, estado
         doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=40, bottomMargin=40)
         styles = getSampleStyleSheet()
         elements = []
+        if LOGO_PATH.exists():
+            logo = RLImage(str(LOGO_PATH), width=2.5*inch, height=1.05*inch)
+            logo.hAlign = 'CENTER'
+            elements.append(logo)
+            elements.append(Spacer(1, 6))
         elements.append(Paragraph('Asociación de Espina Bífida — Reporte', styles['Title']))
         elements.append(Paragraph(f'Tipo: {tipo} | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}', styles['Normal']))
         elements.append(Spacer(1, 20))
@@ -91,8 +98,9 @@ def exportar_beneficiario_pdf(folio: str, current_user: dict=None):
     """Generar reporte PDF de un beneficiario con sus datos y documentos (RF-ER-06)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
     from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import inch
     try:
         with get_db() as conn:
             cur = conn.cursor()
@@ -106,6 +114,11 @@ def exportar_beneficiario_pdf(folio: str, current_user: dict=None):
         doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=40, bottomMargin=40)
         styles = getSampleStyleSheet()
         elements = []
+        if LOGO_PATH.exists():
+            logo = RLImage(str(LOGO_PATH), width=2.5*inch, height=1.05*inch)
+            logo.hAlign = 'CENTER'
+            elements.append(logo)
+            elements.append(Spacer(1, 6))
         elements.append(Paragraph('Asociación de Espina Bífida', styles['Title']))
         elements.append(Paragraph(f'Expediente del Beneficiario — {nombre}', styles['Heading2']))
         elements.append(Paragraph(f'Folio: {folio} | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}', styles['Normal']))
@@ -206,10 +219,18 @@ def exportar_credencial_pdf(folio: str, current_user: dict=None):
         # Header bar
         hdr_h = 1.6 * cm
         cv.setFillColor(NAVY); cv.rect(0, H - hdr_h, W, hdr_h, fill=1, stroke=0)
-        cv.setFillColor(WHITE); cv.setFont('Helvetica-Bold', 10)
-        cv.drawString(0.5 * cm, H - 1.05 * cm, 'ESPINA BIFIDA - Asociacion de Nuevo Leon ABP')
+        logo_w_hdr = 1.4 * cm
+        logo_h_hdr = 1.4 * cm
+        if LOGO_PATH.exists():
+            try:
+                cv.drawImage(str(LOGO_PATH), 0.2 * cm, H - hdr_h + 0.1 * cm, logo_w_hdr, logo_h_hdr, preserveAspectRatio=True, anchor='c', mask='auto')
+            except Exception:
+                pass
+        txt_x = logo_w_hdr + 0.45 * cm
+        cv.setFillColor(WHITE); cv.setFont('Helvetica-Bold', 9)
+        cv.drawString(txt_x, H - 1.05 * cm, 'ESPINA BIFIDA - Asociacion de Nuevo Leon ABP')
         cv.setFont('Helvetica', 7)
-        cv.drawString(0.5 * cm, H - 1.4 * cm, 'CREDENCIAL DE BENEFICIARIO')
+        cv.drawString(txt_x, H - 1.4 * cm, 'CREDENCIAL DE BENEFICIARIO')
         cv.setFont('Helvetica-Bold', 9)
         cv.drawRightString(W - 0.5 * cm, H - 1.05 * cm, f'Folio: {folio}')
         cv.setFont('Helvetica', 7)
@@ -318,8 +339,9 @@ def exportar_comprobante_cita(id_cita: int, current_user: dict=None):
     """Generar comprobante PDF de una cita con sus servicios (RF-SO-10)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
     from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import inch
     try:
         with get_db() as conn:
             cur = conn.cursor()
@@ -335,6 +357,11 @@ def exportar_comprobante_cita(id_cita: int, current_user: dict=None):
         doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=40, bottomMargin=40)
         styles = getSampleStyleSheet()
         elements = []
+        if LOGO_PATH.exists():
+            logo = RLImage(str(LOGO_PATH), width=2.5*inch, height=1.05*inch)
+            logo.hAlign = 'CENTER'
+            elements.append(logo)
+            elements.append(Spacer(1, 6))
         elements.append(Paragraph('Asociación de Espina Bífida', styles['Title']))
         elements.append(Paragraph('Comprobante de Servicio', styles['Heading2']))
         elements.append(Spacer(1, 10))
@@ -369,8 +396,9 @@ def exportar_contrato_comodato(id_comodato: int, current_user: dict=None):
     """Generar contrato de comodato en PDF (RF-PS-05)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
     from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import inch
     try:
         with get_db() as conn:
             cur = conn.cursor()
@@ -385,6 +413,11 @@ def exportar_contrato_comodato(id_comodato: int, current_user: dict=None):
         doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=50, bottomMargin=50)
         styles = getSampleStyleSheet()
         elements = []
+        if LOGO_PATH.exists():
+            logo = RLImage(str(LOGO_PATH), width=2.5*inch, height=1.05*inch)
+            logo.hAlign = 'CENTER'
+            elements.append(logo)
+            elements.append(Spacer(1, 6))
         elements.append(Paragraph('Asociación de Espina Bífida', styles['Title']))
         elements.append(Paragraph('CONTRATO DE COMODATO', styles['Heading2']))
         elements.append(Spacer(1, 15))

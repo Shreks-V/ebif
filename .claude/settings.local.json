@@ -143,7 +143,10 @@
       "Bash(sed -n '160,185p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/Pruebas/support_beneficiarios.py\")",
       "WebFetch(domain:www.geeksforgeeks.org)",
       "Bash(pandoc --version)",
-      "Bash(pandoc Avance_Proyecto.md -o Avance_Proyecto.docx --from markdown --to docx)"
+      "Bash(pandoc Avance_Proyecto.md -o Avance_Proyecto.docx --from markdown --to docx)",
+      "Bash(cp \"/Users/maantora/.claude/image-cache/4c10ea67-bcd7-4988-a6af-8fb8aefd0f83/1.png\" \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/uploads/logo.png\")",
+      "Bash(cp '/Users/maantora/Downloads/logo_transparent.png' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/public/logo.png')",
+      "Bash(cp '/Users/maantora/Downloads/logo_transparent.png' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/uploads/logo.png')"
     ]
   },
   "enableAllProjectMcpServers": true,

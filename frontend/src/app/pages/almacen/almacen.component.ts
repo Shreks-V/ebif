@@ -546,7 +546,7 @@ export class AlmacenComponent implements OnInit {
     setTimeout(() => {
       window.print();
       this.printingComodato = null;
-    }, 100);
+    }, 300);
   }
 
   descargarContratoComodato(com: ComodatoItem): void {

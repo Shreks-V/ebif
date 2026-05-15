@@ -53,7 +53,7 @@
             </button>
           </div>
           <!-- Search + Filters -->
-          <div class="px-6 py-4 space-y-4">
+          <div class="px-6 py-4 space-y-4 sticky top-16 z-20 bg-white border-b border-slate-100 shadow-sm">
             <!-- Search -->
             <div class="relative">
               <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -133,7 +133,7 @@
           }
           <!-- Table -->
           @if (!loading) {
-            <div>
+            <div class="overflow-y-auto" style="max-height: calc(100vh - 24rem);">
               <table class="w-full text-sm">
                 <thead class="sticky top-0 z-10 shadow-sm">
                   <tr class="border-t border-slate-200 bg-slate-50">
@@ -171,7 +171,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  @for (cita of citasFiltradas; track cita) {
+                  @for (cita of citasPaginadas; track cita) {
                     <tr class="group hover:bg-slate-50 transition-colors">
                       <td class="px-6 py-4 font-medium text-slate-900">
                         <div>{{ getFecha(cita.fechaHora) }}</div>
@@ -210,6 +210,45 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Paginación -->
+            @if (citasFiltradas.length > citasPageSize) {
+              <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-4 flex-wrap">
+                <p class="text-xs text-slate-500 font-medium">
+                  Mostrando
+                  <span class="font-bold text-slate-700">{{ (citasPaginaActual - 1) * citasPageSize + 1 }}–{{ citasPaginaFin }}</span>
+                  de <span class="font-bold text-slate-700">{{ citasFiltradas.length }}</span> citas
+                </p>
+                <nav class="flex items-center gap-1">
+                  <button
+                    (click)="irAPagina(citasPaginaActual - 1)"
+                    [disabled]="citasPaginaActual === 1"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    [ngClass]="citasPaginaActual === 1 ? 'border-slate-200 text-slate-400' : 'border-slate-200 text-slate-700 hover:bg-slate-100'">
+                    ← Anterior
+                  </button>
+                  @for (p of citasPaginasVisibles; track p) {
+                    @if (p === '...') {
+                      <span class="px-2 py-1.5 text-xs text-slate-400">…</span>
+                    } @else {
+                      <button
+                        (click)="irAPagina(+p)"
+                        class="w-8 h-8 text-xs font-semibold rounded-lg border transition-all"
+                        [ngClass]="citasPaginaActual === p ? 'bg-[#00328b] border-[#00328b] text-white shadow-sm' : 'border-slate-200 text-slate-700 hover:bg-slate-100'">
+                        {{ p }}
+                      </button>
+                    }
+                  }
+                  <button
+                    (click)="irAPagina(citasPaginaActual + 1)"
+                    [disabled]="citasPaginaActual === citasTotalPaginas"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    [ngClass]="citasPaginaActual === citasTotalPaginas ? 'border-slate-200 text-slate-400' : 'border-slate-200 text-slate-700 hover:bg-slate-100'">
+                    Siguiente →
+                  </button>
+                </nav>
+              </div>
+            }
           }
         </div>
       }

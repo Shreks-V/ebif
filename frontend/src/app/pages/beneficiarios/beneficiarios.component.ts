@@ -713,7 +713,7 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
 
   descargarCredencial(folio: string): void {
     this.api.exportarCredencialPdf(folio).subscribe({
-      next: (blob) => this.descargarArchivo(blob, `credencial_${folio}.pdf`),
+      next: (blob) => this.abrirPdfEnNuevaTab(blob, `credencial_${folio}.pdf`),
       error: () => alert('Error al generar credencial'),
     });
   }
@@ -722,9 +722,21 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
 
   descargarExpediente(folio: string): void {
     this.api.exportarBeneficiarioPdf(folio).subscribe({
-      next: (blob) => this.descargarArchivo(blob, `expediente_${folio}.pdf`),
+      next: (blob) => this.abrirPdfEnNuevaTab(blob, `expediente_${folio}.pdf`),
       error: () => alert('Error al generar expediente'),
     });
+  }
+
+  private abrirPdfEnNuevaTab(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
   private descargarArchivo(blob: Blob, filename: string): void {

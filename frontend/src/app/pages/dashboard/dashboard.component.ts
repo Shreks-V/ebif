@@ -126,11 +126,8 @@ export class DashboardComponent implements OnInit {
       error: () => { this.loading = false; },
     });
 
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    this.resumenSemanaLabel = `${startOfWeek.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })} - ${endOfWeek.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}`;
+    this.resumenSemanaLabel = today.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
+      .replace(/^\w/, c => c.toUpperCase());
   }
 
   private processCitasHoy(resp: any): void {
