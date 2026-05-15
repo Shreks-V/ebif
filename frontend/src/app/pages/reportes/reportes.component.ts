@@ -141,8 +141,8 @@ export class ReportesComponent implements OnInit {
         const pg: Record<string, number> = stats.por_genero ?? {};
         const pp: Record<string, number> = stats.por_procedencia ?? {};
         const pe: Record<string, number> = stats.por_etapa_vida ?? {};
-        this.sec1Hombres = pg['Masculino'] ?? 0;
-        this.sec1Mujeres = pg['Femenino'] ?? 0;
+        this.sec1Hombres = pg['Hombre'] ?? pg['Masculino'] ?? pg['H'] ?? 0;
+        this.sec1Mujeres = pg['Mujer'] ?? pg['Femenino'] ?? pg['M'] ?? 0;
         this.sec1Nl = pp['Nuevo León'] ?? 0;
         this.sec1Foraneos = pp['Foráneos'] ?? 0;
         this.sec1Lactantes = pe['Primera Infancia (0-5)'] ?? 0;

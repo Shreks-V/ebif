@@ -87,8 +87,13 @@ def reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, t
             cursor = conn.cursor()
             cursor.execute(f'SELECT p.GENERO AS label, COUNT(*) AS cnt FROM PACIENTE p WHERE {where} GROUP BY p.GENERO ORDER BY p.GENERO', params)
             rows = rows_to_dicts(cursor)
-            labels = [r['label'].strip() if r['label'] else 'SIN DATO' for r in rows]
-            values = [r['cnt'] for r in rows]
+            counts = {'Hombre': 0, 'Mujer': 0}
+            for r in rows:
+                label = _genero_label(r.get('label'))
+                if label:
+                    counts[label] += int(r.get('cnt') or 0)
+            labels = ['Hombre', 'Mujer']
+            values = [counts[label] for label in labels]
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except Exception as e:
         logger.exception('Error en reporte por genero')
@@ -173,7 +178,11 @@ def reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo
             totals = row_to_dict(cursor) or {}
             cursor.execute(f'SELECT p.GENERO, COUNT(*) AS cnt FROM PACIENTE p WHERE {where} GROUP BY p.GENERO', params)
             genero_rows = rows_to_dicts(cursor)
-            por_genero = {r['genero'].strip() if r['genero'] else 'SIN DATO': r['cnt'] for r in genero_rows}
+            por_genero = {'Hombre': 0, 'Mujer': 0}
+            for r in genero_rows:
+                genero = _genero_label(r.get('genero'))
+                if genero:
+                    por_genero[genero] += int(r.get('cnt') or 0)
             cursor.execute(f'SELECT t.NOMBRE, COUNT(*) AS cnt FROM PACIENTE p JOIN PACIENTE_TIPO_ESPINA pte ON p.ID_PACIENTE = pte.ID_PACIENTE JOIN TIPO_ESPINA_BIFIDA t ON pte.ID_TIPO_ESPINA = t.ID_TIPO_ESPINA WHERE {where} GROUP BY t.NOMBRE', params)
             tipo_rows = rows_to_dicts(cursor)
             por_tipo_espina = {r['nombre'].strip(): r['cnt'] for r in tipo_rows}
