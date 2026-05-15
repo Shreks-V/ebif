@@ -5,7 +5,29 @@ import logging
 from app.domain.exceptions import InternalError
 from typing import Optional
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
+from app.infrastructure.privacy.crypto import decrypt
 logger = logging.getLogger(__name__)
+
+
+def _genero_label(value: str | None) -> str | None:
+    genero = (value or '').strip().upper()
+    if genero in {'H', 'HOMBRE', 'MASCULINO'}:
+        return 'Hombre'
+    if genero in {'M', 'MUJER', 'F', 'FEMENINO'}:
+        return 'Mujer'
+    return None
+
+
+def _curp_es_nl(value: str | None) -> bool:
+    curp = (decrypt(value) or '').strip().upper()
+    if len(curp) != 18:
+        return False
+    return curp[11:13] == 'NL'
+
+
+def _sum_nested_count(target: dict, row_key: str, col_key: str, value: int = 1) -> None:
+    row = target.setdefault(row_key, {})
+    row[col_key] = row.get(col_key, 0) + value
 
 
 def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
@@ -318,6 +340,8 @@ def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
         "WHEN FLOOR(MONTHS_BETWEEN(SYSDATE, FECHA_NACIMIENTO)/12) <= 59 THEN 'Adultez (30-59)' "
         "ELSE 'Adulto Mayor (60+)' END"
     )
+    ESTADO_RESIDENCIA_EXPR = "TRANSLATE(UPPER(NVL(ESTADO,'')), 'ÁÉÍÓÚÜ', 'AEIOUU')"
+    RESIDE_NL_EXPR = f"{ESTADO_RESIDENCIA_EXPR} LIKE '%NUEVO%LEON%'"
 
     periodo_params: dict = {}
     periodo_clause = '1=1'
@@ -342,13 +366,19 @@ def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
             nuevos = int((row_to_dict(cursor) or {}).get('cnt') or 0)
 
             cursor.execute("SELECT NVL(GENERO,'') AS genero, COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY GENERO")
-            gd = {(r.get('genero') or '').strip(): int(r.get('cnt') or 0) for r in rows_to_dicts(cursor)}
-            hombres = gd.get('M', 0)
-            mujeres = gd.get('F', 0)
+            hombres = 0
+            mujeres = 0
+            for r in rows_to_dicts(cursor):
+                genero = _genero_label(r.get('genero'))
+                cnt = int(r.get('cnt') or 0)
+                if genero == 'Hombre':
+                    hombres += cnt
+                elif genero == 'Mujer':
+                    mujeres += cnt
 
             cursor.execute(
                 "SELECT NVL(CIUDAD,'Sin dato') AS ciudad, COUNT(*) AS cnt FROM PACIENTE "
-                "WHERE ACTIVO='S' AND UPPER(NVL(ESTADO,'')) LIKE '%NUEVO%LEON%' GROUP BY CIUDAD ORDER BY cnt DESC"
+                f"WHERE ACTIVO='S' AND {RESIDE_NL_EXPR} GROUP BY CIUDAD ORDER BY cnt DESC"
             )
             municipios = [{'label': (r.get('ciudad') or 'Sin dato').strip(), 'value': int(r.get('cnt') or 0)}
                           for r in rows_to_dicts(cursor)]
@@ -389,31 +419,32 @@ def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
                 out.append(totals_row)
                 return out
 
-            t1_cross = run_cross(
-                f"SELECT {ETAPA_EXPR} AS etapa, "
-                "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%NUEVO%LEON%' THEN 'CURP N.L.' ELSE 'CURP Foráneo' END AS col_val, "
-                f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
-                "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%NUEVO%LEON%' THEN 'CURP N.L.' ELSE 'CURP Foráneo' END"
+            cursor.execute(
+                f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS genero, CURP AS curp "
+                "FROM PACIENTE WHERE ACTIVO='S'"
             )
+            t1_cross: dict = {}
+            t2_cross: dict = {}
+            t3_cross: dict = {}
+            for r in rows_to_dicts(cursor):
+                etapa = (r.get('etapa') or '').strip()
+                genero = _genero_label(r.get('genero'))
+                curp_col = 'CURP N.L.' if _curp_es_nl(r.get('curp')) else 'CURP Foráneo'
+                _sum_nested_count(t1_cross, etapa, curp_col)
+                if genero and curp_col == 'CURP N.L.':
+                    _sum_nested_count(t2_cross, etapa, genero)
+                elif genero:
+                    _sum_nested_count(t3_cross, etapa, genero)
+
             t1 = build_rows(t1_cross, ['CURP N.L.', 'CURP Foráneo'])
-
-            t2_cross = run_cross(
-                f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS col_val, COUNT(*) AS cnt FROM PACIENTE "
-                f"WHERE ACTIVO='S' AND UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%NUEVO%LEON%' GROUP BY {ETAPA_EXPR}, GENERO"
-            )
-            t2 = build_rows(t2_cross, ['M', 'F'], ['Hombre', 'Mujer'])
-
-            t3_cross = run_cross(
-                f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS col_val, COUNT(*) AS cnt FROM PACIENTE "
-                f"WHERE ACTIVO='S' AND UPPER(NVL(ESTADO_NACIMIENTO,'')) NOT LIKE '%NUEVO%LEON%' GROUP BY {ETAPA_EXPR}, GENERO"
-            )
-            t3 = build_rows(t3_cross, ['M', 'F'], ['Hombre', 'Mujer'])
+            t2 = build_rows(t2_cross, ['Hombre', 'Mujer'])
+            t3 = build_rows(t3_cross, ['Hombre', 'Mujer'])
 
             t4_cross = run_cross(
                 f"SELECT {ETAPA_EXPR} AS etapa, "
-                "CASE WHEN UPPER(NVL(ESTADO,'')) LIKE '%NUEVO%LEON%' THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END AS col_val, "
+                f"CASE WHEN {RESIDE_NL_EXPR} THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END AS col_val, "
                 f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
-                "CASE WHEN UPPER(NVL(ESTADO,'')) LIKE '%NUEVO%LEON%' THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END"
+                f"CASE WHEN {RESIDE_NL_EXPR} THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END"
             )
             t4 = build_rows(t4_cross, ['Viven en N.L.', 'Viven en otros estados'])
 
@@ -432,17 +463,23 @@ def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
             genero_etapa: dict = {}
             for r in rows_to_dicts(cursor):
                 et = (r.get('etapa') or '').strip()
-                gn = (r.get('genero') or '').strip()
-                genero_etapa.setdefault(et, {})[gn] = int(r.get('cnt') or 0)
+                genero = _genero_label(r.get('genero'))
+                if genero:
+                    _sum_nested_count(genero_etapa, et, genero, int(r.get('cnt') or 0))
             t6 = []
             t6_totals = {'total': 0, 'Mujer': 0, 'Hombre': 0}
             for etapa in ETAPAS:
-                m = genero_etapa.get(etapa, {}).get('M', 0)
-                f = genero_etapa.get(etapa, {}).get('F', 0)
-                t6.append({'etapa': etapa, 'Hombre': m, 'Mujer': f, 'total': m + f})
-                t6_totals['total'] += m + f
-                t6_totals['Mujer'] += f
-                t6_totals['Hombre'] += m
+                hombres_etapa = genero_etapa.get(etapa, {}).get('Hombre', 0)
+                mujeres_etapa = genero_etapa.get(etapa, {}).get('Mujer', 0)
+                t6.append({
+                    'etapa': etapa,
+                    'Hombre': hombres_etapa,
+                    'Mujer': mujeres_etapa,
+                    'total': hombres_etapa + mujeres_etapa,
+                })
+                t6_totals['total'] += hombres_etapa + mujeres_etapa
+                t6_totals['Mujer'] += mujeres_etapa
+                t6_totals['Hombre'] += hombres_etapa
             t6.append({'etapa': 'Total', 'Hombre': t6_totals['Hombre'], 'Mujer': t6_totals['Mujer'], 'total': t6_totals['total']})
 
             return {
