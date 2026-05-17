@@ -32,6 +32,10 @@ def listar_beneficiarios(
 ):
     return service.listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
 
+@router.get('/mapa')
+def mapa_beneficiarios(current_user: dict=Depends(get_current_user)):
+    return service.mapa_beneficiarios(current_user)
+
 @router.get('/{folio}', response_model=BeneficiarioResponse)
 def obtener_beneficiario(folio: str, current_user: dict=Depends(get_current_user)):
     return service.obtener_beneficiario(folio, current_user)

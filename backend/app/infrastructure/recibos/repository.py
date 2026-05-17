@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+from app.domain.recibos.ports import RecibosRepository
+from app.domain.shared.current_user import CurrentUser
 from app.domain.exceptions import InternalError, NotFoundError, ValidationError
 from typing import Optional
 from datetime import date, datetime, timedelta
@@ -210,7 +212,7 @@ def _call_registrar_venta_completa(
     ])
     return id_venta_out.getvalue(), folio_out.getvalue()
 
-def stats_ventas(current_user: dict=None):
+def stats_ventas(current_user: CurrentUser | None = None):
     """Totales agregados de ventas (no canceladas)."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -228,14 +230,14 @@ def stats_ventas(current_user: dict=None):
         ayer = row_to_dict(cur)
     return {'monto_total_sum': float(totals['monto_total_sum']), 'monto_efectivo': float(by_method['monto_efectivo']), 'monto_tarjeta': float(by_method['monto_tarjeta']), 'monto_transferencia': float(by_method['monto_transferencia']), 'count': int(totals['count']), 'total_hoy': int(hoy['total_hoy']), 'total_ayer': int(ayer['total_ayer']) if ayer else 0, 'pendientes': int(pend['pendientes'])}
 
-def listar_metodos_pago(current_user: dict=None):
+def listar_metodos_pago(current_user: CurrentUser | None = None):
     """Listar metodos de pago activos."""
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("\n            SELECT ID_METODO_PAGO AS id_metodo_pago,\n                   NOMBRE         AS nombre,\n                   DESCRIPCION    AS descripcion,\n                   ACTIVO         AS activo\n              FROM METODO_PAGO\n             WHERE ACTIVO = 'S'\n             ORDER BY ID_METODO_PAGO\n            ")
         return rows_to_dicts(cur)
 
-def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, id_paciente: Optional[int]=None, search: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
+def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, id_paciente: Optional[int]=None, search: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar ventas con filtros opcionales."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
@@ -264,7 +266,7 @@ def listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=Non
         results = [_enrich_venta(conn, v, mp_map=mp_map) for v in ventas]
     return results
 
-def crear_venta(data, current_user: dict=None):
+def crear_venta(data, current_user: CurrentUser | None = None):
     """Crear nueva venta vía SP_REGISTRAR_VENTA_COMPLETA."""
     try:
         with get_db() as conn:
@@ -343,7 +345,7 @@ def crear_venta(data, current_user: dict=None):
         logger.exception('Error al crear venta para paciente %s: %s', data.id_paciente, exc)
         raise InternalError('Error interno al crear la venta')
 
-def obtener_venta(id_venta: int, current_user: dict=None):
+def obtener_venta(id_venta: int, current_user: CurrentUser | None = None):
     """Obtener detalle de una venta (incluye items)."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -354,7 +356,7 @@ def obtener_venta(id_venta: int, current_user: dict=None):
         return _enrich_venta(conn, venta, include_items=True)
 
 
-def listar_items_venta(id_venta: int, current_user: dict=None):
+def listar_items_venta(id_venta: int, current_user: CurrentUser | None = None):
     """Listar ítems (líneas) de una venta."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -363,7 +365,7 @@ def listar_items_venta(id_venta: int, current_user: dict=None):
             raise NotFoundError('Venta no encontrada')
         return _fetch_items_venta(conn, id_venta)
 
-def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_user: dict=None):
+def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_user: CurrentUser | None = None):
     """Agregar un pago parcial a una venta vía SP_REGISTRAR_PAGO_PARCIAL."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -383,7 +385,7 @@ def registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_use
     return obtener_venta(id_venta, current_user)
 
 
-def exentar_venta(id_venta: int, nota: Optional[str]=None, current_user: dict=None):
+def exentar_venta(id_venta: int, nota: Optional[str]=None, current_user: CurrentUser | None = None):
     """Perdonar el saldo pendiente de una venta (marcar como exento de pago)."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -410,7 +412,7 @@ def exentar_venta(id_venta: int, nota: Optional[str]=None, current_user: dict=No
     return obtener_venta(id_venta, current_user)
 
 
-def cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: dict=None):
+def cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: CurrentUser | None = None):
     """Cancelar una venta."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -429,7 +431,7 @@ def cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: dict
         return _enrich_venta(conn, venta)
 
 
-class OracleRecibosRepository:
+class OracleRecibosRepository(RecibosRepository):
     def stats_ventas(self, current_user=None):
         return stats_ventas(current_user)
 

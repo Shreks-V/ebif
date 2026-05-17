@@ -33,6 +33,7 @@ class Servicio(TypedDict, total=False):
     cuota_recuperacion: float
     precio_cuota_a: Optional[float]
     precio_cuota_b: Optional[float]
+    categoria: str
     activo: str
     fecha_registro: Optional[str]
 
@@ -59,6 +60,8 @@ class Comodato(TypedDict, total=False):
 class MovimientoStock(TypedDict, total=False):
     id_movimiento: int
     id_producto: int
+    nombre_producto: Optional[str]
+    clave_interna: Optional[str]
     id_usuario_registro: Optional[int]
     id_venta: Optional[int]
     id_comodato: Optional[int]

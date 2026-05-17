@@ -2,6 +2,8 @@ import re
 from pydantic import BaseModel, field_validator
 from typing import Optional, List
 
+from app.application.beneficiarios.dtos import _normalizar_correo, _normalizar_fecha_iso
+
 __all__ = ["PreRegistroCreate", "AprobarPreRegistroData"]
 
 _CURP_RE = re.compile(
@@ -10,6 +12,31 @@ _CURP_RE = re.compile(
     r'OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$'
 )
 
+_TIPO_CUOTA_MAP = {
+    'A': 'CUOTA A',
+    'B': 'CUOTA B',
+    'CUOTA A': 'CUOTA A',
+    'CUOTA B': 'CUOTA B',
+}
+
+
+def _validar_curp(v: str) -> str:
+    v = v.strip().upper()
+    if not _CURP_RE.match(v):
+        raise ValueError('El CURP no tiene el formato oficial mexicano (18 caracteres).')
+    return v
+
+
+def _normalizar_tipo_cuota(v: Optional[str]) -> Optional[str]:
+    if v is None:
+        return None
+    normalized = v.strip().upper()
+    if normalized not in _TIPO_CUOTA_MAP:
+        raise ValueError('tipo_cuota debe ser CUOTA A o CUOTA B.')
+    return _TIPO_CUOTA_MAP[normalized]
+
+
+# ── DTOs ──────────────────────────────────────────────────────────────────────
 
 class PreRegistroCreate(BaseModel):
     nombre: str
@@ -18,14 +45,6 @@ class PreRegistroCreate(BaseModel):
     fecha_nacimiento: Optional[str] = None
     genero: Optional[str] = None
     curp: str
-
-    @field_validator('curp')
-    @classmethod
-    def curp_formato_valido(cls, v: str) -> str:
-        v = v.strip().upper()
-        if not _CURP_RE.match(v):
-            raise ValueError('El CURP no tiene el formato oficial mexicano (18 caracteres).')
-        return v
     estado_nacimiento: Optional[str] = None
     hospital_nacimiento: Optional[str] = None
     nombre_padre_madre: Optional[str] = None
@@ -46,10 +65,25 @@ class PreRegistroCreate(BaseModel):
     paso_actual: int = 1
     tipos_espina: Optional[List[int]] = None
 
+    @field_validator('curp')
+    @classmethod
+    def _validar_curp(cls, v: str) -> str:
+        return _validar_curp(v)
+
     @field_validator('tipo_cuota')
     @classmethod
-    def tipo_cuota_valida(cls, v: Optional[str]) -> Optional[str]:
-        return normalize_tipo_cuota(v)
+    def _validar_tipo_cuota(cls, v: Optional[str]) -> Optional[str]:
+        return _normalizar_tipo_cuota(v)
+
+    @field_validator('correo_electronico', mode='before')
+    @classmethod
+    def _validar_correo(cls, v) -> str | None:
+        return _normalizar_correo(v)
+
+    @field_validator('fecha_nacimiento', mode='before')
+    @classmethod
+    def _validar_fecha_nacimiento(cls, v) -> str | None:
+        return _normalizar_fecha_iso(v, 'fecha_nacimiento')
 
 
 class AprobarPreRegistroData(BaseModel):
@@ -57,20 +91,9 @@ class AprobarPreRegistroData(BaseModel):
 
     @field_validator('tipo_cuota')
     @classmethod
-    def tipo_cuota_valida(cls, v: Optional[str]) -> Optional[str]:
-        return normalize_tipo_cuota(v)
+    def _validar_tipo_cuota(cls, v: Optional[str]) -> Optional[str]:
+        return _normalizar_tipo_cuota(v)
 
 
-def normalize_tipo_cuota(v: Optional[str]) -> Optional[str]:
-    if v is None:
-        return None
-    value = v.strip().upper()
-    aliases = {
-        'A': 'CUOTA A',
-        'B': 'CUOTA B',
-        'CUOTA A': 'CUOTA A',
-        'CUOTA B': 'CUOTA B',
-    }
-    if value not in aliases:
-        raise ValueError('tipo_cuota debe ser CUOTA A o CUOTA B.')
-    return aliases[value]
+# kept for backward compat (test_preregistro_dtos imports it)
+normalize_tipo_cuota = _normalizar_tipo_cuota

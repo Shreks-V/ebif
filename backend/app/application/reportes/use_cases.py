@@ -45,6 +45,9 @@ class ReportesService:
     def indicadores_desempeno(self, fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, current_user: CurrentUser | None = None):
         return self._repository.indicadores_desempeno(fecha_inicio, fecha_fin, current_user)
 
+    def reporte_pagos_por_metodo(self, fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, current_user: CurrentUser | None = None):
+        return self._repository.reporte_pagos_por_metodo(fecha_inicio, fecha_fin, current_user)
+
 
 def configure_service(service: ReportesService) -> None:
     global _service
@@ -92,3 +95,6 @@ def reporte_por_ciudad(current_user: CurrentUser | None = None):
 
 def indicadores_desempeno(fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, current_user: CurrentUser | None = None):
     return _svc().indicadores_desempeno(fecha_inicio, fecha_fin, current_user)
+
+def reporte_pagos_por_metodo(fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, current_user: CurrentUser | None = None):
+    return _svc().reporte_pagos_por_metodo(fecha_inicio, fecha_fin, current_user)

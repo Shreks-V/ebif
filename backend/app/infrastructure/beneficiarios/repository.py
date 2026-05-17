@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
-from app.domain.exceptions import NotFoundError
+from app.domain.beneficiarios.ports import BeneficiariosRepository
+from app.domain.shared.current_user import CurrentUser
+from app.domain.exceptions import NotFoundError, InternalError
 from typing import Optional
 from datetime import date, datetime, timedelta
 from app.infrastructure.audit.bitacora import log_insert, log_delete
@@ -148,7 +150,7 @@ def _etapa_vida(edad: int) -> str:
     else:
         return 'Adulto Mayor (60+)'
 
-def listar_tipos_espina(current_user: dict=None):
+def listar_tipos_espina(current_user: CurrentUser | None = None):
     """Listar todos los tipos de espina bífida."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -159,7 +161,7 @@ def listar_tipos_espina(current_user: dict=None):
             r['nombre'] = _strip_char(r.get('nombre'))
         return rows
 
-def stats_beneficiarios(current_user: dict=None):
+def stats_beneficiarios(current_user: CurrentUser | None = None):
     """Conteo total de beneficiarios."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -169,7 +171,7 @@ def stats_beneficiarios(current_user: dict=None):
         total = cur.fetchone()[0]
         return {'total': total, 'activos': total_activos, 'inactivos': total - total_activos}
 
-def dashboard_stats(current_user: dict=None):
+def dashboard_stats(current_user: CurrentUser | None = None):
     """Estadísticas generales para el dashboard."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -251,7 +253,7 @@ def _sync_membresias_vencidas(conn) -> int:
     return updated
 
 
-def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
+def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar beneficiarios con filtros opcionales."""
     with get_db() as conn:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -287,7 +289,7 @@ def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None,
         tipos_map = _batch_fetch_tipos_espina(conn, patient_ids)
         return [_patient_row_to_response(row, tipos_map=tipos_map) for row in rows]
 
-def obtener_beneficiario(folio: str, current_user: dict=None):
+def obtener_beneficiario(folio: str, current_user: CurrentUser | None = None):
     """Obtener beneficiario por folio."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -297,7 +299,7 @@ def obtener_beneficiario(folio: str, current_user: dict=None):
             raise NotFoundError('Beneficiario no encontrado')
         return _patient_row_to_response(row, conn)
 
-def crear_beneficiario(data, current_user: dict=None):
+def crear_beneficiario(data, current_user: CurrentUser | None = None):
     """Crear nuevo beneficiario con folio auto-generado."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -317,7 +319,7 @@ def crear_beneficiario(data, current_user: dict=None):
         row = row_to_dict(cur)
         return _patient_row_to_response(row, conn)
 
-def actualizar_beneficiario(folio: str, data, current_user: dict=None):
+def actualizar_beneficiario(folio: str, data, current_user: CurrentUser | None = None):
     """Actualizar beneficiario existente."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -348,7 +350,7 @@ def actualizar_beneficiario(folio: str, data, current_user: dict=None):
         row = row_to_dict(cur)
         return _patient_row_to_response(row, conn)
 
-def eliminar_beneficiario(folio: str, current_user: dict=None):
+def eliminar_beneficiario(folio: str, current_user: CurrentUser | None = None):
     """Soft delete: marcar beneficiario como inactivo."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -364,7 +366,7 @@ def eliminar_beneficiario(folio: str, current_user: dict=None):
 
 def historial_beneficiario(
     folio: str,
-    current_user: dict=None,
+    current_user: CurrentUser | None = None,
     limit_citas: int=100,
     offset_citas: int=0,
     limit_pagos: int=100,
@@ -456,7 +458,7 @@ def historial_beneficiario(
         return {'folio': folio, 'nombre': nombre_completo, 'citas': citas, 'pagos': pagos, 'comodatos': comodatos}
 
 
-def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: dict = None, limit: int=500, offset: int=0):
+def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Beneficiarios con membresía que vence en los próximos N días."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
@@ -479,7 +481,7 @@ def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: dict = Non
         return [_patient_row_to_response(row, tipos_map=tipos_map) for row in rows]
 
 
-def renovar_membresia(folio: str, data: dict, current_user: dict = None):
+def renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None = None):
     """Renueva la membresía por 12 meses y crea el cobro correspondiente."""
     from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
     import oracledb
@@ -548,7 +550,53 @@ def renovar_membresia(folio: str, data: dict, current_user: dict = None):
         }
 
 
-class OracleBeneficiariosRepository:
+def mapa_beneficiarios(current_user=None):
+    """Devuelve todos los beneficiarios activos con sus coordenadas geocodificadas para el mapa."""
+    try:
+        with get_db() as conn:
+            cur = conn.cursor()
+            # Try with geocoding columns first; fall back if migration hasn't run yet
+            try:
+                cur.execute("""
+                    SELECT p.ID_PACIENTE,
+                           p.FOLIO                AS folio_paciente,
+                           TRIM(p.NOMBRE || ' ' || NVL(p.APELLIDO_PATERNO, '') || ' ' || NVL(p.APELLIDO_MATERNO, '')) AS nombre_completo,
+                           p.CIUDAD,
+                           p.ESTADO,
+                           p.TIPO_CUOTA,
+                           p.LATITUD,
+                           p.LONGITUD,
+                           p.GEOCODIFICADO
+                      FROM PACIENTE p
+                     WHERE p.ACTIVO = 'S'
+                       AND p.ESTATUS_REGISTRO = 'APROBADO'
+                     ORDER BY p.NOMBRE, p.APELLIDO_PATERNO
+                """)
+            except Exception:
+                # Geocoding columns not yet added — return rows without them
+                cur.execute("""
+                    SELECT p.ID_PACIENTE,
+                           p.FOLIO                AS folio_paciente,
+                           TRIM(p.NOMBRE || ' ' || NVL(p.APELLIDO_PATERNO, '') || ' ' || NVL(p.APELLIDO_MATERNO, '')) AS nombre_completo,
+                           p.CIUDAD,
+                           p.ESTADO,
+                           p.TIPO_CUOTA,
+                           NULL AS LATITUD,
+                           NULL AS LONGITUD,
+                           'N'  AS GEOCODIFICADO
+                      FROM PACIENTE p
+                     WHERE p.ACTIVO = 'S'
+                       AND p.ESTATUS_REGISTRO = 'APROBADO'
+                     ORDER BY p.NOMBRE, p.APELLIDO_PATERNO
+                """)
+            cols = [c[0].lower() for c in cur.description]
+            return [dict(zip(cols, row)) for row in cur.fetchall()]
+    except Exception:
+        logger.exception('Error en mapa_beneficiarios')
+        raise InternalError('Error interno del servidor')
+
+
+class OracleBeneficiariosRepository(BeneficiariosRepository):
     def listar_tipos_espina(self, current_user=None):
         return listar_tipos_espina(current_user)
 
@@ -581,3 +629,6 @@ class OracleBeneficiariosRepository:
 
     def renovar_membresia(self, folio, data, current_user=None):
         return renovar_membresia(folio, data, current_user)
+
+    def mapa_beneficiarios(self, current_user=None):
+        return mapa_beneficiarios(current_user)

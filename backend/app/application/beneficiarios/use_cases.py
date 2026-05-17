@@ -43,6 +43,9 @@ class BeneficiariosService:
     def renovar_membresia(self, folio: str, data: RenovarMembresiaCreate, current_user: CurrentUser | None = None):
         return self._repository.renovar_membresia(folio, data.model_dump(), current_user)
 
+    def mapa_beneficiarios(self, current_user: CurrentUser | None = None):
+        return self._repository.mapa_beneficiarios(current_user)
+
 
 def configure_service(service: BeneficiariosService) -> None:
     global _service
@@ -87,3 +90,6 @@ def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: CurrentUse
 
 def renovar_membresia(folio: str, data: RenovarMembresiaCreate, current_user: CurrentUser | None = None):
     return _svc().renovar_membresia(folio, data, current_user)
+
+def mapa_beneficiarios(current_user: CurrentUser | None = None):
+    return _svc().mapa_beneficiarios(current_user)

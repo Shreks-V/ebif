@@ -1,561 +1,147 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { AlmacenApiService } from './almacen-api.service';
+import { BeneficiariosApiService } from './beneficiarios-api.service';
+import { CitasApiService } from './citas-api.service';
+import { RecibosApiService } from './recibos-api.service';
+import { ReportesApiService } from './reportes-api.service';
+import { ExportacionesApiService } from './exportaciones-api.service';
+import { AuthApiService } from './auth-api.service';
+import { PreregistroApiService } from './preregistro-api.service';
 
+/**
+ * Facade kept for backward compatibility. Inject domain services directly in new code:
+ *   AlmacenApiService, BeneficiariosApiService, CitasApiService, RecibosApiService,
+ *   ReportesApiService, ExportacionesApiService, AuthApiService, PreregistroApiService
+ */
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private apiUrl = environment.apiUrl;
-
-  constructor(private http: HttpClient) {}
-
-  // ──────────────── Beneficiarios ────────────────
-
-  getBeneficiarios(filters?: any): Observable<any[]> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any[]>(`${this.apiUrl}/beneficiarios`, { params });
-  }
-
-  getBeneficiario(folio: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/beneficiarios/${folio}`);
-  }
-
-  createBeneficiario(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/beneficiarios`, data);
-  }
-
-  updateBeneficiario(folio: string, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/beneficiarios/${folio}`, data);
-  }
-
-  deleteBeneficiario(folio: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/beneficiarios/${folio}`);
-  }
-
-  getBeneficiarioHistorial(folio: string): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/beneficiarios/${folio}/historial`);
-  }
-
-  getBeneficiariosStats(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/beneficiarios/stats`);
-  }
-
-  getDashboardStats(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/beneficiarios/stats/dashboard`);
-  }
-
-  getTiposEspina(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/beneficiarios/tipos-espina`);
-  }
-
-  getNotificaciones(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/notificaciones`);
-  }
-
-  getMembresiasProximasAVencer(dias: number = 30): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/beneficiarios/membresias/proximas-a-vencer?dias=${dias}`);
-  }
-
-  renovarMembresia(folio: string, data: { monto_total: number; exento_pago: string; metodos_pago: { id_metodo_pago: number; monto: number }[] }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/beneficiarios/${folio}/renovar-membresia`, data);
-  }
-
-  // ──────────────── Citas ────────────────
-
-  getCitas(filters?: any): Observable<any[]> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any[]>(`${this.apiUrl}/citas`, { params });
-  }
-
-  getCita(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/citas/${id}`);
-  }
-
-  createCita(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/citas`, data);
-  }
-
-  updateCita(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/citas/${id}`, data);
-  }
-
-  iniciarCita(id: number): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/citas/${id}/iniciar`, {});
-  }
-
-  completarCita(id: number): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/citas/${id}/completar`, {});
-  }
-
-  cancelarCita(id: number): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/citas/${id}/cancelar`, {});
-  }
-
-  deleteCita(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/citas/${id}`);
-  }
-
-  getCitasStats(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/citas/stats`);
-  }
-
-  getCitasHoy(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/citas/hoy`);
-  }
-
-  // ──────────────── Doctores ────────────────
-
-  getDoctores(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/doctores`);
-  }
-
-  getDoctorHoy(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/doctores/hoy`);
-  }
-
-  getDoctor(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/doctores/${id}`);
-  }
-
-  createDoctor(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/doctores`, data);
-  }
-
-  updateDoctor(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/doctores/${id}`, data);
-  }
-
-  deleteDoctor(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/doctores/${id}`);
-  }
-
-  getDoctorDisponibilidad(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/doctores/${id}/disponibilidad`);
-  }
-
-  getDisponibilidadSemana(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/doctores/disponibilidad/semana`);
-  }
-
-  createDoctorDisponibilidad(idDoctor: number, data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/doctores/${idDoctor}/disponibilidad`, data);
-  }
-
-  deleteDoctorDisponibilidad(idDoctor: number, idDisponibilidad: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/doctores/${idDoctor}/disponibilidad/${idDisponibilidad}`);
-  }
-
-  getDoctorServicios(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/doctores/${id}/servicios`);
-  }
-
-  getDoctorDisponibilidadEspecial(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/doctores/${id}/disponibilidad-especial`);
-  }
-
-  createDoctorDisponibilidadEspecial(idDoctor: number, data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/doctores/${idDoctor}/disponibilidad-especial`, data);
-  }
-
-  deleteDoctorDisponibilidadEspecial(idDoctor: number, idDispEspecial: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/doctores/${idDoctor}/disponibilidad-especial/${idDispEspecial}`);
-  }
-
-  // ──────────────── Almacen ────────────────
-
-  getProductos(filters?: any): Observable<any[]> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any[]>(`${this.apiUrl}/almacen/productos`, { params });
-  }
-
-  createProducto(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/almacen/productos`, data);
-  }
-
-  updateProducto(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/almacen/productos/${id}`, data);
-  }
-
-  deleteProducto(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/almacen/productos/${id}`);
-  }
-
-  getServicios(filters?: any): Observable<any[]> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any[]>(`${this.apiUrl}/almacen/servicios`, { params });
-  }
-
-  createServicio(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/almacen/servicios`, data);
-  }
-
-  updateServicio(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/almacen/servicios/${id}`, data);
-  }
-
-  deleteServicio(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/almacen/servicios/${id}`);
-  }
-
-  getComodatos(filters?: any): Observable<any[]> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any[]>(`${this.apiUrl}/almacen/comodatos`, { params });
-  }
-
-  createComodato(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/almacen/comodatos`, data);
-  }
-
-  updateComodato(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/almacen/comodatos/${id}`, data);
-  }
-
-  getAlmacenStats(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/almacen/stats`);
-  }
-
-  getMovimientos(filters?: any): Observable<any[]> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any[]>(`${this.apiUrl}/almacen/movimientos`, { params });
-  }
-
-  // ──────────────── Recibos ────────────────
-
-  getRecibos(filters?: any): Observable<any[]> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any[]>(`${this.apiUrl}/recibos`, { params });
-  }
-
-  createRecibo(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/recibos`, data);
-  }
-
-  getRecibo(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/recibos/${id}`);
-  }
-
-  cancelarRecibo(id: number, motivo?: string): Observable<any> {
-    const params = motivo ? `?motivo=${encodeURIComponent(motivo)}` : '';
-    return this.http.put<any>(`${this.apiUrl}/recibos/${id}/cancelar${params}`, {});
-  }
-
-  getRecibosStats(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/recibos/stats`);
-  }
-
-  getMetodosPago(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/recibos/metodos-pago`);
-  }
-
-  getReciboItems(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/recibos/${id}/items`);
-  }
-
-  registrarPagoParcial(idVenta: number, data: { id_metodo_pago: number; monto: number }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/recibos/${idVenta}/pagos`, data);
-  }
-
-  exentarVenta(idVenta: number, nota?: string): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/recibos/${idVenta}/exentar`, { nota: nota || null });
-  }
-
-  // ──────────────── Exportaciones (PDF / Excel) ────────────────
-
-  exportarReportePdf(tipo: string, filters?: any): Observable<Blob> {
-    let params = new HttpParams().set('tipo', tipo);
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get(`${this.apiUrl}/exportaciones/reportes/pdf`, {
-      params,
-      responseType: 'blob',
-    });
-  }
-
-  exportarBeneficiarioPdf(folio: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/exportaciones/beneficiario/${folio}/pdf`, {
-      responseType: 'blob',
-    });
-  }
-
-  exportarCredencialPdf(folio: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/exportaciones/beneficiario/${folio}/credencial`, {
-      responseType: 'blob',
-    });
-  }
-
-  exportarComprobanteCitaPdf(idCita: number): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/exportaciones/cita/${idCita}/comprobante`, {
-      responseType: 'blob',
-    });
-  }
-
-  exportarContratoComodatoPdf(idComodato: number): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/exportaciones/comodato/${idComodato}/contrato`, {
-      responseType: 'blob',
-    });
-  }
-
-  exportarBeneficiariosExcel(filters?: any): Observable<Blob> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get(`${this.apiUrl}/exportaciones/beneficiarios/excel`, {
-      params,
-      responseType: 'blob',
-    });
-  }
-
-  exportarReporteExcel(tipo: string, filters?: any): Observable<Blob> {
-    let params = new HttpParams().set('tipo', tipo);
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get(`${this.apiUrl}/exportaciones/reportes/excel`, {
-      params,
-      responseType: 'blob',
-    });
-  }
-
-  // ──────────────── Reportes ────────────────
-
-  getReportePorGenero(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/por-genero`, { params });
-  }
-
-  getReportePorEtapaVida(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/por-etapa-vida`, { params });
-  }
-
-  getReportePorTipoEspina(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/por-tipo-espina`, { params });
-  }
-
-  getReportePorEstado(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/por-estado`, { params });
-  }
-
-  getReporteResumen(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/resumen`, { params });
-  }
-
-  getReporteServiciosPorTipo(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/servicios-por-tipo`, { params });
-  }
-
-  getReporteEstudiosPorTipo(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/estudios-por-tipo`, { params });
-  }
-
-  getReportePagosExentos(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/pagos-exentos`, { params });
-  }
-
-  getReporteConsolidadoMensual(mes?: number, anio?: number): Observable<any> {
-    let params = new HttpParams();
-    if (mes) params = params.set('mes', mes.toString());
-    if (anio) params = params.set('anio', anio.toString());
-    return this.http.get<any>(`${this.apiUrl}/reportes/consolidado-mensual`, { params });
-  }
-
-  getHistorialReportes(filters?: any): Observable<any[]> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any[]>(`${this.apiUrl}/reportes/historial`, { params });
-  }
-
-  getReportePorCiudad(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/reportes/por-ciudad`);
-  }
-
-  getIndicadoresDesempeno(filters?: any): Observable<any> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        if (filters[key]) params = params.set(key, filters[key]);
-      });
-    }
-    return this.http.get<any>(`${this.apiUrl}/reportes/indicadores-desempeno`, { params });
-  }
-
-  // ──────────────── Pre-registro ────────────────
-
-  getPreRegistros(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/preregistro`);
-  }
-
-  getPreRegistro(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/preregistro/${id}`);
-  }
-
-  createPreRegistro(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/preregistro`, data);
-  }
-
-  updatePreRegistro(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/preregistro/${id}`, data);
-  }
-
-  aprobarPreRegistro(id: number, tipoCuota?: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/preregistro/${id}/aprobar`, { tipo_cuota: tipoCuota || null });
-  }
-
-  rechazarPreRegistro(id: number): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/preregistro/${id}/rechazar`, {});
-  }
-
-  getTiposEspinaPublic(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/preregistro/tipos-espina`);
-  }
-
-  getTiposDocumentoPublic(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/preregistro/tipos-documento`);
-  }
-
-  checkCurpDisponible(curp: string): Observable<{ disponible: boolean }> {
-    return this.http.get<{ disponible: boolean }>(`${this.apiUrl}/preregistro/check-curp`, {
-      params: new HttpParams().set('curp', curp),
-    });
-  }
-
-  uploadDocumento(idPaciente: number, idTipoDocumento: number, file: File): Observable<any> {
-    const formData = new FormData();
-    formData.append('id_tipo_documento', idTipoDocumento.toString());
-    formData.append('archivo', file);
-    return this.http.post<any>(`${this.apiUrl}/preregistro/${idPaciente}/documentos`, formData);
-  }
-
-  getDocumentos(idPaciente: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/preregistro/${idPaciente}/documentos`);
-  }
-
-  getDocumentoArchivoUrl(idPaciente: number, idDocumento: number): string {
-    return `${this.apiUrl}/preregistro/${idPaciente}/documentos/${idDocumento}/archivo`;
-  }
-
-  deleteDocumento(idPaciente: number, idDocumento: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/preregistro/${idPaciente}/documentos/${idDocumento}`);
-  }
-
-  // ──────────────── Auth (seed) ────────────────
-
-  seedUsers(): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/auth/seed`, {});
-  }
-
-  // ──────────────── Auth (gestión de contraseñas) ────────────────
-
-  cambiarContrasena(data: { contrasena_actual: string; contrasena_nueva: string }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/auth/cambiar-contrasena`, data);
-  }
-
-  listarUsuariosSistema(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/auth/usuarios`);
-  }
-
-  adminResetContrasena(idUsuario: number, data: { contrasena_nueva: string }): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/auth/usuarios/${idUsuario}/reset-contrasena`, data);
-  }
-
-  crearUsuarioSistema(data: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/auth/usuarios`, data);
-  }
-
-  actualizarUsuarioSistema(idUsuario: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/auth/usuarios/${idUsuario}`, data);
-  }
+  constructor(
+    private almacen: AlmacenApiService,
+    private beneficiarios: BeneficiariosApiService,
+    private citas: CitasApiService,
+    private recibos: RecibosApiService,
+    private reportes: ReportesApiService,
+    private exportaciones: ExportacionesApiService,
+    private auth: AuthApiService,
+    private preregistro: PreregistroApiService,
+  ) {}
+
+  // ── Beneficiarios ──
+  getBeneficiarios(filters?: any) { return this.beneficiarios.getBeneficiarios(filters); }
+  getBeneficiario(folio: string) { return this.beneficiarios.getBeneficiario(folio); }
+  createBeneficiario(data: any) { return this.beneficiarios.createBeneficiario(data); }
+  updateBeneficiario(folio: string, data: any) { return this.beneficiarios.updateBeneficiario(folio, data); }
+  deleteBeneficiario(folio: string) { return this.beneficiarios.deleteBeneficiario(folio); }
+  getBeneficiarioHistorial(folio: string) { return this.beneficiarios.getBeneficiarioHistorial(folio); }
+  getBeneficiariosStats() { return this.beneficiarios.getBeneficiariosStats(); }
+  getDashboardStats() { return this.beneficiarios.getDashboardStats(); }
+  getMapaBeneficiarios() { return this.beneficiarios.getMapaBeneficiarios(); }
+  getTiposEspina() { return this.beneficiarios.getTiposEspina(); }
+  getNotificaciones() { return this.beneficiarios.getNotificaciones(); }
+  getMembresiasProximasAVencer(dias: number = 30) { return this.beneficiarios.getMembresiasProximasAVencer(dias); }
+  renovarMembresia(folio: string, data: any) { return this.beneficiarios.renovarMembresia(folio, data); }
+
+  // ── Citas ──
+  getCitas(filters?: any) { return this.citas.getCitas(filters); }
+  getCita(id: number) { return this.citas.getCita(id); }
+  createCita(data: any) { return this.citas.createCita(data); }
+  updateCita(id: number, data: any) { return this.citas.updateCita(id, data); }
+  iniciarCita(id: number) { return this.citas.iniciarCita(id); }
+  completarCita(id: number) { return this.citas.completarCita(id); }
+  cancelarCita(id: number) { return this.citas.cancelarCita(id); }
+  deleteCita(id: number) { return this.citas.deleteCita(id); }
+  getCitasStats() { return this.citas.getCitasStats(); }
+  getCitasHoy() { return this.citas.getCitasHoy(); }
+
+  // ── Doctores ──
+  getDoctores() { return this.citas.getDoctores(); }
+  getDoctorHoy() { return this.citas.getDoctorHoy(); }
+  getDoctor(id: number) { return this.citas.getDoctor(id); }
+  createDoctor(data: any) { return this.citas.createDoctor(data); }
+  updateDoctor(id: number, data: any) { return this.citas.updateDoctor(id, data); }
+  deleteDoctor(id: number) { return this.citas.deleteDoctor(id); }
+  getDoctorDisponibilidad(id: number) { return this.citas.getDoctorDisponibilidad(id); }
+  getDisponibilidadSemana() { return this.citas.getDisponibilidadSemana(); }
+  createDoctorDisponibilidad(idDoctor: number, data: any) { return this.citas.createDoctorDisponibilidad(idDoctor, data); }
+  deleteDoctorDisponibilidad(idDoctor: number, idDisponibilidad: number) { return this.citas.deleteDoctorDisponibilidad(idDoctor, idDisponibilidad); }
+  getDoctorServicios(id: number) { return this.citas.getDoctorServicios(id); }
+  getDoctorDisponibilidadEspecial(id: number) { return this.citas.getDoctorDisponibilidadEspecial(id); }
+  createDoctorDisponibilidadEspecial(idDoctor: number, data: any) { return this.citas.createDoctorDisponibilidadEspecial(idDoctor, data); }
+  deleteDoctorDisponibilidadEspecial(idDoctor: number, idDispEspecial: number) { return this.citas.deleteDoctorDisponibilidadEspecial(idDoctor, idDispEspecial); }
+
+  // ── Almacén ──
+  getProductos(filters?: any) { return this.almacen.getProductos(filters); }
+  createProducto(data: any) { return this.almacen.createProducto(data); }
+  updateProducto(id: number, data: any) { return this.almacen.updateProducto(id, data); }
+  deleteProducto(id: number) { return this.almacen.deleteProducto(id); }
+  ajustarExistencia(id: number, stockNuevo: number, motivo: string) { return this.almacen.ajustarExistencia(id, stockNuevo, motivo); }
+  getServicios(filters?: any) { return this.almacen.getServicios(filters); }
+  createServicio(data: any) { return this.almacen.createServicio(data); }
+  updateServicio(id: number, data: any) { return this.almacen.updateServicio(id, data); }
+  deleteServicio(id: number) { return this.almacen.deleteServicio(id); }
+  getComodatos(filters?: any) { return this.almacen.getComodatos(filters); }
+  createComodato(data: any) { return this.almacen.createComodato(data); }
+  updateComodato(id: number, data: any) { return this.almacen.updateComodato(id, data); }
+  getAlmacenStats() { return this.almacen.getAlmacenStats(); }
+  getMovimientos(filters?: any) { return this.almacen.getMovimientos(filters); }
+
+  // ── Recibos ──
+  getRecibos(filters?: any) { return this.recibos.getRecibos(filters); }
+  createRecibo(data: any) { return this.recibos.createRecibo(data); }
+  getRecibo(id: number) { return this.recibos.getRecibo(id); }
+  cancelarRecibo(id: number, motivo?: string) { return this.recibos.cancelarRecibo(id, motivo); }
+  getRecibosStats() { return this.recibos.getRecibosStats(); }
+  getMetodosPago() { return this.recibos.getMetodosPago(); }
+  getReciboItems(id: number) { return this.recibos.getReciboItems(id); }
+  registrarPagoParcial(idVenta: number, data: any) { return this.recibos.registrarPagoParcial(idVenta, data); }
+  exentarVenta(idVenta: number, nota?: string) { return this.recibos.exentarVenta(idVenta, nota); }
+
+  // ── Exportaciones ──
+  exportarReportePdf(tipo: string, filters?: any): Observable<Blob> { return this.exportaciones.exportarReportePdf(tipo, filters); }
+  exportarReporteExcel(tipo: string, filters?: any): Observable<Blob> { return this.exportaciones.exportarReporteExcel(tipo, filters); }
+  exportarBeneficiarioPdf(folio: string): Observable<Blob> { return this.exportaciones.exportarBeneficiarioPdf(folio); }
+  exportarCredencialPdf(folio: string): Observable<Blob> { return this.exportaciones.exportarCredencialPdf(folio); }
+  exportarBeneficiariosExcel(filters?: any): Observable<Blob> { return this.exportaciones.exportarBeneficiariosExcel(filters); }
+  exportarComprobanteCitaPdf(idCita: number): Observable<Blob> { return this.exportaciones.exportarComprobanteCitaPdf(idCita); }
+  exportarContratoComodatoPdf(idComodato: number): Observable<Blob> { return this.exportaciones.exportarContratoComodatoPdf(idComodato); }
+
+  // ── Reportes ──
+  getReportePorGenero(filters?: any) { return this.reportes.getReportePorGenero(filters); }
+  getReportePorEtapaVida(filters?: any) { return this.reportes.getReportePorEtapaVida(filters); }
+  getReportePorTipoEspina(filters?: any) { return this.reportes.getReportePorTipoEspina(filters); }
+  getReportePorEstado(filters?: any) { return this.reportes.getReportePorEstado(filters); }
+  getReporteResumen(filters?: any) { return this.reportes.getReporteResumen(filters); }
+  getReporteServiciosPorTipo(filters?: any) { return this.reportes.getReporteServiciosPorTipo(filters); }
+  getReporteEstudiosPorTipo(filters?: any) { return this.reportes.getReporteEstudiosPorTipo(filters); }
+  getReportePagosExentos(filters?: any) { return this.reportes.getReportePagosExentos(filters); }
+  getReportePagosPorMetodo(fechaInicio?: string, fechaFin?: string) { return this.reportes.getReportePagosPorMetodo(fechaInicio, fechaFin); }
+  getReporteConsolidadoMensual(mes?: number, anio?: number) { return this.reportes.getReporteConsolidadoMensual(mes, anio); }
+  getHistorialReportes(filters?: any) { return this.reportes.getHistorialReportes(filters); }
+  getReportePorCiudad() { return this.reportes.getReportePorCiudad(); }
+  getIndicadoresDesempeno(filters?: any) { return this.reportes.getIndicadoresDesempeno(filters); }
+
+  // ── Pre-registro ──
+  getPreRegistros() { return this.preregistro.getPreRegistros(); }
+  getPreRegistro(id: number) { return this.preregistro.getPreRegistro(id); }
+  createPreRegistro(data: any) { return this.preregistro.createPreRegistro(data); }
+  updatePreRegistro(id: number, data: any) { return this.preregistro.updatePreRegistro(id, data); }
+  aprobarPreRegistro(id: number, tipoCuota?: string) { return this.preregistro.aprobarPreRegistro(id, tipoCuota); }
+  rechazarPreRegistro(id: number) { return this.preregistro.rechazarPreRegistro(id); }
+  getTiposEspinaPublic() { return this.preregistro.getTiposEspinaPublic(); }
+  getTiposDocumentoPublic() { return this.preregistro.getTiposDocumentoPublic(); }
+  checkCurpDisponible(curp: string) { return this.preregistro.checkCurpDisponible(curp); }
+  uploadDocumento(idPaciente: number, idTipoDocumento: number, file: File) { return this.preregistro.uploadDocumento(idPaciente, idTipoDocumento, file); }
+  getDocumentos(idPaciente: number) { return this.preregistro.getDocumentos(idPaciente); }
+  getDocumentoArchivoUrl(idPaciente: number, idDocumento: number) { return this.preregistro.getDocumentoArchivoUrl(idPaciente, idDocumento); }
+  getDocumentoBlob(idPaciente: number, idDocumento: number): Observable<Blob> { return this.preregistro.getDocumentoBlob(idPaciente, idDocumento); }
+  deleteDocumento(idPaciente: number, idDocumento: number) { return this.preregistro.deleteDocumento(idPaciente, idDocumento); }
+
+  // ── Auth ──
+  cambiarContrasena(data: any) { return this.auth.cambiarContrasena(data); }
+  listarUsuariosSistema() { return this.auth.listarUsuariosSistema(); }
+  adminResetContrasena(idUsuario: number, data: any) { return this.auth.adminResetContrasena(idUsuario, data); }
+  crearUsuarioSistema(data: any) { return this.auth.crearUsuarioSistema(data); }
+  actualizarUsuarioSistema(idUsuario: number, data: any) { return this.auth.actualizarUsuarioSistema(idUsuario, data); }
+  seedUsers() { return this.auth.seedUsers(); }
 }

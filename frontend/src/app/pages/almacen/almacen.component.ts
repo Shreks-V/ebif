@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -42,6 +42,7 @@ interface ServicioItem {
   precioA: number | null;
   precioB: number | null;
   activo: string;
+  categoria: string;
 }
 
 interface ComodatoItem {
@@ -88,8 +89,8 @@ interface TableSortState {
     }
   `],
 })
-export class AlmacenComponent implements OnInit {
-  activeTab: 'inventario' | 'servicios' | 'comodatos' = 'inventario';
+export class AlmacenComponent implements OnInit, OnDestroy {
+  activeTab: 'inventario' | 'servicios' | 'comodatos' | 'historial' = 'inventario';
   selectedCategory: string | null = null;
   quickInventoryFilter: 'none' | 'existencias-bajas' | 'proximos-vencer' = 'none';
   searchInventario = '';
@@ -118,6 +119,150 @@ export class AlmacenComponent implements OnInit {
   submittingDelete = false;
   submittingComodato = false;
 
+  // Quick stock entry
+  quickStockItem: { id: number; nombre: string; cantidadActual: number } | null = null;
+  quickStockCantidad = 1;
+  quickStockMotivo = 'Recepción de mercancía';
+  quickStockSubmitting = false;
+
+  openQuickStockModal(item: any): void {
+    this.quickStockItem = { id: item.id, nombre: item.nombre, cantidadActual: item.cantidadDisponible ?? 0 };
+    this.quickStockCantidad = 1;
+    this.quickStockMotivo = 'Recepción de mercancía';
+  }
+
+  closeQuickStockModal(): void { this.quickStockItem = null; }
+
+  quickStockDecrement(): void { if (this.quickStockCantidad > 1) this.quickStockCantidad--; }
+  quickStockIncrement(): void { this.quickStockCantidad++; }
+
+  confirmQuickStock(): void {
+    if (!this.quickStockItem || this.quickStockCantidad < 1 || this.quickStockSubmitting) return;
+    this.quickStockSubmitting = true;
+    const nuevoStock = this.quickStockItem.cantidadActual + this.quickStockCantidad;
+    this.api.ajustarExistencia(this.quickStockItem.id, nuevoStock, this.quickStockMotivo || 'Entrada de stock').subscribe({
+      next: () => {
+        this.quickStockSubmitting = false;
+        this.quickStockItem = null;
+        this.loadProductos();
+        this.loadAlmacenStats();
+      },
+      error: () => { this.quickStockSubmitting = false; },
+    });
+  }
+
+  // Historial tab
+  historialItems: any[] = [];
+  historialLoading = false;
+  historialFiltroProducto = '';
+  historialFiltroTipo = '';
+  historialFechaInicio = '';
+  historialFechaFin = '';
+  historialPage = 1;
+  readonly historialPageSize = 20;
+  historialSortKey = 'fecha_movimiento';
+  historialSortDir: 'asc' | 'desc' = 'desc';
+  private _historialDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  historialToggleSort(key: string): void {
+    if (this.historialSortKey === key) {
+      this.historialSortDir = this.historialSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.historialSortKey = key;
+      this.historialSortDir = key === 'fecha_movimiento' || key === 'cantidad' ? 'desc' : 'asc';
+    }
+    this.historialPage = 1;
+  }
+
+  get historialSorted(): any[] {
+    const key = this.historialSortKey;
+    const dir = this.historialSortDir === 'asc' ? 1 : -1;
+    return [...this.historialItems].sort((a, b) => {
+      const av = a[key] ?? '';
+      const bv = b[key] ?? '';
+      if (av < bv) return -dir;
+      if (av > bv) return dir;
+      return 0;
+    });
+  }
+
+  get historialPaginated(): any[] {
+    const start = (this.historialPage - 1) * this.historialPageSize;
+    return this.historialSorted.slice(start, start + this.historialPageSize);
+  }
+  get historialTotalPages(): number { return Math.max(1, Math.ceil(this.historialItems.length / this.historialPageSize)); }
+  get historialPageEnd(): number { return Math.min(this.historialPage * this.historialPageSize, this.historialItems.length); }
+  get historialHayFiltros(): boolean {
+    return !!(this.historialFiltroProducto || this.historialFiltroTipo || this.historialFechaInicio || this.historialFechaFin);
+  }
+
+  historialOnBusquedaChange(): void {
+    this.historialPage = 1;
+    if (this._historialDebounce) clearTimeout(this._historialDebounce);
+    this._historialDebounce = setTimeout(() => this.cargarHistorial(), 400);
+  }
+
+  historialOnFiltroChange(): void {
+    this.historialPage = 1;
+    this.cargarHistorial();
+  }
+
+  historialLimpiarFiltros(): void {
+    this.historialFiltroProducto = '';
+    this.historialFiltroTipo = '';
+    this.historialFechaInicio = '';
+    this.historialFechaFin = '';
+    this.historialPage = 1;
+    this.cargarHistorial();
+  }
+
+  cargarHistorial(): void {
+    this.historialLoading = true;
+    const params: any = { limit: 500 };
+    if (this.historialFiltroProducto) params['busqueda'] = this.historialFiltroProducto;
+    if (this.historialFiltroTipo) params['tipo_movimiento'] = this.historialFiltroTipo;
+    if (this.historialFechaInicio) params['fecha_inicio'] = this.historialFechaInicio;
+    if (this.historialFechaFin) params['fecha_fin'] = this.historialFechaFin;
+    this.api.getMovimientos(params).subscribe({
+      next: (data) => { this.historialItems = data; this.historialLoading = false; this.historialPage = 1; },
+      error: () => { this.historialLoading = false; },
+    });
+  }
+
+  private _silentRefreshHistorial(): void {
+    const params: any = { limit: 500 };
+    if (this.historialFiltroProducto) params['busqueda'] = this.historialFiltroProducto;
+    if (this.historialFiltroTipo) params['tipo_movimiento'] = this.historialFiltroTipo;
+    if (this.historialFechaInicio) params['fecha_inicio'] = this.historialFechaInicio;
+    if (this.historialFechaFin) params['fecha_fin'] = this.historialFechaFin;
+    this.api.getMovimientos(params).subscribe({
+      next: (data) => { this.historialItems = data; },
+      error: () => {},
+    });
+  }
+
+  tipoMovimientoLabel(tipo: string): string {
+    const map: Record<string, string> = {
+      ENTRADA: 'Entrada', SALIDA: 'Salida', AJUSTE: 'Ajuste',
+      SALIDA_MERMA: 'Merma', SALIDA_VENTA: 'Venta', SALIDA_COMODATO: 'Comodato',
+    };
+    return map[tipo] ?? tipo;
+  }
+
+  tipoMovimientoClass(tipo: string): string {
+    if (tipo === 'ENTRADA') return 'bg-emerald-100 text-emerald-700';
+    if (tipo === 'SALIDA') return 'bg-red-100 text-red-700';
+    if (tipo === 'SALIDA_VENTA') return 'bg-red-100 text-red-700';
+    if (tipo === 'SALIDA_COMODATO') return 'bg-purple-100 text-purple-700';
+    if (tipo === 'AJUSTE') return 'bg-blue-100 text-blue-700';
+    if (tipo === 'SALIDA_MERMA') return 'bg-amber-100 text-amber-700';
+    return 'bg-slate-100 text-slate-600';
+  }
+
+  tipoMovimientoSigno(tipo: string): string {
+    return (tipo === 'ENTRADA' || tipo === 'AJUSTE') ? '+' : '-';
+  }
+
   // Print
   printingComodato: ComodatoItem | null = null;
 
@@ -135,6 +280,9 @@ export class AlmacenComponent implements OnInit {
   get isAdminOrAlmacen(): boolean { return this.auth.hasRole('ADMINISTRADOR', 'ENCARGADO_ALMACEN'); }
   get debugMode(): boolean { return this.config.debug; }
 
+  private _refreshTimer: ReturnType<typeof setInterval> | null = null;
+  lastRefreshed: Date = new Date();
+
   constructor(private api: ApiService, private route: ActivatedRoute, private auth: AuthService, private config: ConfigService) {}
 
   ngOnInit(): void {
@@ -142,6 +290,13 @@ export class AlmacenComponent implements OnInit {
     this.loadServicios();
     this.loadComodatos();
     this.loadAlmacenStats();
+    this._refreshTimer = setInterval(() => {
+      this.loadProductos(true);
+      this.loadServicios();
+      this.loadAlmacenStats();
+      this._silentRefreshHistorial();
+      this.lastRefreshed = new Date();
+    }, 60_000);
 
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'];
@@ -171,8 +326,8 @@ export class AlmacenComponent implements OnInit {
 
   // ──────────────── Data Loading ────────────────
 
-  loadProductos(): void {
-    this.loading = true;
+  loadProductos(silent = false): void {
+    if (!silent) this.loading = true;
     this.api.getProductos({ activo: 'S' }).subscribe({
       next: (data) => {
         this.productos = data.map((p: any) => ({
@@ -197,11 +352,11 @@ export class AlmacenComponent implements OnInit {
           unidadMedida: String(p?.unidad_medida ?? p?.unidadMedida ?? '\u2014'),
           fechaCaducidad: p?.fecha_caducidad ?? p?.fechaCaducidad ?? null,
         })).filter((p: ProductoItem) => p.idProducto > 0 && !!p.nombre);
-        this.loading = false;
+        if (!silent) this.loading = false;
       },
       error: (err) => {
         console.error('Error loading productos:', err);
-        this.loading = false;
+        if (!silent) this.loading = false;
       },
     });
   }
@@ -243,6 +398,7 @@ export class AlmacenComponent implements OnInit {
           precioA: this.toNumberOrNull(s?.precio_cuota_a ?? s?.precioA),
           precioB: this.toNumberOrNull(s?.precio_cuota_b ?? s?.precioB),
           activo: String(s?.activo ?? 'S'),
+          categoria: String(s?.categoria ?? 'SERVICIO'),
         })).filter((s: ServicioItem) => s.idServicio > 0 && !!s.nombre);
       },
       error: (err) => console.error('Error loading servicios:', err),
@@ -288,6 +444,7 @@ export class AlmacenComponent implements OnInit {
       nombre: '',
       descripcion: '',
       tipo_producto: '',
+      categoria: 'SERVICIO',
       precio_cuota_a: null as number | null,
       precio_cuota_b: null as number | null,
       activo: 'S',
@@ -324,9 +481,10 @@ export class AlmacenComponent implements OnInit {
 
   // ──────────────── Producto Modal ────────────────
 
-  openNuevoProductoModal(): void {
+  openNuevoProductoModal(tipoInicial: string = ''): void {
     this.editingProduct = null;
     this.productoForm = this.getEmptyProductoForm();
+    if (tipoInicial) this.productoForm.tipo_producto = tipoInicial;
     this.showNuevoProductoModal = true;
   }
 
@@ -347,6 +505,7 @@ export class AlmacenComponent implements OnInit {
       nombre: producto.nombre,
       descripcion: producto.descripcion,
       tipo_producto: producto.tipoProducto,
+      categoria: 'SERVICIO',
       precio_cuota_a: producto.precioA,
       precio_cuota_b: producto.precioB,
       activo: producto.activo,
@@ -393,6 +552,7 @@ export class AlmacenComponent implements OnInit {
         precio_cuota_a: payload.precio_cuota_a,
         precio_cuota_b: payload.precio_cuota_b,
         cuota_recuperacion: payload.cuota_recuperacion ?? 0,
+        categoria: payload.categoria ?? 'SERVICIO',
       };
 
       this.api.createServicio(servicioPayload).subscribe({
@@ -583,6 +743,13 @@ export class AlmacenComponent implements OnInit {
 
   getComodatosActivosCount(): number {
     return this.comodatos.filter(c => c.estatus === 'PRESTADO').length;
+  }
+
+  get comodatosVencidos(): ComodatoItem[] {
+    const hoy = new Date().toLocaleDateString('en-CA');
+    return this.comodatos.filter(c =>
+      c.estatus === 'PRESTADO' && c.fechaDevolucion && c.fechaDevolucion.slice(0, 10) < hoy
+    );
   }
 
   mostrarInventarioCompleto(): void {
@@ -913,6 +1080,7 @@ export class AlmacenComponent implements OnInit {
       precio_cuota_a: servicio.precioA,
       precio_cuota_b: servicio.precioB,
       activo: servicio.activo,
+      categoria: servicio.categoria ?? 'SERVICIO',
     };
     this.showEditServicioModal = true;
   }
@@ -1026,5 +1194,9 @@ export class AlmacenComponent implements OnInit {
         this.submittingDevolucion = false;
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this._refreshTimer) clearInterval(this._refreshTimer);
   }
 }

@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { HttpInterceptorFn } from '@angular/common/http';
-import { catchError, throwError } from 'rxjs';
+import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 /**
@@ -64,28 +64,44 @@ function getAuthToken(): string | null {
   return null;
 }
 
+const REFRESH_THRESHOLD_SECONDS = 30 * 60; // renew if < 30 min left
+
+import type { HttpRequest } from '@angular/common/http';
+function addHeaders(r: HttpRequest<unknown>, token: string | null, preregistroToken: string | null) {
+  if (preregistroToken && isScopedPreregistroResourceUrl(r.url)) {
+    r = r.clone({ setHeaders: { 'X-Preregistro-Token': preregistroToken } });
+  }
+  if (token && !isPublicPreregistroUrl(r.url, r.method)) {
+    r = r.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
+  }
+  return r;
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const authService = inject(AuthService);
   const token = getAuthToken();
   const preregistroToken = sessionStorage.getItem('preregistro_token');
 
-  if (preregistroToken && isScopedPreregistroResourceUrl(req.url)) {
-    req = req.clone({
-      setHeaders: { 'X-Preregistro-Token': preregistroToken },
-    });
+  // Never refresh on auth endpoints to avoid infinite loops
+  const isAuthEndpoint = req.url.includes('/auth/');
+  const isPublic = isPublicPreregistroUrl(req.url, req.method);
+
+  const handle = (t: string | null) => {
+    const r = addHeaders(req, t, preregistroToken);
+    return next(r).pipe(
+      catchError((err) => {
+        if (err.status === 401 && !isPublic) authService.logout();
+        return throwError(() => err);
+      }),
+    );
+  };
+
+  // Proactive refresh: if token is valid but close to expiry, renew first
+  if (token && !isAuthEndpoint && !isPublic && authService.tokenSecondsLeft() < REFRESH_THRESHOLD_SECONDS) {
+    return authService.refreshToken().pipe(
+      switchMap(() => handle(getAuthToken())),
+    );
   }
 
-  if (token && !isPublicPreregistroUrl(req.url, req.method)) {
-    req = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` },
-    });
-  }
-
-  return next(req).pipe(
-    catchError((err) => {
-      if (err.status === 401 && !isPublicPreregistroUrl(req.url, req.method)) {
-        inject(AuthService).logout();
-      }
-      return throwError(() => err);
-    }),
-  );
+  return handle(token);
 };

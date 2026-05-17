@@ -8,8 +8,11 @@ from app.domain.auth.exceptions import AuthError, UserAlreadyExistsError, UserNo
 
 logger = logging.getLogger(__name__)
 from app.application.auth.use_cases import AuthService
-from app.presentation.api.dependencies import get_auth_service
+from app.presentation.api.dependencies import get_auth_service, get_token_decoder
 from app.presentation.api.security import get_current_user
+from app.domain.auth.ports import AccessTokenIssuer
+from app.core.config import settings
+from datetime import timedelta
 from app.presentation.api.schemas import (
     AdminResetContrasenaRequest, CambiarContrasenaRequest,
     Token, UserLogin, UserResponse, UsuarioCreate, UsuarioUpdate,
@@ -60,6 +63,17 @@ def login(
         }
     except LoginError:
         raise _auth_error()
+
+
+@router.post("/refresh", response_model=Token)
+def refresh_token(
+    current_user: dict = Depends(get_current_user),
+    token_issuer: AccessTokenIssuer = Depends(get_token_decoder),
+):
+    """Re-emite un token fresco para un usuario ya autenticado."""
+    payload = {"sub": current_user["correo"], "rol": current_user.get("rol")}
+    new_token = token_issuer.issue(payload, expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    return {"access_token": new_token, "token_type": "bearer"}
 
 
 @router.get("/me", response_model=UserResponse)

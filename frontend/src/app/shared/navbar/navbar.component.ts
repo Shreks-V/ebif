@@ -96,8 +96,63 @@ const ROLE_LABELS: Record<string, string> = {
               </svg>
               Reportes
             </a>
+
           </div>
     
+          <!-- Global Search (desktop) -->
+          <div class="hidden lg:block relative">
+            @if (searchOpen) {
+              <div class="flex items-center gap-2 bg-white/15 border border-white/30 rounded-xl px-3 py-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input #searchInput type="text" [(ngModel)]="searchQuery" (input)="onSearchInput()"
+                  (keydown.escape)="closeSearch()" (keydown.enter)="submitSearch()"
+                  placeholder="Buscar beneficiario..." autofocus
+                  class="bg-transparent text-white placeholder-white/50 text-sm outline-none w-48" />
+                <button (click)="closeSearch()" class="text-white/60 hover:text-white transition-colors cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              </div>
+              <!-- Results dropdown -->
+              @if (searchQuery.length >= 2) {
+                <div class="absolute top-full left-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+                  @if (searchLoading) {
+                    <div class="px-4 py-3 text-sm text-slate-400 flex items-center gap-2">
+                      <div class="w-3 h-3 border-2 border-slate-300 border-t-transparent rounded-full animate-spin"></div>
+                      Buscando...
+                    </div>
+                  } @else if (searchResults.length === 0) {
+                    <div class="px-4 py-3 text-sm text-slate-400">Sin resultados para "{{ searchQuery }}"</div>
+                  } @else {
+                    <div class="py-1">
+                      @for (r of searchResults; track r.idPaciente) {
+                        <button (click)="irABeneficiario()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-left cursor-pointer">
+                          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" [style.background]="'#00328b'">
+                            {{ (r.nombre?.charAt(0) || '') + (r.apellido_paterno?.charAt(0) || '') }}
+                          </div>
+                          <div class="min-w-0">
+                            <p class="text-sm font-bold text-slate-800 truncate">{{ r.nombre }} {{ r.apellido_paterno }} {{ r.apellido_materno }}</p>
+                            <p class="text-xs text-slate-500">{{ r.folio }} &middot; {{ r.membresia_estatus }}</p>
+                          </div>
+                        </button>
+                      }
+                      <div class="px-4 py-2 border-t border-slate-100">
+                        <button (click)="irABeneficiario()" class="text-xs font-semibold text-[#00328b] hover:underline cursor-pointer">
+                          Ver todos los resultados →
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            } @else {
+              <button (click)="openSearch()"
+                class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all duration-200 cursor-pointer"
+                title="Buscar (Ctrl+K)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </button>
+            }
+          </div>
+
           <!-- Right: Notifications + User menu + Mobile hamburger -->
           <div class="flex items-center gap-3 relative">
             <!-- Notifications bell (desktop) -->
@@ -525,6 +580,61 @@ export class NavbarComponent implements OnInit, OnDestroy {
   dismissedIds = new Set<string>();
   notifLoading = false;
 
+  // Global search
+  searchOpen = false;
+  searchQuery = '';
+  searchResults: any[] = [];
+  searchLoading = false;
+  private _searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  openSearch(): void {
+    this.searchOpen = true;
+    this.searchQuery = '';
+    this.searchResults = [];
+    this.userMenuOpen = false;
+    this.notificationsOpen = false;
+  }
+
+  closeSearch(): void {
+    this.searchOpen = false;
+    this.searchQuery = '';
+    this.searchResults = [];
+  }
+
+  onSearchInput(): void {
+    if (this._searchDebounce) clearTimeout(this._searchDebounce);
+    if (this.searchQuery.length < 2) { this.searchResults = []; return; }
+    this._searchDebounce = setTimeout(() => {
+      this.searchLoading = true;
+      this.api.getBeneficiarios({ busqueda: this.searchQuery, membresia_estatus: 'ACTIVO', limit: 8 }).subscribe({
+        next: (data) => { this.searchResults = data || []; this.searchLoading = false; },
+        error: () => { this.searchResults = []; this.searchLoading = false; },
+      });
+    }, 300);
+  }
+
+  submitSearch(): void {
+    this.irABeneficiario();
+  }
+
+  irABeneficiario(): void {
+    this.closeSearch();
+    this.router.navigate(['/registro-usuarios']);
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Escape') {
+      this.userMenuOpen = false;
+      this.notificationsOpen = false;
+      if (this.searchOpen) this.closeSearch();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      this.searchOpen ? this.closeSearch() : this.openSearch();
+    }
+  }
+
   get visibleNotifications(): NavbarNotification[] {
     return this.notifications.filter(n => !this.dismissedIds.has(n.id));
   }
@@ -556,22 +666,18 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.refreshInterval) clearInterval(this.refreshInterval);
+    if (this._searchDebounce) clearTimeout(this._searchDebounce);
   }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    if (!this.userMenuOpen && !this.notificationsOpen) return;
+    if (!this.userMenuOpen && !this.notificationsOpen && !this.searchOpen) return;
     const target = event.target as Node;
     if (!this.host.nativeElement.contains(target)) {
       this.userMenuOpen = false;
       this.notificationsOpen = false;
+      if (this.searchOpen) this.closeSearch();
     }
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.userMenuOpen = false;
-    this.notificationsOpen = false;
   }
 
   get userName(): string {

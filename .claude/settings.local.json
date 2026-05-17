@@ -153,7 +153,22 @@
       "Bash(venv/bin/python -c \"from app.infrastructure.doctores.repository import crear_doctor; print\\('OK'\\)\")",
       "Bash(venv/bin/python -c \"from app.presentation.api.routers.preregistro import router; print\\('Backend OK'\\)\")",
       "Bash(read -r LINES_627_628)",
-      "Bash(sed -n '625,635p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/almacen/almacen.component.html\")"
+      "Bash(sed -n '625,635p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/almacen/almacen.component.html\")",
+      "Bash(grep -E \"\\\\.\\(ts|html\\)$\")",
+      "Bash(awk '{print $NF}')",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(venv/bin/python -c \"from app.presentation.api.routers.auth import router; print\\('OK'\\)\")",
+      "Bash(venv/bin/python -c \"from app.presentation.api.routers.reportes import router; print\\('OK'\\)\")",
+      "Bash(venv/bin/python -c \"from app.infrastructure.almacen.repository import listar_movimientos; print\\('OK'\\)\")",
+      "Bash(python db/apply_migration.py \"db/migrations/019_servicio_categoria.sql\")",
+      "Bash(grep -v \"^chunk\\\\|^polyfills\\\\|^styles\\\\|^main\\\\|^Lazy\\\\|^Initial\\\\|^Application\\\\|^Output\\\\|^\\\\s*$\")",
+      "Bash(pkill -f \"uvicorn\\\\|fastapi\")",
+      "Bash(git -C \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif\" diff --stat HEAD)",
+      "Bash(git -C \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif\" status --short)",
+      "Bash(sed -i '' 's/current_user: dict=None/current_user: CurrentUser | None = None/g' __TRACKED_VAR__/repository.py)",
+      "Bash(sed -i '' 's/current_user: dict = None/current_user: CurrentUser | None = None/g' __TRACKED_VAR__/repository.py)",
+      "Bash(awk '/^def /{start=NR; func=$0} NR-start>40 && start{print \"Line \"start\": \"func\" is \"NR-start\" lines\"}' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/infrastructure/exportaciones/repository.py\")",
+      "Bash(python -m pytest tests/test_almacen_dtos.py tests/test_beneficiarios_dtos.py tests/test_almacen_service.py -v)"
     ]
   },
   "enableAllProjectMcpServers": true,

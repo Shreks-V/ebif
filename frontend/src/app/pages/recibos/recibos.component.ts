@@ -132,6 +132,76 @@ export class RecibosComponent implements OnInit {
     cantidad: 1
   };
 
+  // Multi-select catalog state
+  catalogoTab: 'SERVICIO' | 'LABORATORIO' | 'PRODUCTO' = 'SERVICIO';
+  catalogoFiltro = '';
+  cantidadesCatalogo: Record<string, number> = {};
+  laboratoriosCatalogo: ConceptoCobroOption[] = [];
+
+  getCatalogKey(tipo: string, id: number): string { return `${tipo}_${id}`; }
+
+  getCantidad(tipo: string, id: number): number {
+    return this.cantidadesCatalogo[this.getCatalogKey(tipo, id)] ?? 0;
+  }
+
+  setCantidad(tipo: string, id: number, val: number): void {
+    const key = this.getCatalogKey(tipo, id);
+    const n = Math.max(0, Math.floor(Number(val) || 0));
+    if (n === 0) delete this.cantidadesCatalogo[key];
+    else this.cantidadesCatalogo[key] = n;
+  }
+
+  get catalogoActivo(): ConceptoCobroOption[] {
+    let list: ConceptoCobroOption[];
+    if (this.catalogoTab === 'SERVICIO') list = this.serviciosCatalogo;
+    else if (this.catalogoTab === 'LABORATORIO') list = this.laboratoriosCatalogo;
+    else list = this.productosCatalogo;
+    if (!this.catalogoFiltro) return list;
+    const q = this.catalogoFiltro.toLowerCase();
+    return list.filter(c => c.nombre.toLowerCase().includes(q));
+  }
+
+  get totalSeleccionados(): number {
+    return Object.values(this.cantidadesCatalogo).filter(v => v > 0).length;
+  }
+
+  precioParaCuota(item: ConceptoCobroOption): number {
+    const cuota = this.tipoCuotaBeneficiarioSeleccionado;
+    if (cuota === 'B' && item.precioB > 0) return item.precioB;
+    if (item.precioA > 0) return item.precioA;
+    return item.precioDefault;
+  }
+
+  agregarSeleccionados(): void {
+    const allItems = [...this.serviciosCatalogo, ...this.laboratoriosCatalogo, ...this.productosCatalogo];
+    for (const [key, cantidad] of Object.entries(this.cantidadesCatalogo)) {
+      if (cantidad <= 0) continue;
+      const [tipoStr, idStr] = key.split('_');
+      const tipo = tipoStr as 'SERVICIO' | 'PRODUCTO';
+      const id = Number(idStr);
+      const found = allItems.find(c => c.tipo === tipo && c.id === id);
+      if (!found) continue;
+      const precio = this.precioParaCuota(found);
+      const existing = this.itemsNuevoCobro.findIndex(i => i.id === id && i.tipo === tipo);
+      if (existing >= 0) {
+        this.itemsNuevoCobro[existing].cantidad += cantidad;
+        this.itemsNuevoCobro[existing].subtotal = this.itemsNuevoCobro[existing].cantidad * precio;
+      } else {
+        this.itemsNuevoCobro.push({
+          tipo,
+          id,
+          descripcion: found.nombre,
+          cantidad,
+          precio_unitario: precio,
+          subtotal: precio * cantidad,
+        });
+      }
+    }
+    this.cantidadesCatalogo = {};
+    this.catalogoFiltro = '';
+    this.recalcularTotalDesdeItems();
+  }
+
   nuevoCobro = {
     id_paciente: 0,
     monto_total: 0,
@@ -343,18 +413,32 @@ export class RecibosComponent implements OnInit {
   }
 
   private cargarCatalogoCobros(): void {
-    this.api.getServicios({ activo: 'S' }).subscribe({
+    this.api.getServicios({ activo: 'S', categoria: 'SERVICIO' }).subscribe({
       next: (data: any[]) => {
         this.serviciosCatalogo = data.map((s: any) => ({
           id: s.id_servicio,
           nombre: s.nombre,
-          tipo: 'SERVICIO',
+          tipo: 'SERVICIO' as const,
           precioA: Number(s.precio_cuota_a ?? s.cuota_recuperacion ?? 0),
           precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
           precioDefault: Number(s.cuota_recuperacion ?? s.precio_cuota_a ?? s.precio_cuota_b ?? 0),
         }));
       },
       error: (err) => console.error('Error al cargar servicios para cobro:', err)
+    });
+
+    this.api.getServicios({ activo: 'S', categoria: 'LABORATORIO' }).subscribe({
+      next: (data: any[]) => {
+        this.laboratoriosCatalogo = data.map((s: any) => ({
+          id: s.id_servicio,
+          nombre: s.nombre,
+          tipo: 'SERVICIO' as const,
+          precioA: Number(s.precio_cuota_a ?? s.cuota_recuperacion ?? 0),
+          precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
+          precioDefault: Number(s.cuota_recuperacion ?? s.precio_cuota_a ?? s.precio_cuota_b ?? 0),
+        }));
+      },
+      error: (err) => console.error('Error al cargar laboratorios para cobro:', err)
     });
 
     this.api.getProductos({ activo: 'S' }).subscribe({

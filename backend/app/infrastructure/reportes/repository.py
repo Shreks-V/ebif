@@ -4,6 +4,8 @@ from datetime import date, datetime
 from difflib import SequenceMatcher
 import logging
 import unicodedata
+from app.domain.reportes.ports import ReportesRepository
+from app.domain.shared.current_user import CurrentUser
 from app.domain.exceptions import InternalError
 from typing import Optional
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
@@ -149,7 +151,7 @@ def _build_patient_where(
     where = ' AND '.join(clauses) if clauses else '1=1'
     return (where, params)
 
-def reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Distribucion de pacientes por genero (PACIENTE.GENERO)."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
@@ -169,7 +171,7 @@ def reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, t
         logger.exception('Error en reporte por genero')
         raise InternalError('Error interno del servidor')
 
-def reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Distribucion por grupo de edad calculado desde PACIENTE.FECHA_NACIMIENTO."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     etapas_orden = ['Primera Infancia (0-5)', 'Infancia (6-11)', 'Adolescencia (12-17)', 'Juventud (18-29)', 'Adultez (30-59)', 'Adulto Mayor (60+)']
@@ -185,7 +187,7 @@ def reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=Non
         logger.exception('Error en reporte por etapa de vida')
         raise InternalError('Error interno del servidor')
 
-def reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Distribucion por tipo de espina bifida (TIPO_ESPINA_BIFIDA table)."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
@@ -200,7 +202,7 @@ def reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=No
         logger.exception('Error en reporte por tipo espina')
         raise InternalError('Error interno del servidor')
 
-def reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Distribucion de pacientes por estado/region (PACIENTE.ESTADO)."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
@@ -221,7 +223,7 @@ def reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, t
         logger.exception('Error en reporte por estado')
         raise InternalError('Error interno del servidor')
 
-def reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Resumen general de estadisticas del sistema."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin, solo_activos=False)
     try:
@@ -267,7 +269,7 @@ def reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo
         logger.exception('Error en reporte resumen')
         raise InternalError('Error interno del servidor')
 
-def reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Total de servicios brindados por tipo de servicio (RF-ER-08)."""
     try:
         with get_db() as conn:
@@ -291,7 +293,7 @@ def reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Opti
         logger.exception('Error en reporte servicios por tipo')
         raise InternalError('Error interno del servidor')
 
-def reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Número de estudios (servicios de tipo estudio) realizados (RF-ER-09)."""
     try:
         with get_db() as conn:
@@ -314,7 +316,7 @@ def reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optio
         logger.exception('Error en reporte estudios por tipo')
         raise InternalError('Error interno del servidor')
 
-def reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Total de pagos exentos y cuotas de recuperación (RF-ER-10)."""
     try:
         with get_db() as conn:
@@ -335,7 +337,7 @@ def reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
         logger.exception('Error en reporte pagos exentos')
         raise InternalError('Error interno del servidor')
 
-def reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=None, current_user: dict=None):
+def reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):
     """Reporte mensual consolidado con resumen de servicios y demografía (RF-ER-07)."""
     hoy = date.today()
     m = mes or hoy.month
@@ -361,7 +363,7 @@ def reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=Non
         logger.exception('Error en reporte consolidado mensual')
         raise InternalError('Error interno del servidor')
 
-def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
+def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Historial de reportes generados (tabla REPORTE)."""
     try:
         with get_db() as conn:
@@ -389,7 +391,7 @@ def historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[
         raise InternalError('Error interno del servidor')
 
 
-def reporte_por_ciudad(current_user: dict=None):
+def reporte_por_ciudad(current_user: CurrentUser | None = None):
     """Distribución por ciudad/municipio de residencia de pacientes activos."""
     try:
         with get_db() as conn:
@@ -415,7 +417,7 @@ def reporte_por_ciudad(current_user: dict=None):
         raise InternalError('Error interno del servidor')
 
 
-def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: dict=None):
+def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Indicadores de desempeño cruzados por etapa de vida (RF-ER)."""
     ETAPAS = [
         'Primera Infancia (0-5)', 'Infancia (6-11)', 'Adolescencia (12-17)',
@@ -597,7 +599,52 @@ def indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[
         raise InternalError('Error interno del servidor')
 
 
-class OracleReportesRepository:
+def reporte_pagos_por_metodo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+    """Desglose del monto cobrado agrupado por método de pago en el período."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            clauses = ["v.CANCELADA = 'N'"]
+            params: dict = {}
+            if fecha_inicio:
+                clauses.append("v.FECHA_VENTA >= TO_TIMESTAMP(:fi, 'YYYY-MM-DD')")
+                params['fi'] = fecha_inicio
+            if fecha_fin:
+                clauses.append("v.FECHA_VENTA < TO_TIMESTAMP(:ff, 'YYYY-MM-DD') + 1")
+                params['ff'] = fecha_fin
+            where = ' AND '.join(clauses)
+            cursor.execute(f"""
+                SELECT mp.NOMBRE          AS metodo,
+                       COUNT(vmp.ID_VENTA) AS num_pagos,
+                       NVL(SUM(vmp.MONTO), 0) AS monto_total
+                  FROM VENTA_METODO_PAGO vmp
+                  JOIN METODO_PAGO mp ON mp.ID_METODO_PAGO = vmp.ID_METODO_PAGO
+                  JOIN VENTA v        ON v.ID_VENTA = vmp.ID_VENTA
+                 WHERE {where}
+                 GROUP BY mp.NOMBRE
+                 ORDER BY monto_total DESC
+            """, params)
+            cols = [c[0].lower() for c in cursor.description]
+            rows = [dict(zip(cols, row)) for row in cursor.fetchall()]
+            total = sum(float(r['monto_total']) for r in rows)
+            return {
+                'detalle': [
+                    {
+                        'metodo': r['metodo'],
+                        'num_pagos': int(r['num_pagos']),
+                        'monto': float(r['monto_total']),
+                        'porcentaje': round(float(r['monto_total']) / total * 100, 1) if total else 0,
+                    }
+                    for r in rows
+                ],
+                'total': total,
+            }
+    except Exception:
+        logger.exception('Error en reporte pagos por metodo')
+        raise InternalError('Error interno del servidor')
+
+
+class OracleReportesRepository(ReportesRepository):
     def reporte_por_genero(self, genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
         return reporte_por_genero(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
 
@@ -633,3 +680,6 @@ class OracleReportesRepository:
 
     def indicadores_desempeno(self, fecha_inicio=None, fecha_fin=None, current_user=None):
         return indicadores_desempeno(fecha_inicio, fecha_fin, current_user)
+
+    def reporte_pagos_por_metodo(self, fecha_inicio=None, fecha_fin=None, current_user=None):
+        return reporte_pagos_por_metodo(fecha_inicio, fecha_fin, current_user)

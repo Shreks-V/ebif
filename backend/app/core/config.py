@@ -12,7 +12,7 @@ class Settings(BaseModel):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "change-in-production")
     ALLOW_FALLBACK_USERS: bool = os.getenv("ALLOW_FALLBACK_USERS", "false").lower() in ("true", "1", "yes")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))  # 2 hours
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))  # 8 hours
     CORS_ORIGINS: list[str] = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:4200").split(",") if origin.strip()]
     ALLOWED_HOSTS: list[str] = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,backend").split(",") if host.strip()]
     MAX_UPLOAD_SIZE: int = int(os.getenv("MAX_UPLOAD_SIZE", str(5 * 1024 * 1024)))  # 5 MB

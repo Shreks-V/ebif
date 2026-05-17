@@ -25,6 +25,8 @@ export class PreRegistroComponent implements OnInit {
   submitted = false;
   submitting = false;
   fotografiaName = '';
+  fotografiaFile: File | null = null;
+  fotografiaPreview: string | null = null;
   stepError = '';
   validationAttempted = false;
   invalidFields: string[] = [];
@@ -358,6 +360,15 @@ export class PreRegistroComponent implements OnInit {
         if (res.preregistro_token) {
           sessionStorage.setItem('preregistro_token', res.preregistro_token);
         }
+        if (this.fotografiaFile) {
+          const tipoFoto = this.tiposDocumento.find(t =>
+            t.nombre?.toLowerCase().includes('fotograf')
+          );
+          if (tipoFoto) {
+            this.api.uploadDocumento(res.id_paciente, tipoFoto.id_tipo_documento, this.fotografiaFile)
+              .subscribe({ error: (e) => console.error('Error al subir fotografía:', e) });
+          }
+        }
         this.currentStep = 5;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
@@ -385,8 +396,19 @@ export class PreRegistroComponent implements OnInit {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
-      this.fotografiaName = input.files[0].name;
+      const file = input.files[0];
+      this.fotografiaFile = file;
+      this.fotografiaName = file.name;
+      const reader = new FileReader();
+      reader.onload = (e) => { this.fotografiaPreview = e.target?.result as string; };
+      reader.readAsDataURL(file);
     }
+  }
+
+  quitarFotografia(): void {
+    this.fotografiaFile = null;
+    this.fotografiaName = '';
+    this.fotografiaPreview = null;
   }
 
   get hayDocumentosListos(): boolean {

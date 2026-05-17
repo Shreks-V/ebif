@@ -42,15 +42,36 @@
       @if (activeTab === 'citas') {
         <div class="bg-white rounded-xl shadow-sm border border-slate-200">
           <!-- Card Header -->
-          <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
             <h2 class="text-lg font-bold text-slate-900 tracking-wide">CITAS</h2>
-            <button (click)="abrirNuevaCita()" class="px-4 py-2 bg-[#00328b] text-white text-sm font-semibold rounded-lg hover:bg-[#002a75] transition-colors flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" x2="12" y1="5" y2="19"/>
-                <line x1="5" x2="19" y1="12" y2="12"/>
-              </svg>
-              Nueva Cita
-            </button>
+            <div class="flex items-center gap-2 ml-auto">
+              <!-- View toggle -->
+              <div class="flex rounded-lg border border-slate-200 overflow-hidden">
+                <button (click)="citasView = 'lista'"
+                  class="px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5"
+                  [class]="citasView === 'lista' ? 'bg-[#00328b] text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+                  Lista
+                </button>
+                <button (click)="citasView = 'calendario'"
+                  class="px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 border-l border-slate-200"
+                  [class]="citasView === 'calendario' ? 'bg-[#00328b] text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                  Calendario
+                </button>
+              </div>
+              <button (click)="exportarCitasCSV()" class="px-3 py-1.5 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                CSV
+              </button>
+              <button (click)="abrirNuevaCita()" class="px-4 py-2 bg-[#00328b] text-white text-sm font-semibold rounded-lg hover:bg-[#002a75] transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" x2="12" y1="5" y2="19"/>
+                  <line x1="5" x2="19" y1="12" y2="12"/>
+                </svg>
+                Nueva Cita
+              </button>
+            </div>
           </div>
           <!-- Search + Filters -->
           <div class="px-6 py-4 space-y-4 sticky top-16 z-20 bg-white border-b border-slate-100 shadow-sm">
@@ -131,8 +152,56 @@
               </div>
             </div>
           }
+
+          <!-- Calendar View -->
+          @if (!loading && citasView === 'calendario') {
+            <div class="p-5">
+              <!-- Month navigation -->
+              <div class="flex items-center justify-between mb-4">
+                <button (click)="calendarPrev()" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h3 class="text-base font-black text-slate-800 capitalize">{{ calendarMonthLabel }}</h3>
+                <button (click)="calendarNext()" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <!-- Day headers -->
+              <div class="grid grid-cols-7 mb-1">
+                @for (d of ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']; track d) {
+                  <div class="text-center text-[10px] font-bold text-slate-400 uppercase py-1">{{ d }}</div>
+                }
+              </div>
+              <!-- Day cells -->
+              <div class="grid grid-cols-7 gap-1">
+                @for (cell of calendarDays; track cell.dateStr) {
+                  <div class="min-h-[90px] rounded-xl border p-1.5 transition-colors"
+                    [class]="cell.isToday ? 'border-[#00328b] bg-[#00328b]/5' :
+                             cell.isCurrentMonth ? 'border-slate-200 bg-white hover:border-slate-300' :
+                             'border-transparent bg-slate-50'">
+                    <p class="text-xs font-bold mb-1 text-right"
+                      [class]="cell.isToday ? 'text-[#00328b]' : cell.isCurrentMonth ? 'text-slate-700' : 'text-slate-300'">
+                      {{ cell.day }}
+                    </p>
+                    @for (cita of cell.citas.slice(0,3); track cita.idCita) {
+                      <div (click)="verDetalleCita(cita)"
+                        class="text-[10px] font-semibold px-1.5 py-0.5 rounded mb-0.5 truncate cursor-pointer"
+                        [ngClass]="getEstadoBadgeClass(cita.estatus)"
+                        [title]="cita.nombrePaciente">
+                        {{ getHora(cita.fechaHora) }} {{ cita.nombrePaciente }}
+                      </div>
+                    }
+                    @if (cell.citas.length > 3) {
+                      <p class="text-[9px] font-bold text-slate-400 text-right">+{{ cell.citas.length - 3 }} más</p>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
           <!-- Table -->
-          @if (!loading) {
+          @if (!loading && citasView === 'lista') {
             <div class="overflow-y-auto" style="max-height: calc(100vh - 24rem);">
               <table class="w-full text-sm">
                 <thead class="sticky top-0 z-10 shadow-sm">

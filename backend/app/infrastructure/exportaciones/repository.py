@@ -15,6 +15,8 @@ import logging
 from datetime import datetime, date
 from pathlib import Path
 from typing import Optional
+from app.domain.exportaciones.ports import ExportacionesRepository
+from app.domain.shared.current_user import CurrentUser
 from app.domain.exportaciones.entities import FilePayload
 from app.domain.exceptions import InternalError, NotFoundError, ValidationError
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
@@ -53,7 +55,7 @@ def exportar_reporte_pdf(  # noqa: C901
     fecha_fin: Optional[str] = None,
     mes: Optional[int] = None,
     anio: Optional[int] = None,
-    current_user: dict = None,
+    current_user: CurrentUser | None = None,
 ):
     """Generar reporte estadístico en PDF (RF-ER-05)."""
     from reportlab.lib.pagesizes import letter
@@ -135,15 +137,6 @@ def exportar_reporte_pdf(  # noqa: C901
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
             ]))
             return t
-
-        def _page_footer(cv, doc):
-            cv.saveState()
-            cv.setFont('Helvetica', 7)
-            cv.setFillColor(GRAY)
-            cv.drawString(L_MARGIN, 0.4 * inch,
-                          'Confidencial — Asociación de Espina Bífida de Nuevo León A.B.P.')
-            cv.drawRightString(PAGE_W - R_MARGIN, 0.4 * inch, f'Pág. {doc.page}')
-            cv.restoreStore()
 
         def _page_footer(cv, doc):
             cv.saveState()
@@ -513,7 +506,7 @@ def exportar_reporte_pdf(  # noqa: C901
         logger.exception('Error al generar PDF de reporte')
         raise InternalError('Error interno del servidor')
 
-def exportar_beneficiario_pdf(folio: str, current_user: dict=None):
+def exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = None):
     """Generar reporte PDF de un beneficiario con sus datos y documentos (RF-ER-06)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -557,7 +550,7 @@ def exportar_beneficiario_pdf(folio: str, current_user: dict=None):
         logger.exception('Error al generar PDF del beneficiario')
         raise InternalError('Error interno del servidor')
 
-def exportar_credencial_pdf(folio: str, current_user: dict=None):
+def exportar_credencial_pdf(folio: str, current_user: CurrentUser | None = None):
     """Generar credencial del beneficiario en PDF (RF-RB-06)."""
     from reportlab.lib.pagesizes import landscape, A6
     from reportlab.lib.units import cm
@@ -754,7 +747,7 @@ def exportar_credencial_pdf(folio: str, current_user: dict=None):
         raise InternalError('Error interno del servidor')
 
 
-def exportar_comprobante_cita(id_cita: int, current_user: dict=None):
+def exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = None):
     """Generar comprobante PDF de una cita con sus servicios (RF-SO-10)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -818,7 +811,7 @@ def exportar_comprobante_cita(id_cita: int, current_user: dict=None):
         logger.exception('Error al generar comprobante PDF')
         raise InternalError('Error interno del servidor')
 
-def exportar_contrato_comodato(id_comodato: int, current_user: dict=None):
+def exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | None = None):
     """Generar contrato de comodato en PDF (RF-PS-05)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -883,7 +876,7 @@ def exportar_contrato_comodato(id_comodato: int, current_user: dict=None):
         logger.exception('Error al generar contrato de comodato PDF')
         raise InternalError('Error interno del servidor')
 
-def exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[str]=None, membresia_estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: dict=None):
+def exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[str]=None, membresia_estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: CurrentUser | None = None):
     """Exportar lista filtrada de beneficiarios a Excel (RF-RB-07)."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -940,7 +933,7 @@ def exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[st
         logger.exception('Error al generar Excel de beneficiarios')
         raise InternalError('Error interno del servidor')
 
-def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, mes: Optional[int]=None, anio: Optional[int]=None, current_user: dict=None):
+def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):
     """Exportar datos de reportes a Excel (RF-ER-11)."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -1069,7 +1062,7 @@ def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None
         raise InternalError('Error interno del servidor')
 
 
-class OracleExportacionesRepository:
+class OracleExportacionesRepository(ExportacionesRepository):
     def exportar_reporte_pdf(self, tipo='resumen', genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, mes=None, anio=None, current_user=None):
         return exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user)
 

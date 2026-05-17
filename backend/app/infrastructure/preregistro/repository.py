@@ -4,6 +4,8 @@ from datetime import datetime, date
 import logging
 import mimetypes
 import os
+from app.domain.preregistro.ports import PreregistroRepository
+from app.domain.shared.current_user import CurrentUser
 import uuid
 from pathlib import Path
 from app.domain.preregistro.entities import UploadedFile
@@ -45,7 +47,7 @@ def _serialize(row: dict) -> dict:
     return result
 
 
-def _resolve_usuario_registro_id(conn, current_user: dict | None) -> int:
+def _resolve_usuario_registro_id(conn, current_user: CurrentUser | None) -> int:
     """Resolver un ID_USUARIO_REGISTRO existente para cumplir FK de DOCUMENTO_PACIENTE."""
     cursor = conn.cursor()
 
@@ -85,7 +87,7 @@ def _resolve_usuario_registro_id(conn, current_user: dict | None) -> int:
 
 _BASE_SQL = '\n    SELECT ID_PACIENTE, FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n           FECHA_NACIMIENTO, GENERO, CURP,\n           ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,\n           DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n           TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n           TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL, ESTATUS_REGISTRO,\n           FECHA_REGISTRO, EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n           TIPO_SANGRE, USA_VALVULA\n    FROM PACIENTE\n'
 
-def listar_preregistros(estatus: Optional[str]=None, current_user: dict=None, limit: int=100, offset: int=0):
+def listar_preregistros(estatus: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar todos los pre-registros (pacientes pendientes de aprobación)."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _BASE_SQL + " WHERE ESTATUS_REGISTRO IN ('PENDIENTE', 'RECHAZADO')"
@@ -244,7 +246,7 @@ def actualizar_preregistro(id_paciente: int, data):
         conn.commit()
     return _fetch_preregistro(id_paciente)
 
-def aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: dict = None):
+def aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: CurrentUser | None = None):
     """Aprobar un pre-registro y convertirlo en beneficiario aprobado."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -283,7 +285,7 @@ async def subir_documento(
     id_paciente: int,
     id_tipo_documento: int,
     archivo: UploadedFile,
-    current_user: dict | None = None,
+    current_user: CurrentUser | None = None,
 ):
     """Subir un documento para un pre-registro."""
     with get_db() as conn:
@@ -393,7 +395,7 @@ def eliminar_documento(id_paciente: int, id_documento: int):
         conn.commit()
     return {'message': 'Documento eliminado correctamente'}
 
-def rechazar_preregistro(id_paciente: int, current_user: dict=None):
+def rechazar_preregistro(id_paciente: int, current_user: CurrentUser | None = None):
     """Rechazar un pre-registro."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -407,7 +409,7 @@ def rechazar_preregistro(id_paciente: int, current_user: dict=None):
     return {'message': 'Pre-registro rechazado', 'preregistro': preregistro}
 
 
-class OraclePreregistroRepository:
+class OraclePreregistroRepository(PreregistroRepository):
     def listar_preregistros(self, estatus=None, current_user=None, limit=100, offset=0):
         return listar_preregistros(estatus, current_user, limit, offset)
 

@@ -8,6 +8,7 @@ class ServicioBase(BaseModel):
     cuota_recuperacion: float = Field(default=0.0, ge=0)
     precio_cuota_a: Optional[float] = Field(default=None, ge=0)
     precio_cuota_b: Optional[float] = Field(default=None, ge=0)
+    categoria: Literal["SERVICIO", "LABORATORIO"] = "SERVICIO"
     activo: Literal["S", "N"] = "S"
 
 

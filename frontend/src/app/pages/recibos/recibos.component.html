@@ -496,42 +496,101 @@
             </div>
           }
 
-          <!-- Add item staging row -->
-          <div class="space-y-2">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <select [(ngModel)]="nuevoConcepto.tipo" (ngModelChange)="onTipoConceptoChange()"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
-                <option value="SERVICIO">Servicio</option>
-                <option value="PRODUCTO">Producto</option>
-              </select>
-              <select [(ngModel)]="nuevoConcepto.id" (ngModelChange)="onConceptoSeleccionadoChange()"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm">
-                <option [ngValue]="0" disabled>
-                  {{ nuevoConcepto.tipo === 'SERVICIO' ? 'Seleccionar servicio...' : 'Seleccionar producto...' }}
-                </option>
-                @for (item of conceptosDisponibles; track item) {
-                  <option [ngValue]="item.id">{{ item.nombre }}</option>
-                }
-              </select>
-              <input type="number" [(ngModel)]="nuevoConcepto.cantidad" (ngModelChange)="onCantidadConceptoChange()" min="1" step="1"
-                [disabled]="nuevoConcepto.tipo === 'SERVICIO'"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm disabled:bg-slate-50 disabled:text-slate-400"
-                placeholder="Cantidad" />
+          <!-- Multi-select catalog -->
+          <div class="border-2 border-slate-200 rounded-xl overflow-hidden">
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-200 bg-slate-50">
+              <button type="button" (click)="catalogoTab = 'SERVICIO'; catalogoFiltro = ''"
+                class="flex-1 py-2.5 text-xs font-semibold transition-all cursor-pointer"
+                [class.bg-white]="catalogoTab === 'SERVICIO'"
+                [class.text-[#00328b]]="catalogoTab === 'SERVICIO'"
+                [class.border-b-2]="catalogoTab === 'SERVICIO'"
+                [class.border-[#00328b]]="catalogoTab === 'SERVICIO'"
+                [class.text-slate-500]="catalogoTab !== 'SERVICIO'">
+                Servicios
+              </button>
+              <button type="button" (click)="catalogoTab = 'LABORATORIO'; catalogoFiltro = ''"
+                class="flex-1 py-2.5 text-xs font-semibold transition-all cursor-pointer"
+                [class.bg-white]="catalogoTab === 'LABORATORIO'"
+                [class.text-[#00328b]]="catalogoTab === 'LABORATORIO'"
+                [class.border-b-2]="catalogoTab === 'LABORATORIO'"
+                [class.border-[#00328b]]="catalogoTab === 'LABORATORIO'"
+                [class.text-slate-500]="catalogoTab !== 'LABORATORIO'">
+                Laboratorio
+              </button>
+              <button type="button" (click)="catalogoTab = 'PRODUCTO'; catalogoFiltro = ''"
+                class="flex-1 py-2.5 text-xs font-semibold transition-all cursor-pointer"
+                [class.bg-white]="catalogoTab === 'PRODUCTO'"
+                [class.text-[#00328b]]="catalogoTab === 'PRODUCTO'"
+                [class.border-b-2]="catalogoTab === 'PRODUCTO'"
+                [class.border-[#00328b]]="catalogoTab === 'PRODUCTO'"
+                [class.text-slate-500]="catalogoTab !== 'PRODUCTO'">
+                Productos
+              </button>
             </div>
-            @if (conceptoPrecioUnitario > 0) {
-              <p class="text-xs font-semibold text-slate-600">
-                Precio unitario (cuota {{ tipoCuotaBeneficiarioSeleccionado }}):
-                <span class="text-emerald-700">${{ conceptoPrecioUnitario | number:'1.2-2' }}</span>
-                &middot; Subtotal:
-                <span class="text-emerald-700">${{ (conceptoPrecioUnitario * nuevoConcepto.cantidad) | number:'1.2-2' }}</span>
-              </p>
-            }
-            <button (click)="agregarItemALista()"
-              [disabled]="nuevoConcepto.id === 0"
-              class="w-full py-2.5 border-2 border-dashed border-emerald-300 rounded-xl text-sm font-semibold text-emerald-600 hover:bg-emerald-50 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
-              Agregar al cobro
-            </button>
+
+            <!-- Search -->
+            <div class="px-3 py-2 border-b border-slate-100 bg-white">
+              <input type="text" [(ngModel)]="catalogoFiltro"
+                [placeholder]="catalogoTab === 'SERVICIO' ? 'Buscar servicio...' : 'Buscar producto...'"
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-1 focus:ring-blue-100 transition-all" />
+            </div>
+
+            <!-- Items list -->
+            <div class="max-h-52 overflow-y-auto bg-white">
+              @if (catalogoActivo.length === 0) {
+                <p class="text-center text-slate-400 text-sm py-6">Sin resultados</p>
+              }
+              @for (item of catalogoActivo; track item.id) {
+                <div class="flex items-center gap-3 px-3 py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-slate-800 truncate">{{ item.nombre }}</p>
+                    @if (precioParaCuota(item) > 0) {
+                      <p class="text-xs text-emerald-600 font-semibold">${{ precioParaCuota(item) | number:'1.2-2' }}</p>
+                    } @else {
+                      <p class="text-xs text-slate-400">Sin precio para cuota {{ tipoCuotaBeneficiarioSeleccionado }}</p>
+                    }
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button"
+                      (click)="setCantidad(catalogoTab, item.id, getCantidad(catalogoTab, item.id) - 1)"
+                      [disabled]="getCantidad(catalogoTab, item.id) === 0"
+                      class="w-7 h-7 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-all cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                    </button>
+                    <span class="w-8 text-center text-sm font-bold"
+                      [class.text-[#00328b]]="getCantidad(catalogoTab, item.id) > 0">
+                      {{ getCantidad(catalogoTab, item.id) }}
+                    </span>
+                    <button type="button"
+                      (click)="setCantidad(catalogoTab, item.id, getCantidad(catalogoTab, item.id) + 1)"
+                      class="w-7 h-7 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 flex items-center justify-center transition-all cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Add button -->
+            <div class="px-3 py-2.5 bg-slate-50 border-t border-slate-200">
+              <button type="button" (click)="agregarSeleccionados()"
+                [disabled]="totalSeleccionados === 0"
+                class="w-full py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-2"
+                [class.bg-[#00328b]]="totalSeleccionados > 0"
+                [class.text-white]="totalSeleccionados > 0"
+                [class.hover:bg-[#002570]]="totalSeleccionados > 0"
+                [class.bg-slate-100]="totalSeleccionados === 0"
+                [class.text-slate-400]="totalSeleccionados === 0"
+                [class.cursor-not-allowed]="totalSeleccionados === 0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                @if (totalSeleccionados > 0) {
+                  Agregar {{ totalSeleccionados }} concepto{{ totalSeleccionados !== 1 ? 's' : '' }} al cobro
+                } @else {
+                  Selecciona conceptos para agregar
+                }
+              </button>
+            </div>
           </div>
         </div>
 

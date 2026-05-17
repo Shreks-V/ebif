@@ -135,6 +135,8 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
   editError = '';
   editFotoFile: File | null = null;
   editFotoPreviewUrl: string | null = null;
+  editStep = 1;
+  readonly editSteps = ['Datos Personales', 'Dirección', 'Contacto', 'Info. Médica', 'Membresía'];
 
   // Historial modal
   showHistorialModal = false;
@@ -215,12 +217,18 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
 
   constructor(private api: ApiService, private route: ActivatedRoute, private auth: AuthService) {}
 
+  private _refreshTimer: ReturnType<typeof setInterval> | null = null;
+
   ngOnInit(): void {
     this.loadBeneficiarios();
     this.loadPreregistros();
     this.loadTiposDocumentoCatalogo();
     this.loadAlertasMembresia();
     this.resetFormData();
+    this._refreshTimer = setInterval(() => {
+      this.loadBeneficiarios();
+      this.loadPreregistros();
+    }, 60_000);
 
     this.route.queryParams.subscribe(params => {
       if (params['action'] === 'nuevo') {
@@ -235,6 +243,7 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     window.visualViewport?.removeEventListener('resize', this.onViewportGeometryChange);
     window.visualViewport?.removeEventListener('scroll', this.onViewportGeometryChange);
+    if (this._refreshTimer) clearInterval(this._refreshTimer);
   }
 
   private resetFormData(): void {
@@ -563,15 +572,60 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
   }
 
   // ──────────── Modal: Detalle Beneficiario ────────────
+  detalleTab: 'datos' | 'contacto' | 'medico' | 'cobros' | 'documentos' = 'datos';
+  detalleDocumentos: any[] = [];
+  detalleDocumentosLoading = false;
+  detalleCobros: any[] = [];
+  detalleCobrosLoading = false;
 
   verDetalleBeneficiario(b: Beneficiario): void {
     this.beneficiarioSeleccionado = b;
     this.showDetalleModal = true;
+    this.detalleTab = 'datos';
+    this.detalleDocumentos = [];
+    this.detalleCobros = [];
+    this.detalleDocumentosLoading = true;
+    this.detalleCobrosLoading = true;
+    this.api.getDocumentos(b.idPaciente).subscribe({
+      next: (docs) => { this.detalleDocumentos = docs; this.detalleDocumentosLoading = false; },
+      error: () => { this.detalleDocumentosLoading = false; },
+    });
+    this.api.getRecibos({ id_paciente: b.idPaciente }).subscribe({
+      next: (cobros) => { this.detalleCobros = cobros || []; this.detalleCobrosLoading = false; },
+      error: () => { this.detalleCobrosLoading = false; },
+    });
   }
 
   closeDetalleModal(): void {
     this.showDetalleModal = false;
     this.beneficiarioSeleccionado = null;
+    this.detalleDocumentos = [];
+    this.detalleCobros = [];
+  }
+
+  get detalleCobrosTotal(): number {
+    return this.detalleCobros
+      .filter(c => c.cancelada !== 'S')
+      .reduce((sum, c) => sum + (Number(c.monto_total) || 0), 0);
+  }
+
+  descargarDocumento(doc: any): void {
+    if (!this.beneficiarioSeleccionado) return;
+    this.api.getDocumentoBlob(this.beneficiarioSeleccionado.idPaciente, doc.id_documento).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.nombre_archivo || `documento_${doc.id_documento}`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => alert('No se pudo descargar el documento.'),
+    });
+  }
+
+  esImagen(formato: string): boolean {
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes((formato || '').toLowerCase());
   }
 
   // ──────────── Modal: Detalle Preregistro ────────────
@@ -1126,6 +1180,7 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
     this.editFotoFile = null;
     this.editFotoPreviewUrl = b.fotoUrl || null;
     this.editError = '';
+    this.editStep = 1;
     if (this.tiposDocumentoCatalogo.length === 0) {
       this.loadTiposDocumentoCatalogo();
     }
@@ -1136,6 +1191,23 @@ export class BeneficiariosComponent implements OnInit, OnDestroy {
       });
     }
     this.showEditModal = true;
+  }
+
+  editNextStep(): void {
+    if (this.editStep === 1) {
+      if (!this.editFormData.nombre || !this.editFormData.apellido_paterno ||
+          !this.editFormData.fecha_nacimiento || !this.editFormData.genero || !this.editFormData.curp) {
+        this.editError = 'Completa los campos obligatorios (*)';
+        return;
+      }
+    }
+    this.editError = '';
+    if (this.editStep < this.editSteps.length) this.editStep++;
+  }
+
+  editPrevStep(): void {
+    this.editError = '';
+    if (this.editStep > 1) this.editStep--;
   }
 
   onFotoBeneficiarioSeleccionada(event: Event): void {

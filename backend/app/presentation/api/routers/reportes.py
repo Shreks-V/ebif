@@ -49,6 +49,10 @@ def reporte_por_ciudad(current_user: dict=Depends(get_current_user)):
 def indicadores_desempeno(fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
     return service.indicadores_desempeno(fecha_inicio, fecha_fin, current_user)
 
+@router.get('/pagos-por-metodo')
+def reporte_pagos_por_metodo(fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
+    return service.reporte_pagos_por_metodo(fecha_inicio, fecha_fin, current_user)
+
 @router.get('/historial', response_model=List[ReporteResponse])
 def historial_reportes(
     tipo_reporte: Optional[str]=Query(None, max_length=60),

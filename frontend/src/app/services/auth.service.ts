@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 interface LoginResponse {
@@ -83,6 +83,32 @@ export class AuthService {
     } catch {
       return false;
     }
+  }
+
+  /** Returns seconds until token expires, or 0 if expired/invalid. */
+  tokenSecondsLeft(): number {
+    const token = this.getToken();
+    if (!token) return 0;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return Math.max(0, Math.floor(payload.exp - Date.now() / 1000));
+    } catch {
+      return 0;
+    }
+  }
+
+  private _refreshing = false;
+
+  refreshToken(): Observable<void> {
+    if (this._refreshing) return of(undefined);
+    this._refreshing = true;
+    return this.http.post<LoginResponse>(`${this.apiUrl}/refresh`, {}).pipe(
+      tap((res) => {
+        sessionStorage.setItem('token', res.access_token);
+        this._refreshing = false;
+      }),
+      catchError(() => { this._refreshing = false; return of(undefined as any); }),
+    ) as Observable<void>;
   }
 
   getUser(): UserInfo | null {

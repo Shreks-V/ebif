@@ -230,6 +230,8 @@ class VentaResponse(VentaBase):
 class MovimientoInventario(BaseModel):
     id_movimiento: int
     id_producto: int
+    nombre_producto: Optional[str] = None
+    clave_interna: Optional[str] = None
     id_usuario_registro: Optional[int] = None
     id_venta: Optional[int] = None
     id_comodato: Optional[int] = None

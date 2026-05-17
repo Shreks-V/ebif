@@ -12,5 +12,6 @@ export const routes: Routes = [
   { path: 'reportes', canActivate: [authGuard], loadComponent: () => import('./pages/reportes/reportes.component').then(m => m.ReportesComponent) },
   { path: 'perfil', canActivate: [authGuard], loadComponent: () => import('./pages/perfil/perfil.component').then(m => m.PerfilComponent) },
   { path: 'usuarios-sistema', canActivate: [authGuard], loadComponent: () => import('./pages/usuarios-sistema/usuarios-sistema.component').then(m => m.UsuariosSistemaComponent) },
+  { path: 'mapa', redirectTo: 'reportes', pathMatch: 'full' },
   { path: '**', redirectTo: '' },
 ];

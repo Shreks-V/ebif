@@ -41,11 +41,12 @@ def ajustar_existencia(id_producto: int, data: AjusteExistenciaRequest, current_
 def listar_servicios(
     busqueda: Optional[str]=Query(None, max_length=120),
     activo: Optional[Literal['S', 'N']]=Query(None),
+    categoria: Optional[Literal['SERVICIO', 'LABORATORIO']]=Query(None),
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     current_user: dict=Depends(get_current_user),
 ):
-    return service.listar_servicios(busqueda, activo, current_user, limit, offset)
+    return service.listar_servicios(busqueda, activo, categoria, current_user, limit, offset)
 
 @router.get('/servicios/{id_servicio}', response_model=ServicioResponse)
 def obtener_servicio(id_servicio: int, current_user: dict=Depends(get_current_user)):
@@ -88,12 +89,15 @@ def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: di
 @router.get('/movimientos', response_model=List[MovimientoInventario])
 def listar_movimientos(
     id_producto: Optional[int]=Query(None, ge=1),
-    tipo_movimiento: Optional[Literal['ENTRADA', 'SALIDA', 'AJUSTE', 'SALIDA_MERMA']]=Query(None, description='ENTRADA, SALIDA, AJUSTE, SALIDA_MERMA'),
+    tipo_movimiento: Optional[str]=Query(None),
+    busqueda: Optional[str]=Query(None, max_length=120),
+    fecha_inicio: Optional[str]=Query(None),
+    fecha_fin: Optional[str]=Query(None),
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     current_user: dict=Depends(get_current_user),
 ):
-    return service.listar_movimientos(id_producto, tipo_movimiento, current_user, limit, offset)
+    return service.listar_movimientos(id_producto, tipo_movimiento, busqueda, fecha_inicio, fecha_fin, current_user, limit, offset)
 
 @router.get('/stats')
 def almacen_stats(current_user: dict=Depends(get_current_user)):

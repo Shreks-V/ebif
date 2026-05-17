@@ -20,6 +20,47 @@ interface TableSortState {
 })
 export class CitasComponent implements OnInit, OnDestroy {
   activeTab: 'citas' | 'medicos' = 'citas';
+  citasView: 'lista' | 'calendario' = 'lista';
+
+  // Calendar
+  calendarYear = new Date().getFullYear();
+  calendarMonth = new Date().getMonth();
+
+  get calendarMonthLabel(): string {
+    return new Date(this.calendarYear, this.calendarMonth, 1)
+      .toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+  }
+
+  get calendarDays(): { dateStr: string; day: number; isCurrentMonth: boolean; isToday: boolean; citas: any[] }[] {
+    const first = new Date(this.calendarYear, this.calendarMonth, 1);
+    const start = new Date(first);
+    start.setDate(1 - first.getDay());
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const dateStr = d.toLocaleDateString('en-CA');
+      days.push({
+        dateStr,
+        day: d.getDate(),
+        isCurrentMonth: d.getMonth() === this.calendarMonth,
+        isToday: dateStr === todayStr,
+        citas: this.citas.filter(c => (c.fechaHora || '').startsWith(dateStr))
+      });
+    }
+    return days;
+  }
+
+  calendarPrev(): void {
+    if (this.calendarMonth === 0) { this.calendarYear--; this.calendarMonth = 11; }
+    else this.calendarMonth--;
+  }
+
+  calendarNext(): void {
+    if (this.calendarMonth === 11) { this.calendarYear++; this.calendarMonth = 0; }
+    else this.calendarMonth++;
+  }
 
   searchCitas = '';
   searchMedicos = '';
@@ -712,6 +753,28 @@ export class CitasComponent implements OnInit, OnDestroy {
     document.body.removeChild(a);
     // Si el navegador descarga en vez de abrir, también ofrecer descarga nominal
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  exportarCitasCSV(): void {
+    const rows = [
+      ['Fecha', 'Hora', 'Paciente', 'Tipo de consulta', 'Estado', 'Notas'],
+      ...this.citasFiltradas.map(c => [
+        this.getFecha(c.fechaHora),
+        this.getHora(c.fechaHora),
+        c.nombrePaciente,
+        c.servicios?.[0]?.nombre || '',
+        c.estatus,
+        (c.notas || '').replace(/\n/g, ' ')
+      ])
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `citas_${new Date().toLocaleDateString('en-CA')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   confirmarEliminarCita(cita: any): void {

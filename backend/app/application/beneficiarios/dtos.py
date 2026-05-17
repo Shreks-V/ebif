@@ -3,6 +3,35 @@ from typing import Optional, List
 from datetime import date
 
 
+def _normalizar_correo(v) -> str | None:
+    """Returns None for blank/None, raises ValueError for invalid format."""
+    if v is None:
+        return None
+    s = str(v).strip()
+    if not s:
+        return None
+    if "@" not in s or "." not in s.rsplit("@", 1)[-1]:
+        raise ValueError("correo_electronico no tiene un formato válido")
+    return s
+
+
+def _normalizar_fecha_iso(v, campo: str) -> str | None:
+    """Returns None for blank/None, truncates to YYYY-MM-DD, raises ValueError for invalid."""
+    if v is None or v == "":
+        return None
+    if not isinstance(v, str):
+        return v
+    s = v.strip()
+    if len(s) < 10:
+        raise ValueError(f"{campo} debe ser YYYY-MM-DD")
+    head = s[:10]
+    try:
+        date.fromisoformat(head)
+    except ValueError as exc:
+        raise ValueError(f"{campo} debe ser YYYY-MM-DD") from exc
+    return head
+
+
 class BeneficiarioBase(BaseModel):
     nombre: str
     apellido_paterno: str
@@ -33,39 +62,13 @@ class BeneficiarioBase(BaseModel):
 
     @field_validator("correo_electronico", mode="before")
     @classmethod
-    def _correo_vacio_a_none(cls, v):
-        if v is None:
-            return None
-        if isinstance(v, str) and not v.strip():
-            return None
-        return v
-
-    @field_validator("correo_electronico")
-    @classmethod
-    def _correo_formato_simple(cls, v: str | None) -> str | None:
-        if v is None:
-            return None
-        s = str(v).strip()
-        if "@" not in s or "." not in s.rsplit("@", 1)[-1]:
-            raise ValueError("correo_electronico no tiene un formato válido")
-        return s
+    def _validar_correo(cls, v) -> str | None:
+        return _normalizar_correo(v)
 
     @field_validator("fecha_nacimiento", mode="before")
     @classmethod
-    def _fecha_nacimiento_iso(cls, v):
-        if v is None or v == "":
-            return None
-        if isinstance(v, str):
-            s = v.strip()
-            if len(s) < 10:
-                raise ValueError("fecha_nacimiento debe ser YYYY-MM-DD")
-            head = s[:10]
-            try:
-                date.fromisoformat(head)
-            except ValueError as exc:
-                raise ValueError("fecha_nacimiento debe ser YYYY-MM-DD") from exc
-            return head
-        return v
+    def _validar_fecha_nacimiento(cls, v) -> str | None:
+        return _normalizar_fecha_iso(v, "fecha_nacimiento")
 
 
 class BeneficiarioCreate(BeneficiarioBase):
