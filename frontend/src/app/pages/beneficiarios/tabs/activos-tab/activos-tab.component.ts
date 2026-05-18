@@ -702,10 +702,12 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
       this.nuevoError = 'Por favor completa todos los campos obligatorios marcados con *.';
       return;
     }
-    if (!this.CURP_REGEX.test(this.formData.curp.trim().toUpperCase())) {
-      this.nuevoError = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial mexicano).';
+    const curp = this.formData.curp.trim().toUpperCase();
+    if (!this.CURP_REGEX.test(curp)) {
+      this.nuevoError = 'El CURP debe tener 18 caracteres con formato oficial. Ejemplo: GAGJ850116HBSRPN09.';
       return;
     }
+    this.formData.curp = curp;
     this.submittingNuevo = true;
     this.nuevoError = '';
 
@@ -871,10 +873,12 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
       this.editError = 'Por favor completa todos los campos obligatorios.';
       return;
     }
-    if (!this.CURP_REGEX.test(this.editFormData.curp.trim().toUpperCase())) {
-      this.editError = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial mexicano).';
+    const curp = this.editFormData.curp.trim().toUpperCase();
+    if (!this.CURP_REGEX.test(curp)) {
+      this.editError = 'El CURP debe tener 18 caracteres con formato oficial. Ejemplo: GAGJ850116HBSRPN09.';
       return;
     }
+    this.editFormData.curp = curp;
     const beneficiario = this.beneficiarios.find(item => item.folio === this.editFolio);
     if (!beneficiario) { this.editError = 'No se encontro el beneficiario a actualizar.'; return; }
 

@@ -180,7 +180,7 @@
 
 <!-- MODAL: Nuevo / Editar Producto (shared between Inventario and Servicios tabs) -->
 @if (showNuevoProductoModal) {
-  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeProductoModal()">
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm backdrop-saturate-75 z-50 flex items-center justify-center" (click)="closeProductoModal()">
     <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold text-slate-800">
@@ -393,7 +393,7 @@
 
 <!-- MODAL: Confirmar Eliminación -->
 @if (showConfirmDeleteModal) {
-  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" (click)="closeConfirmDeleteModal()">
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm backdrop-saturate-75 z-50 flex items-center justify-center" (click)="closeConfirmDeleteModal()">
     <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-slate-800">Confirmar Eliminaci&oacute;n</h2>
