@@ -596,6 +596,45 @@ def mapa_beneficiarios(current_user=None):
         raise InternalError('Error interno del servidor')
 
 
+def expirar_membresias_vencidas() -> int:
+    with get_db() as conn:
+        return _sync_membresias_vencidas(conn)
+
+
+def get_sin_geocodificar(limit: int) -> list[dict]:
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """SELECT ID_PACIENTE, CIUDAD, ESTADO
+                 FROM PACIENTE
+                WHERE (GEOCODIFICADO = 'N' OR GEOCODIFICADO IS NULL)
+                  AND (CIUDAD IS NOT NULL OR ESTADO IS NOT NULL)
+                  AND ROWNUM <= :limit""",
+            {"limit": limit},
+        )
+        return [{"id": r[0], "ciudad": r[1], "estado": r[2]} for r in cur.fetchall()]
+
+
+def guardar_geocodificacion(id_paciente: int, lat: float, lon: float) -> None:
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE PACIENTE SET LATITUD=:lat, LONGITUD=:lon, GEOCODIFICADO='S' WHERE ID_PACIENTE=:id",
+            {"lat": lat, "lon": lon, "id": id_paciente},
+        )
+        conn.commit()
+
+
+def marcar_geocodificacion_fallida(id_paciente: int) -> None:
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE PACIENTE SET GEOCODIFICADO='F' WHERE ID_PACIENTE=:id",
+            {"id": id_paciente},
+        )
+        conn.commit()
+
+
 class OracleBeneficiariosRepository(BeneficiariosRepository):
     def listar_tipos_espina(self, current_user=None):
         return listar_tipos_espina(current_user)
@@ -632,3 +671,15 @@ class OracleBeneficiariosRepository(BeneficiariosRepository):
 
     def mapa_beneficiarios(self, current_user=None):
         return mapa_beneficiarios(current_user)
+
+    def expirar_membresias_vencidas(self) -> int:
+        return expirar_membresias_vencidas()
+
+    def get_sin_geocodificar(self, limit: int) -> list[dict]:
+        return get_sin_geocodificar(limit)
+
+    def guardar_geocodificacion(self, id_paciente: int, lat: float, lon: float) -> None:
+        guardar_geocodificacion(id_paciente, lat, lon)
+
+    def marcar_geocodificacion_fallida(self, id_paciente: int) -> None:
+        marcar_geocodificacion_fallida(id_paciente)
