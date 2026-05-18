@@ -1,0 +1,271 @@
+<!-- Category Filter Cards -->
+<div class="flex items-center justify-between mb-0">
+  <div class="flex items-center gap-3">
+    <h2 class="text-lg font-semibold text-slate-800">Filtrar por Categor&iacute;a</h2>
+    @if (quickFilter !== 'none') {
+      <span class="px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+        {{ quickFilterLabel }}
+      </span>
+    }
+  </div>
+  @if (selectedCategory || quickFilter !== 'none') {
+    <button (click)="limpiarFiltros()" class="text-sm text-slate-500 hover:text-slate-700 cursor-pointer bg-transparent border-0">Limpiar filtros</button>
+  }
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Medicamentos -->
+  <button
+    (click)="toggleCategory('Medicamento')"
+    [class]="selectedCategory === 'Medicamento'
+      ? 'bg-blue-50 rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-blue-500 text-left transition-all'
+      : 'bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-slate-200 hover:border-blue-300 text-left transition-all'"
+    >
+    <div class="flex items-center gap-4 mb-3">
+      <div [class]="selectedCategory === 'Medicamento' ? 'p-3 bg-blue-600 rounded-xl shadow-lg' : 'p-3 bg-blue-100 rounded-xl'">
+        <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Medicamento'" [class.text-blue-600]="selectedCategory !== 'Medicamento'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-slate-900">Medicamentos</h3>
+        <p class="text-sm text-slate-600">{{ getCategoryCount('Medicamento') }} elementos</p>
+      </div>
+    </div>
+    <p class="text-sm font-semibold" [class]="selectedCategory === 'Medicamento' ? 'text-blue-700' : 'text-slate-500'">
+      {{ selectedCategory === 'Medicamento' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
+    </p>
+  </button>
+  <!-- Equipo -->
+  <button
+    (click)="toggleCategory('Equipo')"
+    [class]="selectedCategory === 'Equipo'
+      ? 'bg-green-50 rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-green-500 text-left transition-all'
+      : 'bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl border-2 border-slate-200 hover:border-green-300 text-left transition-all'"
+    >
+    <div class="flex items-center gap-4 mb-3">
+      <div [class]="selectedCategory === 'Equipo' ? 'p-3 bg-green-600 rounded-xl shadow-lg' : 'p-3 bg-green-100 rounded-xl'">
+        <svg class="w-6 h-6" [class.text-white]="selectedCategory === 'Equipo'" [class.text-green-600]="selectedCategory !== 'Equipo'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-slate-900">Equipo</h3>
+        <p class="text-sm text-slate-600">{{ getCategoryCount('Equipo') }} elementos</p>
+      </div>
+    </div>
+    <p class="text-sm font-semibold" [class]="selectedCategory === 'Equipo' ? 'text-green-700' : 'text-slate-500'">
+      {{ selectedCategory === 'Equipo' ? '&#10003; Filtro activo' : 'Ver categor&iacute;a' }}
+    </p>
+  </button>
+</div>
+
+<!-- Search + Add -->
+<div class="flex flex-col sm:flex-row gap-4">
+  <div class="relative flex-1">
+    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.3-4.3"/>
+    </svg>
+    <input
+      type="text"
+      [(ngModel)]="search"
+      placeholder="Buscar en inventario..."
+      class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+      />
+  </div>
+  <button (click)="requestAdd.emit()" class="px-6 py-3 bg-[#00328b] text-white rounded-xl font-semibold text-sm hover:bg-[#002a75] transition-colors shadow-lg flex items-center gap-2">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+    </svg>
+    Agregar elemento
+  </button>
+</div>
+
+<!-- Inventory Table -->
+<div class="bg-white rounded-2xl shadow-lg border border-slate-200">
+  <div>
+    <table class="w-full text-sm">
+      <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
+        <tr class="bg-slate-50 border-b border-slate-200">
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('id')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>ID</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('id') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('categoria')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Categor&iacute;a</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('categoria') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('nombre')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Nombre</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('nombre') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('unidad')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Unidad</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('unidad') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('stock')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Existencias actuales</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('stock') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('precioA')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Precio Cuota A</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('precioA') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('precioB')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Precio Cuota B</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('precioB') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('estado')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Estado</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('estado') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (filteredRows.length === 0) {
+          <tr><td colspan="9" class="px-6 py-14 text-center">
+            <div class="flex flex-col items-center gap-2 text-slate-400">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m7.5 4.27 9 5.15M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16ZM3.3 7l8.7 5 8.7-5M12 22V12"/></svg>
+              <p class="text-sm font-semibold">Sin productos en inventario</p>
+            </div>
+          </td></tr>
+        }
+        @for (item of filteredRows; track item.id + '-' + item.categoria) {
+          <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+            <td class="px-5 py-4 text-slate-600 font-mono">{{ item.id }}</td>
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-2">
+                <div [ngClass]="getCategoryIconBg(item.categoria)" class="w-7 h-7 rounded-lg flex items-center justify-center">
+                  @if (item.categoria === 'MEDICAMENTO') {
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>
+                    </svg>
+                  }
+                  @if (item.categoria === 'EQUIPO') {
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                  }
+                </div>
+                <span class="text-slate-700">{{ item.categoria || '—' }}</span>
+              </div>
+            </td>
+            <td class="px-5 py-4 text-slate-800 font-medium">{{ item.nombre || '—' }}</td>
+            <td class="px-5 py-4 text-slate-600">{{ item.unidadMedida || '—' }}</td>
+            <td class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible ?? '—' }}</td>
+            <td class="px-5 py-4">
+              <span class="text-green-700 font-semibold">{{ formatCurrency(item.precioA) }}</span>
+            </td>
+            <td class="px-5 py-4">
+              <span class="text-blue-700 font-semibold">{{ formatCurrency(item.precioB) }}</span>
+            </td>
+            <td class="px-5 py-4">
+              <span [ngClass]="getEstadoBadgeClass(item.estado || 'N/A')" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                {{ item.estado || 'N/A' }}
+              </span>
+            </td>
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-1">
+                <button (click)="openQuickStock(item)" class="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors" title="Agregar unidades">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                  </svg>
+                </button>
+                <button (click)="requestEdit.emit(item)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                @if (isAdmin) {
+                  <button (click)="requestDelete.emit({ id: item.id, nombre: item.nombre, categoria: item.categoria })" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors" title="Eliminar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+                    </svg>
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL: Quick Stock -->
+@if (quickStockItem) {
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="closeQuickStock()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm" (click)="$event.stopPropagation()">
+      <div class="flex items-center gap-3 px-6 pt-6 pb-4">
+        <div class="bg-emerald-100 rounded-xl p-2.5 shrink-0">
+          <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h3 class="font-bold text-slate-800 text-base">Agregar unidades</h3>
+          <p class="text-xs text-slate-500 truncate">{{ quickStockItem.nombre }}</p>
+        </div>
+        <button (click)="closeQuickStock()" class="ml-auto p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-6 pb-6 space-y-4">
+        <div class="bg-slate-50 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span class="text-sm text-slate-500">Stock actual</span>
+          <span class="font-bold text-slate-800 text-xl">{{ quickStockItem.cantidadActual }}</span>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Unidades a agregar</label>
+          <div class="flex items-center gap-2">
+            <button type="button" (click)="quickStockDecrement()"
+              class="w-11 h-11 rounded-xl border-2 border-slate-200 flex items-center justify-center text-xl font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors select-none">−</button>
+            <input type="number" [(ngModel)]="quickStockCantidad" min="1" name="qsCantidad"
+              class="flex-1 text-center px-3 py-2.5 border-2 border-slate-200 rounded-xl text-xl font-bold focus:border-[#00328b] focus:outline-none transition-colors">
+            <button type="button" (click)="quickStockIncrement()"
+              class="w-11 h-11 rounded-xl border-2 border-slate-200 flex items-center justify-center text-xl font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors select-none">+</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Motivo</label>
+          <input type="text" [(ngModel)]="quickStockMotivo" name="qsMotivo"
+            class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:border-[#00328b] focus:outline-none transition-colors"
+            placeholder="Ej: Recepción de mercancía">
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center justify-between">
+          <span class="text-sm font-semibold text-emerald-700">Nuevo total</span>
+          <span class="text-xl font-bold text-emerald-700">{{ quickStockItem.cantidadActual + quickStockCantidad }}</span>
+        </div>
+        <div class="flex gap-3 pt-1">
+          <button type="button" (click)="closeQuickStock()"
+            class="flex-1 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancelar</button>
+          <button type="button" (click)="confirmQuickStock()" [disabled]="quickStockSubmitting || quickStockCantidad < 1"
+            class="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+            @if (quickStockSubmitting) {
+              <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            }
+            Confirmar entrada
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

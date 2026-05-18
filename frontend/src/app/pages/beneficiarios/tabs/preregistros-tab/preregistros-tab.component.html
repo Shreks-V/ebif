@@ -1,0 +1,417 @@
+<div class="bg-white rounded-xl shadow-sm border border-slate-200">
+  <!-- Search -->
+  <div class="px-6 py-4">
+    <div class="relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="filter()"
+        placeholder="Buscar por nombre, ID o CURP..."
+        class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f3ad1c]/20 focus:border-[#f3ad1c] transition-all" />
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-auto max-h-[calc(100vh-360px)] min-h-[320px]">
+    <table class="w-full text-sm">
+      <thead class="bg-amber-50 sticky top-0 z-20 shadow-sm">
+        <tr class="bg-amber-50 border-b border-amber-200">
+          <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleSort('id')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>ID</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator('id') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleSort('nombre')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Nombre</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator('nombre') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleSort('estatus')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Estatus</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator('estatus') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleSort('cuota')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Cuota</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator('cuota') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleSort('fechaSolicitud')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Fecha Solicitud</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator('fechaSolicitud') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (paginated.length === 0) {
+          <tr><td colspan="6" class="px-6 py-14 text-center">
+            <div class="flex flex-col items-center gap-2 text-slate-400">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+              <p class="text-sm font-semibold">No hay pre-registros pendientes</p>
+            </div>
+          </td></tr>
+        }
+        @for (p of paginated; track p) {
+          <tr class="border-b border-slate-100 hover:bg-amber-50/30 transition-colors">
+            <td class="px-6 py-4 text-sm font-semibold text-slate-700">{{ p.id }}</td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <app-avatar-iniciales [iniciales]="p.iniciales" [colorClass]="p.color" sizeClass="w-12 h-12 text-sm" />
+                <span class="text-sm font-semibold text-slate-800">{{ p.nombre }} {{ p.apellidoPaterno }} {{ p.apellidoMaterno }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-slate-600">{{ p.estatus }}</td>
+            <td class="px-6 py-4">
+              <app-cuota-badge [cuota]="p.tipoCuota" />
+            </td>
+            <td class="px-6 py-4 text-sm text-slate-600">{{ p.fechaSolicitud }}</td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-2">
+                <button (click)="verDetalle(p)" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Ver detalle">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+                <button (click)="editar(p)" class="px-4 py-2 rounded-lg border-2 border-blue-300 text-blue-600 text-sm font-bold hover:bg-blue-50 transition-colors">
+                  Editar
+                </button>
+                <button (click)="abrirModalAprobacion(p)" class="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition-colors">
+                  Aprobar
+                </button>
+                <button (click)="rechazar(p)" class="px-4 py-2 rounded-lg border-2 border-red-400 text-red-500 text-sm font-bold hover:bg-red-50 transition-colors">
+                  Rechazar
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="px-6 py-4 bg-amber-50 border-t border-amber-200 flex items-center justify-between">
+    <span class="text-sm text-slate-500 font-medium">
+      Mostrando {{ start + 1 }} a {{ end }} de {{ filteredPreregistros.length }} preregistros
+    </span>
+    <div class="flex items-center gap-2">
+      <button
+        (click)="page > 1 && (page = page - 1)"
+        [disabled]="page <= 1"
+        class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+        Anterior
+      </button>
+      <button
+        (click)="page < totalPages && (page = page + 1)"
+        [disabled]="page >= totalPages"
+        class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+        Siguiente
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: Detalle Preregistro ==================== -->
+@if (showDetalleModal && preregistroSeleccionado) {
+  <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" (click)="closeDetalle()">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-3xl w-full mx-4 max-h-[92vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between px-8 pt-8 pb-5 border-b border-slate-100 shrink-0">
+        <div class="flex items-center gap-4">
+          <app-avatar-iniciales [iniciales]="preregistroSeleccionado.iniciales" [colorClass]="preregistroSeleccionado.color" sizeClass="w-14 h-14 text-lg shrink-0" />
+          <div>
+            <h2 class="text-xl font-black text-slate-900">{{ preregistroSeleccionado.nombre }} {{ preregistroSeleccionado.apellidoPaterno }} {{ preregistroSeleccionado.apellidoMaterno }}</h2>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">{{ preregistroSeleccionado.estatus }}</span>
+              @if (preregistroSeleccionado.tipoCuota) {
+                <app-cuota-badge [cuota]="preregistroSeleccionado.tipoCuota" />
+              }
+              @if (!preregistroSeleccionado.tipoCuota) {
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500">Sin cuota asignada</span>
+              }
+            </div>
+          </div>
+        </div>
+        <button (click)="closeDetalle()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="overflow-y-auto flex-1 px-8 py-6 space-y-6">
+        <div>
+          <h3 class="text-xs font-bold text-[#00328b] uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">Datos Personales</h3>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Nombre</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.nombre }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Apellido Paterno</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.apellidoPaterno }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Apellido Materno</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.apellidoMaterno || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha de Nacimiento</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.fechaNacimiento ? preregistroSeleccionado.fechaNacimiento.substring(0,10) : '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Sexo</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.genero || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">CURP</span><p class="text-sm font-semibold text-slate-800 mt-0.5 font-mono">{{ preregistroSeleccionado.curp || '-' }}</p></div>
+            <div class="col-span-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Padre / Madre</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.nombrePadreMadre || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Folio</span><p class="text-sm font-semibold text-slate-800 mt-0.5 font-mono">{{ preregistroSeleccionado.folio || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha de Solicitud</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.fechaSolicitud ? preregistroSeleccionado.fechaSolicitud.substring(0,10) : '-' }}</p></div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-xs font-bold text-[#00328b] uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">Direccion</h3>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div class="col-span-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Calle y numero</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.direccion || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Colonia</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.colonia || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Ciudad</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.ciudad || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Estado</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.estado || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Codigo Postal</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.codigoPostal || '-' }}</p></div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-xs font-bold text-[#00328b] uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">Contacto</h3>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Telefono Casa</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.telefonoCasa || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Telefono Celular</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.telefonoCelular || '-' }}</p></div>
+            <div class="col-span-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Correo Electronico</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.correoElectronico || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">En Emergencia Avisar a</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.enEmergenciaAvisarA || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Telefono Emergencia</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.telefonoEmergencia || '-' }}</p></div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-xs font-bold text-[#00328b] uppercase tracking-wider mb-3 pb-1 border-b border-slate-100">Informacion Medica</h3>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Tipo de Sangre</span><p class="text-sm font-semibold text-slate-800 mt-0.5">{{ preregistroSeleccionado.tipoSangre || '-' }}</p></div>
+            <div><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Usa Valvula</span>
+              <p class="mt-0.5">
+                @if (preregistroSeleccionado.usaValvula === 'S') {
+                  <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">Si</span>
+                }
+                @if (preregistroSeleccionado.usaValvula !== 'S') {
+                  <span class="text-sm font-semibold text-slate-800">No</span>
+                }
+              </p>
+            </div>
+            @if (preregistroSeleccionado.notasAdicionales) {
+              <div class="col-span-2"><span class="text-xs font-bold text-slate-400 uppercase tracking-wide">Notas Adicionales</span><p class="text-sm font-semibold text-slate-800 mt-0.5 whitespace-pre-wrap">{{ preregistroSeleccionado.notasAdicionales }}</p></div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 px-8 py-5 border-t border-slate-100 shrink-0">
+        <button (click)="closeDetalle()" class="px-5 py-2.5 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+          Cerrar
+        </button>
+        <button (click)="closeDetalle(); editar(preregistroSeleccionado!)" class="px-5 py-2.5 rounded-xl font-bold border-2 border-blue-300 text-blue-600 hover:bg-blue-50 transition-all">
+          Editar
+        </button>
+        <button (click)="closeDetalle(); rechazar(preregistroSeleccionado!)" class="px-5 py-2.5 rounded-xl font-bold border-2 border-red-400 text-red-500 hover:bg-red-50 transition-all">
+          Rechazar
+        </button>
+        <button (click)="closeDetalle(); abrirModalAprobacion(preregistroSeleccionado!)" class="px-5 py-2.5 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
+          Aprobar
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ==================== MODAL: Confirmar Aprobacion ==================== -->
+@if (showAprobarModal && preregistroAProbar) {
+  <div class="fixed inset-0 bg-slate-950/50 backdrop-blur-md backdrop-saturate-75 z-[60] flex items-center justify-center" (click)="showAprobarModal = false">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()">
+      <div class="flex flex-col items-center text-center mb-6">
+        <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-black text-slate-900">Aprobar Beneficiario</h3>
+        <p class="text-slate-500 text-sm mt-1 font-semibold">{{ preregistroAProbar.nombre }} {{ preregistroAProbar.apellidoPaterno }} {{ preregistroAProbar.apellidoMaterno }}</p>
+      </div>
+      <div class="mb-6">
+        <label class="block text-sm font-bold text-slate-700 mb-3">Tipo de Cuota <span class="text-red-500">*</span></label>
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button"
+            (click)="aprobarCuotaSeleccionada = 'CUOTA A'"
+            [ngClass]="aprobarCuotaSeleccionada === 'CUOTA A'
+              ? 'border-[#00328b] bg-[#00328b] text-white shadow-lg'
+              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
+            class="px-4 py-4 rounded-2xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1">
+            <span class="text-base">Cuota A</span>
+            <span class="text-xs font-normal opacity-75">Tarifa estandar</span>
+          </button>
+          <button type="button"
+            (click)="aprobarCuotaSeleccionada = 'CUOTA B'"
+            [ngClass]="aprobarCuotaSeleccionada === 'CUOTA B'
+              ? 'border-[#f3ad1c] bg-[#f3ad1c] text-white shadow-lg'
+              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
+            class="px-4 py-4 rounded-2xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1">
+            <span class="text-base">Cuota B</span>
+            <span class="text-xs font-normal opacity-75">Tarifa diferenciada</span>
+          </button>
+        </div>
+        @if (!aprobarCuotaSeleccionada) {
+          <p class="text-xs text-amber-600 font-semibold mt-2">Selecciona el tipo de cuota para continuar</p>
+        }
+      </div>
+      <div class="flex gap-3">
+        <button (click)="showAprobarModal = false" class="flex-1 px-5 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+          Cancelar
+        </button>
+        <button (click)="confirmarAprobacion()"
+          [disabled]="!aprobarCuotaSeleccionada || submittingAprobacion"
+          class="flex-1 px-5 py-3 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ submittingAprobacion ? 'Aprobando...' : 'Confirmar Aprobacion' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ==================== MODAL: Editar Preregistro ==================== -->
+@if (showEditModal && editData) {
+  <div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" (click)="showEditModal = false">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-slate-900">Editar Pre-registro</h2>
+        <button (click)="showEditModal = false" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <form (ngSubmit)="guardarEdicion()">
+        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Datos Personales</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
+            <input type="text" [(ngModel)]="editData.nombre" name="preNombre" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Paterno *</label>
+            <input type="text" [(ngModel)]="editData.apellido_paterno" name="preApellidoPaterno" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Materno</label>
+            <input type="text" [(ngModel)]="editData.apellido_materno" name="preApellidoMaterno" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento</label>
+            <input type="date" [(ngModel)]="editData.fecha_nacimiento" name="preFechaNacimiento" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Genero</label>
+            <select [(ngModel)]="editData.genero" name="preGenero" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+              <option value="">Seleccionar</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">CURP *</label>
+            <input type="text" [(ngModel)]="editData.curp" name="preCurp" required maxlength="18" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all uppercase" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del Padre/Madre</label>
+            <input type="text" [(ngModel)]="editData.nombre_padre_madre" name="prePadreMadre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+        </div>
+        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Direccion y Contacto</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Direccion</label>
+            <input type="text" [(ngModel)]="editData.direccion" name="preDireccion" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Colonia</label>
+            <input type="text" [(ngModel)]="editData.colonia" name="preColonia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Ciudad</label>
+            <input type="text" list="municipios-pre-edit" [(ngModel)]="editData.ciudad" name="preCiudad" autocomplete="off" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+            <datalist id="municipios-pre-edit">
+              @for (m of getMunicipiosParaEstado(editData.estado); track m) {
+                <option [value]="m"></option>
+              }
+            </datalist>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+            <select [(ngModel)]="editData.estado" name="preEstado" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+              <option value="">Seleccionar</option>
+              @for (e of estadosMexicanos; track e) {
+                <option [value]="e">{{ e }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Codigo Postal</label>
+            <input type="text" [(ngModel)]="editData.codigo_postal" name="preCP" maxlength="5" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Casa</label>
+            <input type="tel" [(ngModel)]="editData.telefono_casa" name="preTelCasa" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Celular</label>
+            <input type="tel" [(ngModel)]="editData.telefono_celular" name="preTelCel" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electronico</label>
+            <input type="email" [(ngModel)]="editData.correo_electronico" name="preCorreo" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">En emergencia avisar a</label>
+            <input type="text" [(ngModel)]="editData.en_emergencia_avisar_a" name="preEmergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Emergencia</label>
+            <input type="tel" [(ngModel)]="editData.telefono_emergencia" name="preTelEmergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          </div>
+        </div>
+        <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Informacion Medica</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Sangre</label>
+            <select [(ngModel)]="editData.tipo_sangre" name="preTipoSangre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+              <option value="">Seleccionar</option>
+              @for (ts of tiposSangre; track ts) {
+                <option [value]="ts">{{ ts }}</option>
+              }
+            </select>
+          </div>
+          <div class="flex items-center gap-3 pt-7">
+            <input type="checkbox" [(ngModel)]="editUsaValvula" name="preUsaValvula" id="preUsaValvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+            <label for="preUsaValvula" class="text-sm font-semibold text-slate-700">Usa Valvula</label>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota</label>
+            <select [(ngModel)]="editData.tipo_cuota" name="preTipoCuota" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+              <option value="">Seleccionar</option>
+              <option value="CUOTA A">A</option>
+              <option value="CUOTA B">B</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Notas Adicionales</label>
+            <textarea [(ngModel)]="editData.notas_adicionales" name="preNotas" rows="3" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all resize-none"></textarea>
+          </div>
+        </div>
+        @if (editError) {
+          <div class="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-sm font-semibold">
+            {{ editError }}
+          </div>
+        }
+        <div class="flex items-center justify-end gap-3">
+          <button type="button" (click)="showEditModal = false" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="submittingEdit" class="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-[#f3ad1c] to-[#ffb84d] text-white hover:shadow-lg transition-all disabled:opacity-50">
+            {{ submittingEdit ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

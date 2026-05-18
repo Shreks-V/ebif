@@ -178,6 +178,50 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="md:col-span-2">
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Pa&iacute;s <span class="text-red-500">*</span></label>
+                  <select [(ngModel)]="formData.pais" [class]="getFieldClass('pais') + ' bg-white'">
+                    <option value="">Seleccionar...</option>
+                    @for (p of paises; track p.nombre) {
+                      <option [value]="p.nombre">{{ p.bandera }} {{ p.nombre }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Estado <span class="text-red-500">*</span></label>
+                  @if (formData.pais === 'México' || !formData.pais) {
+                    <select [(ngModel)]="formData.estado" [class]="getFieldClass('estado') + ' bg-white'">
+                      <option value="">Seleccionar...</option>
+                      @for (e of estados; track e) {
+                        <option [value]="e">{{ e }}</option>
+                      }
+                    </select>
+                  } @else {
+                    <input type="text" [(ngModel)]="formData.estado" [class]="getFieldClass('estado')" placeholder="Estado / Provincia">
+                  }
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Municipio <span class="text-red-500">*</span></label>
+                  <input type="text" list="municipios-preg-mun" [(ngModel)]="formData.municipio" [class]="getFieldClass('municipio')" autocomplete="off">
+                  <datalist id="municipios-preg-mun">
+                    @for (m of getMunicipiosParaEstado(formData.estado); track m) {
+                      <option [value]="m"></option>
+                    }
+                  </datalist>
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Ciudad <span class="text-red-500">*</span></label>
+                  <input type="text" list="municipios-preg-ciu" [(ngModel)]="formData.ciudad" [class]="getFieldClass('ciudad')" autocomplete="off">
+                  <datalist id="municipios-preg-ciu">
+                    @for (m of getMunicipiosParaEstado(formData.estado); track m) {
+                      <option [value]="m"></option>
+                    }
+                  </datalist>
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Colonia <span class="text-red-500">*</span></label>
+                  <input type="text" [(ngModel)]="formData.colonia" [class]="getFieldClass('colonia')">
+                </div>
+                <div class="md:col-span-2">
                   <label class="block text-sm font-bold text-slate-700 mb-1">Calle <span class="text-red-500">*</span></label>
                   <input type="text" [(ngModel)]="formData.calle" [class]="getFieldClass('calle')">
                 </div>
@@ -188,27 +232,6 @@
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">N&uacute;mero Interior</label>
                   <input type="text" [(ngModel)]="formData.numeroInterior" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all">
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Colonia <span class="text-red-500">*</span></label>
-                  <input type="text" [(ngModel)]="formData.colonia" [class]="getFieldClass('colonia')">
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Municipio <span class="text-red-500">*</span></label>
-                  <input type="text" [(ngModel)]="formData.municipio" [class]="getFieldClass('municipio')">
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Ciudad <span class="text-red-500">*</span></label>
-                  <input type="text" [(ngModel)]="formData.ciudad" [class]="getFieldClass('ciudad')">
-                </div>
-                <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Estado <span class="text-red-500">*</span></label>
-                  <select [(ngModel)]="formData.estado" [class]="getFieldClass('estado') + ' bg-white'">
-                    <option value="">Seleccionar...</option>
-                    @for (e of estados; track e) {
-                      <option [value]="e">{{ e }}</option>
-                    }
-                  </select>
                 </div>
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">C&oacute;digo Postal <span class="text-red-500">*</span></label>
@@ -229,7 +252,7 @@
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Casa</label>
                   <div class="flex gap-2">
                     <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
-                      @for (p of paises; track p.nombre) {
+                      @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
                     </select>
@@ -243,7 +266,7 @@
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Celular <span class="text-red-500">*</span></label>
                   <div class="flex gap-2">
                     <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
-                      @for (p of paises; track p.nombre) {
+                      @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
                     </select>
@@ -271,7 +294,7 @@
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono de Emergencia <span class="text-red-500">*</span></label>
                   <div class="flex gap-2">
                     <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
-                      @for (p of paises; track p.nombre) {
+                      @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
                     </select>
@@ -305,7 +328,7 @@
                     <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono del Tutor <span class="text-red-500">*</span></label>
                     <div class="flex gap-2">
                       <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
-                        @for (p of paises; track p.nombre) {
+                        @for (p of paisesTelefono; track p.nombre) {
                           <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                         }
                       </select>

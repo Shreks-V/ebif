@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { getMunicipiosParaEstado } from '../../shared/data/mexico-municipios';
+import { PAISES } from '../../shared/data/paises';
 
 interface DocumentoPendiente {
   id: number;
@@ -41,7 +43,9 @@ export class PreRegistroComponent implements OnInit {
 
   tiposSangre = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
 
-  paises = [
+  readonly paises = PAISES;
+
+  readonly paisesTelefono = [
     { bandera: '🇲🇽', nombre: 'México',         codigo: '+52'  },
     { bandera: '🇺🇸', nombre: 'Estados Unidos',  codigo: '+1'   },
     { bandera: '🇨🇦', nombre: 'Canadá',          codigo: '+1'   },
@@ -65,10 +69,14 @@ export class PreRegistroComponent implements OnInit {
     'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucat\u00e1n', 'Zacatecas'
   ];
 
+  getMunicipiosParaEstado(estado: string): readonly string[] {
+    return getMunicipiosParaEstado(estado);
+  }
+
   formData: any = {
     nombre: '', apellidoPaterno: '', apellidoMaterno: '',
     fechaNacimiento: '', sexo: '', curp: '', nombrePadreMadre: '',
-    calle: '', numeroExterior: '', numeroInterior: '',
+    pais: 'México', calle: '', numeroExterior: '', numeroInterior: '',
     colonia: '', municipio: '', ciudad: '', estado: '', codigoPostal: '',
     telefonoCasaCodigo: '+52', telefonoCasa: '',
     telefonoCelularCodigo: '+52', telefonoCelular: '',
@@ -91,7 +99,7 @@ export class PreRegistroComponent implements OnInit {
   // Validation rules per step
   private requiredByStep: { [step: number]: string[] } = {
     1: ['nombre', 'apellidoPaterno', 'apellidoMaterno', 'fechaNacimiento', 'sexo', 'curp', 'nombrePadreMadre'],
-    2: ['calle', 'numeroExterior', 'colonia', 'municipio', 'ciudad', 'estado', 'codigoPostal'],
+    2: ['pais', 'calle', 'numeroExterior', 'colonia', 'municipio', 'ciudad', 'estado', 'codigoPostal'],
     3: ['telefonoCelular', 'enEmergenciaAvisarA', 'telefonoEmergencia'],
     4: ['tipoSangre'],
   };

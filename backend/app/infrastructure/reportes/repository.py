@@ -397,10 +397,10 @@ def reporte_por_ciudad(current_user: CurrentUser | None = None):
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) AS label, "
-                "UPPER(TRIM(NVL(ESTADO,'Sin dato'))) AS estado, COUNT(*) AS cnt "
+                "SELECT INITCAP(TRIM(NVL(CIUDAD,'Sin dato'))) AS label, "
+                "INITCAP(TRIM(NVL(ESTADO,'Sin dato'))) AS estado, COUNT(*) AS cnt "
                 "FROM PACIENTE WHERE ACTIVO='S' "
-                "GROUP BY UPPER(TRIM(NVL(CIUDAD,'Sin dato'))), UPPER(TRIM(NVL(ESTADO,'Sin dato'))) "
+                "GROUP BY INITCAP(TRIM(NVL(CIUDAD,'Sin dato'))), INITCAP(TRIM(NVL(ESTADO,'Sin dato'))) "
                 "ORDER BY cnt DESC"
             )
             rows = rows_to_dicts(cursor)

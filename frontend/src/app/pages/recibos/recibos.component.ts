@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
+import { NuevoCobroComponent } from './nuevo-cobro/nuevo-cobro.component';
 
 interface MetodoPagoItem {
   idMetodoPago: number;
@@ -33,36 +34,6 @@ interface MetodoPagoCatalogo {
   nombre: string;
 }
 
-interface BeneficiarioOption {
-  id: number;
-  folio: string;
-  nombre: string;
-  tipoCuota: string;
-}
-
-interface MetodoPagoRow {
-  id_metodo_pago: number;
-  monto: number;
-}
-
-interface VentaLineaForm {
-  tipo: 'SERVICIO' | 'PRODUCTO';
-  id: number;
-  descripcion: string;
-  precio_unitario: number;
-  cantidad: number;
-  subtotal: number;
-}
-
-interface ConceptoCobroOption {
-  id: number;
-  nombre: string;
-  tipo: 'SERVICIO' | 'PRODUCTO';
-  precioA: number;
-  precioB: number;
-  precioDefault: number;
-}
-
 interface TableSortState {
   key: string;
   direction: 'asc' | 'desc';
@@ -71,7 +42,7 @@ interface TableSortState {
 @Component({
   selector: 'app-recibos',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent, NuevoCobroComponent],
   templateUrl: './recibos.component.html',
   styles: []
 })
@@ -110,104 +81,9 @@ export class RecibosComponent implements OnInit {
   pagoNota = '';
   pagoError = '';
   guardandoPago = false;
+  metodosPagoCatalogo: MetodoPagoCatalogo[] = [];
 
   showNuevoCobro = false;
-  guardandoCobro = false;
-  nuevoCobroError = '';
-  beneficiariosList: BeneficiarioOption[] = [];
-  beneficiarioBusqueda = '';
-  showBeneficiarioDropdown = false;
-  beneficiariosFiltradosCobro: BeneficiarioOption[] = [];
-  metodosPagoCatalogo: MetodoPagoCatalogo[] = [];
-  serviciosCatalogo: ConceptoCobroOption[] = [];
-  productosCatalogo: ConceptoCobroOption[] = [];
-  nuevoCobroMontoPagado = 0;
-  nuevoCobroSaldoPendiente = 0;
-  conceptoPrecioUnitario = 0;
-  itemsNuevoCobro: VentaLineaForm[] = [];
-
-  nuevoConcepto = {
-    tipo: 'SERVICIO' as 'SERVICIO' | 'PRODUCTO',
-    id: 0,
-    cantidad: 1
-  };
-
-  // Multi-select catalog state
-  catalogoTab: 'SERVICIO' | 'LABORATORIO' | 'PRODUCTO' = 'SERVICIO';
-  catalogoFiltro = '';
-  cantidadesCatalogo: Record<string, number> = {};
-  laboratoriosCatalogo: ConceptoCobroOption[] = [];
-
-  getCatalogKey(tipo: string, id: number): string { return `${tipo}_${id}`; }
-
-  getCantidad(tipo: string, id: number): number {
-    return this.cantidadesCatalogo[this.getCatalogKey(tipo, id)] ?? 0;
-  }
-
-  setCantidad(tipo: string, id: number, val: number): void {
-    const key = this.getCatalogKey(tipo, id);
-    const n = Math.max(0, Math.floor(Number(val) || 0));
-    if (n === 0) delete this.cantidadesCatalogo[key];
-    else this.cantidadesCatalogo[key] = n;
-  }
-
-  get catalogoActivo(): ConceptoCobroOption[] {
-    let list: ConceptoCobroOption[];
-    if (this.catalogoTab === 'SERVICIO') list = this.serviciosCatalogo;
-    else if (this.catalogoTab === 'LABORATORIO') list = this.laboratoriosCatalogo;
-    else list = this.productosCatalogo;
-    if (!this.catalogoFiltro) return list;
-    const q = this.catalogoFiltro.toLowerCase();
-    return list.filter(c => c.nombre.toLowerCase().includes(q));
-  }
-
-  get totalSeleccionados(): number {
-    return Object.values(this.cantidadesCatalogo).filter(v => v > 0).length;
-  }
-
-  precioParaCuota(item: ConceptoCobroOption): number {
-    const cuota = this.tipoCuotaBeneficiarioSeleccionado;
-    if (cuota === 'B' && item.precioB > 0) return item.precioB;
-    if (item.precioA > 0) return item.precioA;
-    return item.precioDefault;
-  }
-
-  agregarSeleccionados(): void {
-    const allItems = [...this.serviciosCatalogo, ...this.laboratoriosCatalogo, ...this.productosCatalogo];
-    for (const [key, cantidad] of Object.entries(this.cantidadesCatalogo)) {
-      if (cantidad <= 0) continue;
-      const [tipoStr, idStr] = key.split('_');
-      const tipo = tipoStr as 'SERVICIO' | 'PRODUCTO';
-      const id = Number(idStr);
-      const found = allItems.find(c => c.tipo === tipo && c.id === id);
-      if (!found) continue;
-      const precio = this.precioParaCuota(found);
-      const existing = this.itemsNuevoCobro.findIndex(i => i.id === id && i.tipo === tipo);
-      if (existing >= 0) {
-        this.itemsNuevoCobro[existing].cantidad += cantidad;
-        this.itemsNuevoCobro[existing].subtotal = this.itemsNuevoCobro[existing].cantidad * precio;
-      } else {
-        this.itemsNuevoCobro.push({
-          tipo,
-          id,
-          descripcion: found.nombre,
-          cantidad,
-          precio_unitario: precio,
-          subtotal: precio * cantidad,
-        });
-      }
-    }
-    this.cantidadesCatalogo = {};
-    this.catalogoFiltro = '';
-    this.recalcularTotalDesdeItems();
-  }
-
-  nuevoCobro = {
-    id_paciente: 0,
-    monto_total: 0,
-    exento_pago: 'N',
-    metodos_pago: [{ id_metodo_pago: 0, monto: 0 }] as MetodoPagoRow[]
-  };
 
   constructor(private api: ApiService, private route: ActivatedRoute) {}
 
@@ -226,29 +102,13 @@ export class RecibosComponent implements OnInit {
     });
   }
 
+  // ── Data loading ──
+
   private cargarRecibos(): void {
     this.loading = true;
     this.api.getRecibos().subscribe({
       next: (data: any[]) => {
-        this.recibos = data.map((r: any) => ({
-          idVenta: r.id_venta,
-          folioVenta: r.folio_venta,
-          idPaciente: r.id_paciente,
-          nombrePaciente: r.nombre_paciente,
-          folioPaciente: r.folio_paciente,
-          fechaVenta: r.fecha_venta,
-          montoTotal: r.monto_total,
-          montoPagado: r.monto_pagado,
-          saldoPendiente: r.saldo_pendiente,
-          exentoPago: r.exento_pago,
-          cancelada: r.cancelada,
-          motivoCancelacion: r.motivo_cancelacion,
-          metodosPago: (r.metodos_pago || []).map((mp: any) => ({
-            idMetodoPago: mp.id_metodo_pago,
-            nombre: mp.nombre,
-            monto: mp.monto
-          }))
-        }));
+        this.recibos = data.map((r: any) => this._mapearRecibo(r));
         this.filtrarRecibos();
         this.calcularEstadisticas();
         this.loading = false;
@@ -268,30 +128,22 @@ export class RecibosComponent implements OnInit {
         this.montoTarjeta = stats.monto_tarjeta ?? 0;
         this.montoTransferencia = stats.monto_transferencia ?? 0;
       },
-      error: (err) => {
-        console.error('Error al cargar estadísticas de recibos:', err);
-      }
+      error: (err) => console.error('Error al cargar estadísticas de recibos:', err)
     });
   }
 
+  // ── Filters & sorting ──
+
   filtrarRecibos(): void {
     const filtrados = this.recibos.filter(r => {
-      const matchFolio = !this.filtroFolio ||
-        r.folioVenta.toLowerCase().includes(this.filtroFolio.toLowerCase());
-      const matchBeneficiario = !this.filtroBeneficiario ||
-        r.nombrePaciente.toLowerCase().includes(this.filtroBeneficiario.toLowerCase());
-      let matchFechaInicio = true;
-      let matchFechaFin = true;
-      if (this.filtroFechaInicio && r.fechaVenta) {
-        matchFechaInicio = r.fechaVenta.slice(0, 10) >= this.filtroFechaInicio;
-      }
-      if (this.filtroFechaFin && r.fechaVenta) {
-        matchFechaFin = r.fechaVenta.slice(0, 10) <= this.filtroFechaFin;
-      }
+      const matchFolio = !this.filtroFolio || r.folioVenta.toLowerCase().includes(this.filtroFolio.toLowerCase());
+      const matchBeneficiario = !this.filtroBeneficiario || r.nombrePaciente.toLowerCase().includes(this.filtroBeneficiario.toLowerCase());
+      const matchFechaInicio = !this.filtroFechaInicio || !r.fechaVenta || r.fechaVenta.slice(0, 10) >= this.filtroFechaInicio;
+      const matchFechaFin = !this.filtroFechaFin || !r.fechaVenta || r.fechaVenta.slice(0, 10) <= this.filtroFechaFin;
       const matchAdeudo = !this.filtroSoloAdeudos || (r.saldoPendiente > 0 && r.cancelada !== 'S');
       return matchFolio && matchBeneficiario && matchFechaInicio && matchFechaFin && matchAdeudo;
     });
-    this.recibosFiltrados = this.sortRows(filtrados, this.recibosSort, (recibo, key) => this.getReciboSortValue(recibo, key));
+    this.recibosFiltrados = this._sortRows(filtrados, this.recibosSort, (recibo, key) => this._getReciboSortValue(recibo, key));
   }
 
   limpiarFiltros(): void {
@@ -317,348 +169,24 @@ export class RecibosComponent implements OnInit {
     return sort.direction === 'asc' ? '^' : 'v';
   }
 
-  private getReciboSortValue(recibo: Recibo, key: string): unknown {
-    switch (key) {
-      case 'folioVenta': return recibo.folioVenta;
-      case 'nombrePaciente': return recibo.nombrePaciente;
-      case 'fechaVenta': return recibo.fechaVenta;
-      case 'montoTotal': return recibo.montoTotal;
-      case 'montoPagado': return recibo.montoPagado;
-      case 'saldoPendiente': return recibo.saldoPendiente;
-      case 'pago': return this.getPagoLabel(recibo);
-      case 'estado': return recibo.cancelada === 'S' ? 'cancelada' : (recibo.saldoPendiente === 0 ? 'pagada' : 'pendiente');
-      default: return recibo.fechaVenta;
-    }
-  }
-
-  private sortRows<T>(rows: T[], sort: TableSortState, valueGetter: (row: T, key: string) => unknown): T[] {
-    const direction = sort.direction === 'asc' ? 1 : -1;
-    return [...rows].sort((a, b) => {
-      const left = this.toComparableValue(valueGetter(a, sort.key));
-      const right = this.toComparableValue(valueGetter(b, sort.key));
-      if (left < right) return -1 * direction;
-      if (left > right) return 1 * direction;
-      return 0;
-    });
-  }
-
-  private toComparableValue(value: unknown): number | string {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'number') return value;
-    const text = String(value).trim();
-    const maybeDate = Date.parse(text);
-    if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
-    const maybeNumber = Number(text);
-    if (!Number.isNaN(maybeNumber) && text !== '') return maybeNumber;
-    return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  }
-
   calcularEstadisticas(): void {
-    this.montoTotal = this.recibos
-      .filter(r => r.cancelada !== 'S')
-      .reduce((sum, r) => sum + r.montoTotal, 0);
-    this.montoEfectivo = this.recibos
-      .filter(r => r.cancelada !== 'S')
-      .reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'EFECTIVO').reduce((s, mp) => s + mp.monto, 0), 0);
-    this.montoTarjeta = this.recibos
-      .filter(r => r.cancelada !== 'S')
-      .reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'TARJETA').reduce((s, mp) => s + mp.monto, 0), 0);
-    this.montoTransferencia = this.recibos
-      .filter(r => r.cancelada !== 'S')
-      .reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'TRANSFERENCIA').reduce((s, mp) => s + mp.monto, 0), 0);
+    const activos = this.recibos.filter(r => r.cancelada !== 'S');
+    this.montoTotal = activos.reduce((sum, r) => sum + r.montoTotal, 0);
+    this.montoEfectivo = activos.reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'EFECTIVO').reduce((s, mp) => s + mp.monto, 0), 0);
+    this.montoTarjeta = activos.reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'TARJETA').reduce((s, mp) => s + mp.monto, 0), 0);
+    this.montoTransferencia = activos.reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'TRANSFERENCIA').reduce((s, mp) => s + mp.monto, 0), 0);
   }
 
-  openNuevoCobro(): void {
-    this.nuevoCobroError = '';
-    this.guardandoCobro = false;
-    this.itemsNuevoCobro = [];
-    this.nuevoCobro = {
-      id_paciente: 0,
-      monto_total: 0,
-      exento_pago: 'N',
-      metodos_pago: [{ id_metodo_pago: 0, monto: 0 }]
-    };
-    this.nuevoCobroMontoPagado = 0;
-    this.nuevoCobroSaldoPendiente = 0;
-    this.conceptoPrecioUnitario = 0;
-    this.nuevoConcepto = { tipo: 'SERVICIO', id: 0, cantidad: 1 };
-    this.beneficiarioBusqueda = '';
-    this.showBeneficiarioDropdown = false;
-    this.beneficiariosFiltradosCobro = [];
+  // ── Nuevo cobro ──
 
-    this.api.getBeneficiarios().subscribe({
-      next: (data: any[]) => {
-        this.beneficiariosList = data.map((b: any) => ({
-          id: b.id_paciente,
-          folio: b.folio_paciente || b.folio,
-          nombre: b.nombre_completo || ((b.nombre || '') + ' ' + (b.apellido_paterno || '') + ' ' + (b.apellido_materno || '')).trim(),
-          tipoCuota: b.tipo_cuota || 'A'
-        }));
-      },
-      error: (err) => console.error('Error al cargar beneficiarios:', err)
-    });
+  openNuevoCobro(): void { this.showNuevoCobro = true; }
 
-    this.api.getMetodosPago().subscribe({
-      next: (data: any[]) => {
-        this.metodosPagoCatalogo = data.map((m: any) => ({
-          id: m.id_metodo_pago || m.id,
-          nombre: m.nombre
-        }));
-      },
-      error: (err) => console.error('Error al cargar metodos de pago:', err)
-    });
-
-    this.cargarCatalogoCobros();
-    this.showNuevoCobro = true;
+  onCobroSaved(): void {
+    this.cargarRecibos();
+    this.cargarStats();
   }
 
-  private cargarCatalogoCobros(): void {
-    this.api.getServicios({ activo: 'S', categoria: 'SERVICIO' }).subscribe({
-      next: (data: any[]) => {
-        this.serviciosCatalogo = data.map((s: any) => ({
-          id: s.id_servicio,
-          nombre: s.nombre,
-          tipo: 'SERVICIO' as const,
-          precioA: Number(s.precio_cuota_a ?? s.cuota_recuperacion ?? 0),
-          precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
-          precioDefault: Number(s.cuota_recuperacion ?? s.precio_cuota_a ?? s.precio_cuota_b ?? 0),
-        }));
-      },
-      error: (err) => console.error('Error al cargar servicios para cobro:', err)
-    });
-
-    this.api.getServicios({ activo: 'S', categoria: 'LABORATORIO' }).subscribe({
-      next: (data: any[]) => {
-        this.laboratoriosCatalogo = data.map((s: any) => ({
-          id: s.id_servicio,
-          nombre: s.nombre,
-          tipo: 'SERVICIO' as const,
-          precioA: Number(s.precio_cuota_a ?? s.cuota_recuperacion ?? 0),
-          precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
-          precioDefault: Number(s.cuota_recuperacion ?? s.precio_cuota_a ?? s.precio_cuota_b ?? 0),
-        }));
-      },
-      error: (err) => console.error('Error al cargar laboratorios para cobro:', err)
-    });
-
-    this.api.getProductos({ activo: 'S' }).subscribe({
-      next: (data: any[]) => {
-        this.productosCatalogo = data.map((p: any) => ({
-          id: p.id_producto,
-          nombre: p.nombre,
-          tipo: 'PRODUCTO',
-          precioA: Number(p.precio_cuota_a ?? 0),
-          precioB: Number(p.precio_cuota_b ?? 0),
-          precioDefault: Number(p.precio_cuota_a ?? p.precio_cuota_b ?? 0),
-        }));
-      },
-      error: (err) => console.error('Error al cargar productos para cobro:', err)
-    });
-  }
-
-  get conceptosDisponibles(): ConceptoCobroOption[] {
-    return this.nuevoConcepto.tipo === 'SERVICIO' ? this.serviciosCatalogo : this.productosCatalogo;
-  }
-
-  get tipoCuotaBeneficiarioSeleccionado(): string {
-    const b = this.beneficiariosList.find(item => item.id === this.nuevoCobro.id_paciente);
-    return b?.tipoCuota === 'B' ? 'B' : 'A';
-  }
-
-  onTipoConceptoChange(): void {
-    this.nuevoConcepto.id = 0;
-    this.nuevoConcepto.cantidad = 1;
-    this.conceptoPrecioUnitario = 0;
-  }
-
-  onConceptoSeleccionadoChange(): void {
-    this.actualizarPrecioHint();
-    if (this.nuevoConcepto.tipo === 'SERVICIO') {
-      this.nuevoConcepto.cantidad = 1;
-    }
-  }
-
-  onCantidadConceptoChange(): void {
-    if (!this.nuevoConcepto.cantidad || this.nuevoConcepto.cantidad < 1) {
-      this.nuevoConcepto.cantidad = 1;
-    }
-    this.actualizarPrecioHint();
-  }
-
-  onPacienteCobroChange(): void {
-    this.actualizarPrecioHint();
-    // Recalculate subtotals if items are already added (price tier may change)
-    if (this.itemsNuevoCobro.length > 0) {
-      this.recalcularTotalDesdeItems();
-    }
-  }
-
-  private actualizarPrecioHint(): void {
-    const selected = this.conceptosDisponibles.find(item => item.id === this.nuevoConcepto.id);
-    if (!selected) {
-      this.conceptoPrecioUnitario = 0;
-      return;
-    }
-    const cuota = this.tipoCuotaBeneficiarioSeleccionado;
-    let precio = cuota === 'B' ? selected.precioB : selected.precioA;
-    if (!precio || precio <= 0) precio = selected.precioDefault || 0;
-    this.conceptoPrecioUnitario = precio;
-  }
-
-  agregarItemALista(): void {
-    if (this.nuevoConcepto.id === 0) return;
-    const found = this.conceptosDisponibles.find(c => c.id === this.nuevoConcepto.id);
-    if (!found) return;
-
-    const cuota = this.tipoCuotaBeneficiarioSeleccionado;
-    let precio = cuota === 'B' ? found.precioB : found.precioA;
-    if (!precio || precio <= 0) precio = found.precioDefault || 0;
-
-    const cantidad = this.nuevoConcepto.tipo === 'SERVICIO' ? 1 : (this.nuevoConcepto.cantidad || 1);
-    const subtotal = Number((precio * cantidad).toFixed(2));
-
-    this.itemsNuevoCobro.push({
-      tipo: this.nuevoConcepto.tipo,
-      id: found.id,
-      descripcion: found.nombre,
-      precio_unitario: precio,
-      cantidad,
-      subtotal
-    });
-
-    this.nuevoConcepto.id = 0;
-    this.nuevoConcepto.cantidad = 1;
-    this.conceptoPrecioUnitario = 0;
-
-    this.recalcularTotalDesdeItems();
-  }
-
-  removerItem(index: number): void {
-    this.itemsNuevoCobro.splice(index, 1);
-    this.recalcularTotalDesdeItems();
-  }
-
-  recalcularTotalDesdeItems(): void {
-    this.nuevoCobro.monto_total = Number(
-      this.itemsNuevoCobro.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2)
-    );
-    this.calcularSaldoCobro();
-  }
-
-  // ── Beneficiario combobox ──
-
-  filtrarBeneficiariosCobro(): void {
-    const q = this.beneficiarioBusqueda.toLowerCase().trim();
-    this.nuevoCobro.id_paciente = 0;
-    if (!q) {
-      this.beneficiariosFiltradosCobro = this.beneficiariosList.slice(0, 10);
-    } else {
-      this.beneficiariosFiltradosCobro = this.beneficiariosList
-        .filter(b => b.nombre.toLowerCase().includes(q) || (b.folio || '').toLowerCase().includes(q))
-        .slice(0, 20);
-    }
-    this.showBeneficiarioDropdown = true;
-  }
-
-  onBeneficiarioBusquedaFocus(): void {
-    const q = this.beneficiarioBusqueda.toLowerCase().trim();
-    this.beneficiariosFiltradosCobro = q
-      ? this.beneficiariosList.filter(b => b.nombre.toLowerCase().includes(q) || (b.folio || '').toLowerCase().includes(q)).slice(0, 20)
-      : this.beneficiariosList.slice(0, 10);
-    this.showBeneficiarioDropdown = true;
-  }
-
-  onBeneficiarioBusquedaBlur(): void {
-    setTimeout(() => { this.showBeneficiarioDropdown = false; }, 200);
-  }
-
-  seleccionarBeneficiarioCobro(b: BeneficiarioOption): void {
-    this.nuevoCobro.id_paciente = b.id;
-    this.beneficiarioBusqueda = `${b.folio} - ${b.nombre}`;
-    this.showBeneficiarioDropdown = false;
-    this.onPacienteCobroChange();
-  }
-
-  limpiarSeleccionBeneficiario(): void {
-    this.nuevoCobro.id_paciente = 0;
-    this.beneficiarioBusqueda = '';
-    this.beneficiariosFiltradosCobro = this.beneficiariosList.slice(0, 10);
-    this.actualizarPrecioHint();
-  }
-
-  closeNuevoCobro(): void {
-    this.showNuevoCobro = false;
-  }
-
-  agregarMetodoPago(): void {
-    this.nuevoCobro.metodos_pago.push({ id_metodo_pago: 0, monto: 0 });
-  }
-
-  removerMetodoPago(index: number): void {
-    this.nuevoCobro.metodos_pago.splice(index, 1);
-    this.calcularSaldoCobro();
-  }
-
-  calcularSaldoCobro(): void {
-    this.nuevoCobroMontoPagado = this.nuevoCobro.metodos_pago.reduce((sum, mp) => sum + (mp.monto || 0), 0);
-    this.nuevoCobroSaldoPendiente = Math.max(0, (this.nuevoCobro.monto_total || 0) - this.nuevoCobroMontoPagado);
-  }
-
-  guardarCobro(): void {
-    if (!this.nuevoCobro.id_paciente) {
-      this.nuevoCobroError = 'Selecciona un paciente.';
-      return;
-    }
-    if (this.nuevoCobro.monto_total <= 0) {
-      this.nuevoCobroError = 'El monto total debe ser mayor a 0.';
-      return;
-    }
-    if (this.itemsNuevoCobro.length === 0) {
-      this.nuevoCobroError = 'Agrega al menos un concepto al cobro.';
-      return;
-    }
-    const metodosValidos = this.nuevoCobro.metodos_pago.filter(mp => mp.id_metodo_pago > 0 && mp.monto > 0);
-    if (this.nuevoCobro.exento_pago !== 'S' && metodosValidos.length === 0) {
-      this.nuevoCobroError = 'Agrega al menos un metodo de pago con monto.';
-      return;
-    }
-
-    this.nuevoCobroError = '';
-    this.guardandoCobro = true;
-
-    const payload = {
-      id_paciente: this.nuevoCobro.id_paciente,
-      monto_total: this.nuevoCobro.monto_total,
-      monto_pagado: this.nuevoCobroMontoPagado,
-      saldo_pendiente: this.nuevoCobroSaldoPendiente,
-      exento_pago: this.nuevoCobro.exento_pago,
-      metodos_pago: metodosValidos.map(mp => ({
-        id_metodo_pago: mp.id_metodo_pago,
-        monto: mp.monto
-      })),
-      items: this.itemsNuevoCobro.map(item => ({
-        tipo: item.tipo,
-        id_referencia: item.id,
-        descripcion: item.descripcion,
-        precio_unitario: item.precio_unitario,
-        cantidad: item.cantidad
-      }))
-    };
-
-    this.api.createRecibo(payload).subscribe({
-      next: () => {
-        this.guardandoCobro = false;
-        this.showNuevoCobro = false;
-        this.cargarRecibos();
-        this.cargarStats();
-      },
-      error: (err) => {
-        this.guardandoCobro = false;
-        this.nuevoCobroError = err?.error?.detail || 'Error al crear el recibo. Intenta de nuevo.';
-        console.error('Error al crear recibo:', err);
-      }
-    });
-  }
+  // ── Detalle modal ──
 
   verDetalle(recibo: Recibo): void {
     this.reciboSeleccionado = recibo;
@@ -671,9 +199,7 @@ export class RecibosComponent implements OnInit {
         this.reciboItems = items;
         this.loadingItems = false;
       },
-      error: () => {
-        this.loadingItems = false;
-      }
+      error: () => { this.loadingItems = false; }
     });
   }
 
@@ -755,7 +281,7 @@ export class RecibosComponent implements OnInit {
         <div class="total-row"><span>Monto Pagado</span><span>${fmtMoney(r.montoPagado)}</span></div>
         <div class="total-row saldo"><span>Saldo Pendiente</span><span>${fmtMoney(r.saldoPendiente)}</span></div>
       </div>
-      ${r.cancelada === 'S' ? `<div class="cancelada"><strong>CANCELADA</strong> — ${r.motivoCancelacion ?? ''}</div>` : ''}
+      ${r.cancelada === 'S' ? `<div class="cancelada"><strong>CANCELADA</strong> &mdash; ${r.motivoCancelacion ?? ''}</div>` : ''}
     </body></html>`;
 
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
@@ -765,7 +291,6 @@ export class RecibosComponent implements OnInit {
       win.focus();
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } else {
-      // Fallback cuando el navegador bloquea la pestaña: descarga como HTML imprimible
       URL.revokeObjectURL(blobUrl);
       const fallback = new Blob([html], { type: 'text/html;charset=utf-8' });
       const a = document.createElement('a');
@@ -777,6 +302,8 @@ export class RecibosComponent implements OnInit {
       setTimeout(() => URL.revokeObjectURL(a.href), 150);
     }
   }
+
+  // ── Cancel modal ──
 
   confirmarCancelarRecibo(recibo: Recibo): void {
     this.reciboACancelar = recibo;
@@ -803,19 +330,7 @@ export class RecibosComponent implements OnInit {
     });
   }
 
-  onExentoPagoChange(): void {
-    if (this.nuevoCobro.exento_pago === 'S') {
-      const exentoMethod = this.metodosPagoCatalogo.find(m => m.nombre === 'EXENTO');
-      if (exentoMethod) {
-        this.nuevoCobro.metodos_pago = [{ id_metodo_pago: exentoMethod.id, monto: this.nuevoCobro.monto_total || 0 }];
-      } else {
-        this.nuevoCobro.metodos_pago = [];
-      }
-    } else {
-      this.nuevoCobro.metodos_pago = [{ id_metodo_pago: 0, monto: 0 }];
-    }
-    this.calcularSaldoCobro();
-  }
+  // ── Pago modal ──
 
   getPagoLabel(recibo: Recibo): string {
     if (!recibo.metodosPago || recibo.metodosPago.length === 0) return '—';
@@ -873,9 +388,6 @@ export class RecibosComponent implements OnInit {
           this.guardandoPago = false;
           this.showPagoModal = false;
           this._actualizarReciboEnLista(updated);
-          if (this.reciboSeleccionado?.idVenta === updated.id_venta) {
-            this._mapearRecibo(updated);
-          }
           this.cargarStats();
         },
         error: (err: any) => {
@@ -905,9 +417,6 @@ export class RecibosComponent implements OnInit {
         this.guardandoPago = false;
         this.showPagoModal = false;
         this._actualizarReciboEnLista(updated);
-        if (this.reciboSeleccionado?.idVenta === updated.id_venta) {
-          this._mapearRecibo(updated);
-        }
         this.cargarStats();
       },
       error: (err: any) => {
@@ -916,6 +425,8 @@ export class RecibosComponent implements OnInit {
       }
     });
   }
+
+  // ── Private helpers ──
 
   private _mapearRecibo(r: any): Recibo {
     return {
@@ -938,13 +449,45 @@ export class RecibosComponent implements OnInit {
   private _actualizarReciboEnLista(raw: any): void {
     const mapped = this._mapearRecibo(raw);
     const idx = this.recibos.findIndex(r => r.idVenta === mapped.idVenta);
-    if (idx !== -1) {
-      this.recibos[idx] = mapped;
-    }
-    if (this.reciboSeleccionado?.idVenta === mapped.idVenta) {
-      this.reciboSeleccionado = mapped;
-    }
+    if (idx !== -1) this.recibos[idx] = mapped;
+    if (this.reciboSeleccionado?.idVenta === mapped.idVenta) this.reciboSeleccionado = mapped;
     this.filtrarRecibos();
     this.calcularEstadisticas();
+  }
+
+  private _getReciboSortValue(recibo: Recibo, key: string): unknown {
+    switch (key) {
+      case 'folioVenta': return recibo.folioVenta;
+      case 'nombrePaciente': return recibo.nombrePaciente;
+      case 'fechaVenta': return recibo.fechaVenta;
+      case 'montoTotal': return recibo.montoTotal;
+      case 'montoPagado': return recibo.montoPagado;
+      case 'saldoPendiente': return recibo.saldoPendiente;
+      case 'pago': return this.getPagoLabel(recibo);
+      case 'estado': return recibo.cancelada === 'S' ? 'cancelada' : (recibo.saldoPendiente === 0 ? 'pagada' : 'pendiente');
+      default: return recibo.fechaVenta;
+    }
+  }
+
+  private _sortRows<T>(rows: T[], sort: TableSortState, valueGetter: (row: T, key: string) => unknown): T[] {
+    const dir = sort.direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const left = this._toComparableValue(valueGetter(a, sort.key));
+      const right = this._toComparableValue(valueGetter(b, sort.key));
+      if (left < right) return -1 * dir;
+      if (left > right) return 1 * dir;
+      return 0;
+    });
+  }
+
+  private _toComparableValue(value: unknown): number | string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') return value;
+    const text = String(value).trim();
+    const maybeDate = Date.parse(text);
+    if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
+    const maybeNumber = Number(text);
+    if (!Number.isNaN(maybeNumber) && text !== '') return maybeNumber;
+    return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   }
 }
