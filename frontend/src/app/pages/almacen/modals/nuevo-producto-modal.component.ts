@@ -20,7 +20,7 @@ export class NuevoProductoModalComponent implements OnChanges {
   submitting = false;
   form = this._emptyForm();
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['editingProduct'] || changes['initialTipo']) {

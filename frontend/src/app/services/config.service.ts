@@ -11,7 +11,7 @@ export class ConfigService {
     return this._debug;
   }
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   async load(): Promise<void> {
     try {

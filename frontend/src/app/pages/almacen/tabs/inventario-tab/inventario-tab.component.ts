@@ -54,7 +54,7 @@ export class InventarioTabComponent {
 
   readonly formatCurrency = formatCurrency;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   getCategoryCount(categoria: string): number {
     if (categoria === 'Medicamento') return this.productos.filter(p => p.tipoProducto === 'MEDICAMENTO').length;

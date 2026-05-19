@@ -79,7 +79,7 @@ export class ReportesTabComponent implements OnInit {
   seg3TipoEspina: { label: string; value: number }[] = [];
   seg3Estado: { label: string; value: number }[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     const today = new Date();

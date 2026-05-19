@@ -35,7 +35,7 @@ export class PerfilComponent {
     return roles[rol] ?? rol;
   }
 
-  constructor(private api: ApiService, private auth: AuthService) {}
+  constructor(private readonly api: ApiService, private readonly auth: AuthService) {}
 
   cambiarContrasena(): void {
     if (this.form.contrasena_nueva !== this.form.confirmar) return;

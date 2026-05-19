@@ -9,7 +9,7 @@ import { TipoEspina } from '../shared/models/beneficiario.models';
 export class PreregistroApiService {
   private readonly base = `${environment.apiUrl}/preregistro`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getPreRegistros(): Observable<PreRegistro[]> {
     return this.http.get<PreRegistro[]>(this.base);

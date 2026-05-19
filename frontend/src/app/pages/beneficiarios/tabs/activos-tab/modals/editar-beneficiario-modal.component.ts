@@ -50,7 +50,7 @@ export class EditarBeneficiarioModalComponent implements OnChanges {
     return getMunicipiosParaEstado(estado);
   }
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['beneficiario'] && this.beneficiario) {

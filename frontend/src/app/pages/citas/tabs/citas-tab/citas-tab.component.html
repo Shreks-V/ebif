@@ -39,7 +39,7 @@
         <circle cx="11" cy="11" r="8"/>
         <path d="m21 21-4.3-4.3"/>
       </svg>
-      <input
+      <input aria-label="Buscar por nombre de paciente..."
         type="text"
         placeholder="Buscar por nombre de paciente..."
         [(ngModel)]="searchCitas"
@@ -61,7 +61,7 @@
           [ngClass]="!filtroFecha ? 'bg-[#00328b] text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
           Todas
         </button>
-        <input
+        <input aria-label="Filtro fecha"
           type="date"
           [(ngModel)]="filtroFecha"
           (change)="filtrarCitas()"

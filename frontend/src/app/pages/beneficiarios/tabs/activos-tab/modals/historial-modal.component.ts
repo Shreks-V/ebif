@@ -34,7 +34,7 @@ export class HistorialModalComponent implements OnChanges {
   readonly getComodatoStatusLabel = getComodatoStatusLabel;
   readonly getComodatoStatusClass = getComodatoStatusClass;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['beneficiario'] && this.beneficiario) {

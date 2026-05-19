@@ -26,7 +26,7 @@ export class PagoReciboModalComponent implements OnChanges {
   guardando = false;
   metodosCatalogo: { id: number; nombre: string }[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['recibo'] && this.recibo) {

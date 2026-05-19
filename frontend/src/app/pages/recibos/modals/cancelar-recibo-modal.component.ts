@@ -19,7 +19,7 @@ export class CancelarReciboModalComponent implements OnChanges {
   motivo = '';
   cancelando = false;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['recibo'] && this.recibo) {

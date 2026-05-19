@@ -18,26 +18,26 @@
           <label class="block text-sm font-semibold text-slate-700 mb-1">
             Clave Interna @if (form.tipo_producto !== 'SERVICIO') { <span>*</span> }
           </label>
-          <input type="text" [(ngModel)]="form.clave_interna" name="clave_interna"
+          <input type="text" [(ngModel)]="form.clave_interna" name="clave_interna" aria-label="Ej: MED-001"
             [required]="form.tipo_producto !== 'SERVICIO'"
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: MED-001"/>
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
-          <input type="text" [(ngModel)]="form.nombre" name="nombre" required
+          <input type="text" [(ngModel)]="form.nombre" name="nombre" required aria-label="Nombre del producto"
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Nombre del producto"/>
         </div>
       </div>
       <div>
         <label class="block text-sm font-semibold text-slate-700 mb-1">Descripci&oacute;n</label>
         <textarea autoGrow [(ngModel)]="form.descripcion" name="descripcion" rows="2"
-          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden"></textarea>
+          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" aria-label="Descripción"></textarea>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Producto *</label>
           <select [(ngModel)]="form.tipo_producto" name="tipo_producto" required
-            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Tipo de producto">
             <option value="">Seleccionar...</option>
             <option value="MEDICAMENTO">Medicamento</option>
             <option value="EQUIPO">Equipo</option>
@@ -47,7 +47,7 @@
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Activo</label>
           <select [(ngModel)]="form.activo" name="activo"
-            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Activo">
             <option value="S">S&iacute;</option>
             <option value="N">No</option>
           </select>
@@ -56,12 +56,12 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota A</label>
-          <input type="number" [(ngModel)]="form.precio_cuota_a" name="precio_cuota_a" step="0.01" min="0"
+          <input type="number" [(ngModel)]="form.precio_cuota_a" name="precio_cuota_a" step="0.01" min="0" aria-label="0.00"
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00"/>
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota B</label>
-          <input type="number" [(ngModel)]="form.precio_cuota_b" name="precio_cuota_b" step="0.01" min="0"
+          <input type="number" [(ngModel)]="form.precio_cuota_b" name="precio_cuota_b" step="0.01" min="0" aria-label="0.00"
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00"/>
         </div>
       </div>
@@ -71,18 +71,18 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Presentaci&oacute;n</label>
-              <input type="text" [(ngModel)]="form.presentacion" name="presentacion"
+              <input type="text" [(ngModel)]="form.presentacion" name="presentacion" aria-label="Ej: Tableta"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: Tableta"/>
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Dosis</label>
-              <input type="text" [(ngModel)]="form.dosis" name="dosis"
+              <input type="text" [(ngModel)]="form.dosis" name="dosis" aria-label="Ej: 500mg"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: 500mg"/>
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Requiere Caducidad</label>
               <select [(ngModel)]="form.requiere_caducidad" name="requiere_caducidad"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Requiere Caducidad">
                 <option value="S">S&iacute;</option>
                 <option value="N">No</option>
               </select>
@@ -91,7 +91,7 @@
           @if (form.requiere_caducidad === 'S') {
             <div class="mt-4">
               <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Caducidad</label>
-              <input type="date" [(ngModel)]="form.fecha_caducidad" name="fecha_caducidad"
+              <input type="date" [(ngModel)]="form.fecha_caducidad" name="fecha_caducidad" aria-label="Form.fecha caducidad"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
             </div>
           }
@@ -103,17 +103,17 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">N&uacute;mero de Serie</label>
-              <input type="text" [(ngModel)]="form.numero_serie" name="numero_serie"
+              <input type="text" [(ngModel)]="form.numero_serie" name="numero_serie" aria-label="Form.numero serie"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Marca</label>
-              <input type="text" [(ngModel)]="form.marca" name="marca"
+              <input type="text" [(ngModel)]="form.marca" name="marca" aria-label="Form.marca"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Modelo</label>
-              <input type="text" [(ngModel)]="form.modelo" name="modelo"
+              <input type="text" [(ngModel)]="form.modelo" name="modelo" aria-label="Form.modelo"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
             </div>
           </div>
@@ -121,7 +121,7 @@
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus Equipo</label>
               <select [(ngModel)]="form.estatus_equipo" name="estatus_equipo"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Estatus Equipo">
                 <option value="DISPONIBLE">Disponible</option>
                 <option value="EN_USO">En Uso</option>
                 <option value="DAÑADO">Da&ntilde;ado</option>
@@ -130,7 +130,7 @@
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Observaciones</label>
               <textarea autoGrow [(ngModel)]="form.observaciones" name="observaciones" rows="2"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden"></textarea>
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" aria-label="Observaciones"></textarea>
             </div>
           </div>
         </div>
@@ -142,14 +142,14 @@
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Categor&iacute;a</label>
               <select [(ngModel)]="form.categoria" name="srv_categoria"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm">
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" aria-label="Srv Categoria">
                 <option value="SERVICIO">Servicio general</option>
                 <option value="LABORATORIO">Laboratorio / Estudio</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Cuota de Recuperaci&oacute;n</label>
-              <input type="number" [(ngModel)]="form.cuota_recuperacion" name="cuota_recuperacion" step="0.01" min="0"
+              <input type="number" [(ngModel)]="form.cuota_recuperacion" name="cuota_recuperacion" step="0.01" min="0" aria-label="0.00"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00"/>
             </div>
           </div>
@@ -161,17 +161,17 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Cantidad Disponible</label>
-              <input type="number" [(ngModel)]="form.cantidad_disponible" name="cantidad_disponible" min="0"
+              <input type="number" [(ngModel)]="form.cantidad_disponible" name="cantidad_disponible" min="0" aria-label="0"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0"/>
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Nivel M&iacute;nimo</label>
-              <input type="number" [(ngModel)]="form.nivel_minimo" name="nivel_minimo" min="0"
+              <input type="number" [(ngModel)]="form.nivel_minimo" name="nivel_minimo" min="0" aria-label="5"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="5"/>
             </div>
             <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">Unidad de Medida</label>
-              <input type="text" [(ngModel)]="form.unidad_medida" name="unidad_medida"
+              <input type="text" [(ngModel)]="form.unidad_medida" name="unidad_medida" aria-label="Ej: Pieza, Caja"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: Pieza, Caja"/>
             </div>
           </div>

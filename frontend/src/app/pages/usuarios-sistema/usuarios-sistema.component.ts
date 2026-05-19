@@ -67,7 +67,7 @@ export class UsuariosSistemaComponent implements OnInit {
     return this.auth.getUser()?.id_usuario ?? -1;
   }
 
-  constructor(private api: ApiService, private auth: AuthService, private router: Router) {}
+  constructor(private readonly api: ApiService, private readonly auth: AuthService, private readonly router: Router) {}
 
   ngOnInit(): void {
     if (!this.auth.isAdmin()) {

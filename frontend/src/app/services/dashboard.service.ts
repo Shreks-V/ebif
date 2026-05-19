@@ -19,7 +19,7 @@ const AVATAR_COLORS = [
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   load(today: Date): Observable<DashboardData & { doctorAtendidos: number; doctorTotalHoy: number }> {
     return forkJoin({

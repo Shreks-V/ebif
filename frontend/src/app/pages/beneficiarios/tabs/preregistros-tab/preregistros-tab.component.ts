@@ -120,7 +120,7 @@ export class PreregistrosTabComponent implements OnInit {
     'bg-cyan-400', 'bg-amber-400'
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.load();

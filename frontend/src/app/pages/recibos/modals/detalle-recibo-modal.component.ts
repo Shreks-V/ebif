@@ -25,7 +25,7 @@ export class DetalleReciboModalComponent implements OnChanges {
   items: ReciboItem[] = [];
   loadingItems = false;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['recibo'] && this.recibo) {
@@ -122,7 +122,7 @@ export class DetalleReciboModalComponent implements OnChanges {
       a.download = `comprobante_${r.folioVenta}.html`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 150);
     }
   }

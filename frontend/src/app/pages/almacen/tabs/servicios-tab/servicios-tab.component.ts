@@ -35,7 +35,7 @@ export class ServiciosTabComponent {
 
   readonly formatCurrency = formatCurrency;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   get filtered(): ServicioItem[] {
     if (!this.search.trim()) return this.servicios;

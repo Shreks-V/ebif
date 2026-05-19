@@ -8,7 +8,7 @@ import { BitacoraFilter, BitacoraResponse } from '../shared/models/bitacora.mode
 export class BitacoraApiService {
   private readonly base = `${environment.apiUrl}/bitacora`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getBitacora(filters: BitacoraFilter = {}): Observable<BitacoraResponse> {
     let params = new HttpParams();

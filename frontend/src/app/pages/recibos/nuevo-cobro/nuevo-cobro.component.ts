@@ -72,7 +72,7 @@ export class NuevoCobroComponent implements OnInit {
     metodos_pago: [{ id_metodo_pago: 0, monto: 0 }] as MetodoPagoRow[],
   };
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.api.getBeneficiarios().subscribe({

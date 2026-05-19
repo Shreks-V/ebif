@@ -11,7 +11,7 @@ import {
 export class AuthApiService {
   private readonly base = `${environment.apiUrl}/auth`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   cambiarContrasena(data: CambiarContrasenaPayload): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.base}/cambiar-contrasena`, data);

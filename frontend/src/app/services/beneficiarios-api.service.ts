@@ -23,7 +23,7 @@ export interface BeneficiariosFilter {
 export class BeneficiariosApiService {
   private readonly base = `${environment.apiUrl}/beneficiarios`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getBeneficiarios(filters?: BeneficiariosFilter): Observable<Beneficiario[]> {
     return this.http.get<Beneficiario[]>(this.base, { params: buildParams(filters) });

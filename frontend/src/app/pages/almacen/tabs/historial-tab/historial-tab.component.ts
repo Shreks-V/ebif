@@ -33,7 +33,7 @@ export class HistorialTabComponent implements OnInit, OnDestroy {
   private _debounce: ReturnType<typeof setTimeout> | null = null;
   private _timer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.cargar();

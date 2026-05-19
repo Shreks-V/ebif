@@ -30,7 +30,7 @@ export class EditarCitaModalComponent implements OnChanges {
   editCitaFechaHora = '';
   guardandoEdicionCita = false;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['cita'] && this.cita) {

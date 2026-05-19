@@ -51,9 +51,9 @@ export class DashboardComponent implements OnInit {
   pacienteParaRecibo: ReciboModalPaciente | null = null;
 
   constructor(
-    private router: Router,
-    private api: ApiService,
-    private dashboardService: DashboardService,
+    private readonly router: Router,
+    private readonly api: ApiService,
+    private readonly dashboardService: DashboardService,
   ) {}
 
   ngOnInit(): void {

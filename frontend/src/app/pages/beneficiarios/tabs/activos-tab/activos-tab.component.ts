@@ -84,7 +84,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   readonly getMembresiaBadgeClass = getMembresiaBadgeClass;
   readonly getMembresiaVencimientoClass = getMembresiaVencimientoClass;
 
-  constructor(private api: ApiService, private route: ActivatedRoute) {}
+  constructor(private readonly api: ApiService, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.loadBeneficiarios();
@@ -313,7 +313,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url; link.download = filename;
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    document.body.appendChild(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 150);
   }
 

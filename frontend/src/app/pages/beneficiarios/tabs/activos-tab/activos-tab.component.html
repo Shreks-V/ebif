@@ -23,7 +23,7 @@
       <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
       </svg>
-      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="filter()"
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="filter()" aria-label="Buscar por nombre, folio, CURP o membresía..."
         placeholder="Buscar por nombre, folio, CURP o membresía..."
         class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00328b]/20 focus:border-[#00328b] transition-all" />
     </div>

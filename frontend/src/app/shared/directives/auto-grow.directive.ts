@@ -5,7 +5,7 @@ import { Directive, ElementRef, HostListener, AfterViewInit } from '@angular/cor
   standalone: true,
 })
 export class AutoGrowDirective implements AfterViewInit {
-  constructor(private el: ElementRef<HTMLTextAreaElement>) {}
+  constructor(private readonly el: ElementRef<HTMLTextAreaElement>) {}
 
   ngAfterViewInit(): void {
     // Defer so ngModel has time to populate the value before measuring

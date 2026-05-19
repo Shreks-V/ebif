@@ -13,7 +13,7 @@ export class ConfirmarEliminarCitaModalComponent {
   @Output() eliminado = new EventEmitter<void>();
   @Output() cancelado = new EventEmitter<void>();
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   eliminar(): void {
     if (!this.cita) return;

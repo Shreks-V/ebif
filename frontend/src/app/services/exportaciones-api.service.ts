@@ -8,7 +8,7 @@ import { buildParams } from './api-helpers';
 export class ExportacionesApiService {
   private readonly base = `${environment.apiUrl}/exportaciones`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   exportarReportePdf(tipo: string, filters?: Record<string, unknown>): Observable<Blob> {
     const params = buildParams({ tipo, ...filters });

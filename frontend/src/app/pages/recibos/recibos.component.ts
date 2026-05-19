@@ -71,7 +71,7 @@ export class RecibosComponent implements OnInit {
 
   get isAdmin(): boolean { return this.auth.isAdmin(); }
 
-  constructor(private api: ApiService, private route: ActivatedRoute, private auth: AuthService) {}
+  constructor(private readonly api: ApiService, private readonly route: ActivatedRoute, private readonly auth: AuthService) {}
 
   ngOnInit(): void {
     this.cargarRecibos();

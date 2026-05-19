@@ -76,7 +76,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   private readonly actionMenuViewportPadding = 8;
   private readonly _onViewportChange = (): void => { this._repositionCitaMenu(); };
 
-  constructor(private api: ApiService, private route: ActivatedRoute) {}
+  constructor(private readonly api: ApiService, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this._cargarCitas();

@@ -27,13 +27,13 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
       <div class="relative sm:col-span-2 lg:col-span-1">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" [(ngModel)]="filtroProducto" (ngModelChange)="onBusquedaChange()"
+        <input type="text" [(ngModel)]="filtroProducto" (ngModelChange)="onBusquedaChange()" aria-label="Buscar producto, clave u observación..."
           placeholder="Buscar producto, clave u observación..."
           class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white transition-colors">
       </div>
       <div>
         <select [(ngModel)]="filtroTipo" (ngModelChange)="onFiltroChange()"
-          class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white transition-colors text-slate-700">
+          class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white transition-colors text-slate-700" aria-label="Filtrar por tipo">
           <option value="">Todos los tipos</option>
           <option value="ENTRADA">Entrada</option>
           <option value="AJUSTE_POS">Ajuste positivo</option>
@@ -45,11 +45,11 @@
         </select>
       </div>
       <div>
-        <input type="date" [(ngModel)]="fechaInicio" (ngModelChange)="onFiltroChange()"
+        <input type="date" [(ngModel)]="fechaInicio" (ngModelChange)="onFiltroChange()" aria-label="Fecha inicio"
           class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white transition-colors text-slate-700">
       </div>
       <div>
-        <input type="date" [(ngModel)]="fechaFin" (ngModelChange)="onFiltroChange()"
+        <input type="date" [(ngModel)]="fechaFin" (ngModelChange)="onFiltroChange()" aria-label="Fecha fin"
           class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white transition-colors text-slate-700">
       </div>
     </div>

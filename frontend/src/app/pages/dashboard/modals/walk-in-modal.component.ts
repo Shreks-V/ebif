@@ -26,7 +26,7 @@ export class WalkInModalComponent implements OnInit {
   saving = false;
   error = '';
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.api.getBeneficiarios().subscribe({

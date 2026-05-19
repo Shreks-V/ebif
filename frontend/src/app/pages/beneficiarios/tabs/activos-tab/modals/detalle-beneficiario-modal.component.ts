@@ -29,7 +29,7 @@ export class DetalleBeneficiarioModalComponent implements OnChanges {
   readonly getMembresiaBadgeClass = getMembresiaBadgeClass;
   readonly getMembresiaVencimientoClass = getMembresiaVencimientoClass;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['beneficiario'] && this.beneficiario) {
@@ -75,7 +75,7 @@ export class DetalleBeneficiarioModalComponent implements OnChanges {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
       },
       error: () => alert('Error al generar expediente'),

@@ -55,7 +55,7 @@ export class BitacoraComponent implements OnInit, OnDestroy {
 
   selectedItem: BitacoraItem | null = null;
 
-  constructor(private bitacoraApi: BitacoraApiService) {}
+  constructor(private readonly bitacoraApi: BitacoraApiService) {}
 
   openDetail(item: BitacoraItem): void {
     this.selectedItem = item;

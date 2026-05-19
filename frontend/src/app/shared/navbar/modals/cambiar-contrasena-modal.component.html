@@ -24,15 +24,15 @@
       @if (!success) {
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Contraseña actual</label>
-          <input type="password" [(ngModel)]="data.actual" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Tu contraseña actual">
+          <input type="password" [(ngModel)]="data.actual" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Tu contraseña actual" aria-label="Tu contraseña actual">
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Nueva contraseña</label>
-          <input type="password" [(ngModel)]="data.nueva" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Mínimo 8 caracteres">
+          <input type="password" [(ngModel)]="data.nueva" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Mínimo 8 caracteres" aria-label="Mínimo 8 caracteres">
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Confirmar nueva contraseña</label>
-          <input type="password" [(ngModel)]="data.confirmar" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Repite la nueva contraseña">
+          <input type="password" [(ngModel)]="data.confirmar" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Repite la nueva contraseña" aria-label="Repite la nueva contraseña">
         </div>
       }
     </div>

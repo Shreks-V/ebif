@@ -20,7 +20,7 @@ export class BeneficiariosComponent implements OnInit {
 
   get isAdmin(): boolean { return this.auth.isAdmin(); }
 
-  constructor(private route: ActivatedRoute, private auth: AuthService) {}
+  constructor(private readonly route: ActivatedRoute, private readonly auth: AuthService) {}
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {

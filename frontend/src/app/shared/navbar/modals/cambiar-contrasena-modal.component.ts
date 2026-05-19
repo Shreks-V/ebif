@@ -17,7 +17,7 @@ export class CambiarContrasenaModalComponent {
   success = false;
   loading = false;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   close(): void { this.closed.emit(); }
 

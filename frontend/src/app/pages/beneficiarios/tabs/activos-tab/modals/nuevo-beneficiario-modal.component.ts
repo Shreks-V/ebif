@@ -45,7 +45,7 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
     return getMunicipiosParaEstado(estado);
   }
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.api.getTiposEspina().subscribe({

@@ -52,7 +52,7 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
   private geocodeCache: Record<string, { lat: number; lng: number }> = {};
   private _geocodingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private api: ApiService, private router: Router) {}
+  constructor(private readonly api: ApiService, private readonly router: Router) {}
 
   ngOnInit(): void {
     try {

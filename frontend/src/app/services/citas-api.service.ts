@@ -23,7 +23,7 @@ export class CitasApiService {
   private readonly citasBase = `${environment.apiUrl}/citas`;
   private readonly doctoresBase = `${environment.apiUrl}/doctores`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   // ── Citas ──
 

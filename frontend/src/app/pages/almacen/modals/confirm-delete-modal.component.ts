@@ -15,7 +15,7 @@ export class ConfirmDeleteModalComponent {
 
   submitting = false;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   confirm(): void {
     if (!this.item) return;

@@ -35,7 +35,7 @@ export class NuevaCitaModalComponent implements OnInit {
   nuevaCitaLoadingServicios = false;
   guardandoCita = false;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.nuevaCitaServiciosFiltrados = this.serviciosList;

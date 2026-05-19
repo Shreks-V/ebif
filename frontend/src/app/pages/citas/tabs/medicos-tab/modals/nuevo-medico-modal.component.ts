@@ -25,7 +25,7 @@ export class NuevoMedicoModalComponent {
   guardando = false;
   error = '';
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   toggleServicio(idServicio: number): void {
     const idx = this.serviciosSeleccionados.indexOf(idServicio);

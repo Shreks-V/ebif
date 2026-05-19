@@ -53,7 +53,7 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
   private readonly actionMenuViewportPadding = 8;
   private readonly _onViewportChange = (): void => { this._repositionMedicoMenu(); };
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this._cargarDoctores();

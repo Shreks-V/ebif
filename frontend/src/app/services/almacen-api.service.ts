@@ -19,7 +19,7 @@ export interface ProductosFilter {
 export class AlmacenApiService {
   private readonly base = `${environment.apiUrl}/almacen`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getProductos(filters?: ProductosFilter): Observable<ProductoRaw[]> {
     return this.http.get<ProductoRaw[]>(`${this.base}/productos`, { params: buildParams(filters) });

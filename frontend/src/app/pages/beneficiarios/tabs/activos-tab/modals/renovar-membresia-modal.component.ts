@@ -32,7 +32,7 @@ export class RenovarMembresiaModalComponent implements OnInit {
 
   readonly getMembresiaBadgeClass = getMembresiaBadgeClass;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.api.getMetodosPago().subscribe({

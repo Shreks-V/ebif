@@ -67,7 +67,7 @@ export class MapaTabComponent implements OnInit, OnDestroy, AfterViewChecked {
       .slice(0, 6);
   }
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this._mapNeedsInit = true;

@@ -62,7 +62,7 @@ export class ComodatosTabComponent {
   comodatoToDevolver: ComodatoItem | null = null;
   submittingDevolucion = false;
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   get equiposList(): ProductoItem[] {
     return this.productos.filter(p => p.tipoProducto === 'EQUIPO');
@@ -252,7 +252,7 @@ export class ComodatosTabComponent {
         link.download = `contrato_${com.folioComodato}.pdf`;
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 150);
       },
       error: () => alert('Error al generar contrato de comodato'),

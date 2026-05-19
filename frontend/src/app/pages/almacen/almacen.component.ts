@@ -62,10 +62,10 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   private _refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    private api: ApiService,
-    private route: ActivatedRoute,
-    private auth: AuthService,
-    private config: ConfigService,
+    private readonly api: ApiService,
+    private readonly route: ActivatedRoute,
+    private readonly auth: AuthService,
+    private readonly config: ConfigService,
   ) {}
 
   ngOnInit(): void {

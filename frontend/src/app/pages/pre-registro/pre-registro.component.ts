@@ -116,7 +116,7 @@ export class PreRegistroComponent implements OnInit {
   subiendoDoc = false;
 
   // Validation rules per step
-  private requiredByStep: { [step: number]: string[] } = {
+  private readonly requiredByStep: { [step: number]: string[] } = {
     1: ['nombre', 'apellidoPaterno', 'apellidoMaterno', 'fechaNacimiento', 'sexo', 'curp', 'nombrePadreMadre'],
     2: ['pais', 'calle', 'numeroExterior', 'colonia', 'municipio', 'ciudad', 'estado', 'codigoPostal'],
     3: ['telefonoCelular', 'enEmergenciaAvisarA', 'telefonoEmergencia'],

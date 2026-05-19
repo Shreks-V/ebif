@@ -28,15 +28,15 @@ import { PreRegistro } from '../shared/models/preregistro.models';
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   constructor(
-    private almacen: AlmacenApiService,
-    private beneficiarios: BeneficiariosApiService,
-    private bitacora: BitacoraApiService,
-    private citas: CitasApiService,
-    private recibos: RecibosApiService,
-    private reportes: ReportesApiService,
-    private exportaciones: ExportacionesApiService,
-    private auth: AuthApiService,
-    private preregistro: PreregistroApiService,
+    private readonly almacen: AlmacenApiService,
+    private readonly beneficiarios: BeneficiariosApiService,
+    private readonly bitacora: BitacoraApiService,
+    private readonly citas: CitasApiService,
+    private readonly recibos: RecibosApiService,
+    private readonly reportes: ReportesApiService,
+    private readonly exportaciones: ExportacionesApiService,
+    private readonly auth: AuthApiService,
+    private readonly preregistro: PreregistroApiService,
   ) {}
 
   // ── Beneficiarios ──

@@ -13,7 +13,7 @@ export class CredencialModalComponent {
   @Input() beneficiario: Beneficiario | null = null;
   @Output() closed = new EventEmitter<void>();
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   get padecimiento(): string {
     const tipos = this.beneficiario?.tiposEspina;
@@ -41,7 +41,7 @@ export class CredencialModalComponent {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 }

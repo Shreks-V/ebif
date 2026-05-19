@@ -60,7 +60,7 @@ export class ReciboPostCitaModalComponent implements OnChanges {
   servicios: CatalogoItem[] = [];
   productos: CatalogoItem[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['paciente'] && this.paciente) {

@@ -13,7 +13,7 @@ export class ConfirmarDesactivarModalComponent {
   @Output() desactivado = new EventEmitter<void>();
   @Output() cancelado = new EventEmitter<void>();
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   desactivar(): void {
     if (!this.beneficiario) return;

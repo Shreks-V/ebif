@@ -19,7 +19,7 @@ export interface ReporteFilter {
 export class ReportesApiService {
   private readonly base = `${environment.apiUrl}/reportes`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getReportePorGenero(filters?: ReporteFilter): Observable<ReporteChartData> {
     return this.http.get<ReporteChartData>(`${this.base}/por-genero`, { params: buildParams(filters) });

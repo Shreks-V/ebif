@@ -48,7 +48,7 @@ export class DisponibilidadModalComponent implements OnChanges {
     { num: 7, nombre: 'Domingo' },
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['medico'] && this.medico) {

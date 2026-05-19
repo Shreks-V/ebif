@@ -22,7 +22,7 @@ export class AuthService {
   private userSubject = new BehaviorSubject<UserInfo | null>(null);
   user$ = this.userSubject.asObservable();
 
-  constructor(private http: HttpClient, private router: Router) {
+  constructor(private readonly http: HttpClient, private readonly router: Router) {
     this.loadUser();
   }
 

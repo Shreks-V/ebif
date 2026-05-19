@@ -24,7 +24,7 @@ export interface PagoPayload {
 export class RecibosApiService {
   private readonly base = `${environment.apiUrl}/recibos`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getRecibos(filters?: RecibosFilter): Observable<Recibo[]> {
     return this.http.get<Recibo[]>(this.base, { params: buildParams(filters) });
