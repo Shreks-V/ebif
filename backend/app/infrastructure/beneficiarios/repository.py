@@ -15,8 +15,8 @@ from app.domain.beneficiarios.services import calculate_age, etapa_vida, normali
 logger = logging.getLogger(__name__)
 
 _MSG_BENEFICIARIO_NO_ENCONTRADO = 'Beneficiario no encontrado'
-_SELECT_PACIENTE_BY_FOLIO = _SELECT_PACIENTE_BY_FOLIO
-_SELECT_PACIENTE_BY_ID = _SELECT_PACIENTE_BY_ID
+_SELECT_PACIENTE_BY_FOLIO = 'SELECT * FROM PACIENTE WHERE FOLIO = :folio'
+_SELECT_PACIENTE_BY_ID = 'SELECT * FROM PACIENTE WHERE ID_PACIENTE = :id'
 
 # Shared WHERE predicates — single source of truth for the active/approved patient filter
 _ACTIVO_APROBADO = "ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'"
@@ -112,7 +112,7 @@ def _batch_fetch_tipos_espina(conn, patient_ids: list[int]) -> dict[int, list[di
             result[pid].append({'id_tipo_espina': row[1], 'nombre': _strip_char(row[2])})
     return result
 
-def _listar_tipos_espina(current_user: CurrentUser | None = None):
+def _listar_tipos_espina(_current_user: CurrentUser | None = None):
     """Listar todos los tipos de espina bífida."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -123,7 +123,7 @@ def _listar_tipos_espina(current_user: CurrentUser | None = None):
             r['nombre'] = _strip_char(r.get('nombre'))
         return rows
 
-def _stats_beneficiarios(current_user: CurrentUser | None = None):
+def _stats_beneficiarios(_current_user: CurrentUser | None = None):
     """Conteo total de beneficiarios."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -133,7 +133,7 @@ def _stats_beneficiarios(current_user: CurrentUser | None = None):
         total = cur.fetchone()[0]
         return {'total': total, 'activos': total_activos, 'inactivos': total - total_activos}
 
-def _dashboard_stats(current_user: CurrentUser | None = None):
+def _dashboard_stats(_current_user: CurrentUser | None = None):
     """Estadísticas generales para el dashboard."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -215,7 +215,7 @@ def _sync_membresias_vencidas(conn) -> int:
     return updated
 
 
-def _listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar beneficiarios con filtros opcionales."""
     with get_db() as conn:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -251,7 +251,7 @@ def _listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None
         tipos_map = _batch_fetch_tipos_espina(conn, patient_ids)
         return [_patient_row_to_response(row, tipos_map=tipos_map) for row in rows]
 
-def _obtener_beneficiario(folio: str, current_user: CurrentUser | None = None):
+def _obtener_beneficiario(folio: str, _current_user: CurrentUser | None = None):
     """Obtener beneficiario por folio."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -281,7 +281,7 @@ def _crear_beneficiario(data, current_user: CurrentUser | None = None):
         row = row_to_dict(cur)
         return _patient_row_to_response(row, conn)
 
-def _actualizar_beneficiario(folio: str, data, current_user: CurrentUser | None = None):
+def _actualizar_beneficiario(folio: str, data, _current_user: CurrentUser | None = None):
     """Actualizar beneficiario existente."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -328,7 +328,7 @@ def _eliminar_beneficiario(folio: str, current_user: CurrentUser | None = None):
 
 def _historial_beneficiario(
     folio: str,
-    current_user: CurrentUser | None = None,
+    _current_user: CurrentUser | None = None,
     limit_citas: int=100,
     offset_citas: int=0,
     limit_pagos: int=100,
@@ -420,7 +420,7 @@ def _historial_beneficiario(
         return {'folio': folio, 'nombre': nombre_completo, 'citas': citas, 'pagos': pagos, 'comodatos': comodatos}
 
 
-def _listar_membresias_proximas_a_vencer(dias: int = 30, current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
+def _listar_membresias_proximas_a_vencer(dias: int = 30, _current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Beneficiarios con membresía que vence en los próximos N días."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
@@ -512,7 +512,7 @@ def _renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None 
         }
 
 
-def _mapa_beneficiarios(current_user=None):
+def _mapa_beneficiarios(_current_user=None):
     """Devuelve todos los beneficiarios activos con sus coordenadas geocodificadas para el mapa."""
     try:
         with get_db() as conn:

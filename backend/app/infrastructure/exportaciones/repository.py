@@ -25,13 +25,13 @@ from app.infrastructure.privacy.crypto import decrypt_row, PACIENTE_ENCRYPTED_FI
 logger = logging.getLogger(__name__)
 
 _MSG_ERROR_INTERNO = 'Error interno del servidor'
-_ORG_NAME = _ORG_NAME
-_COL_TOTAL_PACIENTES = _COL_TOTAL_PACIENTES
-_COL_EDAD_PROMEDIO = _COL_EDAD_PROMEDIO
-_COL_GENERO = _COL_GENERO
-_COL_ETAPA_VIDA = _COL_ETAPA_VIDA
-_COL_PAC_ATENDIDOS = _COL_PAC_ATENDIDOS
-_COL_METRICA = _COL_METRICA
+_ORG_NAME = 'Asociación de Espina Bífida'
+_COL_TOTAL_PACIENTES = 'Total Pacientes'
+_COL_EDAD_PROMEDIO = 'Edad Promedio'
+_COL_GENERO = 'Género'
+_COL_ETAPA_VIDA = 'Etapa de Vida'
+_COL_PAC_ATENDIDOS = 'Pacientes Atendidos'
+_COL_METRICA = 'Métrica'
 
 UPLOAD_DOCUMENTOS_DIR = Path(__file__).resolve().parents[3] / 'uploads' / 'documentos'
 LOGO_PATH = Path(__file__).resolve().parents[3] / 'uploads' / 'logo.png'
@@ -516,7 +516,7 @@ def _exportar_reporte_pdf(  # noqa: C901
         logger.exception('Error al generar PDF de reporte')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = None):
+def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = None):
     """Generar reporte PDF de un beneficiario con sus datos y documentos (RF-ER-06)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -560,7 +560,7 @@ def _exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = No
         logger.exception('Error al generar PDF del beneficiario')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_credencial_pdf(folio: str, current_user: CurrentUser | None = None):
+def _exportar_credencial_pdf(folio: str, _current_user: CurrentUser | None = None):
     """Generar credencial del beneficiario en PDF (RF-RB-06)."""
     from reportlab.lib.pagesizes import landscape, A6
     from reportlab.lib.units import cm
@@ -757,7 +757,7 @@ def _exportar_credencial_pdf(folio: str, current_user: CurrentUser | None = None
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = None):
+def _exportar_comprobante_cita(id_cita: int, _current_user: CurrentUser | None = None):
     """Generar comprobante PDF de una cita con sus servicios (RF-SO-10)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -821,7 +821,7 @@ def _exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = 
         logger.exception('Error al generar comprobante PDF')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | None = None):
+def _exportar_contrato_comodato(id_comodato: int, _current_user: CurrentUser | None = None):
     """Generar contrato de comodato en PDF (RF-PS-05)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -886,7 +886,7 @@ def _exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | No
         logger.exception('Error al generar contrato de comodato PDF')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[str]=None, membresia_estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: CurrentUser | None = None):
+def _exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[str]=None, membresia_estatus: Optional[str]=None, busqueda: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Exportar lista filtrada de beneficiarios a Excel (RF-RB-07)."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment

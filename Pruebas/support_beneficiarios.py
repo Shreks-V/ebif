@@ -8,8 +8,8 @@ from fastapi import HTTPException
 from app.presentation.api.schemas import BeneficiarioCreate
 
 _MSG_BENEFICIARIO_NO_ENCONTRADO = "Beneficiario no encontrado"
-_ESTADO_NL = _ESTADO_NL
-_TIPO_TORACICA = _TIPO_TORACICA
+_ESTADO_NL = "Nuevo León"
+_TIPO_TORACICA = "Torácica"
 
 
 def _visible(p: dict[str, Any]) -> bool:

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 _MSG_DOCTOR_NO_ENCONTRADO = 'Doctor no encontrado'
 _MSG_ERROR_INTERNO = 'Error interno del servidor'
-_SELECT_DOCTOR_BY_ID = _SELECT_DOCTOR_BY_ID
+_SELECT_DOCTOR_BY_ID = 'SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor'
 
 _SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS = {
     20601: (404, None),  # Doctor no existe o inactivo
@@ -82,7 +82,7 @@ def _match_especial_hoy(fecha_inicio_date: date, tipo: str) -> bool:
     return False
 
 
-def _doctor_del_dia(current_user: CurrentUser | None = None):
+def _doctor_del_dia(_current_user: CurrentUser | None = None):
     """Doctor asignado hoy: primero busca en disponibilidad especial, luego en semanal."""
     hoy = date.today()
     dia_semana = hoy.weekday() + 1
@@ -148,7 +148,7 @@ def _doctor_del_dia(current_user: CurrentUser | None = None):
         logger.exception('Error al consultar doctor del día')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _listar_doctores(current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_doctores(_current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar todos los doctores con sus servicios."""
     try:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -161,7 +161,7 @@ def _listar_doctores(current_user: CurrentUser | None = None, limit: int=100, of
         logger.exception('Error al consultar doctores')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _obtener_disponibilidad_semana(current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
+def _obtener_disponibilidad_semana(_current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Obtener toda la disponibilidad de todos los doctores (para validar conflictos)."""
     try:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -174,7 +174,7 @@ def _obtener_disponibilidad_semana(current_user: CurrentUser | None = None, limi
         logger.exception('Error al consultar disponibilidad semanal')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _obtener_doctor(id_doctor: int, current_user: CurrentUser | None = None):
+def _obtener_doctor(id_doctor: int, _current_user: CurrentUser | None = None):
     """Obtener un doctor por ID."""
     try:
         with get_db() as conn:
@@ -226,7 +226,7 @@ def _crear_doctor(data, current_user: CurrentUser | None = None):
         logger.exception('Error al crear doctor')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _actualizar_doctor(id_doctor: int, data, current_user: CurrentUser | None = None):
+def _actualizar_doctor(id_doctor: int, data, _current_user: CurrentUser | None = None):
     """Actualizar doctor existente y sus servicios."""
     try:
         with get_db() as conn:
@@ -247,7 +247,7 @@ def _actualizar_doctor(id_doctor: int, data, current_user: CurrentUser | None = 
         logger.exception('Error al actualizar doctor')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _desactivar_doctor(id_doctor: int, current_user: CurrentUser | None = None):
+def _desactivar_doctor(id_doctor: int, _current_user: CurrentUser | None = None):
     """Desactivar doctor (soft delete, ACTIVO = 'N')."""
     try:
         with get_db() as conn:
@@ -264,7 +264,7 @@ def _desactivar_doctor(id_doctor: int, current_user: CurrentUser | None = None):
         logger.exception('Error al desactivar doctor')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _obtener_disponibilidad(id_doctor: int, current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
+def _obtener_disponibilidad(id_doctor: int, _current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Obtener disponibilidad semanal de un doctor."""
     try:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -282,7 +282,7 @@ def _obtener_disponibilidad(id_doctor: int, current_user: CurrentUser | None = N
         logger.exception('Error al consultar disponibilidad')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _crear_disponibilidad(id_doctor: int, data, current_user: CurrentUser | None = None):
+def _crear_disponibilidad(id_doctor: int, data, _current_user: CurrentUser | None = None):
     """Crear un slot de disponibilidad semanal para un doctor (por día de la semana)."""
     if data.dia_semana < 1 or data.dia_semana > 7:
         raise ValidationError('dia_semana debe ser entre 1 (Lunes) y 7 (Domingo)')
@@ -316,7 +316,7 @@ def _crear_disponibilidad(id_doctor: int, data, current_user: CurrentUser | None
         logger.exception('Error al crear disponibilidad')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_user: CurrentUser | None = None):
+def _eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, _current_user: CurrentUser | None = None):
     """Eliminar un slot de disponibilidad de un doctor."""
     try:
         with get_db() as conn:
@@ -332,7 +332,7 @@ def _eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_use
         logger.exception('Error al eliminar disponibilidad')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _obtener_servicios_doctor(id_doctor: int, current_user: CurrentUser | None = None):
+def _obtener_servicios_doctor(id_doctor: int, _current_user: CurrentUser | None = None):
     """Obtener los servicios asociados a un doctor."""
     try:
         with get_db() as conn:
@@ -348,7 +348,7 @@ def _obtener_servicios_doctor(id_doctor: int, current_user: CurrentUser | None =
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | None = None):
+def _listar_disponibilidad_especial(id_doctor: int, _current_user: CurrentUser | None = None):
     """Listar todos los slots de disponibilidad especial de un doctor."""
     try:
         with get_db() as conn:
@@ -376,7 +376,7 @@ def _listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | 
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _crear_disponibilidad_especial(id_doctor: int, data, current_user: CurrentUser | None = None):
+def _crear_disponibilidad_especial(id_doctor: int, data, _current_user: CurrentUser | None = None):
     """Crear un slot de disponibilidad especial para un doctor."""
     tipos_validos = ('UNICA', 'QUINCENAL', 'CADA_3_SEMANAS', 'MENSUAL')
     if data.tipo_recurrencia not in tipos_validos:
@@ -430,7 +430,7 @@ def _crear_disponibilidad_especial(id_doctor: int, data, current_user: CurrentUs
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, current_user: CurrentUser | None = None):
+def _eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, _current_user: CurrentUser | None = None):
     """Eliminar (soft-delete) un slot de disponibilidad especial."""
     try:
         with get_db() as conn:

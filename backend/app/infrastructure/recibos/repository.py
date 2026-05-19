@@ -233,7 +233,7 @@ def _call_registrar_venta_completa(
     ])
     return id_venta_out.getvalue(), folio_out.getvalue()
 
-def _stats_ventas(current_user: CurrentUser | None = None):
+def _stats_ventas(_current_user: CurrentUser | None = None):
     """Totales agregados de ventas (no canceladas)."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -251,14 +251,14 @@ def _stats_ventas(current_user: CurrentUser | None = None):
         ayer = row_to_dict(cur)
     return {'monto_total_sum': float(totals['monto_total_sum']), 'monto_efectivo': float(by_method['monto_efectivo']), 'monto_tarjeta': float(by_method['monto_tarjeta']), 'monto_transferencia': float(by_method['monto_transferencia']), 'count': int(totals['count']), 'total_hoy': int(hoy['total_hoy']), 'total_ayer': int(ayer['total_ayer']) if ayer else 0, 'pendientes': int(pend['pendientes'])}
 
-def _listar_metodos_pago(current_user: CurrentUser | None = None):
+def _listar_metodos_pago(_current_user: CurrentUser | None = None):
     """Listar metodos de pago activos."""
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute("\n            SELECT ID_METODO_PAGO AS id_metodo_pago,\n                   NOMBRE         AS nombre,\n                   DESCRIPCION    AS descripcion,\n                   ACTIVO         AS activo\n              FROM METODO_PAGO\n             WHERE ACTIVO = 'S'\n             ORDER BY ID_METODO_PAGO\n            ")
         return rows_to_dicts(cur)
 
-def _listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, id_paciente: Optional[int]=None, search: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0, solo_adeudos: bool=False):
+def _listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, id_paciente: Optional[int]=None, search: Optional[str]=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0, solo_adeudos: bool=False):
     """Listar ventas con filtros opcionales."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
@@ -368,7 +368,7 @@ def _crear_venta(data, current_user: CurrentUser | None = None):
         logger.exception('Error al crear venta para paciente %s: %s', data.id_paciente, exc)
         raise InternalError('Error interno al crear la venta')
 
-def _obtener_venta(id_venta: int, current_user: CurrentUser | None = None):
+def _obtener_venta(id_venta: int, _current_user: CurrentUser | None = None):
     """Obtener detalle de una venta (incluye items)."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -379,7 +379,7 @@ def _obtener_venta(id_venta: int, current_user: CurrentUser | None = None):
         return _enrich_venta(conn, venta, include_items=True)
 
 
-def _listar_items_venta(id_venta: int, current_user: CurrentUser | None = None):
+def _listar_items_venta(id_venta: int, _current_user: CurrentUser | None = None):
     """Listar ítems (líneas) de una venta."""
     with get_db() as conn:
         cur = conn.cursor()

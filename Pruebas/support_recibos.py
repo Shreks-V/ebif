@@ -173,6 +173,7 @@ class InMemoryRecibosRepository:
         current_user: dict | None = None,
         limit: int = 100,
         offset: int = 0,
+        solo_adeudos: bool = False,
     ) -> list[dict[str, Any]]:
         rows = list(self._ventas.values())
         filtered: list[dict[str, Any]] = []

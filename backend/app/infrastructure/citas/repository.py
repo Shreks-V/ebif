@@ -80,7 +80,7 @@ def _batch_fetch_servicios(conn, cita_ids: list[int]) -> dict[int, list[dict]]:
             result[cid].append(d)
     return result
 
-def _citas_stats(current_user: CurrentUser | None = None):
+def _citas_stats(_current_user: CurrentUser | None = None):
     """Obtener conteo de citas por estatus + total de hoy."""
     hoy = date.today()
     with get_db() as conn:
@@ -100,7 +100,7 @@ def _citas_stats(current_user: CurrentUser | None = None):
         stats['total_ayer'] = int(ayer_row['total_ayer']) if ayer_row else 0
     return stats
 
-def _citas_hoy(current_user: CurrentUser | None = None):
+def _citas_hoy(_current_user: CurrentUser | None = None):
     """Obtener las citas de hoy (hora local del servidor Python, no UTC de Oracle)."""
     hoy = date.today()
     with get_db() as conn:
@@ -114,7 +114,7 @@ def _citas_hoy(current_user: CurrentUser | None = None):
     canceladas = sum((1 for c in citas if c['estatus'] == 'CANCELADA'))
     return {'fecha': hoy.isoformat(), 'total': len(citas), 'programadas': programadas, 'completadas': completadas, 'canceladas': canceladas, 'citas': citas}
 
-def _citas_proximas(dias: int = 7, current_user: CurrentUser | None = None):
+def _citas_proximas(dias: int = 7, _current_user: CurrentUser | None = None):
     """Cuenta de citas PROGRAMADAS en los próximos N días (excluyendo hoy)."""
     hoy = date.today()
     desde = (hoy + timedelta(days=1)).isoformat()
@@ -135,7 +135,7 @@ def _citas_proximas(dias: int = 7, current_user: CurrentUser | None = None):
         row = cursor.fetchone()
     return {'count': int(row[0]) if row else 0, 'desde': desde, 'hasta': hasta.isoformat()}
 
-def _listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_paciente: Optional[int]=None, busqueda: Optional[str]=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar citas con filtros opcionales."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     conditions = []
@@ -164,7 +164,7 @@ def _listar_citas(fecha: Optional[str]=None, estatus: Optional[str]=None, id_pac
         citas = [_enrich_cita(conn, c, svc_map=svc_map) for c in citas]
     return citas
 
-def _obtener_cita(id_cita: int, current_user: CurrentUser | None = None):
+def _obtener_cita(id_cita: int, _current_user: CurrentUser | None = None):
     """Obtener una cita por su ID."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -227,7 +227,7 @@ def _crear_cita(data, current_user: CurrentUser | None = None):
         cita = _enrich_cita(conn, cita)
     return cita
 
-def _actualizar_cita(id_cita: int, data, current_user: CurrentUser | None = None):
+def _actualizar_cita(id_cita: int, data, _current_user: CurrentUser | None = None):
     """Actualizar cita existente (estatus, notas, fecha, servicios)."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -260,7 +260,7 @@ def _actualizar_cita(id_cita: int, data, current_user: CurrentUser | None = None
         cita = _enrich_cita(conn, cita)
     return cita
 
-def _iniciar_cita(id_cita: int, current_user: CurrentUser | None = None):
+def _iniciar_cita(id_cita: int, _current_user: CurrentUser | None = None):
     """Marcar una cita como EN_CURSO."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -275,7 +275,7 @@ def _iniciar_cita(id_cita: int, current_user: CurrentUser | None = None):
         cita = _enrich_cita(conn, cita)
     return cita
 
-def _completar_cita(id_cita: int, current_user: CurrentUser | None = None):
+def _completar_cita(id_cita: int, _current_user: CurrentUser | None = None):
     """Marcar una cita como COMPLETADA."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -311,7 +311,7 @@ def _cancelar_cita(id_cita: int, current_user: CurrentUser | None = None):
         cita = _enrich_cita(conn, cita)
     return cita
 
-def _eliminar_cita(id_cita: int, current_user: CurrentUser | None = None):
+def _eliminar_cita(id_cita: int, _current_user: CurrentUser | None = None):
     """Eliminar una cita y sus detalles de servicio."""
     with get_db() as conn:
         cursor = conn.cursor()

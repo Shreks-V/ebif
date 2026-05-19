@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 _MSG_ERROR_INTERNO = 'Error interno del servidor'
 _SQL_AND = ' AND '
-_SIN_DATO = _SIN_DATO
-_CURP_NL = _CURP_NL
+_SIN_DATO = 'SIN DATO'
+_CURP_NL = 'CURP N.L.'
 
 
 def _normalize_key(s: str) -> str:
@@ -158,7 +158,7 @@ def _build_patient_where(
     where = _SQL_AND.join(clauses) if clauses else '1=1'
     return (where, params)
 
-def _reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Distribucion de pacientes por genero (PACIENTE.GENERO)."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
@@ -178,7 +178,7 @@ def _reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, 
         logger.exception('Error en reporte por genero')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Distribucion por grupo de edad calculado desde PACIENTE.FECHA_NACIMIENTO."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     etapas_orden = ['Primera Infancia (0-5)', 'Infancia (6-11)', 'Adolescencia (12-17)', 'Juventud (18-29)', 'Adultez (30-59)', 'Adulto Mayor (60+)']
@@ -194,7 +194,7 @@ def _reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=No
         logger.exception('Error en reporte por etapa de vida')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Distribucion por tipo de espina bifida (TIPO_ESPINA_BIFIDA table)."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
@@ -209,7 +209,7 @@ def _reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=N
         logger.exception('Error en reporte por tipo espina')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Distribucion de pacientes por estado/region (PACIENTE.ESTADO)."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin)
     try:
@@ -230,7 +230,7 @@ def _reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, 
         logger.exception('Error en reporte por estado')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Resumen general de estadisticas del sistema."""
     where, params = _build_patient_where(genero, estado, tipo_espina, fecha_inicio, fecha_fin, solo_activos=False)
     try:
@@ -276,7 +276,7 @@ def _reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tip
         logger.exception('Error en reporte resumen')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Total de servicios brindados por tipo de servicio (RF-ER-08)."""
     try:
         with get_db() as conn:
@@ -300,7 +300,7 @@ def _reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Opt
         logger.exception('Error en reporte servicios por tipo')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Número de estudios (servicios de tipo estudio) realizados (RF-ER-09)."""
     try:
         with get_db() as conn:
@@ -323,7 +323,7 @@ def _reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Opti
         logger.exception('Error en reporte estudios por tipo')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Total de pagos exentos y cuotas de recuperación (RF-ER-10)."""
     try:
         with get_db() as conn:
@@ -344,7 +344,7 @@ def _reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional
         logger.exception('Error en reporte pagos exentos')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):
+def _reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=None, _current_user: CurrentUser | None = None):
     """Reporte mensual consolidado con resumen de servicios y demografía (RF-ER-07)."""
     hoy = date.today()
     m = mes or hoy.month
@@ -370,7 +370,7 @@ def _reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=No
         logger.exception('Error en reporte consolidado mensual')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Historial de reportes generados (tabla REPORTE)."""
     try:
         with get_db() as conn:
@@ -398,7 +398,7 @@ def _historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _reporte_por_ciudad(current_user: CurrentUser | None = None):
+def _reporte_por_ciudad(_current_user: CurrentUser | None = None):
     """Distribución por ciudad/municipio de residencia de pacientes activos."""
     try:
         with get_db() as conn:
@@ -424,7 +424,7 @@ def _reporte_por_ciudad(current_user: CurrentUser | None = None):
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Indicadores de desempeño cruzados por etapa de vida (RF-ER)."""
     ETAPAS = [
         'Primera Infancia (0-5)', 'Infancia (6-11)', 'Adolescencia (12-17)',
@@ -606,7 +606,7 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _reporte_pagos_por_metodo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
+def _reporte_pagos_por_metodo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Desglose del monto cobrado agrupado por método de pago en el período."""
     try:
         with get_db() as conn:

@@ -90,7 +90,7 @@ def _resolve_usuario_registro_id(conn, current_user: CurrentUser | None) -> int:
 
 _BASE_SQL = '\n    SELECT ID_PACIENTE, FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n           FECHA_NACIMIENTO, GENERO, CURP,\n           ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,\n           DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n           TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n           TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL, ESTATUS_REGISTRO,\n           FECHA_REGISTRO, EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n           TIPO_SANGRE, USA_VALVULA\n    FROM PACIENTE\n'
 
-def _listar_preregistros(estatus: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_preregistros(estatus: Optional[str]=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar todos los pre-registros (pacientes pendientes de aprobación)."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _BASE_SQL + " WHERE ESTATUS_REGISTRO IN ('PENDIENTE', 'RECHAZADO')"
@@ -249,7 +249,7 @@ def _actualizar_preregistro(id_paciente: int, data):
         conn.commit()
     return _fetch_preregistro(id_paciente)
 
-def _aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: CurrentUser | None = None):
+def _aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, _current_user: CurrentUser | None = None):
     """Aprobar un pre-registro y convertirlo en beneficiario aprobado."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -398,7 +398,7 @@ def _eliminar_documento(id_paciente: int, id_documento: int):
         conn.commit()
     return {'message': 'Documento eliminado correctamente'}
 
-def _rechazar_preregistro(id_paciente: int, current_user: CurrentUser | None = None):
+def _rechazar_preregistro(id_paciente: int, _current_user: CurrentUser | None = None):
     """Rechazar un pre-registro."""
     with get_db() as conn:
         cursor = conn.cursor()
