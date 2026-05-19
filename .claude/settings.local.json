@@ -202,7 +202,20 @@
       "Bash(sed -n '1,25p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/citas-tab/citas-tab.component.ts\")",
       "Bash(sed *)",
       "Bash(grep -v \"^--$\")",
-      "Bash(python -c \"from app.presentation.api.app_factory import create_app; app = create_app\\(\\); print\\('OK'\\)\")"
+      "Bash(python -c \"from app.presentation.api.app_factory import create_app; app = create_app\\(\\); print\\('OK'\\)\")",
+      "Bash(npm search *)",
+      "Bash(npx sonarqube-api-mcp *)",
+      "Bash(claude mcp *)",
+      "mcp__sonarcloud__search_sonar_issues",
+      "Bash(find '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app' -name *.ts -print0)",
+      "Bash(xargs -0 perl -i -pe 's/\\\\bprivate \\(?!readonly\\\\b\\)\\([a-z][a-zA-Z0-9]*:\\)/private readonly $1/g')",
+      "Bash(perl -i -pe 's/private readonly \\(actionMenuTriggerElement|citaMenuTriggerElement|medicoMenuTriggerElement|geocodeCache|markers|refreshInterval\\):/private $1:/g' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/beneficiarios/tabs/activos-tab/activos-tab.component.ts' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/citas-tab/citas-tab.component.ts' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/medicos-tab/medicos-tab.component.ts' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/mapa/mapa.component.ts' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/shared/navbar/navbar.component.ts')",
+      "Bash(perl -i -pe 's/document\\\\.body\\\\.removeChild\\\\\\(\\([a-zA-Z]+\\)\\\\\\)/$1.remove\\(\\)/g' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/beneficiarios/tabs/activos-tab/modals/credencial-modal.component.ts' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/beneficiarios/tabs/activos-tab/modals/detalle-beneficiario-modal.component.ts' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/recibos/modals/detalle-recibo-modal.component.ts' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/almacen/tabs/comodatos-tab/comodatos-tab.component.ts' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/beneficiarios/tabs/activos-tab/activos-tab.component.ts')",
+      "Bash(grep -n \"/[A-Za-z\\\\[\\\\]\\\\{\\\\}\\\\\\(\\\\\\)\\\\|\\\\.\\\\*\\\\+\\\\?]\\\\{20,\\\\}/\" \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/pre-registro/pre-registro.component.ts\")",
+      "Bash(perl -i -0pe 's/\\(def _listar_movimientos\\\\\\([^\\)]*?\\)current_user\\(\\\\s*:\\\\s*CurrentUser[^=]*=\\\\s*None\\)/$1_current_user$2/g' backend/app/infrastructure/almacen/repository.py)",
+      "Bash(git commit -m ' *)",
+      "Bash(git -C \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif\" add backend/db/migrations/003_sp_almacen.sql backend/db/migrations/004_sp_ventas.sql backend/db/migrations/005_sp_pacientes_citas.sql backend/db/migrations/006_sp_doctores_usuarios.sql backend/db/migrations/014_sp_movimiento_comodato_types.sql backend/db/migrations/015_venta_linea.sql)",
+      "Bash(git -C '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif' commit -m ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,
