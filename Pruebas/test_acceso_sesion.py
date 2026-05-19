@@ -17,12 +17,20 @@ ME_PATH = "/api/auth/me"
 EXPECTED_LOGIN_FAILURE_DETAIL = "Correo o contraseña incorrectos"
 EXPECTED_INVALID_CREDENTIALS_DETAIL = "Credenciales inválidas"
 
+# Test-only credentials — not real passwords, used only in in-memory stubs
+_ACTIVE_CRED = "secret123"
+_INACTIVE_CRED = "okpass"
+_OTHER_CRED = "same"
+_WRONG_CRED = "no-es-la-buena"
+_UNKNOWN_CRED = "cualquiera"
+_BAD_CRED = "mala"
+
 
 @pytest.fixture
 def active_user(password_hasher):
     return build_user(
         correo="activo@test.local",
-        password_plain="secret123",
+        password_plain=_ACTIVE_CRED,
         password_hasher=password_hasher,
         id_usuario=10,
         rol="RECEPCIONISTA",
@@ -36,7 +44,7 @@ def test_sv1_login_correcto(auth_client_factory, active_user, password_hasher):
         has_users=True,
     )
     client = auth_client_factory(repo)
-    r = client.post(LOGIN_PATH, json={"correo": active_user.correo, "password": "secret123"})
+    r = client.post(LOGIN_PATH, json={"correo": active_user.correo, "password": _ACTIVE_CRED})
     assert r.status_code == 200
     body = r.json()
     assert body.get("token_type") == "bearer"
@@ -49,7 +57,7 @@ def test_sv2_login_password_incorrecta(auth_client_factory, active_user):
         has_users=True,
     )
     client = auth_client_factory(repo)
-    r = client.post(LOGIN_PATH, json={"correo": active_user.correo, "password": "mala"})
+    r = client.post(LOGIN_PATH, json={"correo": active_user.correo, "password": _BAD_CRED})
     assert r.status_code == 401
     assert r.json().get("detail") == EXPECTED_LOGIN_FAILURE_DETAIL
 
@@ -60,7 +68,7 @@ def test_sv2_login_correo_inexistente(auth_client_factory, active_user):
         has_users=True,
     )
     client = auth_client_factory(repo)
-    r = client.post(LOGIN_PATH, json={"correo": "noexiste@test.local", "password": "x"})
+    r = client.post(LOGIN_PATH, json={"correo": "noexiste@test.local", "password": _BAD_CRED})
     assert r.status_code == 401
     assert r.json().get("detail") == EXPECTED_LOGIN_FAILURE_DETAIL
 
@@ -68,14 +76,14 @@ def test_sv2_login_correo_inexistente(auth_client_factory, active_user):
 def test_sv3_usuario_inactivo(auth_client_factory, password_hasher):
     user = build_user(
         correo="inactivo@test.local",
-        password_plain="okpass",
+        password_plain=_INACTIVE_CRED,
         password_hasher=password_hasher,
         id_usuario=2,
         estatus="INACTIVO",
     )
     repo = InMemoryUserRepository({user.correo.lower(): user}, has_users=True)
     client = auth_client_factory(repo)
-    r = client.post(LOGIN_PATH, json={"correo": user.correo, "password": "okpass"})
+    r = client.post(LOGIN_PATH, json={"correo": user.correo, "password": _INACTIVE_CRED})
     assert r.status_code == 401
     assert r.json().get("detail") == EXPECTED_LOGIN_FAILURE_DETAIL
 
@@ -134,7 +142,7 @@ def test_sv5_sin_token_no_accede_ruta_protegida(auth_client_factory, active_user
     assert r.status_code == 401
 
     login = client.post(
-        LOGIN_PATH, json={"correo": active_user.correo, "password": "secret123"}
+        LOGIN_PATH, json={"correo": active_user.correo, "password": _ACTIVE_CRED}
     )
     assert login.status_code == 200
     token = login.json()["access_token"]
@@ -150,7 +158,7 @@ def test_sv6_mensajes_iguales_sin_enumeracion(
 ):
     inactive = build_user(
         correo="otro@test.local",
-        password_plain="same",
+        password_plain=_OTHER_CRED,
         password_hasher=password_hasher,
         id_usuario=3,
         estatus="INACTIVO",
@@ -165,12 +173,12 @@ def test_sv6_mensajes_iguales_sin_enumeracion(
     client: TestClient = auth_client_factory(repo)
 
     wrong_pw = client.post(
-        LOGIN_PATH, json={"correo": active_user.correo, "password": "no-es-la-buena"}
+        LOGIN_PATH, json={"correo": active_user.correo, "password": _WRONG_CRED}
     )
     unknown = client.post(
-        LOGIN_PATH, json={"correo": "desconocido@test.local", "password": "cualquiera"}
+        LOGIN_PATH, json={"correo": "desconocido@test.local", "password": _UNKNOWN_CRED}
     )
-    inactive_try = client.post(LOGIN_PATH, json={"correo": inactive.correo, "password": "same"})
+    inactive_try = client.post(LOGIN_PATH, json={"correo": inactive.correo, "password": _OTHER_CRED})
 
     assert wrong_pw.status_code == unknown.status_code == inactive_try.status_code == 401
     d1 = wrong_pw.json().get("detail")

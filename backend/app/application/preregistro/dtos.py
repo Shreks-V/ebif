@@ -12,11 +12,14 @@ _CURP_RE = re.compile(
     r'OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$'
 )
 
+_CUOTA_A = 'CUOTA A'
+_CUOTA_B = 'CUOTA B'
+
 _TIPO_CUOTA_MAP = {
-    'A': 'CUOTA A',
-    'B': 'CUOTA B',
-    'CUOTA A': 'CUOTA A',
-    'CUOTA B': 'CUOTA B',
+    'A': _CUOTA_A,
+    'B': _CUOTA_B,
+    _CUOTA_A: _CUOTA_A,
+    _CUOTA_B: _CUOTA_B,
 }
 
 

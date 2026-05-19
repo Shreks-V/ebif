@@ -32,6 +32,9 @@ def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
     return safe_limit, safe_offset
 
 
+_WHERE_CITA = ' WHERE c.ID_CITA = :id_cita'
+_MSG_CITA_NO_ENCONTRADA = 'Cita no encontrada'
+
 CITA_BASE_QUERY = "\n    SELECT c.ID_CITA, c.ID_PACIENTE, c.ID_USUARIO_REGISTRO,\n           c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO,\n           p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           p.FOLIO AS FOLIO_PACIENTE\n    FROM CITA c\n    JOIN PACIENTE p ON c.ID_PACIENTE = p.ID_PACIENTE\n"
 
 def _serialize_row(row: dict) -> dict:
@@ -165,10 +168,10 @@ def _obtener_cita(id_cita: int, current_user: CurrentUser | None = None):
     """Obtener una cita por su ID."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
         cita = row_to_dict(cursor)
         if cita is None:
-            raise NotFoundError('Cita no encontrada')
+            raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
         cita = _enrich_cita(conn, cita)
     return cita
 
@@ -219,7 +222,7 @@ def _crear_cita(data, current_user: CurrentUser | None = None):
         id_cita = id_cita_out.getvalue()
         log_insert(conn, 'CITA', id_cita, id_usuario, f'Cita creada para paciente {data.id_paciente}')
         conn.commit()
-        cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
         cita = row_to_dict(cursor)
         cita = _enrich_cita(conn, cita)
     return cita
@@ -230,7 +233,7 @@ def _actualizar_cita(id_cita: int, data, current_user: CurrentUser | None = None
         cursor = conn.cursor()
         cursor.execute('SELECT ID_CITA FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         if cursor.fetchone() is None:
-            raise NotFoundError('Cita no encontrada')
+            raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
         fecha_ts = datetime.strptime(data.fecha_hora[:19], '%Y-%m-%dT%H:%M:%S') if isinstance(data.fecha_hora, str) else data.fecha_hora
         cursor.execute(
             'UPDATE CITA'
@@ -252,7 +255,7 @@ def _actualizar_cita(id_cita: int, data, current_user: CurrentUser | None = None
             for s in data.servicios:
                 cursor.execute("\n                    INSERT INTO DETALLE_CITA_SERVICIO\n                        (ID_CITA, ID_SERVICIO, CANTIDAD, MONTO_PAGADO, CANCELADO)\n                    VALUES (:id_cita, :id_servicio, :cantidad, :monto_pagado, 'N')\n                    ", {'id_cita': id_cita, 'id_servicio': s['id_servicio'], 'cantidad': s.get('cantidad', 1), 'monto_pagado': s.get('monto_pagado', 0.0)})
         conn.commit()
-        cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
         cita = row_to_dict(cursor)
         cita = _enrich_cita(conn, cita)
     return cita
@@ -264,10 +267,10 @@ def _iniciar_cita(id_cita: int, current_user: CurrentUser | None = None):
         cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         row = cursor.fetchone()
         if row is None:
-            raise NotFoundError('Cita no encontrada')
+            raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
         cursor.execute("UPDATE CITA SET ESTATUS = 'EN_CURSO' WHERE ID_CITA = :id_cita", {'id_cita': id_cita})
         conn.commit()
-        cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
         cita = row_to_dict(cursor)
         cita = _enrich_cita(conn, cita)
     return cita
@@ -279,10 +282,10 @@ def _completar_cita(id_cita: int, current_user: CurrentUser | None = None):
         cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         row = cursor.fetchone()
         if row is None:
-            raise NotFoundError('Cita no encontrada')
+            raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
         cursor.execute("UPDATE CITA SET ESTATUS = 'COMPLETADA' WHERE ID_CITA = :id_cita", {'id_cita': id_cita})
         conn.commit()
-        cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
         cita = row_to_dict(cursor)
         cita = _enrich_cita(conn, cita)
     return cita
@@ -303,7 +306,7 @@ def _cancelar_cita(id_cita: int, current_user: CurrentUser | None = None):
                                    default_detail='No se pudo cancelar la cita')
         log_cancelacion(conn, 'CITA', id_cita, id_usuario, 'Cita cancelada')
         conn.commit()
-        cursor.execute(CITA_BASE_QUERY + ' WHERE c.ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
         cita = row_to_dict(cursor)
         cita = _enrich_cita(conn, cita)
     return cita
@@ -314,7 +317,7 @@ def _eliminar_cita(id_cita: int, current_user: CurrentUser | None = None):
         cursor = conn.cursor()
         cursor.execute('SELECT ID_CITA FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         if cursor.fetchone() is None:
-            raise NotFoundError('Cita no encontrada')
+            raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
         cursor.execute('DELETE FROM DETALLE_CITA_SERVICIO WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         cursor.execute('DELETE FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
         conn.commit()

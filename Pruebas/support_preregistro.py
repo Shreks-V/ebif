@@ -8,6 +8,8 @@ from typing import Any
 
 from fastapi import HTTPException, UploadFile
 
+_MSG_PREREGISTRO_NO_ENCONTRADO = "Pre-registro no encontrado"
+
 from app.presentation.api.schemas import PreRegistroCreate
 
 
@@ -80,13 +82,13 @@ class InMemoryPreregistroRepository:
     def obtener_preregistro(self, id_paciente: int) -> dict[str, Any]:
         row = self._by_id.get(id_paciente)
         if not row:
-            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_PREREGISTRO_NO_ENCONTRADO)
         return _serialize(dict(row))
 
     def actualizar_preregistro(self, id_paciente: int, data: PreRegistroCreate) -> dict[str, Any]:
         row = self._by_id.get(id_paciente)
         if not row or row.get("estatus_registro") != "PENDIENTE":
-            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_PREREGISTRO_NO_ENCONTRADO)
 
         paso = data.paso_actual or 1
         if paso >= 3:
@@ -118,7 +120,7 @@ class InMemoryPreregistroRepository:
         del current_user
         row = self._by_id.get(id_paciente)
         if not row:
-            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_PREREGISTRO_NO_ENCONTRADO)
         est = (row.get("estatus_registro") or "").strip()
         if est == "APROBADO":
             raise HTTPException(status_code=400, detail="Este pre-registro ya fue aprobado")
@@ -139,7 +141,7 @@ class InMemoryPreregistroRepository:
         del current_user
         row = self._by_id.get(id_paciente)
         if not row:
-            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_PREREGISTRO_NO_ENCONTRADO)
         row["estatus_registro"] = "RECHAZADO"
         return {
             "message": "Pre-registro rechazado",
@@ -155,7 +157,7 @@ class InMemoryPreregistroRepository:
     ) -> dict[str, Any]:
         del current_user
         if id_paciente not in self._by_id:
-            raise HTTPException(status_code=404, detail="Pre-registro no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_PREREGISTRO_NO_ENCONTRADO)
         ext = os.path.splitext(archivo.filename or "")[1].lower() or ".pdf"
         name = f"{id_paciente}_{uuid.uuid4().hex}{ext}"
         path = os.path.join(self._upload_dir, name)

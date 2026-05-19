@@ -26,6 +26,9 @@ _SP_PACIENTE_ERRORS = {
     20204: (409, None),
 }
 logger = logging.getLogger(__name__)
+
+_MSG_PREREGISTRO_NO_ENCONTRADO = 'Pre-registro no encontrado'
+
 UPLOAD_DIR = Path(__file__).resolve().parents[3] / 'uploads' / 'documentos'
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -183,7 +186,7 @@ def _fetch_preregistro(id_paciente: int) -> dict:
         cursor.execute(sql, {'id': id_paciente})
         row = row_to_dict(cursor)
     if not row:
-        raise NotFoundError('Pre-registro no encontrado')
+        raise NotFoundError(_MSG_PREREGISTRO_NO_ENCONTRADO)
     return _serialize(decrypt_row(row, PACIENTE_ENCRYPTED_FIELDS))
 
 def _check_curp_disponible(curp: str) -> dict:
@@ -237,7 +240,7 @@ def _actualizar_preregistro(id_paciente: int, data):
         cursor = conn.cursor()
         cursor.execute("SELECT ID_PACIENTE FROM PACIENTE WHERE ID_PACIENTE = :id AND ESTATUS_REGISTRO = 'PENDIENTE'", {'id': id_paciente})
         if cursor.fetchone() is None:
-            raise NotFoundError('Pre-registro no encontrado')
+            raise NotFoundError(_MSG_PREREGISTRO_NO_ENCONTRADO)
         cursor.execute("UPDATE PACIENTE SET\n                NOMBRE = :nombre, APELLIDO_PATERNO = :ap, APELLIDO_MATERNO = :am,\n                FECHA_NACIMIENTO = TO_DATE(:fecha_nac, 'YYYY-MM-DD'),\n                GENERO = :genero, CURP = :curp,\n                ESTADO_NACIMIENTO = :estado_nac, HOSPITAL_NACIMIENTO = :hospital,\n                NOMBRE_PADRE_MADRE = :padre_madre,\n                DIRECCION = :direccion, COLONIA = :colonia, CIUDAD = :ciudad,\n                ESTADO = :estado, CODIGO_POSTAL = :cp,\n                TELEFONO_CASA = :tel_casa, TELEFONO_CELULAR = :tel_cel,\n                CORREO_ELECTRONICO = :correo,\n                EN_EMERGENCIA_AVISAR_A = :emergencia_avisar,\n                TELEFONO_EMERGENCIA = :tel_emergencia,\n                TIPO_SANGRE = :tipo_sangre, USA_VALVULA = :usa_valvula,\n                TIPO_CUOTA = :tipo_cuota, NOTAS_ADICIONALES = :notas,\n                PASO_ACTUAL = :paso\n               WHERE ID_PACIENTE = :id", {'nombre': data.nombre, 'ap': data.apellido_paterno, 'am': data.apellido_materno, 'fecha_nac': data.fecha_nacimiento, 'genero': data.genero, 'curp': encrypt(data.curp), 'estado_nac': data.estado_nacimiento, 'hospital': encrypt(data.hospital_nacimiento), 'padre_madre': encrypt(data.nombre_padre_madre), 'direccion': encrypt(data.direccion), 'colonia': data.colonia, 'ciudad': data.ciudad, 'estado': data.estado, 'cp': data.codigo_postal, 'tel_casa': encrypt(data.telefono_casa), 'tel_cel': encrypt(data.telefono_celular), 'correo': encrypt(data.correo_electronico), 'emergencia_avisar': encrypt(data.en_emergencia_avisar_a), 'tel_emergencia': encrypt(data.telefono_emergencia), 'tipo_sangre': encrypt(data.tipo_sangre), 'usa_valvula': data.usa_valvula or 'N', 'tipo_cuota': data.tipo_cuota, 'notas': encrypt(data.notas_adicionales), 'paso': data.paso_actual or 1, 'id': id_paciente})
         if data.tipos_espina is not None:
             cursor.execute('DELETE FROM PACIENTE_TIPO_ESPINA WHERE ID_PACIENTE = :id', {'id': id_paciente})
@@ -253,7 +256,7 @@ def _aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user:
         cursor.execute('SELECT ESTATUS_REGISTRO FROM PACIENTE WHERE ID_PACIENTE = :id', {'id': id_paciente})
         row = cursor.fetchone()
         if row is None:
-            raise NotFoundError('Pre-registro no encontrado')
+            raise NotFoundError(_MSG_PREREGISTRO_NO_ENCONTRADO)
         estatus = row[0].strip() if row[0] else None
         if estatus == 'APROBADO':
             raise ValidationError('Este pre-registro ya fue aprobado')
@@ -292,7 +295,7 @@ async def _subir_documento(
         cursor = conn.cursor()
         cursor.execute('SELECT ID_PACIENTE FROM PACIENTE WHERE ID_PACIENTE = :id', {'id': id_paciente})
         if cursor.fetchone() is None:
-            raise NotFoundError('Pre-registro no encontrado')
+            raise NotFoundError(_MSG_PREREGISTRO_NO_ENCONTRADO)
     original_name = archivo.filename or ''
     ext = os.path.splitext(original_name)[1].lower()
     if ext not in settings.ALLOWED_UPLOAD_EXTENSIONS:
@@ -402,7 +405,7 @@ def _rechazar_preregistro(id_paciente: int, current_user: CurrentUser | None = N
         cursor.execute('SELECT ESTATUS_REGISTRO FROM PACIENTE WHERE ID_PACIENTE = :id', {'id': id_paciente})
         row = cursor.fetchone()
         if row is None:
-            raise NotFoundError('Pre-registro no encontrado')
+            raise NotFoundError(_MSG_PREREGISTRO_NO_ENCONTRADO)
         cursor.execute("UPDATE PACIENTE SET ESTATUS_REGISTRO = 'RECHAZADO' WHERE ID_PACIENTE = :id", {'id': id_paciente})
         conn.commit()
     preregistro = _fetch_preregistro(id_paciente)

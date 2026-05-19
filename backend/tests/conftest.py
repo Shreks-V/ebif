@@ -11,6 +11,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+# Test-only credentials — not real passwords, used only for the in-memory stub
+_STUB_ADMIN_CRED = "admin1234"
+_STUB_OP_CRED = "op123456"
+_STUB_INACTIVE_CRED = "inactive1"
+
 # Set minimal env vars before the app module is imported so config loads cleanly.
 os.environ.setdefault("DEBUG", "true")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-long-enough-32ch")
@@ -37,7 +42,7 @@ class StubUserRepository:
                 apellido_paterno="Test",
                 apellido_materno=None,
                 correo="admin@test.com",
-                hashed_password=hasher.hash("admin1234"),
+                hashed_password=hasher.hash(_STUB_ADMIN_CRED),
                 rol="ADMINISTRADOR",
                 estatus="ACTIVO",
                 fecha_creacion=datetime(2025, 1, 1),
@@ -48,7 +53,7 @@ class StubUserRepository:
                 apellido_paterno="Test",
                 apellido_materno=None,
                 correo="op@test.com",
-                hashed_password=hasher.hash("op123456"),
+                hashed_password=hasher.hash(_STUB_OP_CRED),
                 rol="RECEPCIONISTA",
                 estatus="ACTIVO",
                 fecha_creacion=datetime(2025, 1, 1),
@@ -59,7 +64,7 @@ class StubUserRepository:
                 apellido_paterno="Test",
                 apellido_materno=None,
                 correo="inactivo@test.com",
-                hashed_password=hasher.hash("inactive1"),
+                hashed_password=hasher.hash(_STUB_INACTIVE_CRED),
                 rol="RECEPCIONISTA",
                 estatus="INACTIVO",
                 fecha_creacion=datetime(2025, 1, 1),
@@ -121,7 +126,7 @@ class StubUserRepository:
         ]
 
     def log_login_attempt(self, id_usuario, success, ip=None) -> None:
-        pass
+        """No-op stub — login attempts are not tracked in tests."""
 
 
 def _make_auth_service():
@@ -155,7 +160,7 @@ def client():
 @pytest.fixture(scope="session")
 def admin_token(client):
     """JWT for the stub admin user."""
-    res = client.post("/api/auth/login", json={"correo": "admin@test.com", "password": "admin1234"})
+    res = client.post("/api/auth/login", json={"correo": "admin@test.com", "password": _STUB_ADMIN_CRED})
     assert res.status_code == 200
     return res.json()["access_token"]
 
@@ -163,6 +168,6 @@ def admin_token(client):
 @pytest.fixture(scope="session")
 def op_token(client):
     """JWT for the stub recepcionista user."""
-    res = client.post("/api/auth/login", json={"correo": "op@test.com", "password": "op123456"})
+    res = client.post("/api/auth/login", json={"correo": "op@test.com", "password": _STUB_OP_CRED})
     assert res.status_code == 200
     return res.json()["access_token"]

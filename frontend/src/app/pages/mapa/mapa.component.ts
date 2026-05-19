@@ -93,7 +93,7 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
           estado: b.estado ?? '',
           tipoCuota: b.tipo_cuota ?? b.tipoCuota ?? '',
         }));
-        this.estados = [...new Set(this.beneficiarios.map(b => b.estado).filter(Boolean))].sort();
+        this.estados = [...new Set(this.beneficiarios.map(b => b.estado).filter(Boolean))].sort((a, b) => a.localeCompare(b));
         this.loading = false;
         this.geocodeAll();
       },

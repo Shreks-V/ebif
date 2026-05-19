@@ -30,11 +30,21 @@ BEGIN
 
   IF v_next_seq < v_max_seq THEN
     v_delta := v_max_seq - v_next_seq;
-    EXECUTE IMMEDIATE 'ALTER SEQUENCE SEQ_VENTA_FOLIO INCREMENT BY ' || v_delta;
+    BEGIN
+      EXECUTE IMMEDIATE 'ALTER SEQUENCE SEQ_VENTA_FOLIO INCREMENT BY ' || v_delta;
+    EXCEPTION
+      WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20010, 'Error al ajustar incremento de secuencia: ' || SQLERRM);
+    END;
     SELECT SEQ_VENTA_FOLIO.NEXTVAL
       INTO v_next_seq
       FROM DUAL;
-    EXECUTE IMMEDIATE 'ALTER SEQUENCE SEQ_VENTA_FOLIO INCREMENT BY 1';
+    BEGIN
+      EXECUTE IMMEDIATE 'ALTER SEQUENCE SEQ_VENTA_FOLIO INCREMENT BY 1';
+    EXCEPTION
+      WHEN OTHERS THEN
+        RAISE_APPLICATION_ERROR(-20011, 'Error al restaurar incremento de secuencia: ' || SQLERRM);
+    END;
   END IF;
 END;
 /

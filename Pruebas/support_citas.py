@@ -8,6 +8,8 @@ from fastapi import HTTPException
 
 from app.presentation.api.schemas import CitaCreate
 
+_MSG_CITA_NO_ENCONTRADA = "Cita no encontrada"
+
 
 def _fecha_iso_dia(fecha_hora: str) -> str:
     return (fecha_hora or "")[:10]
@@ -145,7 +147,7 @@ class InMemoryCitasRepository:
         del current_user
         c = self._citas.get(id_cita)
         if not c:
-            raise HTTPException(status_code=404, detail="Cita no encontrada")
+            raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         return self._enriquecer(dict(c))
 
     def crear_cita(self, data: CitaCreate, current_user: dict | None = None) -> dict[str, Any]:
@@ -203,7 +205,7 @@ class InMemoryCitasRepository:
     ) -> dict[str, Any]:
         del current_user
         if id_cita not in self._citas:
-            raise HTTPException(status_code=404, detail="Cita no encontrada")
+            raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         c = self._citas[id_cita]
         c["id_paciente"] = data.id_paciente
         c["fecha_hora"] = data.fecha_hora
@@ -227,14 +229,14 @@ class InMemoryCitasRepository:
     def completar_cita(self, id_cita: int, current_user: dict | None = None) -> dict[str, Any]:
         del current_user
         if id_cita not in self._citas:
-            raise HTTPException(status_code=404, detail="Cita no encontrada")
+            raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         self._citas[id_cita]["estatus"] = "COMPLETADA"
         return self._enriquecer(dict(self._citas[id_cita]))
 
     def cancelar_cita(self, id_cita: int, current_user: dict | None = None) -> dict[str, Any]:
         del current_user
         if id_cita not in self._citas:
-            raise HTTPException(status_code=404, detail="Cita no encontrada")
+            raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         self._citas[id_cita]["estatus"] = "CANCELADA"
         self._citas[id_cita]["notas"] = "Cita cancelada"
         return self._enriquecer(dict(self._citas[id_cita]))
@@ -242,7 +244,7 @@ class InMemoryCitasRepository:
     def eliminar_cita(self, id_cita: int, current_user: dict | None = None) -> dict[str, str]:
         del current_user
         if id_cita not in self._citas:
-            raise HTTPException(status_code=404, detail="Cita no encontrada")
+            raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         del self._citas[id_cita]
         return {"detail": "Cita eliminada"}
 

@@ -28,13 +28,20 @@ from Pruebas.support_citas import InMemoryCitasRepository
 from Pruebas.support_preregistro import InMemoryPreregistroRepository
 from Pruebas.support_recibos import InMemoryRecibosRepository
 
+_PREFIX_AUTH = "/api/auth"
+_TAG_AUTH = "Autenticación"
+
+# Test-only credentials — not real passwords, used only in in-memory stubs
+_STUB_ADMIN_CRED = "adm123"
+_STUB_RECEP_CRED = "rec123"
+
 
 def build_minimal_auth_app(auth_service: AuthService) -> FastAPI:
     app = FastAPI()
     app.state.limiter = auth_router.limiter
     app.add_middleware(SlowAPIMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.dependency_overrides[get_auth_service] = lambda: auth_service
     return app
 
@@ -44,7 +51,7 @@ def build_minimal_app_with_beneficiarios(auth_service: AuthService) -> FastAPI:
     app.state.limiter = auth_router.limiter
     app.add_middleware(SlowAPIMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.include_router(
         beneficiarios_router.router, prefix="/api/beneficiarios", tags=["Beneficiarios"]
     )
@@ -57,7 +64,7 @@ def build_minimal_app_with_citas(auth_service: AuthService) -> FastAPI:
     app.state.limiter = auth_router.limiter
     app.add_middleware(SlowAPIMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.include_router(citas_router.router, prefix="/api/citas", tags=["Citas"])
     app.dependency_overrides[get_auth_service] = lambda: auth_service
     return app
@@ -68,7 +75,7 @@ def build_minimal_app_with_preregistro(auth_service: AuthService) -> FastAPI:
     app.state.limiter = auth_router.limiter
     app.add_middleware(SlowAPIMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.include_router(
         preregistro_router.router, prefix="/api/preregistro", tags=["Pre-Registro"]
     )
@@ -81,7 +88,7 @@ def build_minimal_app_with_recibos(auth_service: AuthService) -> FastAPI:
     app.state.limiter = auth_router.limiter
     app.add_middleware(SlowAPIMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.include_router(auth_router.router, prefix="/api/auth", tags=["Autenticación"])
+    app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.include_router(recibos_router.router, prefix="/api/recibos", tags=["Recibos"])
     app.dependency_overrides[get_auth_service] = lambda: auth_service
     return app
@@ -119,7 +126,7 @@ def _default_beneficiarios_user_repo(
 ) -> InMemoryUserRepository:
     admin = build_user(
         correo="admin-ben@test.local",
-        password_plain="adm123",
+        password_plain=_STUB_ADMIN_CRED,
         password_hasher=password_hasher,
         id_usuario=1,
         nombre="Admin",
@@ -128,7 +135,7 @@ def _default_beneficiarios_user_repo(
     )
     recep = build_user(
         correo="recep-ben@test.local",
-        password_plain="rec123",
+        password_plain=_STUB_RECEP_CRED,
         password_hasher=password_hasher,
         id_usuario=2,
         nombre="Recepción",

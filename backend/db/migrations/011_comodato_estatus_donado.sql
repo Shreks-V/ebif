@@ -11,7 +11,12 @@ BEGIN
        AND constraint_type = 'C'
        AND search_condition_vc LIKE '%PRESTADO%'
   ) LOOP
-    EXECUTE IMMEDIATE 'ALTER TABLE COMODATO DROP CONSTRAINT ' || c.constraint_name;
+    BEGIN
+      EXECUTE IMMEDIATE 'ALTER TABLE COMODATO DROP CONSTRAINT ' || c.constraint_name;
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL; -- idempotent: ignore if constraint was already dropped
+    END;
   END LOOP;
 END;
 /

@@ -35,6 +35,7 @@ AS
   v_saldo        NUMBER;
   v_id_prod      NUMBER;
   v_cant         NUMBER;
+  v_i            NUMBER;
 BEGIN
   IF p_monto_total IS NULL OR p_monto_total < 0 THEN
     RAISE_APPLICATION_ERROR(-20401, 'Monto total invalido.');
@@ -50,11 +51,13 @@ BEGIN
       'Arrays de metodos de pago y montos desalineados.');
   END IF;
 
-  FOR i IN 1 .. p_montos_pago.COUNT LOOP
-    IF p_montos_pago(i) IS NULL OR p_montos_pago(i) < 0 THEN
-      RAISE_APPLICATION_ERROR(-20404, 'Monto de pago invalido en linea ' || i || '.');
+  v_i := 1;
+  WHILE v_i <= p_montos_pago.COUNT LOOP
+    IF p_montos_pago(v_i) IS NULL OR p_montos_pago(v_i) < 0 THEN
+      RAISE_APPLICATION_ERROR(-20404, 'Monto de pago invalido en linea ' || v_i || '.');
     END IF;
-    v_total_pagado := v_total_pagado + p_montos_pago(i);
+    v_total_pagado := v_total_pagado + p_montos_pago(v_i);
+    v_i := v_i + 1;
   END LOOP;
 
   IF v_total_pagado > p_monto_total AND NVL(p_exento_pago, 'N') <> 'S' THEN
@@ -78,17 +81,20 @@ BEGIN
   )
   RETURNING ID_VENTA, FOLIO_VENTA INTO p_id_venta_out, p_folio_out;
 
-  FOR i IN 1 .. p_metodos_pago.COUNT LOOP
+  v_i := 1;
+  WHILE v_i <= p_metodos_pago.COUNT LOOP
     INSERT INTO VENTA_METODO_PAGO (
       ID_VENTA, ID_METODO_PAGO, MONTO
     ) VALUES (
-      p_id_venta_out, p_metodos_pago(i), p_montos_pago(i)
+      p_id_venta_out, p_metodos_pago(v_i), p_montos_pago(v_i)
     );
+    v_i := v_i + 1;
   END LOOP;
 
-  FOR i IN 1 .. p_productos.COUNT LOOP
-    v_id_prod := p_productos(i);
-    v_cant    := p_cantidades(i);
+  v_i := 1;
+  WHILE v_i <= p_productos.COUNT LOOP
+    v_id_prod := p_productos(v_i);
+    v_cant    := p_cantidades(v_i);
     IF v_id_prod IS NOT NULL AND v_cant IS NOT NULL AND v_cant > 0 THEN
       SP_REGISTRAR_MOVIMIENTO_STOCK(
         p_id_producto   => v_id_prod,
@@ -99,6 +105,7 @@ BEGIN
         p_observaciones => 'Salida por venta ' || p_folio_out
       );
     END IF;
+    v_i := v_i + 1;
   END LOOP;
 END SP_REGISTRAR_VENTA_COMPLETA;
 /

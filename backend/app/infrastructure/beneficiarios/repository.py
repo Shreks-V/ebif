@@ -14,6 +14,10 @@ from app.domain.beneficiarios.services import calculate_age, etapa_vida, normali
 
 logger = logging.getLogger(__name__)
 
+_MSG_BENEFICIARIO_NO_ENCONTRADO = 'Beneficiario no encontrado'
+_SELECT_PACIENTE_BY_FOLIO = _SELECT_PACIENTE_BY_FOLIO
+_SELECT_PACIENTE_BY_ID = _SELECT_PACIENTE_BY_ID
+
 # Shared WHERE predicates — single source of truth for the active/approved patient filter
 _ACTIVO_APROBADO = "ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'"
 _P_ACTIVO_APROBADO = "p.ACTIVO = 'S' AND p.ESTATUS_REGISTRO = 'APROBADO'"
@@ -251,10 +255,10 @@ def _obtener_beneficiario(folio: str, current_user: CurrentUser | None = None):
     """Obtener beneficiario por folio."""
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute('SELECT * FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
+        cur.execute(_SELECT_PACIENTE_BY_FOLIO, {'folio': folio})
         row = row_to_dict(cur)
         if row is None:
-            raise NotFoundError('Beneficiario no encontrado')
+            raise NotFoundError(_MSG_BENEFICIARIO_NO_ENCONTRADO)
         return _patient_row_to_response(row, conn)
 
 def _crear_beneficiario(data, current_user: CurrentUser | None = None):
@@ -273,7 +277,7 @@ def _crear_beneficiario(data, current_user: CurrentUser | None = None):
             cur.execute('\n                INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO)\n                VALUES (:id_paciente, :id_tipo_espina, SYSDATE)\n                ', {'id_paciente': new_id, 'id_tipo_espina': tid})
         log_insert(conn, 'PACIENTE', new_id, current_user.get('id_usuario', 1), f'Beneficiario {folio} creado')
         conn.commit()
-        cur.execute('SELECT * FROM PACIENTE WHERE ID_PACIENTE = :id', {'id': new_id})
+        cur.execute(_SELECT_PACIENTE_BY_ID, {'id': new_id})
         row = row_to_dict(cur)
         return _patient_row_to_response(row, conn)
 
@@ -284,7 +288,7 @@ def _actualizar_beneficiario(folio: str, data, current_user: CurrentUser | None 
         cur.execute('SELECT ID_PACIENTE FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
         row = cur.fetchone()
         if row is None:
-            raise NotFoundError('Beneficiario no encontrado')
+            raise NotFoundError(_MSG_BENEFICIARIO_NO_ENCONTRADO)
         id_paciente = row[0]
         payload = data.model_dump()
         tipos_ids = payload.pop('tipos_espina', None) or []
@@ -304,7 +308,7 @@ def _actualizar_beneficiario(folio: str, data, current_user: CurrentUser | None 
         for tid in tipos_ids:
             cur.execute('\n                INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO)\n                VALUES (:id_paciente, :id_tipo_espina, SYSDATE)\n                ', {'id_paciente': id_paciente, 'id_tipo_espina': tid})
         conn.commit()
-        cur.execute('SELECT * FROM PACIENTE WHERE ID_PACIENTE = :id', {'id': id_paciente})
+        cur.execute(_SELECT_PACIENTE_BY_ID, {'id': id_paciente})
         row = row_to_dict(cur)
         return _patient_row_to_response(row, conn)
 
@@ -315,7 +319,7 @@ def _eliminar_beneficiario(folio: str, current_user: CurrentUser | None = None):
         cur.execute('SELECT ID_PACIENTE FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
         row = cur.fetchone()
         if row is None:
-            raise NotFoundError('Beneficiario no encontrado')
+            raise NotFoundError(_MSG_BENEFICIARIO_NO_ENCONTRADO)
         id_paciente = row[0]
         cur.execute("UPDATE PACIENTE SET ACTIVO = 'N' WHERE FOLIO = :folio", {'folio': folio})
         log_delete(conn, 'PACIENTE', id_paciente, current_user.get('id_usuario', 1), f'Beneficiario {folio} desactivado')
@@ -338,10 +342,10 @@ def _historial_beneficiario(
     safe_limit_comodatos, safe_offset_comodatos = _normalize_pagination(limit_comodatos, offset_comodatos)
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute('SELECT * FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
+        cur.execute(_SELECT_PACIENTE_BY_FOLIO, {'folio': folio})
         paciente = row_to_dict(cur)
         if paciente is None:
-            raise NotFoundError('Beneficiario no encontrado')
+            raise NotFoundError(_MSG_BENEFICIARIO_NO_ENCONTRADO)
         paciente = decrypt_row(paciente, PACIENTE_ENCRYPTED_FIELDS)
         nombre_completo = ' '.join((
             _strip_char(paciente.get('nombre')) or '',
@@ -457,7 +461,7 @@ def _renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None 
         )
         row = cur.fetchone()
         if row is None:
-            raise NotFoundError('Beneficiario no encontrado')
+            raise NotFoundError(_MSG_BENEFICIARIO_NO_ENCONTRADO)
         id_paciente = row[0]
 
         # 1. Actualizar fechas de membresía
@@ -500,7 +504,7 @@ def _renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None 
         conn.commit()
 
         # 3. Devolver paciente actualizado
-        cur.execute('SELECT * FROM PACIENTE WHERE ID_PACIENTE = :id', {'id': id_paciente})
+        cur.execute(_SELECT_PACIENTE_BY_ID, {'id': id_paciente})
         patient_row = row_to_dict(cur)
         return {
             'paciente': _patient_row_to_response(patient_row, conn),

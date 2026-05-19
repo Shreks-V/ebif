@@ -11,7 +11,13 @@ from app.domain.exceptions import InternalError
 from typing import Optional
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.privacy.crypto import decrypt
+
 logger = logging.getLogger(__name__)
+
+_MSG_ERROR_INTERNO = 'Error interno del servidor'
+_SQL_AND = ' AND '
+_SIN_DATO = _SIN_DATO
+_CURP_NL = _CURP_NL
 
 
 def _normalize_key(s: str) -> str:
@@ -42,7 +48,7 @@ def _aggregate_normalized(
     # Step 1 — group by normalized composite key
     groups: dict[str, dict] = {}
     for r in rows:
-        norm_parts = tuple(_normalize_key(r.get(f) or '') or 'SIN DATO' for f in key_fields)
+        norm_parts = tuple(_normalize_key(r.get(f) or '') or _SIN_DATO for f in key_fields)
         composite = NULL_SEP.join(norm_parts)
         cnt = int(r.get(count_field) or 0)
         if composite not in groups:
@@ -75,7 +81,7 @@ def _aggregate_normalized(
 
         # Format display labels: title-case the normalized (accent-free) form
         for f, norm_val in zip(key_fields, combined['_norm']):
-            combined[f] = norm_val.title() if norm_val != 'SIN DATO' else 'Sin dato'
+            combined[f] = norm_val.title() if norm_val != _SIN_DATO else 'Sin dato'
         del combined['_norm']
         merged.append(combined)
 
@@ -149,7 +155,7 @@ def _build_patient_where(
     if fecha_fin:
         clauses.append("p.FECHA_NACIMIENTO <= TO_DATE(:fecha_fin, 'YYYY-MM-DD')")
         params['fecha_fin'] = fecha_fin
-    where = ' AND '.join(clauses) if clauses else '1=1'
+    where = _SQL_AND.join(clauses) if clauses else '1=1'
     return (where, params)
 
 def _reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
@@ -170,7 +176,7 @@ def _reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, 
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except oracledb.DatabaseError as e:
         logger.exception('Error en reporte por genero')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Distribucion por grupo de edad calculado desde PACIENTE.FECHA_NACIMIENTO."""
@@ -186,7 +192,7 @@ def _reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=No
             return {'labels': etapas_orden, 'values': values, 'total': sum(values)}
     except oracledb.DatabaseError as e:
         logger.exception('Error en reporte por etapa de vida')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Distribucion por tipo de espina bifida (TIPO_ESPINA_BIFIDA table)."""
@@ -201,7 +207,7 @@ def _reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=N
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except oracledb.DatabaseError as e:
         logger.exception('Error en reporte por tipo espina')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Distribucion de pacientes por estado/region (PACIENTE.ESTADO)."""
@@ -222,7 +228,7 @@ def _reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, 
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except oracledb.DatabaseError as e:
         logger.exception('Error en reporte por estado')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tipo_espina: Optional[int]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Resumen general de estadisticas del sistema."""
@@ -268,7 +274,7 @@ def _reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tip
             return {'total_pacientes': totals.get('total') or 0, 'activos': totals.get('activos') or 0, 'inactivos': totals.get('inactivos') or 0, 'por_genero': por_genero, 'edad_promedio': float(totals.get('edad_promedio') or 0), 'edad_minima': int(totals.get('edad_minima') or 0), 'edad_maxima': int(totals.get('edad_maxima') or 0), 'por_tipo_espina': por_tipo_espina, 'estados_representados': totals.get('estados_representados') or 0, 'fecha_generacion': datetime.now().isoformat()}
     except oracledb.DatabaseError as e:
         logger.exception('Error en reporte resumen')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Total de servicios brindados por tipo de servicio (RF-ER-08)."""
@@ -283,7 +289,7 @@ def _reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Opt
             if fecha_fin:
                 clauses.append("c.FECHA_HORA < TO_TIMESTAMP(:ff, 'YYYY-MM-DD') + 1")
                 params['ff'] = fecha_fin
-            where = ' AND '.join(clauses)
+            where = _SQL_AND.join(clauses)
             cursor.execute(f'SELECT s.NOMBRE AS label, SUM(d.CANTIDAD) AS cnt,\n                           SUM(d.MONTO_PAGADO) AS monto\n                    FROM DETALLE_CITA_SERVICIO d\n                    JOIN SERVICIO s ON s.ID_SERVICIO = d.ID_SERVICIO\n                    JOIN CITA c ON c.ID_CITA = d.ID_CITA\n                    WHERE {where}\n                    GROUP BY s.NOMBRE ORDER BY cnt DESC', params)
             rows = rows_to_dicts(cursor)
             labels = [r['label'].strip() for r in rows]
@@ -292,7 +298,7 @@ def _reporte_servicios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Opt
             return {'labels': labels, 'values': values, 'montos': montos, 'total': sum(values)}
     except oracledb.DatabaseError:
         logger.exception('Error en reporte servicios por tipo')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Número de estudios (servicios de tipo estudio) realizados (RF-ER-09)."""
@@ -307,7 +313,7 @@ def _reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Opti
             if fecha_fin:
                 clauses.append("c.FECHA_HORA < TO_TIMESTAMP(:ff, 'YYYY-MM-DD') + 1")
                 params['ff'] = fecha_fin
-            where = ' AND '.join(clauses)
+            where = _SQL_AND.join(clauses)
             cursor.execute(f'SELECT s.NOMBRE AS label, COUNT(*) AS cnt\n                    FROM DETALLE_CITA_SERVICIO d\n                    JOIN SERVICIO s ON s.ID_SERVICIO = d.ID_SERVICIO\n                    JOIN CITA c ON c.ID_CITA = d.ID_CITA\n                    WHERE {where}\n                    GROUP BY s.NOMBRE ORDER BY cnt DESC', params)
             rows = rows_to_dicts(cursor)
             labels = [r['label'].strip() for r in rows]
@@ -315,7 +321,7 @@ def _reporte_estudios_por_tipo(fecha_inicio: Optional[str]=None, fecha_fin: Opti
             return {'labels': labels, 'values': values, 'total': sum(values)}
     except oracledb.DatabaseError:
         logger.exception('Error en reporte estudios por tipo')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
     """Total de pagos exentos y cuotas de recuperación (RF-ER-10)."""
@@ -330,13 +336,13 @@ def _reporte_pagos_exentos(fecha_inicio: Optional[str]=None, fecha_fin: Optional
             if fecha_fin:
                 clauses.append("v.FECHA_VENTA < TO_TIMESTAMP(:ff, 'YYYY-MM-DD') + 1")
                 params['ff'] = fecha_fin
-            where = ' AND '.join(clauses)
+            where = _SQL_AND.join(clauses)
             cursor.execute(f"SELECT\n                        COUNT(CASE WHEN v.EXENTO_PAGO = 'S' THEN 1 END) AS total_exentos,\n                        COUNT(CASE WHEN v.EXENTO_PAGO = 'N' THEN 1 END) AS total_cuotas,\n                        NVL(SUM(CASE WHEN v.EXENTO_PAGO = 'S' THEN v.MONTO_TOTAL ELSE 0 END), 0) AS monto_exentos,\n                        NVL(SUM(CASE WHEN v.EXENTO_PAGO = 'N' THEN v.MONTO_TOTAL ELSE 0 END), 0) AS monto_cuotas,\n                        NVL(SUM(v.MONTO_TOTAL), 0) AS monto_total\n                    FROM VENTA v\n                    WHERE {where}", params)
             row = row_to_dict(cursor)
             return {'total_exentos': int(row['total_exentos'] or 0), 'total_cuotas': int(row['total_cuotas'] or 0), 'monto_exentos': float(row['monto_exentos'] or 0), 'monto_cuotas': float(row['monto_cuotas'] or 0), 'monto_total': float(row['monto_total'] or 0)}
     except oracledb.DatabaseError:
         logger.exception('Error en reporte pagos exentos')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):
     """Reporte mensual consolidado con resumen de servicios y demografía (RF-ER-07)."""
@@ -358,11 +364,11 @@ def _reporte_consolidado_mensual(mes: Optional[int]=None, anio: Optional[int]=No
             cursor.execute('SELECT ESTATUS, COUNT(*) AS cnt\n                   FROM CITA\n                   WHERE FECHA_HORA >= :fecha_inicio\n                     AND FECHA_HORA < :fecha_fin\n                   GROUP BY ESTATUS', params)
             citas_status = {r['estatus'].strip(): int(r['cnt']) for r in rows_to_dicts(cursor)}
             cursor.execute("SELECT p.GENERO, COUNT(DISTINCT c.ID_PACIENTE) AS cnt\n                   FROM CITA c\n                   JOIN PACIENTE p ON p.ID_PACIENTE = c.ID_PACIENTE\n                   WHERE c.ESTATUS = 'COMPLETADA'\n                     AND c.FECHA_HORA >= :fecha_inicio\n                     AND c.FECHA_HORA < :fecha_fin\n                   GROUP BY p.GENERO", params)
-            por_genero = {r['genero'].strip() if r['genero'] else 'SIN DATO': int(r['cnt']) for r in rows_to_dicts(cursor)}
+            por_genero = {r['genero'].strip() if r['genero'] else _SIN_DATO: int(r['cnt']) for r in rows_to_dicts(cursor)}
             return {'mes': m, 'anio': a, 'pacientes_atendidos': int(r1['pacientes_atendidos'] or 0), 'total_servicios': int(r2['total_servicios'] or 0), 'monto_servicios': float(r2['monto_servicios'] or 0), 'total_ventas': int(r3['total_ventas'] or 0), 'monto_ventas': float(r3['monto_ventas'] or 0), 'citas_por_estatus': citas_status, 'por_genero': por_genero, 'fecha_generacion': datetime.now().isoformat()}
     except oracledb.DatabaseError:
         logger.exception('Error en reporte consolidado mensual')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Historial de reportes generados (tabla REPORTE)."""
@@ -383,13 +389,13 @@ def _historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional
                 params['fecha_fin'] = fecha_fin
             params['offset'] = safe_offset
             params['limit'] = safe_limit
-            where = ' AND '.join(clauses)
+            where = _SQL_AND.join(clauses)
             cursor.execute(f'SELECT ID_REPORTE, ID_USUARIO, TIPO_REPORTE, FECHA_GENERACION, FECHA_INICIO, FECHA_FIN, FORMATO FROM REPORTE WHERE {where} ORDER BY FECHA_GENERACION DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY', params)
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
     except oracledb.DatabaseError as e:
         logger.exception('Error al consultar historial de reportes')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 def _reporte_por_ciudad(current_user: CurrentUser | None = None):
@@ -415,7 +421,7 @@ def _reporte_por_ciudad(current_user: CurrentUser | None = None):
             }
     except oracledb.DatabaseError:
         logger.exception('Error en reporte por ciudad')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
@@ -527,14 +533,14 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
             for r in rows_to_dicts(cursor):
                 etapa = (r.get('etapa') or '').strip()
                 genero = _genero_label(r.get('genero'))
-                curp_col = 'CURP N.L.' if _curp_es_nl(r.get('curp')) else 'CURP Foráneo'
+                curp_col = _CURP_NL if _curp_es_nl(r.get('curp')) else 'CURP Foráneo'
                 _sum_nested_count(t1_cross, etapa, curp_col)
-                if genero and curp_col == 'CURP N.L.':
+                if genero and curp_col == _CURP_NL:
                     _sum_nested_count(t2_cross, etapa, genero)
                 elif genero:
                     _sum_nested_count(t3_cross, etapa, genero)
 
-            t1 = build_rows(t1_cross, ['CURP N.L.', 'CURP Foráneo'])
+            t1 = build_rows(t1_cross, [_CURP_NL, 'CURP Foráneo'])
             t2 = build_rows(t2_cross, ['Hombre', 'Mujer'])
             t3 = build_rows(t3_cross, ['Hombre', 'Mujer'])
 
@@ -597,7 +603,7 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
             }
     except oracledb.DatabaseError:
         logger.exception('Error en indicadores de desempeno')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 def _reporte_pagos_por_metodo(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None):
@@ -613,7 +619,7 @@ def _reporte_pagos_por_metodo(fecha_inicio: Optional[str]=None, fecha_fin: Optio
             if fecha_fin:
                 clauses.append("v.FECHA_VENTA < TO_TIMESTAMP(:ff, 'YYYY-MM-DD') + 1")
                 params['ff'] = fecha_fin
-            where = ' AND '.join(clauses)
+            where = _SQL_AND.join(clauses)
             cursor.execute(f"""
                 SELECT mp.NOMBRE          AS metodo,
                        COUNT(vmp.ID_VENTA) AS num_pagos,
@@ -642,7 +648,7 @@ def _reporte_pagos_por_metodo(fecha_inicio: Optional[str]=None, fecha_fin: Optio
             }
     except oracledb.DatabaseError:
         logger.exception('Error en reporte pagos por metodo')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 class OracleReportesRepository(ReportesRepository):

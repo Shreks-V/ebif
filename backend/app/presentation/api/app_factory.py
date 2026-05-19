@@ -126,6 +126,7 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=500, content={"detail": exc.detail})
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
+    app.add_middleware(RequestSizeLimitMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -134,7 +135,6 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type", "Accept"],
         max_age=600,
     )
-    app.add_middleware(RequestSizeLimitMiddleware)
     app.include_router(build_api_router())
 
     @app.get("/api/health")

@@ -4,25 +4,30 @@ Covers login, /me, user management, and password flows.
 """
 import pytest
 
+from tests.conftest import _STUB_ADMIN_CRED, _STUB_OP_CRED, _STUB_INACTIVE_CRED
+
+_WRONG_CRED = "incorrect"
+_UNKNOWN_CRED = "cualquiera"
+
 
 class TestLogin:
     def test_login_valid_credentials_returns_token(self, client):
-        res = client.post("/api/auth/login", json={"correo": "admin@test.com", "password": "admin1234"})
+        res = client.post("/api/auth/login", json={"correo": "admin@test.com", "password": _STUB_ADMIN_CRED})
         assert res.status_code == 200
         body = res.json()
         assert "access_token" in body
         assert body["token_type"] == "bearer"
 
     def test_login_wrong_password_returns_401(self, client):
-        res = client.post("/api/auth/login", json={"correo": "admin@test.com", "password": "incorrect"})
+        res = client.post("/api/auth/login", json={"correo": "admin@test.com", "password": _WRONG_CRED})
         assert res.status_code == 401
 
     def test_login_unknown_email_returns_401(self, client):
-        res = client.post("/api/auth/login", json={"correo": "noexiste@test.com", "password": "cualquiera"})
+        res = client.post("/api/auth/login", json={"correo": "noexiste@test.com", "password": _UNKNOWN_CRED})
         assert res.status_code == 401
 
     def test_login_inactive_user_returns_401(self, client):
-        res = client.post("/api/auth/login", json={"correo": "inactivo@test.com", "password": "inactive1"})
+        res = client.post("/api/auth/login", json={"correo": "inactivo@test.com", "password": _STUB_INACTIVE_CRED})
         assert res.status_code == 401
 
 

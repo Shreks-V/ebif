@@ -52,6 +52,7 @@ AS
   v_precio       NUMBER;
   v_cant         NUMBER;
   v_subtotal     NUMBER;
+  v_i            NUMBER;
 BEGIN
   IF p_monto_total IS NULL OR p_monto_total < 0 THEN
     RAISE_APPLICATION_ERROR(-20401, 'Monto total invalido.');
@@ -68,11 +69,13 @@ BEGIN
     RAISE_APPLICATION_ERROR(-20403, 'Arrays de metodos de pago y montos desalineados.');
   END IF;
 
-  FOR i IN 1 .. p_montos_pago.COUNT LOOP
-    IF p_montos_pago(i) IS NULL OR p_montos_pago(i) < 0 THEN
-      RAISE_APPLICATION_ERROR(-20404, 'Monto de pago invalido en posicion ' || i || '.');
+  v_i := 1;
+  WHILE v_i <= p_montos_pago.COUNT LOOP
+    IF p_montos_pago(v_i) IS NULL OR p_montos_pago(v_i) < 0 THEN
+      RAISE_APPLICATION_ERROR(-20404, 'Monto de pago invalido en posicion ' || v_i || '.');
     END IF;
-    v_total_pagado := v_total_pagado + p_montos_pago(i);
+    v_total_pagado := v_total_pagado + p_montos_pago(v_i);
+    v_i := v_i + 1;
   END LOOP;
 
   IF v_total_pagado > p_monto_total AND NVL(p_exento_pago, 'N') <> 'S' THEN
@@ -96,23 +99,26 @@ BEGIN
   )
   RETURNING ID_VENTA, FOLIO_VENTA INTO p_id_venta_out, p_folio_out;
 
-  FOR i IN 1 .. p_metodos_pago.COUNT LOOP
+  v_i := 1;
+  WHILE v_i <= p_metodos_pago.COUNT LOOP
     INSERT INTO VENTA_METODO_PAGO (ID_VENTA, ID_METODO_PAGO, MONTO)
-    VALUES (p_id_venta_out, p_metodos_pago(i), p_montos_pago(i));
+    VALUES (p_id_venta_out, p_metodos_pago(v_i), p_montos_pago(v_i));
+    v_i := v_i + 1;
   END LOOP;
 
-  FOR i IN 1 .. p_linea_tipos.COUNT LOOP
-    v_tipo     := p_linea_tipos(i);
-    v_id_ref   := p_linea_ids(i);
-    v_precio   := p_linea_precios(i);
-    v_cant     := p_linea_cantidades(i);
+  v_i := 1;
+  WHILE v_i <= p_linea_tipos.COUNT LOOP
+    v_tipo     := p_linea_tipos(v_i);
+    v_id_ref   := p_linea_ids(v_i);
+    v_precio   := p_linea_precios(v_i);
+    v_cant     := p_linea_cantidades(v_i);
     v_subtotal := v_precio * v_cant;
 
     INSERT INTO VENTA_LINEA (
       ID_VENTA, TIPO, ID_REFERENCIA, DESCRIPCION,
       PRECIO_UNITARIO, CANTIDAD, SUBTOTAL
     ) VALUES (
-      p_id_venta_out, v_tipo, v_id_ref, p_linea_descs(i),
+      p_id_venta_out, v_tipo, v_id_ref, p_linea_descs(v_i),
       v_precio, v_cant, v_subtotal
     );
 
@@ -126,6 +132,7 @@ BEGIN
         p_observaciones => 'Salida por venta ' || p_folio_out
       );
     END IF;
+    v_i := v_i + 1;
   END LOOP;
 END SP_REGISTRAR_VENTA_COMPLETA;
 /

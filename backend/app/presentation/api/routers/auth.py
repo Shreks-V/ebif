@@ -22,6 +22,9 @@ from app.presentation.api.schemas import Token, UserResponse
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
+_MSG_USUARIO_NO_ENCONTRADO = "Usuario no encontrado"
+_MSG_SOLO_ADMINISTRADORES = "Solo administradores"
+
 
 def _auth_error() -> HTTPException:
     return HTTPException(
@@ -85,7 +88,7 @@ def get_me(
     try:
         return auth_service.get_me(current_user["correo"])
     except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=_MSG_USUARIO_NO_ENCONTRADO)
 
 
 @router.post("/cambiar-contrasena", status_code=200)
@@ -100,7 +103,7 @@ def cambiar_contrasena(
     except AuthError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="La contraseña actual es incorrecta")
     except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=_MSG_USUARIO_NO_ENCONTRADO)
     except PasswordTooShortError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 
@@ -113,7 +116,7 @@ def listar_usuarios(
     try:
         return auth_service.list_users(current_user)
     except ForbiddenError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_MSG_SOLO_ADMINISTRADORES)
 
 
 @router.post("/usuarios", response_model=UserResponse, status_code=201)
@@ -125,7 +128,7 @@ def crear_usuario(
     try:
         return auth_service.create_user(current_user, body.model_dump())
     except ForbiddenError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_MSG_SOLO_ADMINISTRADORES)
     except PasswordTooShortError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
     except UserAlreadyExistsError:
@@ -145,9 +148,9 @@ def actualizar_usuario(
     try:
         return auth_service.update_user(current_user, id_usuario, body.model_dump())
     except ForbiddenError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_MSG_SOLO_ADMINISTRADORES)
     except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=_MSG_USUARIO_NO_ENCONTRADO)
     except Exception as exc:
         logger.exception("Error al actualizar usuario: %s", exc)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al actualizar el usuario")
@@ -164,9 +167,9 @@ def reset_contrasena_admin(
         auth_service.admin_reset_password(current_user, id_usuario, body.contrasena_nueva)
         return {"message": "Contraseña restablecida correctamente"}
     except ForbiddenError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo administradores")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_MSG_SOLO_ADMINISTRADORES)
     except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=_MSG_USUARIO_NO_ENCONTRADO)
     except PasswordTooShortError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 

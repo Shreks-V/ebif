@@ -15,6 +15,27 @@ from app.infrastructure.persistence.sp_helpers import make_number_list, make_var
 
 logger = logging.getLogger(__name__)
 
+_MSG_VENTA_NO_ENCONTRADA = 'Venta no encontrada'
+_SELECT_VENTA_BY_ID = """
+            SELECT v.ID_VENTA,
+                   v.FOLIO_VENTA,
+                   v.ID_PACIENTE,
+                   v.ID_USUARIO_REGISTRO,
+                   v.FECHA_VENTA,
+                   v.MONTO_TOTAL,
+                   v.MONTO_PAGADO,
+                   v.SALDO_PENDIENTE,
+                   v.EXENTO_PAGO,
+                   v.CANCELADA,
+                   v.MOTIVO_CANCELACION,
+                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')
+                       AS NOMBRE_PACIENTE,
+                   p.FOLIO AS FOLIO_PACIENTE
+              FROM VENTA v
+              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE
+             WHERE v.ID_VENTA = :id_venta
+            """
+
 _SP_VENTA_ERRORS = {
     20401: (400, None),
     20402: (400, None),
@@ -336,7 +357,7 @@ def _crear_venta(data, current_user: CurrentUser | None = None):
 
             log_insert(conn, 'VENTA', new_id, id_usuario, f'Venta {folio} creada para paciente {data.id_paciente}')
             conn.commit()
-            cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': new_id})
+            cur.execute(_SELECT_VENTA_BY_ID, {'id_venta': new_id})
             venta = row_to_dict(cur)
             if venta is None:
                 raise InternalError('Error al recuperar la venta creada')
@@ -351,10 +372,10 @@ def _obtener_venta(id_venta: int, current_user: CurrentUser | None = None):
     """Obtener detalle de una venta (incluye items)."""
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': id_venta})
+        cur.execute(_SELECT_VENTA_BY_ID, {'id_venta': id_venta})
         venta = row_to_dict(cur)
         if venta is None:
-            raise NotFoundError('Venta no encontrada')
+            raise NotFoundError(_MSG_VENTA_NO_ENCONTRADA)
         return _enrich_venta(conn, venta, include_items=True)
 
 
@@ -364,7 +385,7 @@ def _listar_items_venta(id_venta: int, current_user: CurrentUser | None = None):
         cur = conn.cursor()
         cur.execute('SELECT ID_VENTA FROM VENTA WHERE ID_VENTA = :id_venta', {'id_venta': id_venta})
         if row_to_dict(cur) is None:
-            raise NotFoundError('Venta no encontrada')
+            raise NotFoundError(_MSG_VENTA_NO_ENCONTRADA)
         return _fetch_items_venta(conn, id_venta)
 
 def _registrar_pago(id_venta: int, id_metodo_pago: int, monto: float, current_user: CurrentUser | None = None):
@@ -397,7 +418,7 @@ def _exentar_venta(id_venta: int, nota: Optional[str]=None, current_user: Curren
         )
         row = row_to_dict(cur)
         if row is None:
-            raise NotFoundError('Venta no encontrada')
+            raise NotFoundError(_MSG_VENTA_NO_ENCONTRADA)
         if row['cancelada'] == 'S':
             raise ValidationError('La venta está cancelada y no puede modificarse')
         if row['exento_pago'] == 'S':
@@ -421,7 +442,7 @@ def _cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: Cur
         cur.execute('SELECT CANCELADA FROM VENTA WHERE ID_VENTA = :id_venta', {'id_venta': id_venta})
         row = row_to_dict(cur)
         if row is None:
-            raise NotFoundError('Venta no encontrada')
+            raise NotFoundError(_MSG_VENTA_NO_ENCONTRADA)
         if row['cancelada'] == 'S':
             raise ValidationError('La venta ya esta cancelada')
         motivo_final = motivo or 'Sin motivo especificado'

@@ -4,6 +4,8 @@ from app.domain.citas.ports import CitasRepository
 from app.domain.shared.current_user import CurrentUser
 from app.domain.exceptions import ValidationError
 
+_MSG_ID_CITA_INVALIDO = 'ID de cita inválido'
+
 _service: "CitasService | None" = None
 
 
@@ -40,22 +42,22 @@ class CitasService:
 
     def iniciar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
         if id_cita <= 0:
-            raise ValidationError('ID de cita inválido')
+            raise ValidationError(_MSG_ID_CITA_INVALIDO)
         return self._repository.iniciar_cita(id_cita, current_user)
 
     def completar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
         if id_cita <= 0:
-            raise ValidationError('ID de cita inválido')
+            raise ValidationError(_MSG_ID_CITA_INVALIDO)
         return self._repository.completar_cita(id_cita, current_user)
 
     def cancelar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
         if id_cita <= 0:
-            raise ValidationError('ID de cita inválido')
+            raise ValidationError(_MSG_ID_CITA_INVALIDO)
         return self._repository.cancelar_cita(id_cita, current_user)
 
     def eliminar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
         if id_cita <= 0:
-            raise ValidationError('ID de cita inválido')
+            raise ValidationError(_MSG_ID_CITA_INVALIDO)
         return self._repository.eliminar_cita(id_cita, current_user)
 
     def citas_proximas(self, dias: int = 7, current_user: CurrentUser | None = None):

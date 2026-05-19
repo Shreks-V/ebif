@@ -15,6 +15,10 @@ from app.infrastructure.persistence.sp_helpers import (
 from app.infrastructure.privacy.crypto import encrypt, decrypt_row, DOCTOR_ENCRYPTED_FIELDS
 logger = logging.getLogger(__name__)
 
+_MSG_DOCTOR_NO_ENCONTRADO = 'Doctor no encontrado'
+_MSG_ERROR_INTERNO = 'Error interno del servidor'
+_SELECT_DOCTOR_BY_ID = _SELECT_DOCTOR_BY_ID
+
 _SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS = {
     20601: (404, None),  # Doctor no existe o inactivo
 }
@@ -142,7 +146,7 @@ def _doctor_del_dia(current_user: CurrentUser | None = None):
             return {'doctor': doctor, 'hora_inicio': doctor['hora_inicio'], 'hora_fin': doctor['hora_fin']}
     except oracledb.DatabaseError:
         logger.exception('Error al consultar doctor del día')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _listar_doctores(current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar todos los doctores con sus servicios."""
@@ -155,7 +159,7 @@ def _listar_doctores(current_user: CurrentUser | None = None, limit: int=100, of
             return [_doctor_with_servicios(conn, r) for r in rows]
     except oracledb.DatabaseError as e:
         logger.exception('Error al consultar doctores')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _obtener_disponibilidad_semana(current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Obtener toda la disponibilidad de todos los doctores (para validar conflictos)."""
@@ -168,7 +172,7 @@ def _obtener_disponibilidad_semana(current_user: CurrentUser | None = None, limi
             return [_serialize(r) for r in rows]
     except oracledb.DatabaseError as e:
         logger.exception('Error al consultar disponibilidad semanal')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _obtener_doctor(id_doctor: int, current_user: CurrentUser | None = None):
     """Obtener un doctor por ID."""
@@ -178,13 +182,13 @@ def _obtener_doctor(id_doctor: int, current_user: CurrentUser | None = None):
             cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
             row = row_to_dict(cursor)
             if row is None:
-                raise NotFoundError('Doctor no encontrado')
+                raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
             return _doctor_with_servicios(conn, row)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
     except oracledb.DatabaseError as e:
         logger.exception('Error al consultar doctor')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _crear_doctor(data, current_user: CurrentUser | None = None):
     """Crear nuevo doctor con servicios asociados."""
@@ -220,16 +224,16 @@ def _crear_doctor(data, current_user: CurrentUser | None = None):
             return _doctor_with_servicios(conn, row)
     except oracledb.DatabaseError as e:
         logger.exception('Error al crear doctor')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _actualizar_doctor(id_doctor: int, data, current_user: CurrentUser | None = None):
     """Actualizar doctor existente y sus servicios."""
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_BY_ID, {'id_doctor': id_doctor})
             if cursor.fetchone() is None:
-                raise NotFoundError('Doctor no encontrado')
+                raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
             cursor.execute('UPDATE DOCTOR SET NOMBRE = :nombre, APELLIDO_PATERNO = :ap, APELLIDO_MATERNO = :am, ESPECIALIDAD = :esp, TELEFONO = :tel, CORREO = :correo, ACTIVO = :activo WHERE ID_DOCTOR = :id_doctor', {'nombre': data.nombre, 'ap': data.apellido_paterno, 'am': data.apellido_materno, 'esp': data.especialidad, 'tel': encrypt(data.telefono), 'correo': encrypt(data.correo), 'activo': data.activo, 'id_doctor': id_doctor})
             if data.servicios is not None:
                 _sync_doctor_servicios(conn, id_doctor, data.servicios)
@@ -241,16 +245,16 @@ def _actualizar_doctor(id_doctor: int, data, current_user: CurrentUser | None = 
         raise
     except oracledb.DatabaseError as e:
         logger.exception('Error al actualizar doctor')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _desactivar_doctor(id_doctor: int, current_user: CurrentUser | None = None):
     """Desactivar doctor (soft delete, ACTIVO = 'N')."""
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_BY_ID, {'id_doctor': id_doctor})
             if cursor.fetchone() is None:
-                raise NotFoundError('Doctor no encontrado')
+                raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
             cursor.execute("UPDATE DOCTOR SET ACTIVO = 'N' WHERE ID_DOCTOR = :id_doctor", {'id_doctor': id_doctor})
             conn.commit()
             return {'message': 'Doctor desactivado', 'id_doctor': id_doctor}
@@ -258,7 +262,7 @@ def _desactivar_doctor(id_doctor: int, current_user: CurrentUser | None = None):
         raise
     except oracledb.DatabaseError as e:
         logger.exception('Error al desactivar doctor')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _obtener_disponibilidad(id_doctor: int, current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Obtener disponibilidad semanal de un doctor."""
@@ -266,9 +270,9 @@ def _obtener_disponibilidad(id_doctor: int, current_user: CurrentUser | None = N
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_BY_ID, {'id_doctor': id_doctor})
             if cursor.fetchone() is None:
-                raise NotFoundError('Doctor no encontrado')
+                raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
             cursor.execute("SELECT ID_DISPONIBILIDAD, ID_DOCTOR, DIA_SEMANA, TO_CHAR(HORA_INICIO, 'HH24:MI') AS HORA_INICIO, TO_CHAR(HORA_FIN, 'HH24:MI') AS HORA_FIN, DISPONIBLE, FECHA_REGISTRO FROM DISPONIBILIDAD_DOCTOR WHERE ID_DOCTOR = :id_doctor ORDER BY DIA_SEMANA, HORA_INICIO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY", {'id_doctor': id_doctor, 'offset': safe_offset, 'limit': safe_limit})
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
@@ -276,7 +280,7 @@ def _obtener_disponibilidad(id_doctor: int, current_user: CurrentUser | None = N
         raise
     except oracledb.DatabaseError as e:
         logger.exception('Error al consultar disponibilidad')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _crear_disponibilidad(id_doctor: int, data, current_user: CurrentUser | None = None):
     """Crear un slot de disponibilidad semanal para un doctor (por día de la semana)."""
@@ -287,9 +291,9 @@ def _crear_disponibilidad(id_doctor: int, data, current_user: CurrentUser | None
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_BY_ID, {'id_doctor': id_doctor})
             if cursor.fetchone() is None:
-                raise NotFoundError('Doctor no encontrado')
+                raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
             cursor.execute("SELECT dd.ID_DOCTOR, d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS NOMBRE_DOCTOR FROM DISPONIBILIDAD_DOCTOR dd JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR WHERE dd.DIA_SEMANA = :dia AND dd.DISPONIBLE = 'S' AND dd.ID_DOCTOR != :id_doctor AND TO_CHAR(dd.HORA_INICIO, 'HH24:MI') < :hora_fin AND TO_CHAR(dd.HORA_FIN, 'HH24:MI') > :hora_inicio", {'dia': data.dia_semana, 'id_doctor': id_doctor, 'hora_fin': data.hora_fin, 'hora_inicio': data.hora_inicio})
             conflicto = row_to_dict(cursor)
             if conflicto:
@@ -310,7 +314,7 @@ def _crear_disponibilidad(id_doctor: int, data, current_user: CurrentUser | None
         raise
     except oracledb.DatabaseError as e:
         logger.exception('Error al crear disponibilidad')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_user: CurrentUser | None = None):
     """Eliminar un slot de disponibilidad de un doctor."""
@@ -326,22 +330,22 @@ def _eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_use
         raise
     except oracledb.DatabaseError as e:
         logger.exception('Error al eliminar disponibilidad')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _obtener_servicios_doctor(id_doctor: int, current_user: CurrentUser | None = None):
     """Obtener los servicios asociados a un doctor."""
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_BY_ID, {'id_doctor': id_doctor})
             if cursor.fetchone() is None:
-                raise NotFoundError('Doctor no encontrado')
+                raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
             return _get_servicios_for_doctor(conn, id_doctor)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
     except oracledb.DatabaseError as e:
         logger.exception('Error al consultar servicios del doctor')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 def _listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | None = None):
@@ -349,9 +353,9 @@ def _listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | 
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_BY_ID, {'id_doctor': id_doctor})
             if cursor.fetchone() is None:
-                raise NotFoundError('Doctor no encontrado')
+                raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
             cursor.execute(
                 """
                 SELECT ID_DISP_ESPECIAL, ID_DOCTOR,
@@ -369,7 +373,7 @@ def _listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | 
         raise
     except oracledb.DatabaseError:
         logger.exception('Error al listar disponibilidad especial')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 def _crear_disponibilidad_especial(id_doctor: int, data, current_user: CurrentUser | None = None):
@@ -382,9 +386,9 @@ def _crear_disponibilidad_especial(id_doctor: int, data, current_user: CurrentUs
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_BY_ID, {'id_doctor': id_doctor})
             if cursor.fetchone() is None:
-                raise NotFoundError('Doctor no encontrado')
+                raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
             id_var = cursor.var(int)
             cursor.execute(
                 """
@@ -423,7 +427,7 @@ def _crear_disponibilidad_especial(id_doctor: int, data, current_user: CurrentUs
         raise
     except oracledb.DatabaseError:
         logger.exception('Error al crear disponibilidad especial')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 def _eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, current_user: CurrentUser | None = None):
@@ -443,7 +447,7 @@ def _eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, cur
         raise
     except oracledb.DatabaseError:
         logger.exception('Error al eliminar disponibilidad especial')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 class OracleDoctoresRepository(DoctoresRepository):

@@ -7,13 +7,17 @@ from fastapi import HTTPException
 
 from app.presentation.api.schemas import BeneficiarioCreate
 
+_MSG_BENEFICIARIO_NO_ENCONTRADO = "Beneficiario no encontrado"
+_ESTADO_NL = _ESTADO_NL
+_TIPO_TORACICA = _TIPO_TORACICA
+
 
 def _visible(p: dict[str, Any]) -> bool:
     return p.get("activo") == "S" and p.get("estatus_registro") == "APROBADO"
 
 
 def _tipo_label(id_tipo: int) -> str:
-    return {1: "Lumbar", 2: "Torácica"}.get(id_tipo, f"Tipo {id_tipo}")
+    return {1: "Lumbar", 2: _TIPO_TORACICA}.get(id_tipo, f"Tipo {id_tipo}")
 
 
 def _resolve_tipos(ids: list[int] | None) -> list[dict[str, Any]]:
@@ -43,7 +47,7 @@ class InMemoryBeneficiariosRepository:
     def listar_tipos_espina(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
         return [
             {"id_tipo_espina": 1, "nombre": "Lumbar", "descripcion": "Prueba", "activo": "S"},
-            {"id_tipo_espina": 2, "nombre": "Torácica", "descripcion": "Prueba", "activo": "S"},
+            {"id_tipo_espina": 2, "nombre": _TIPO_TORACICA, "descripcion": "Prueba", "activo": "S"},
         ]
 
     def stats_beneficiarios(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -65,7 +69,7 @@ class InMemoryBeneficiariosRepository:
             "activos": activo_mem,
             "inactivos": total - activo_mem,
             "por_genero": {"Masculino": m, "Femenino": f},
-            "por_procedencia": {"Nuevo León": 0, "Foráneos": total},
+            "por_procedencia": {_ESTADO_NL: 0, "Foráneos": total},
             "por_etapa_vida": {},
             "nuevos_esta_semana": 0,
             "nuevos_semana_anterior": 0,
@@ -120,7 +124,7 @@ class InMemoryBeneficiariosRepository:
         del current_user
         row = self._by_folio.get(folio)
         if row is None:
-            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         return self._response_dict(row)
 
     def crear_beneficiario(
@@ -153,7 +157,7 @@ class InMemoryBeneficiariosRepository:
     ) -> dict[str, Any]:
         del current_user
         if folio not in self._by_folio:
-            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         payload = data.model_dump()
         tipos_ids = payload.pop("tipos_espina", None)
         row = self._by_folio[folio]
@@ -166,14 +170,14 @@ class InMemoryBeneficiariosRepository:
     def eliminar_beneficiario(self, folio: str, current_user: dict | None = None) -> dict[str, str]:
         del current_user
         if folio not in self._by_folio:
-            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         self._by_folio[folio]["activo"] = "N"
         return {"detail": "Beneficiario eliminado correctamente"}
 
     def historial_beneficiario(self, folio: str, current_user: dict | None = None, limit_citas: int = 100, offset_citas: int = 0, limit_pagos: int = 100, offset_pagos: int = 0, limit_comodatos: int = 100, offset_comodatos: int = 0) -> dict[str, Any]:
         del current_user
         if folio not in self._by_folio:
-            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         row = self._by_folio[folio]
         nombre_completo = " ".join(
             filter(
@@ -213,7 +217,7 @@ class InMemoryBeneficiariosRepository:
     ) -> dict[str, Any]:
         del data, current_user
         if folio not in self._by_folio:
-            raise HTTPException(status_code=404, detail="Beneficiario no encontrado")
+            raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         row = self._by_folio[folio]
         row["membresia_estatus"] = "ACTIVO"
         row["fecha_inicio_membresia"] = "2026-03-01"
@@ -237,7 +241,7 @@ def default_seed_patients() -> list[dict[str, Any]]:
             "direccion": None,
             "colonia": None,
             "ciudad": "Monterrey",
-            "estado": "Nuevo León",
+            "estado": _ESTADO_NL,
             "codigo_postal": None,
             "telefono_casa": None,
             "telefono_celular": None,
@@ -275,7 +279,7 @@ def default_seed_patients() -> list[dict[str, Any]]:
             "direccion": None,
             "colonia": None,
             "ciudad": "Guadalupe",
-            "estado": "Nuevo León",
+            "estado": _ESTADO_NL,
             "codigo_postal": None,
             "telefono_casa": None,
             "telefono_celular": None,
@@ -313,7 +317,7 @@ def default_seed_patients() -> list[dict[str, Any]]:
             "direccion": "Calle Falsa 123",
             "colonia": "Centro",
             "ciudad": "Monterrey",
-            "estado": "Nuevo León",
+            "estado": _ESTADO_NL,
             "codigo_postal": "64000",
             "telefono_casa": None,
             "telefono_celular": "8110000000",
@@ -330,7 +334,7 @@ def default_seed_patients() -> list[dict[str, Any]]:
             "tipo_cuota": "A",
             "activo": "S",
             "estatus_registro": "APROBADO",
-            "tipos_espina": [{"id_tipo_espina": 1, "nombre": "Lumbar"}, {"id_tipo_espina": 2, "nombre": "Torácica"}],
+            "tipos_espina": [{"id_tipo_espina": 1, "nombre": "Lumbar"}, {"id_tipo_espina": 2, "nombre": _TIPO_TORACICA}],
             "fecha_alta": "2024-06-01",
             "fecha_registro": "2024-06-01T08:00:00",
             "tutor": None,

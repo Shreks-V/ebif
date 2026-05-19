@@ -94,7 +94,7 @@ export class MapaTabComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.mapaBeneficiarios = data;
         this.mapaEstados = [...new Set(
           data.map((b) => (b.estado || '').trim()).filter(Boolean)
-        )].sort();
+        )].sort((a, b) => a.localeCompare(b));
         this.mapaLoading = false;
         if (this._map) this._renderMarkers();
         if (this.mapaPendientesGeocode > 0) this._startAutoPoll();
@@ -118,7 +118,7 @@ export class MapaTabComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.mapaBeneficiarios = data;
           this.mapaEstados = [...new Set(
             data.map((b) => (b.estado || '').trim()).filter(Boolean)
-          )].sort();
+          )].sort((a, b) => a.localeCompare(b));
           this._addNewMarkers();
           if (this.mapaPendientesGeocode === 0) this._stopAutoPoll();
         },

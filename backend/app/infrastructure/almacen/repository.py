@@ -15,6 +15,10 @@ from app.infrastructure.persistence.sp_helpers import sp_error_to_http
 
 logger = logging.getLogger(__name__)
 
+_MSG_PRODUCTO_NO_ENCONTRADO = 'Producto no encontrado'
+_MSG_SERVICIO_NO_ENCONTRADO = 'Servicio no encontrado'
+_MSG_COMODATO_NO_ENCONTRADO = 'Comodato no encontrado'
+
 _SP_CREAR_PRODUCTO_ERRORS = {
     20701: (400, 'Tipo de producto inválido'),
     20702: (400, 'Clave interna requerida'),
@@ -130,7 +134,7 @@ def _obtener_producto(id_producto: int, current_user: CurrentUser | None = None)
         cursor.execute(sql, {'id_producto': id_producto})
         row = row_to_dict(cursor)
     if not row:
-        raise NotFoundError('Producto no encontrado')
+        raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
     return _serialize(row)
 
 def _crear_producto(data, current_user: CurrentUser | None = None):
@@ -215,7 +219,7 @@ def _fetch_producto(id_producto: int) -> dict:
         cursor.execute(sql, {'id_producto': id_producto})
         row = row_to_dict(cursor)
     if not row:
-        raise NotFoundError('Producto no encontrado')
+        raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
     return _serialize(row)
 
 def _actualizar_producto(id_producto: int, data, current_user: CurrentUser | None = None):
@@ -226,7 +230,7 @@ def _actualizar_producto(id_producto: int, data, current_user: CurrentUser | Non
         cursor.execute('SELECT ID_PRODUCTO, TIPO_PRODUCTO FROM PRODUCTO WHERE ID_PRODUCTO = :id', {'id': id_producto})
         existing = cursor.fetchone()
         if not existing:
-            raise NotFoundError('Producto no encontrado')
+            raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
         cursor.execute('UPDATE PRODUCTO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                TIPO_PRODUCTO = :tipo, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b\n               WHERE ID_PRODUCTO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'tipo': tipo_producto_db, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id': id_producto})
         if tipo_producto_db == 'MEDICAMENTO':
             cursor.execute('MERGE INTO MEDICAMENTO m\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (m.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       PRESENTACION = :presentacion, DOSIS = :dosis,\n                       REQUIERE_CADUCIDAD = :requiere\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)\n                       VALUES (:id, :presentacion, :dosis, :requiere)', {'id': id_producto, 'presentacion': data.presentacion, 'dosis': data.dosis, 'requiere': data.requiere_caducidad or 'N'})
@@ -264,7 +268,7 @@ def _desactivar_producto(id_producto: int, current_user: CurrentUser | None = No
         cursor = conn.cursor()
         cursor.execute("UPDATE PRODUCTO SET ACTIVO = 'N' WHERE ID_PRODUCTO = :id", {'id': id_producto})
         if cursor.rowcount == 0:
-            raise NotFoundError('Producto no encontrado')
+            raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
         conn.commit()
     return {'message': 'Producto desactivado correctamente'}
 
@@ -298,7 +302,7 @@ def _obtener_servicio(id_servicio: int, current_user: CurrentUser | None = None)
         cursor.execute('SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n                      ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                      PRECIO_CUOTA_A, PRECIO_CUOTA_B, CATEGORIA\n               FROM SERVICIO WHERE ID_SERVICIO = :id', {'id': id_servicio})
         row = row_to_dict(cursor)
     if not row:
-        raise NotFoundError('Servicio no encontrado')
+        raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
     return _serialize(row)
 
 def _crear_servicio(data, current_user: CurrentUser | None = None):
@@ -320,7 +324,7 @@ def _fetch_servicio(id_servicio: int) -> dict:
         cursor.execute('SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n                      ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                      PRECIO_CUOTA_A, PRECIO_CUOTA_B, CATEGORIA\n               FROM SERVICIO WHERE ID_SERVICIO = :id', {'id': id_servicio})
         row = row_to_dict(cursor)
     if not row:
-        raise NotFoundError('Servicio no encontrado')
+        raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
     return _serialize(row)
 
 def _actualizar_servicio(id_servicio: int, data, current_user: CurrentUser | None = None):
@@ -330,7 +334,7 @@ def _actualizar_servicio(id_servicio: int, data, current_user: CurrentUser | Non
         categoria = getattr(data, 'categoria', None) or 'SERVICIO'
         cursor.execute('UPDATE SERVICIO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                CUOTA_RECUPERACION = :cuota, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b,\n                CATEGORIA = :categoria\n               WHERE ID_SERVICIO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'cuota': data.cuota_recuperacion, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'categoria': categoria, 'id': id_servicio})
         if cursor.rowcount == 0:
-            raise NotFoundError('Servicio no encontrado')
+            raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
         conn.commit()
     return _fetch_servicio(id_servicio)
 
@@ -340,7 +344,7 @@ def _desactivar_servicio(id_servicio: int, current_user: CurrentUser | None = No
         cursor = conn.cursor()
         cursor.execute("UPDATE SERVICIO SET ACTIVO = 'N' WHERE ID_SERVICIO = :id", {'id': id_servicio})
         if cursor.rowcount == 0:
-            raise NotFoundError('Servicio no encontrado')
+            raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
         conn.commit()
     return {'message': 'Servicio desactivado correctamente'}
 _COMODATOS_BASE_SQL = "\n    SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.ID_EQUIPO, c.ID_PACIENTE,\n           c.ID_USUARIO_REGISTRO, c.FECHA_PRESTAMO, c.FECHA_DEVOLUCION,\n           c.ESTATUS, c.MONTO_TOTAL, c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n           c.EXENTO_PAGO, c.NOTAS,\n           pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO || ' ' || NVL(pa.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           pa.FOLIO AS FOLIO_PACIENTE,\n           pr.NOMBRE AS NOMBRE_EQUIPO\n    FROM COMODATO c\n    LEFT JOIN PACIENTE pa ON pa.ID_PACIENTE = c.ID_PACIENTE\n    LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n"
@@ -373,7 +377,7 @@ def _obtener_comodato(id_comodato: int, current_user: CurrentUser | None = None)
         cursor.execute(sql, {'id': id_comodato})
         row = row_to_dict(cursor)
     if not row:
-        raise NotFoundError('Comodato no encontrado')
+        raise NotFoundError(_MSG_COMODATO_NO_ENCONTRADO)
     return _serialize(row)
 
 def _crear_comodato(data, current_user: CurrentUser | None = None):
@@ -413,7 +417,7 @@ def _fetch_comodato(id_comodato: int) -> dict:
         cursor.execute(sql, {'id': id_comodato})
         row = row_to_dict(cursor)
     if not row:
-        raise NotFoundError('Comodato no encontrado')
+        raise NotFoundError(_MSG_COMODATO_NO_ENCONTRADO)
     return _serialize(row)
 
 def _actualizar_comodato(id_comodato: int, data, current_user: CurrentUser | None = None):
@@ -424,7 +428,7 @@ def _actualizar_comodato(id_comodato: int, data, current_user: CurrentUser | Non
         cursor.execute('SELECT ESTATUS, ID_EQUIPO FROM COMODATO WHERE ID_COMODATO = :id', {'id': id_comodato})
         prev = cursor.fetchone()
         if prev is None:
-            raise NotFoundError('Comodato no encontrado')
+            raise NotFoundError(_MSG_COMODATO_NO_ENCONTRADO)
         prev_estatus = prev[0].strip() if prev[0] else ''
         id_equipo_prev = prev[1]
         cursor.execute("UPDATE COMODATO SET\n                ID_EQUIPO = :id_equipo, ID_PACIENTE = :id_paciente,\n                FECHA_PRESTAMO = TO_DATE(:fecha_prest, 'YYYY-MM-DD'),\n                FECHA_DEVOLUCION = CASE WHEN :fecha_dev IS NOT NULL\n                                        THEN TO_DATE(:fecha_dev, 'YYYY-MM-DD')\n                                        ELSE NULL END,\n                ESTATUS = :estatus, MONTO_TOTAL = :monto_total,\n                MONTO_PAGADO = :monto_pagado, SALDO_PENDIENTE = :saldo,\n                EXENTO_PAGO = :exento, NOTAS = :notas\n               WHERE ID_COMODATO = :id", {'id_equipo': data.id_equipo, 'id_paciente': data.id_paciente, 'fecha_prest': data.fecha_prestamo, 'fecha_dev': data.fecha_devolucion, 'estatus': data.estatus, 'monto_total': data.monto_total, 'monto_pagado': data.monto_pagado, 'saldo': data.saldo_pendiente, 'exento': data.exento_pago, 'notas': data.notas, 'id': id_comodato})

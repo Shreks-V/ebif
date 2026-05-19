@@ -50,6 +50,7 @@ CREATE OR REPLACE PROCEDURE SP_REGISTRAR_PACIENTE_COMPLETO (
   p_id_paciente_out       OUT NUMBER
 )
 AS
+  v_i NUMBER;
 BEGIN
   IF p_folio IS NULL OR LENGTH(TRIM(p_folio)) = 0 THEN
     RAISE_APPLICATION_ERROR(-20201, 'Folio requerido.');
@@ -93,12 +94,14 @@ BEGIN
         'Ya existe un paciente con ese folio o CURP.');
   END;
 
-  FOR i IN 1 .. p_tipos_espina.COUNT LOOP
+  v_i := 1;
+  WHILE v_i <= p_tipos_espina.COUNT LOOP
     INSERT INTO PACIENTE_TIPO_ESPINA (
       ID_PACIENTE, ID_TIPO_ESPINA
     ) VALUES (
-      p_id_paciente_out, p_tipos_espina(i)
+      p_id_paciente_out, p_tipos_espina(v_i)
     );
+    v_i := v_i + 1;
   END LOOP;
 END SP_REGISTRAR_PACIENTE_COMPLETO;
 /
@@ -117,6 +120,7 @@ AS
   v_count     NUMBER;
   v_traslape  NUMBER;
   v_asignado  NUMBER;
+  v_i         NUMBER;
 BEGIN
   IF p_servicios IS NULL OR p_servicios.COUNT = 0 THEN
     RAISE_APPLICATION_ERROR(-20301, 'La cita requiere al menos un servicio.');
@@ -141,23 +145,25 @@ BEGIN
   END IF;
 
   -- Validar que cada doctor tenga asignado el servicio correspondiente
-  FOR i IN 1 .. p_servicios.COUNT LOOP
-    IF p_doctores(i) IS NOT NULL THEN
+  v_i := 1;
+  WHILE v_i <= p_servicios.COUNT LOOP
+    IF p_doctores(v_i) IS NOT NULL THEN
       SELECT COUNT(*) INTO v_asignado
       FROM DOCTOR_SERVICIO
-      WHERE ID_DOCTOR = p_doctores(i)
-        AND ID_SERVICIO = p_servicios(i);
+      WHERE ID_DOCTOR = p_doctores(v_i)
+        AND ID_SERVICIO = p_servicios(v_i);
       IF v_asignado = 0 THEN
         RAISE_APPLICATION_ERROR(-20304,
-          'Doctor ' || p_doctores(i) || ' no habilitado para servicio '
-          || p_servicios(i) || '.');
+          'Doctor ' || p_doctores(v_i) || ' no habilitado para servicio '
+          || p_servicios(v_i) || '.');
       END IF;
     END IF;
 
-    IF p_cantidades(i) IS NULL OR p_cantidades(i) <= 0 THEN
+    IF p_cantidades(v_i) IS NULL OR p_cantidades(v_i) <= 0 THEN
       RAISE_APPLICATION_ERROR(-20305,
-        'Cantidad invalida para servicio ' || p_servicios(i) || '.');
+        'Cantidad invalida para servicio ' || p_servicios(v_i) || '.');
     END IF;
+    v_i := v_i + 1;
   END LOOP;
 
   INSERT INTO CITA (
@@ -167,12 +173,14 @@ BEGIN
   )
   RETURNING ID_CITA INTO p_id_cita_out;
 
-  FOR i IN 1 .. p_servicios.COUNT LOOP
+  v_i := 1;
+  WHILE v_i <= p_servicios.COUNT LOOP
     INSERT INTO DETALLE_CITA_SERVICIO (
       ID_CITA, ID_SERVICIO, ID_DOCTOR, CANTIDAD, MONTO_PAGADO, CANCELADO
     ) VALUES (
-      p_id_cita_out, p_servicios(i), p_doctores(i), p_cantidades(i), 0, 'N'
+      p_id_cita_out, p_servicios(v_i), p_doctores(v_i), p_cantidades(v_i), 0, 'N'
     );
+    v_i := v_i + 1;
   END LOOP;
 END SP_CREAR_CITA_CON_SERVICIOS;
 /

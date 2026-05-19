@@ -21,7 +21,17 @@ from app.domain.exportaciones.entities import FilePayload
 from app.domain.exceptions import InternalError, NotFoundError, ValidationError
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.privacy.crypto import decrypt_row, PACIENTE_ENCRYPTED_FIELDS
+
 logger = logging.getLogger(__name__)
+
+_MSG_ERROR_INTERNO = 'Error interno del servidor'
+_ORG_NAME = _ORG_NAME
+_COL_TOTAL_PACIENTES = _COL_TOTAL_PACIENTES
+_COL_EDAD_PROMEDIO = _COL_EDAD_PROMEDIO
+_COL_GENERO = _COL_GENERO
+_COL_ETAPA_VIDA = _COL_ETAPA_VIDA
+_COL_PAC_ATENDIDOS = _COL_PAC_ATENDIDOS
+_COL_METRICA = _COL_METRICA
 
 UPLOAD_DOCUMENTOS_DIR = Path(__file__).resolve().parents[3] / 'uploads' / 'documentos'
 LOGO_PATH = Path(__file__).resolve().parents[3] / 'uploads' / 'logo.png'
@@ -171,7 +181,7 @@ def _exportar_reporte_pdf(  # noqa: C901
             'consolidado-mensual': 'Reporte Consolidado Mensual',
             'indicadores':         'Indicadores de Desempeño',
         }
-        els.append(Paragraph('Asociación de Espina Bífida', h1))
+        els.append(Paragraph(_ORG_NAME, h1))
         els.append(Paragraph(tipo_labels.get(tipo, f'Reporte: {tipo}'), styles['Heading2']))
         periodo_str = ''
         if fecha_inicio or fecha_fin:
@@ -211,7 +221,7 @@ def _exportar_reporte_pdf(  # noqa: C901
             # KPI
             els.append(Paragraph('Resumen Ejecutivo', h2))
             els.append(_kpi_table(
-                ['Total Pacientes', 'Activos', 'Hombres', 'Mujeres', 'Edad Promedio', 'Estados'],
+                [_COL_TOTAL_PACIENTES, 'Activos', 'Hombres', 'Mujeres', _COL_EDAD_PROMEDIO, 'Estados'],
                 [str(total_p), str(activos), str(hombres), str(mujeres),
                  f'{edad_p:.1f} años', str(estados_r)],
             ))
@@ -220,7 +230,7 @@ def _exportar_reporte_pdf(  # noqa: C901
             # Género
             if d_gen.get('labels'):
                 tot = d_gen.get('total', 0)
-                rows = [['Género', 'Pacientes', '%']]
+                rows = [[_COL_GENERO, 'Pacientes', '%']]
                 for l, v in zip(d_gen['labels'], d_gen['values']):
                     rows.append([l, str(v), _pct(v, tot)])
                 rows.append(['Total', str(tot), '100%'])
@@ -233,7 +243,7 @@ def _exportar_reporte_pdf(  # noqa: C901
             # Etapa de vida
             if d_etapa.get('labels'):
                 tot = d_etapa.get('total', 0)
-                rows = [['Etapa de Vida', 'Pacientes', '%']]
+                rows = [[_COL_ETAPA_VIDA, 'Pacientes', '%']]
                 for l, v in zip(d_etapa['labels'], d_etapa['values']):
                     rows.append([l, str(v), _pct(v, tot)])
                 rows.append(['Total', str(tot), '100%'])
@@ -349,7 +359,7 @@ def _exportar_reporte_pdf(  # noqa: C901
 
             els.append(Paragraph(f'Período: {meses_n[_mes]} {_anio}', h2))
             els.append(_kpi_table(
-                ['Pacientes Atendidos', 'Total Servicios', 'Monto Servicios', 'Total Ventas', 'Monto Ventas'],
+                [_COL_PAC_ATENDIDOS, 'Total Servicios', 'Monto Servicios', 'Total Ventas', 'Monto Ventas'],
                 [str(d.get('pacientes_atendidos', 0)),
                  str(d.get('total_servicios', 0)),
                  _money(d.get('monto_servicios', 0)),
@@ -374,7 +384,7 @@ def _exportar_reporte_pdf(  # noqa: C901
 
             pg = d.get('por_genero', {})
             if pg:
-                rows = [['Género', 'Pacientes Atendidos']]
+                rows = [[_COL_GENERO, _COL_PAC_ATENDIDOS]]
                 tot_g = 0
                 for k, v in pg.items():
                     rows.append([k, str(v)])
@@ -426,7 +436,7 @@ def _exportar_reporte_pdf(  # noqa: C901
                 t_rows = tablas.get(key, [])
                 if not t_rows:
                     continue
-                rows = [['Etapa de Vida', cols[0], cols[1], 'Total']]
+                rows = [[_COL_ETAPA_VIDA, cols[0], cols[1], 'Total']]
                 for r in t_rows:
                     rows.append([
                         r.get('etapa', ''),
@@ -479,7 +489,7 @@ def _exportar_reporte_pdf(  # noqa: C901
             els.append(Spacer(1, 12))
 
             col_names = {
-                'por-genero': 'Género', 'por-etapa-vida': 'Etapa de Vida',
+                'por-genero': _COL_GENERO, 'por-etapa-vida': _COL_ETAPA_VIDA,
                 'por-estado': 'Estado', 'por-tipo-espina': 'Tipo de Espina',
             }
             tot = data.get('total', 0)
@@ -504,7 +514,7 @@ def _exportar_reporte_pdf(  # noqa: C901
         raise
     except Exception:
         logger.exception('Error al generar PDF de reporte')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = None):
     """Generar reporte PDF de un beneficiario con sus datos y documentos (RF-ER-06)."""
@@ -531,11 +541,11 @@ def _exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = No
             logo.hAlign = 'CENTER'
             elements.append(logo)
             elements.append(Spacer(1, 6))
-        elements.append(Paragraph('Asociación de Espina Bífida', styles['Title']))
+        elements.append(Paragraph(_ORG_NAME, styles['Title']))
         elements.append(Paragraph(f'Expediente del Beneficiario — {nombre}', styles['Heading2']))
         elements.append(Paragraph(f'Folio: {folio} | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}', styles['Normal']))
         elements.append(Spacer(1, 20))
-        fields = [('Nombre', nombre), ('CURP', paciente.get('curp') or ''), ('Género', _strip(paciente.get('genero')) or ''), ('Fecha de Nacimiento', _date_str(paciente.get('fecha_nacimiento'))), ('Tipo de Sangre', paciente.get('tipo_sangre') or ''), ('Usa Válvula', 'Sí' if _strip(paciente.get('usa_valvula')) == 'S' else 'No'), ('Dirección', paciente.get('direccion') or ''), ('Colonia', paciente.get('colonia') or ''), ('Ciudad', paciente.get('ciudad') or ''), ('Estado', paciente.get('estado') or ''), ('C.P.', paciente.get('codigo_postal') or ''), ('Teléfono Casa', paciente.get('telefono_casa') or ''), ('Teléfono Celular', paciente.get('telefono_celular') or ''), ('Correo', paciente.get('correo_electronico') or ''), ('Contacto Emergencia', paciente.get('en_emergencia_avisar_a') or ''), ('Tel. Emergencia', paciente.get('telefono_emergencia') or ''), ('Membresía', _strip(paciente.get('membresia_estatus')) or ''), ('Tipo Cuota', _strip(paciente.get('tipo_cuota')) or ''), ('Fecha Alta', _date_str(paciente.get('fecha_alta')))]
+        fields = [('Nombre', nombre), ('CURP', paciente.get('curp') or ''), (_COL_GENERO, _strip(paciente.get('genero')) or ''), ('Fecha de Nacimiento', _date_str(paciente.get('fecha_nacimiento'))), ('Tipo de Sangre', paciente.get('tipo_sangre') or ''), ('Usa Válvula', 'Sí' if _strip(paciente.get('usa_valvula')) == 'S' else 'No'), ('Dirección', paciente.get('direccion') or ''), ('Colonia', paciente.get('colonia') or ''), ('Ciudad', paciente.get('ciudad') or ''), ('Estado', paciente.get('estado') or ''), ('C.P.', paciente.get('codigo_postal') or ''), ('Teléfono Casa', paciente.get('telefono_casa') or ''), ('Teléfono Celular', paciente.get('telefono_celular') or ''), ('Correo', paciente.get('correo_electronico') or ''), ('Contacto Emergencia', paciente.get('en_emergencia_avisar_a') or ''), ('Tel. Emergencia', paciente.get('telefono_emergencia') or ''), ('Membresía', _strip(paciente.get('membresia_estatus')) or ''), ('Tipo Cuota', _strip(paciente.get('tipo_cuota')) or ''), ('Fecha Alta', _date_str(paciente.get('fecha_alta')))]
         table_data = [['Campo', 'Valor']]
         for label, val in fields:
             table_data.append([label, str(val)])
@@ -548,7 +558,7 @@ def _exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = No
         raise
     except Exception:
         logger.exception('Error al generar PDF del beneficiario')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _exportar_credencial_pdf(folio: str, current_user: CurrentUser | None = None):
     """Generar credencial del beneficiario en PDF (RF-RB-06)."""
@@ -744,7 +754,7 @@ def _exportar_credencial_pdf(folio: str, current_user: CurrentUser | None = None
         raise
     except Exception:
         logger.exception('Error al generar credencial PDF')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 def _exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = None):
@@ -781,7 +791,7 @@ def _exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = 
             logo.hAlign = 'CENTER'
             elements.append(logo)
             elements.append(Spacer(1, 6))
-        elements.append(Paragraph('Asociación de Espina Bífida', styles['Title']))
+        elements.append(Paragraph(_ORG_NAME, styles['Title']))
         elements.append(Paragraph('Comprobante de Servicio', styles['Heading2']))
         elements.append(Spacer(1, 10))
         info_data = [['Paciente', cita['nombre_paciente']], ['Folio Paciente', cita['folio_paciente']], ['Fecha', _date_str(cita['fecha_hora'])], ['Estatus', _strip(cita['estatus'])], ['Notas', cita.get('notas') or '']]
@@ -809,7 +819,7 @@ def _exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = 
         raise
     except Exception:
         logger.exception('Error al generar comprobante PDF')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | None = None):
     """Generar contrato de comodato en PDF (RF-PS-05)."""
@@ -837,7 +847,7 @@ def _exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | No
             logo.hAlign = 'CENTER'
             elements.append(logo)
             elements.append(Spacer(1, 6))
-        elements.append(Paragraph('Asociación de Espina Bífida', styles['Title']))
+        elements.append(Paragraph(_ORG_NAME, styles['Title']))
         elements.append(Paragraph('CONTRATO DE COMODATO', styles['Heading2']))
         elements.append(Spacer(1, 15))
         folio_com = _strip(com.get('folio_comodato')) or str(id_comodato)
@@ -874,7 +884,7 @@ def _exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | No
         raise
     except Exception:
         logger.exception('Error al generar contrato de comodato PDF')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[str]=None, membresia_estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: CurrentUser | None = None):
     """Exportar lista filtrada de beneficiarios a Excel (RF-RB-07)."""
@@ -903,7 +913,7 @@ def _exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[s
         wb = Workbook()
         ws = wb.active
         ws.title = 'Beneficiarios'
-        headers = ['Folio', 'Nombre', 'Apellido Paterno', 'Apellido Materno', 'Género', 'Fecha Nacimiento', 'Estado', 'Ciudad', 'Membresía', 'Tipo Cuota', 'Fecha Alta']
+        headers = ['Folio', 'Nombre', 'Apellido Paterno', 'Apellido Materno', _COL_GENERO, 'Fecha Nacimiento', 'Estado', 'Ciudad', 'Membresía', 'Tipo Cuota', 'Fecha Alta']
         header_fill = PatternFill(start_color='1e3a5f', end_color='1e3a5f', fill_type='solid')
         header_font = Font(color='FFFFFF', bold=True, size=11)
         for col_idx, header in enumerate(headers, 1):
@@ -931,7 +941,7 @@ def _exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[s
         return _excel_payload(buf, f'beneficiarios_{datetime.now().strftime('%Y%m%d')}.xlsx')
     except Exception:
         logger.exception('Error al generar Excel de beneficiarios')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):
     """Exportar datos de reportes a Excel (RF-ER-11)."""
@@ -960,9 +970,9 @@ def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=Non
             # Sheet 1: Resumen
             ws1 = wb.create_sheet('Resumen')
             d = reporte_resumen(**base_kw)
-            write_headers(ws1, ['Métrica', 'Valor'])
-            items = [('Total Pacientes', d['total_pacientes']), ('Activos', d['activos']),
-                     ('Inactivos', d['inactivos']), ('Edad Promedio', d['edad_promedio']),
+            write_headers(ws1, [_COL_METRICA, 'Valor'])
+            items = [(_COL_TOTAL_PACIENTES, d['total_pacientes']), ('Activos', d['activos']),
+                     ('Inactivos', d['inactivos']), (_COL_EDAD_PROMEDIO, d['edad_promedio']),
                      ('Estados Representados', d['estados_representados'])]
             for k, v in d.get('por_genero', {}).items(): items.append((f'Género: {k}', v))
             for k, v in d.get('por_tipo_espina', {}).items(): items.append((f'Tipo Espina: {k}', v))
@@ -971,13 +981,13 @@ def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=Non
             # Sheet 2: Por Género
             ws2 = wb.create_sheet('Por Género')
             d2 = reporte_por_genero(**base_kw)
-            write_headers(ws2, ['Género', 'Cantidad'])
+            write_headers(ws2, [_COL_GENERO, 'Cantidad'])
             for i, (lb, vl) in enumerate(zip(d2['labels'], d2['values']), 2):
                 ws2.cell(row=i, column=1, value=lb); ws2.cell(row=i, column=2, value=vl)
             # Sheet 3: Por Etapa de Vida
             ws3 = wb.create_sheet('Por Etapa de Vida')
             d3 = reporte_por_etapa_vida(**base_kw)
-            write_headers(ws3, ['Etapa de Vida', 'Cantidad'])
+            write_headers(ws3, [_COL_ETAPA_VIDA, 'Cantidad'])
             for i, (lb, vl) in enumerate(zip(d3['labels'], d3['values']), 2):
                 ws3.cell(row=i, column=1, value=lb); ws3.cell(row=i, column=2, value=vl)
             # Sheet 4: Por Estado
@@ -1030,8 +1040,8 @@ def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=Non
         elif tipo == 'consolidado-mensual':
             ws.title = 'Consolidado Mensual'
             data = reporte_consolidado_mensual(mes=mes, anio=anio, **common_kwargs)
-            write_headers(ws, ['Métrica', 'Valor'])
-            metrics = [('Mes/Año', f'{data['mes']}/{data['anio']}'), ('Pacientes Atendidos', data['pacientes_atendidos']), ('Total Servicios', data['total_servicios']), ('Monto Servicios', data['monto_servicios']), ('Total Ventas', data['total_ventas']), ('Monto Ventas', data['monto_ventas'])]
+            write_headers(ws, [_COL_METRICA, 'Valor'])
+            metrics = [('Mes/Año', f'{data['mes']}/{data['anio']}'), (_COL_PAC_ATENDIDOS, data['pacientes_atendidos']), ('Total Servicios', data['total_servicios']), ('Monto Servicios', data['monto_servicios']), ('Total Ventas', data['total_ventas']), ('Monto Ventas', data['monto_ventas'])]
             for k, v in data.get('citas_por_estatus', {}).items():
                 metrics.append((f'Citas {k}', v))
             for k, v in data.get('por_genero', {}).items():
@@ -1042,8 +1052,8 @@ def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=Non
         else:
             ws.title = 'Resumen'
             data = reporte_resumen(genero=None, estado=None, tipo_espina=None, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
-            write_headers(ws, ['Métrica', 'Valor'])
-            metrics = [('Total Pacientes', data['total_pacientes']), ('Activos', data['activos']), ('Inactivos', data['inactivos']), ('Edad Promedio', data['edad_promedio']), ('Estados Representados', data['estados_representados'])]
+            write_headers(ws, [_COL_METRICA, 'Valor'])
+            metrics = [(_COL_TOTAL_PACIENTES, data['total_pacientes']), ('Activos', data['activos']), ('Inactivos', data['inactivos']), (_COL_EDAD_PROMEDIO, data['edad_promedio']), ('Estados Representados', data['estados_representados'])]
             for k, v in data.get('por_genero', {}).items():
                 metrics.append((f'Género: {k}', v))
             for i, (label, val) in enumerate(metrics, 2):
@@ -1059,7 +1069,7 @@ def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=Non
         return _excel_payload(buf, filename)
     except Exception:
         logger.exception('Error al generar Excel de reportes')
-        raise InternalError('Error interno del servidor')
+        raise InternalError(_MSG_ERROR_INTERNO)
 
 
 class OracleExportacionesRepository(ExportacionesRepository):
