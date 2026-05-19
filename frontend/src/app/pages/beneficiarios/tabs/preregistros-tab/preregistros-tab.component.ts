@@ -129,7 +129,7 @@ export class PreregistrosTabComponent implements OnInit {
   private load(): void {
     this.api.getPreRegistros().subscribe({
       next: (data) => {
-        this.preregistros = data.map((item: any, index: number) => ({
+        this.preregistros = data.map((item, index: number) => ({
           id: item.id_paciente,
           folio: item.folio,
           nombre: item.nombre,
@@ -268,7 +268,7 @@ export class PreregistrosTabComponent implements OnInit {
     this.submittingEdit = false;
 
     this.api.getPreRegistro(p.id).subscribe({
-      next: (data: any) => {
+      next: (data) => {
         this.editData = {
           nombre: data?.nombre || p.nombre,
           apellido_paterno: data?.apellido_paterno || p.apellidoPaterno,

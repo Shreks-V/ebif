@@ -5,6 +5,15 @@ import { ApiService } from '../../../../services/api.service';
 import { AutoGrowDirective } from '../../../../shared/directives/auto-grow.directive';
 import { ServicioItem, formatCurrency } from '../../almacen.models';
 
+interface ServicioEditForm {
+  nombre: string;
+  descripcion: string;
+  precio_cuota_a: number | null;
+  precio_cuota_b: number | null;
+  activo: string;
+  categoria: string;
+}
+
 @Component({
   selector: 'app-servicios-tab',
   standalone: true,
@@ -21,7 +30,7 @@ export class ServiciosTabComponent {
   search = '';
   showEditModal = false;
   editId = 0;
-  editForm: any = null;
+  editForm: ServicioEditForm | null = null;
   submitting = false;
 
   readonly formatCurrency = formatCurrency;

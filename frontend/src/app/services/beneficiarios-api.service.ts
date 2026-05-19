@@ -3,6 +3,18 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { buildParams } from './api-helpers';
+import { Beneficiario, BeneficiariosStats, TipoEspina } from '../shared/models/beneficiario.models';
+
+export interface BeneficiariosFilter {
+  nombre?: string;
+  estado?: string;
+  genero?: string;
+  busqueda?: string;
+  membresia_estatus?: string;
+  tipo_cuota?: string;
+  limit?: number;
+  offset?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class BeneficiariosApiService {
@@ -10,48 +22,48 @@ export class BeneficiariosApiService {
 
   constructor(private http: HttpClient) {}
 
-  getBeneficiarios(filters?: Record<string, any>): Observable<any[]> {
-    return this.http.get<any[]>(this.base, { params: buildParams(filters) });
+  getBeneficiarios(filters?: BeneficiariosFilter): Observable<Beneficiario[]> {
+    return this.http.get<Beneficiario[]>(this.base, { params: buildParams(filters) });
   }
 
-  getBeneficiario(folio: string): Observable<any> {
-    return this.http.get<any>(`${this.base}/${folio}`);
+  getBeneficiario(folio: string): Observable<Beneficiario> {
+    return this.http.get<Beneficiario>(`${this.base}/${folio}`);
   }
 
-  createBeneficiario(data: any): Observable<any> {
-    return this.http.post<any>(this.base, data);
+  createBeneficiario(data: Partial<Beneficiario>): Observable<Beneficiario> {
+    return this.http.post<Beneficiario>(this.base, data);
   }
 
-  updateBeneficiario(folio: string, data: any): Observable<any> {
-    return this.http.put<any>(`${this.base}/${folio}`, data);
+  updateBeneficiario(folio: string, data: Partial<Beneficiario>): Observable<Beneficiario> {
+    return this.http.put<Beneficiario>(`${this.base}/${folio}`, data);
   }
 
-  deleteBeneficiario(folio: string): Observable<any> {
-    return this.http.delete<any>(`${this.base}/${folio}`);
+  deleteBeneficiario(folio: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${folio}`);
   }
 
   getBeneficiarioHistorial(folio: string): Observable<any> {
     return this.http.get<any>(`${this.base}/${folio}/historial`);
   }
 
-  getBeneficiariosStats(): Observable<any> {
-    return this.http.get<any>(`${this.base}/stats`);
+  getBeneficiariosStats(): Observable<BeneficiariosStats> {
+    return this.http.get<BeneficiariosStats>(`${this.base}/stats`);
   }
 
-  getDashboardStats(): Observable<any> {
-    return this.http.get<any>(`${this.base}/stats/dashboard`);
+  getDashboardStats(): Observable<BeneficiariosStats> {
+    return this.http.get<BeneficiariosStats>(`${this.base}/stats/dashboard`);
   }
 
   getMapaBeneficiarios(): Observable<any[]> {
     return this.http.get<any[]>(`${this.base}/mapa`);
   }
 
-  getTiposEspina(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/tipos-espina`);
+  getTiposEspina(): Observable<TipoEspina[]> {
+    return this.http.get<TipoEspina[]>(`${this.base}/tipos-espina`);
   }
 
-  getMembresiasProximasAVencer(dias: number = 30): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/membresias/proximas-a-vencer?dias=${dias}`);
+  getMembresiasProximasAVencer(dias: number = 30): Observable<Beneficiario[]> {
+    return this.http.get<Beneficiario[]>(`${this.base}/membresias/proximas-a-vencer?dias=${dias}`);
   }
 
   renovarMembresia(folio: string, data: { monto_total: number; exento_pago: string; metodos_pago: { id_metodo_pago: number; monto: number }[] }): Observable<any> {

@@ -1,11 +1,11 @@
 import { HttpParams } from '@angular/common/http';
 
-export function buildParams(filters?: Record<string, any>): HttpParams {
+export function buildParams(filters?: object): HttpParams {
   let params = new HttpParams();
   if (filters) {
-    Object.keys(filters).forEach((key) => {
-      if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
-        params = params.set(key, filters[key]);
+    Object.entries(filters).forEach(([key, val]) => {
+      if (val !== null && val !== undefined && val !== '') {
+        params = params.set(key, String(val));
       }
     });
   }

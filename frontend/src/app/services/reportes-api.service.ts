@@ -3,6 +3,17 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { buildParams } from './api-helpers';
+import {
+  ReporteChartData, ResumenReporte, ConsolidadoMensual, HistorialReporte, IndicadoresDesempeno,
+} from '../shared/models/reporte.models';
+
+export interface ReporteFilter {
+  fecha_inicio?: string;
+  fecha_fin?: string;
+  genero?: string;
+  estado?: string;
+  tipo_espina?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ReportesApiService {
@@ -10,61 +21,61 @@ export class ReportesApiService {
 
   constructor(private http: HttpClient) {}
 
-  getReportePorGenero(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/por-genero`, { params: buildParams(filters) });
+  getReportePorGenero(filters?: ReporteFilter): Observable<ReporteChartData> {
+    return this.http.get<ReporteChartData>(`${this.base}/por-genero`, { params: buildParams(filters) });
   }
 
-  getReportePorEtapaVida(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/por-etapa-vida`, { params: buildParams(filters) });
+  getReportePorEtapaVida(filters?: ReporteFilter): Observable<ReporteChartData> {
+    return this.http.get<ReporteChartData>(`${this.base}/por-etapa-vida`, { params: buildParams(filters) });
   }
 
-  getReportePorTipoEspina(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/por-tipo-espina`, { params: buildParams(filters) });
+  getReportePorTipoEspina(filters?: ReporteFilter): Observable<ReporteChartData> {
+    return this.http.get<ReporteChartData>(`${this.base}/por-tipo-espina`, { params: buildParams(filters) });
   }
 
-  getReportePorEstado(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/por-estado`, { params: buildParams(filters) });
+  getReportePorEstado(filters?: ReporteFilter): Observable<ReporteChartData> {
+    return this.http.get<ReporteChartData>(`${this.base}/por-estado`, { params: buildParams(filters) });
   }
 
-  getReporteResumen(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/resumen`, { params: buildParams(filters) });
+  getReporteResumen(filters?: ReporteFilter): Observable<ResumenReporte> {
+    return this.http.get<ResumenReporte>(`${this.base}/resumen`, { params: buildParams(filters) });
   }
 
-  getReporteServiciosPorTipo(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/servicios-por-tipo`, { params: buildParams(filters) });
+  getReporteServiciosPorTipo(filters?: ReporteFilter): Observable<ReporteChartData> {
+    return this.http.get<ReporteChartData>(`${this.base}/servicios-por-tipo`, { params: buildParams(filters) });
   }
 
-  getReporteEstudiosPorTipo(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/estudios-por-tipo`, { params: buildParams(filters) });
+  getReporteEstudiosPorTipo(filters?: ReporteFilter): Observable<ReporteChartData> {
+    return this.http.get<ReporteChartData>(`${this.base}/estudios-por-tipo`, { params: buildParams(filters) });
   }
 
-  getReportePagosExentos(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/pagos-exentos`, { params: buildParams(filters) });
+  getReportePagosExentos(filters?: ReporteFilter): Observable<ReporteChartData> {
+    return this.http.get<ReporteChartData>(`${this.base}/pagos-exentos`, { params: buildParams(filters) });
   }
 
-  getReportePagosPorMetodo(fechaInicio?: string, fechaFin?: string): Observable<any> {
+  getReportePagosPorMetodo(fechaInicio?: string, fechaFin?: string): Observable<ReporteChartData> {
     let params = new HttpParams();
     if (fechaInicio) params = params.set('fecha_inicio', fechaInicio);
     if (fechaFin) params = params.set('fecha_fin', fechaFin);
-    return this.http.get<any>(`${this.base}/pagos-por-metodo`, { params });
+    return this.http.get<ReporteChartData>(`${this.base}/pagos-por-metodo`, { params });
   }
 
-  getReporteConsolidadoMensual(mes?: number, anio?: number): Observable<any> {
+  getReporteConsolidadoMensual(mes?: number, anio?: number): Observable<ConsolidadoMensual> {
     let params = new HttpParams();
     if (mes) params = params.set('mes', mes.toString());
     if (anio) params = params.set('anio', anio.toString());
-    return this.http.get<any>(`${this.base}/consolidado-mensual`, { params });
+    return this.http.get<ConsolidadoMensual>(`${this.base}/consolidado-mensual`, { params });
   }
 
-  getHistorialReportes(filters?: Record<string, any>): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/historial`, { params: buildParams(filters) });
+  getHistorialReportes(filters?: Record<string, string>): Observable<HistorialReporte[]> {
+    return this.http.get<HistorialReporte[]>(`${this.base}/historial`, { params: buildParams(filters) });
   }
 
-  getReportePorCiudad(): Observable<any> {
-    return this.http.get<any>(`${this.base}/por-ciudad`);
+  getReportePorCiudad(): Observable<ReporteChartData> {
+    return this.http.get<ReporteChartData>(`${this.base}/por-ciudad`);
   }
 
-  getIndicadoresDesempeno(filters?: Record<string, any>): Observable<any> {
-    return this.http.get<any>(`${this.base}/indicadores-desempeno`, { params: buildParams(filters) });
+  getIndicadoresDesempeno(filters?: ReporteFilter): Observable<IndicadoresDesempeno> {
+    return this.http.get<IndicadoresDesempeno>(`${this.base}/indicadores-desempeno`, { params: buildParams(filters) });
   }
 }

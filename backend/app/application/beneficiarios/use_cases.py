@@ -2,6 +2,7 @@ from typing import Optional
 from app.application.beneficiarios.dtos import BeneficiarioCreate, RenovarMembresiaCreate
 from app.domain.beneficiarios.ports import BeneficiariosRepository
 from app.domain.shared.current_user import CurrentUser
+from app.domain.exceptions import ValidationError
 
 _service: "BeneficiariosService | None" = None
 
@@ -23,13 +24,37 @@ class BeneficiariosService:
         return self._repository.listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
 
     def obtener_beneficiario(self, folio: str, current_user: CurrentUser | None = None):
-        return self._repository.obtener_beneficiario(folio, current_user)
+        if not folio or not folio.strip():
+            raise ValidationError('El folio del beneficiario es requerido')
+        return self._repository.obtener_beneficiario(folio.strip(), current_user)
 
     def crear_beneficiario(self, data: BeneficiarioCreate, current_user: CurrentUser | None = None):
-        return self._repository.crear_beneficiario(data, current_user)
+        normalized = self._normalize_beneficiario(data)
+        return self._repository.crear_beneficiario(normalized, current_user)
 
     def actualizar_beneficiario(self, folio: str, data: BeneficiarioCreate, current_user: CurrentUser | None = None):
-        return self._repository.actualizar_beneficiario(folio, data, current_user)
+        if not folio or not folio.strip():
+            raise ValidationError('El folio del beneficiario es requerido')
+        normalized = self._normalize_beneficiario(data)
+        return self._repository.actualizar_beneficiario(folio, normalized, current_user)
+
+    @staticmethod
+    def _normalize_beneficiario(data: BeneficiarioCreate) -> BeneficiarioCreate:
+        """Normalize and sanitize beneficiary input before persistence.
+
+        Applied at use-case layer so normalization runs regardless of
+        whether the call originates from the HTTP API, a scheduler, or a test.
+        """
+        updates: dict = {
+            'nombre': data.nombre.strip(),
+            'apellido_paterno': data.apellido_paterno.strip(),
+            'curp': data.curp.strip().upper() if data.curp else data.curp,
+        }
+        if data.apellido_materno is not None:
+            updates['apellido_materno'] = data.apellido_materno.strip()
+        if data.correo_electronico is not None:
+            updates['correo_electronico'] = data.correo_electronico.strip().lower()
+        return data.model_copy(update=updates)
 
     def eliminar_beneficiario(self, folio: str, current_user: CurrentUser | None = None):
         return self._repository.eliminar_beneficiario(folio, current_user)

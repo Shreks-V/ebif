@@ -7,21 +7,24 @@ import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ConfigService } from '../../services/config.service';
-import { AutoGrowDirective } from '../../shared/directives/auto-grow.directive';
 import { InventarioTabComponent } from './tabs/inventario-tab/inventario-tab.component';
 import { ServiciosTabComponent } from './tabs/servicios-tab/servicios-tab.component';
 import { ComodatosTabComponent } from './tabs/comodatos-tab/comodatos-tab.component';
 import { HistorialTabComponent } from './tabs/historial-tab/historial-tab.component';
+import { NuevoProductoModalComponent } from './modals/nuevo-producto-modal.component';
+import { ConfirmDeleteModalComponent } from './modals/confirm-delete-modal.component';
 import { ProductoItem, ServicioItem, ComodatoItem } from './almacen.models';
+import { ProductoRaw, ServicioRaw, ComodatoRaw, AlmacenStats, AlmacenAlertaRaw } from '../../shared/models/almacen.models';
 
 @Component({
   selector: 'app-almacen',
   standalone: true,
   imports: [
     CommonModule, FormsModule,
-    NavbarComponent, FooterComponent, AutoGrowDirective,
+    NavbarComponent, FooterComponent,
     InventarioTabComponent, ServiciosTabComponent,
     ComodatosTabComponent, HistorialTabComponent,
+    NuevoProductoModalComponent, ConfirmDeleteModalComponent,
   ],
   templateUrl: './almacen.component.html',
   styles: [`
@@ -49,14 +52,8 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   printingComodato: ComodatoItem | null = null;
 
   // Shared modals: Nuevo/Editar Producto + Confirm Delete
-  showNuevoProductoModal = false;
-  showConfirmDeleteModal = false;
-  editingProduct: ProductoItem | null = null;
+  productoParaModal: { editingProduct: ProductoItem | null; initialTipo: string } | null = null;
   productoToDelete: { id: number; nombre: string; categoria: string } | null = null;
-  submittingProducto = false;
-  submittingDelete = false;
-
-  productoForm = this._emptyProductoForm();
 
   get isAdmin(): boolean { return this.auth.isAdmin(); }
   get isAdminOrAlmacen(): boolean { return this.auth.hasRole('ADMINISTRADOR', 'ENCARGADO_ALMACEN'); }
@@ -93,11 +90,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
       if (filter === 'caducidad') { this.quickInventoryFilter = 'proximos-vencer'; this.activeTab = 'inventario'; }
       if (params['action'] === 'nuevo') {
         setTimeout(() => {
-          if (this.activeTab === 'comodatos') {
-            // ComodatosTab handles its own modal — nothing needed from parent
-          } else {
-            this.openNuevoProductoModal();
-          }
+          if (this.activeTab !== 'comodatos') this.openNuevoProductoModal();
         }, 0);
       }
     });
@@ -113,27 +106,27 @@ export class AlmacenComponent implements OnInit, OnDestroy {
     if (!silent) this.loading = true;
     this.api.getProductos({ activo: 'S' }).subscribe({
       next: (data) => {
-        this.productos = data.map((p: any) => ({
-          idProducto: Number(p?.id_producto ?? p?.idProducto ?? 0),
-          claveInterna: String(p?.clave_interna ?? p?.claveInterna ?? ''),
-          nombre: String(p?.nombre ?? ''),
-          descripcion: String(p?.descripcion ?? ''),
-          tipoProducto: this._normalizeTipo(p?.tipo_producto ?? p?.tipoProducto),
-          precioA: this._toNum(p?.precio_cuota_a ?? p?.precioA),
-          precioB: this._toNum(p?.precio_cuota_b ?? p?.precioB),
-          activo: String(p?.activo ?? 'S'),
-          presentacion: p?.presentacion,
-          dosis: p?.dosis,
-          requiereCaducidad: p?.requiere_caducidad ?? p?.requiereCaducidad,
-          numeroSerie: p?.numero_serie ?? p?.numeroSerie,
-          marca: p?.marca,
-          modelo: p?.modelo,
-          estatusEquipo: p?.estatus_equipo ?? p?.estatusEquipo,
-          observaciones: p?.observaciones,
-          cantidadDisponible: this._toNum(p?.cantidad_disponible ?? p?.cantidadDisponible),
-          nivelMinimo: this._toNum(p?.nivel_minimo ?? p?.nivelMinimo),
-          unidadMedida: String(p?.unidad_medida ?? p?.unidadMedida ?? '—'),
-          fechaCaducidad: p?.fecha_caducidad ?? p?.fechaCaducidad ?? null,
+        this.productos = data.map((p: ProductoRaw) => ({
+          idProducto: Number(p.id_producto ?? 0),
+          claveInterna: String(p.clave_interna ?? ''),
+          nombre: String(p.nombre ?? ''),
+          descripcion: String(p.descripcion ?? ''),
+          tipoProducto: this._normalizeTipo(p.tipo_producto),
+          precioA: this._toNum(p.precio_cuota_a),
+          precioB: this._toNum(p.precio_cuota_b),
+          activo: String(p.activo ?? 'S'),
+          presentacion: p.presentacion,
+          dosis: p.dosis,
+          requiereCaducidad: p.requiere_caducidad,
+          numeroSerie: p.numero_serie,
+          marca: p.marca,
+          modelo: p.modelo,
+          estatusEquipo: p.estatus_equipo,
+          observaciones: p.observaciones,
+          cantidadDisponible: this._toNum(p.cantidad_disponible),
+          nivelMinimo: this._toNum(p.nivel_minimo),
+          unidadMedida: String(p.unidad_medida ?? '—'),
+          fechaCaducidad: p.fecha_caducidad ?? null,
         })).filter((p: ProductoItem) => p.idProducto > 0 && !!p.nombre);
         if (!silent) this.loading = false;
       },
@@ -144,15 +137,15 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   loadServicios(): void {
     this.api.getServicios({ activo: 'S' }).subscribe({
       next: (data) => {
-        this.servicios = data.map((s: any) => ({
-          idServicio: Number(s?.id_servicio ?? s?.idServicio ?? 0),
-          nombre: String(s?.nombre ?? ''),
-          descripcion: String(s?.descripcion ?? ''),
-          cuotaRecuperacion: Number(s?.cuota_recuperacion ?? s?.cuotaRecuperacion ?? 0),
-          precioA: this._toNum(s?.precio_cuota_a ?? s?.precioA),
-          precioB: this._toNum(s?.precio_cuota_b ?? s?.precioB),
-          activo: String(s?.activo ?? 'S'),
-          categoria: String(s?.categoria ?? 'SERVICIO'),
+        this.servicios = data.map((s: ServicioRaw) => ({
+          idServicio: Number(s.id_servicio ?? 0),
+          nombre: String(s.nombre ?? ''),
+          descripcion: String(s.descripcion ?? ''),
+          cuotaRecuperacion: Number(s.cuota_recuperacion ?? 0),
+          precioA: this._toNum(s.precio_cuota_a),
+          precioB: this._toNum(s.precio_cuota_b),
+          activo: String(s.activo ?? 'S'),
+          categoria: String(s.categoria ?? 'SERVICIO'),
         })).filter((s: ServicioItem) => s.idServicio > 0 && !!s.nombre);
       },
       error: (err) => console.error('Error loading servicios:', err),
@@ -162,7 +155,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   loadComodatos(): void {
     this.api.getComodatos().subscribe({
       next: (data) => {
-        this.comodatos = data.map((c: any) => ({
+        this.comodatos = data.map((c: ComodatoRaw) => ({
           idComodato: c.id_comodato,
           folioComodato: c.folio_comodato,
           idEquipo: c.id_equipo,
@@ -186,15 +179,15 @@ export class AlmacenComponent implements OnInit, OnDestroy {
 
   loadAlmacenStats(): void {
     this.api.getAlmacenStats().subscribe({
-      next: (stats: any) => {
+      next: (stats: AlmacenStats) => {
         this.alertasCaducidad = stats.alertas_caducidad ?? 0;
-        const stockBajo = Array.isArray(stats?.stock_bajo) ? stats.stock_bajo : [];
-        const proximos = Array.isArray(stats?.proximos_vencer) ? stats.proximos_vencer : [];
+        const stockBajo: AlmacenAlertaRaw[] = Array.isArray(stats?.stock_bajo) ? stats.stock_bajo : [];
+        const proximos: AlmacenAlertaRaw[] = Array.isArray(stats?.proximos_vencer) ? stats.proximos_vencer : [];
         this.stockBajoProductoIds = new Set(
-          stockBajo.map((i: any) => Number(i?.id_producto)).filter((id: number) => Number.isInteger(id) && id > 0)
+          stockBajo.map((i: AlmacenAlertaRaw) => Number(i?.id_producto)).filter((id: number) => Number.isInteger(id) && id > 0)
         );
         this.proximosVencerProductoIds = new Set(
-          proximos.map((i: any) => Number(i?.id_producto)).filter((id: number) => Number.isInteger(id) && id > 0)
+          proximos.map((i: AlmacenAlertaRaw) => Number(i?.id_producto)).filter((id: number) => Number.isInteger(id) && id > 0)
         );
       },
       error: () => {
@@ -250,116 +243,33 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   // ── Shared Modal: Nuevo/Editar Producto ──
 
   openNuevoProductoModal(tipoInicial = ''): void {
-    this.editingProduct = null;
-    this.productoForm = this._emptyProductoForm();
-    if (tipoInicial) this.productoForm.tipo_producto = tipoInicial;
-    this.showNuevoProductoModal = true;
+    this.productoParaModal = { editingProduct: null, initialTipo: tipoInicial };
   }
 
   openEditProductoModal(item: { id: number; categoria: string; nombre: string }): void {
     const producto = this.productos.find(p => p.idProducto === item.id);
     if (!producto) return;
-    this.editingProduct = producto;
-    this.productoForm = {
-      clave_interna: producto.claveInterna,
-      nombre: producto.nombre,
-      descripcion: producto.descripcion,
-      tipo_producto: producto.tipoProducto,
-      categoria: 'SERVICIO',
-      precio_cuota_a: producto.precioA,
-      precio_cuota_b: producto.precioB,
-      activo: producto.activo,
-      presentacion: producto.presentacion ?? '',
-      dosis: producto.dosis ?? '',
-      requiere_caducidad: producto.requiereCaducidad ?? 'S',
-      numero_serie: producto.numeroSerie ?? '',
-      marca: producto.marca ?? '',
-      modelo: producto.modelo ?? '',
-      estatus_equipo: producto.estatusEquipo ?? 'DISPONIBLE',
-      observaciones: producto.observaciones ?? '',
-      cuota_recuperacion: 0,
-      cantidad_disponible: producto.cantidadDisponible ?? 0,
-      nivel_minimo: producto.nivelMinimo ?? 5,
-      unidad_medida: producto.unidadMedida,
-      fecha_caducidad: producto.fechaCaducidad ? producto.fechaCaducidad.substring(0, 10) : '',
-    };
-    this.showNuevoProductoModal = true;
+    this.productoParaModal = { editingProduct: producto, initialTipo: '' };
   }
 
-  closeProductoModal(): void {
-    this.showNuevoProductoModal = false;
-    this.editingProduct = null;
-  }
-
-  submitProducto(): void {
-    if (!this.productoForm.nombre || !this.productoForm.tipo_producto) return;
-    if (this.productoForm.tipo_producto !== 'SERVICIO' && !this.productoForm.clave_interna) return;
-    this.submittingProducto = true;
-    const payload: any = { ...this.productoForm };
-
-    if (payload.tipo_producto === 'SERVICIO') {
-      const servicioPayload = {
-        nombre: payload.nombre, descripcion: payload.descripcion, activo: payload.activo,
-        precio_cuota_a: payload.precio_cuota_a, precio_cuota_b: payload.precio_cuota_b,
-        cuota_recuperacion: payload.cuota_recuperacion ?? 0, categoria: payload.categoria ?? 'SERVICIO',
-      };
-      this.api.createServicio(servicioPayload).subscribe({
-        next: () => { this.loadServicios(); this.closeProductoModal(); this.submittingProducto = false; },
-        error: () => { this.submittingProducto = false; },
-      });
-      return;
-    }
-
-    if (payload.tipo_producto === 'MEDICAMENTO') {
-      delete payload.numero_serie; delete payload.marca; delete payload.modelo;
-      delete payload.estatus_equipo; delete payload.observaciones; delete payload.cuota_recuperacion;
-    } else if (payload.tipo_producto === 'EQUIPO') {
-      delete payload.presentacion; delete payload.dosis; delete payload.requiere_caducidad;
-      delete payload.fecha_caducidad; delete payload.cuota_recuperacion;
-    }
-    if (payload.fecha_caducidad === '') payload.fecha_caducidad = null;
-
-    const obs = this.editingProduct
-      ? this.api.updateProducto(this.editingProduct.idProducto, payload)
-      : this.api.createProducto(payload);
-
-    obs.subscribe({
-      next: () => { this.loadProductos(); this.closeProductoModal(); this.submittingProducto = false; },
-      error: () => { this.submittingProducto = false; },
-    });
+  onProductoGuardado(): void {
+    const isServicio = this.productoParaModal?.editingProduct
+      ? this.productoParaModal.editingProduct.tipoProducto === 'SERVICIO'
+      : this.productoParaModal?.initialTipo === 'SERVICIO';
+    isServicio ? this.loadServicios() : this.loadProductos();
+    this.productoParaModal = null;
   }
 
   // ── Shared Modal: Confirm Delete ──
 
   openConfirmDeleteModal(item: { id: number; nombre: string; categoria: string }): void {
     this.productoToDelete = item;
-    this.showConfirmDeleteModal = true;
   }
 
-  closeConfirmDeleteModal(): void {
-    this.showConfirmDeleteModal = false;
+  onProductoEliminado(): void {
+    const isServicio = this.productoToDelete?.categoria === 'SERVICIO';
+    isServicio ? this.loadServicios() : this.loadProductos();
     this.productoToDelete = null;
-  }
-
-  confirmDelete(): void {
-    if (!this.productoToDelete) return;
-    this.submittingDelete = true;
-    const isServicio = this.productoToDelete.categoria === 'SERVICIO';
-    const obs = isServicio
-      ? this.api.deleteServicio(this.productoToDelete.id)
-      : this.api.deleteProducto(this.productoToDelete.id);
-
-    obs.subscribe({
-      next: () => {
-        isServicio ? this.loadServicios() : this.loadProductos();
-        this.closeConfirmDeleteModal();
-        this.submittingDelete = false;
-      },
-      error: (err) => {
-        alert(err?.error?.detail || 'No se pudo eliminar el elemento seleccionado.');
-        this.submittingDelete = false;
-      },
-    });
   }
 
   // ── Print ──
@@ -398,13 +308,4 @@ export class AlmacenComponent implements OnInit, OnDestroy {
     return fecha <= limite;
   }
 
-  private _emptyProductoForm() {
-    return {
-      clave_interna: '', nombre: '', descripcion: '', tipo_producto: '', categoria: 'SERVICIO',
-      precio_cuota_a: null as number | null, precio_cuota_b: null as number | null, activo: 'S',
-      presentacion: '', dosis: '', requiere_caducidad: 'S', numero_serie: '', marca: '', modelo: '',
-      estatus_equipo: 'DISPONIBLE', observaciones: '', cuota_recuperacion: 0,
-      cantidad_disponible: 0, nivel_minimo: 5, unidad_medida: '', fecha_caducidad: '',
-    };
-  }
 }

@@ -76,11 +76,11 @@ export class NuevoCobroComponent implements OnInit {
 
   ngOnInit(): void {
     this.api.getBeneficiarios().subscribe({
-      next: (data: any[]) => {
-        this.beneficiariosList = data.map((b: any) => ({
+      next: (data) => {
+        this.beneficiariosList = data.map((b) => ({
           id: b.id_paciente,
-          folio: b.folio_paciente || b.folio,
-          nombre: b.nombre_completo || ((b.nombre || '') + ' ' + (b.apellido_paterno || '') + ' ' + (b.apellido_materno || '')).trim(),
+          folio: b.folio_paciente ?? b.folio,
+          nombre: b.nombre_completo ?? ((b.nombre || '') + ' ' + (b.apellido_paterno || '') + ' ' + (b.apellido_materno || '')).trim(),
           tipoCuota: b.tipo_cuota || 'A',
         }));
       },
@@ -88,9 +88,9 @@ export class NuevoCobroComponent implements OnInit {
     });
 
     this.api.getMetodosPago().subscribe({
-      next: (data: any[]) => {
-        this.metodosPagoCatalogo = data.map((m: any) => ({
-          id: m.id_metodo_pago || m.id,
+      next: (data) => {
+        this.metodosPagoCatalogo = data.map((m) => ({
+          id: m.id_metodo_pago ?? 0,
           nombre: m.nombre,
         }));
       },
@@ -111,8 +111,10 @@ export class NuevoCobroComponent implements OnInit {
   setCantidad(tipo: string, id: number, val: number): void {
     const key = this.getCatalogKey(tipo, id);
     const n = Math.max(0, Math.floor(Number(val) || 0));
-    if (n === 0) delete this.cantidadesCatalogo[key];
-    else this.cantidadesCatalogo[key] = n;
+    const updated = { ...this.cantidadesCatalogo };
+    if (n === 0) delete updated[key];
+    else updated[key] = n;
+    this.cantidadesCatalogo = updated;
   }
 
   get catalogoActivo(): ConceptoCobroOption[] {
@@ -300,8 +302,8 @@ export class NuevoCobroComponent implements OnInit {
 
   private _cargarCatalogoCobros(): void {
     this.api.getServicios({ activo: 'S', categoria: 'SERVICIO' }).subscribe({
-      next: (data: any[]) => {
-        this.serviciosCatalogo = data.map((s: any) => ({
+      next: (data) => {
+        this.serviciosCatalogo = data.map((s) => ({
           id: s.id_servicio, nombre: s.nombre, tipo: 'SERVICIO' as const,
           precioA: Number(s.precio_cuota_a ?? s.cuota_recuperacion ?? 0),
           precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
@@ -312,8 +314,8 @@ export class NuevoCobroComponent implements OnInit {
     });
 
     this.api.getServicios({ activo: 'S', categoria: 'LABORATORIO' }).subscribe({
-      next: (data: any[]) => {
-        this.laboratoriosCatalogo = data.map((s: any) => ({
+      next: (data) => {
+        this.laboratoriosCatalogo = data.map((s) => ({
           id: s.id_servicio, nombre: s.nombre, tipo: 'SERVICIO' as const,
           precioA: Number(s.precio_cuota_a ?? s.cuota_recuperacion ?? 0),
           precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
@@ -324,8 +326,8 @@ export class NuevoCobroComponent implements OnInit {
     });
 
     this.api.getProductos({ activo: 'S' }).subscribe({
-      next: (data: any[]) => {
-        this.productosCatalogo = data.map((p: any) => ({
+      next: (data) => {
+        this.productosCatalogo = data.map((p) => ({
           id: p.id_producto, nombre: p.nombre, tipo: 'PRODUCTO' as const,
           precioA: Number(p.precio_cuota_a ?? 0),
           precioB: Number(p.precio_cuota_b ?? 0),

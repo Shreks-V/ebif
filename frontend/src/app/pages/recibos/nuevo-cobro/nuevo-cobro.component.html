@@ -187,12 +187,9 @@
           <div class="px-3 py-2.5 bg-slate-50 border-t border-slate-200">
             <button type="button" (click)="agregarSeleccionados()"
               [disabled]="totalSeleccionados === 0"
-              class="w-full py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-2"
-              [class.bg-\[#00328b\]]="totalSeleccionados > 0"
-              [class.text-white]="totalSeleccionados > 0"
-              [class.bg-slate-100]="totalSeleccionados === 0"
-              [class.text-slate-400]="totalSeleccionados === 0"
-              [class.cursor-not-allowed]="totalSeleccionados === 0">
+              class="w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
+              [style.backgroundColor]="totalSeleccionados > 0 ? '#00328b' : ''"
+              [ngClass]="totalSeleccionados > 0 ? 'text-white cursor-pointer' : 'bg-slate-100 text-slate-400 cursor-not-allowed'">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
               @if (totalSeleccionados > 0) {
                 Agregar {{ totalSeleccionados }} concepto{{ totalSeleccionados !== 1 ? 's' : '' }} al cobro

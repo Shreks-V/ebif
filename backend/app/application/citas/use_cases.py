@@ -2,6 +2,7 @@ from typing import Optional
 from app.application.citas.dtos import CitaCreate
 from app.domain.citas.ports import CitasRepository
 from app.domain.shared.current_user import CurrentUser
+from app.domain.exceptions import ValidationError
 
 _service: "CitasService | None" = None
 
@@ -23,21 +24,38 @@ class CitasService:
         return self._repository.obtener_cita(id_cita, current_user)
 
     def crear_cita(self, data: CitaCreate, current_user: CurrentUser | None = None):
-        return self._repository.crear_cita(data, current_user)
+        return self._repository.crear_cita(self._normalize_cita(data), current_user)
 
     def actualizar_cita(self, id_cita: int, data: CitaCreate, current_user: CurrentUser | None = None):
-        return self._repository.actualizar_cita(id_cita, data, current_user)
+        return self._repository.actualizar_cita(id_cita, self._normalize_cita(data), current_user)
+
+    @staticmethod
+    def _normalize_cita(data: CitaCreate) -> CitaCreate:
+        updates: dict = {}
+        if data.notas:
+            updates['notas'] = data.notas.strip()
+        if not data.fecha_hora or not data.fecha_hora.strip():
+            raise ValidationError('La fecha y hora de la cita es requerida')
+        return data.model_copy(update=updates) if updates else data
 
     def iniciar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
+        if id_cita <= 0:
+            raise ValidationError('ID de cita inválido')
         return self._repository.iniciar_cita(id_cita, current_user)
 
     def completar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
+        if id_cita <= 0:
+            raise ValidationError('ID de cita inválido')
         return self._repository.completar_cita(id_cita, current_user)
 
     def cancelar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
+        if id_cita <= 0:
+            raise ValidationError('ID de cita inválido')
         return self._repository.cancelar_cita(id_cita, current_user)
 
     def eliminar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
+        if id_cita <= 0:
+            raise ValidationError('ID de cita inválido')
         return self._repository.eliminar_cita(id_cita, current_user)
 
     def citas_proximas(self, dias: int = 7, current_user: CurrentUser | None = None):

@@ -3,6 +3,7 @@ from app.application.preregistro.dtos import PreRegistroCreate
 from app.domain.preregistro.entities import UploadedFile
 from app.domain.preregistro.ports import PreregistroRepository
 from app.domain.shared.current_user import CurrentUser
+from app.domain.exceptions import ValidationError
 
 _service: "PreregistroService | None" = None
 
@@ -24,7 +25,18 @@ class PreregistroService:
         return self._repository.listar_tipos_documento_publico()
 
     def check_curp_disponible(self, curp: str):
-        return self._repository.check_curp_disponible(curp)
+        curp_normalizado = curp.strip().upper() if curp else ''
+        if not curp_normalizado:
+            raise ValidationError('CURP requerido')
+        return self._repository.check_curp_disponible(curp_normalizado)
+
+    def crear_preregistro(self, data: PreRegistroCreate):
+        normalized = data.model_copy(update={
+            'nombre': data.nombre.strip(),
+            'apellido_paterno': data.apellido_paterno.strip(),
+            'curp': data.curp.strip().upper() if data.curp else data.curp,
+        })
+        return self._repository.crear_preregistro(normalized)
 
     def obtener_preregistro(self, id_paciente: int):
         return self._repository.obtener_preregistro(id_paciente)

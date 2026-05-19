@@ -5,6 +5,29 @@ import { ApiService } from '../../../../services/api.service';
 import { AutoGrowDirective } from '../../../../shared/directives/auto-grow.directive';
 import { ComodatoItem, ProductoItem, TableSortState, sortRows } from '../../almacen.models';
 
+interface BeneficiarioRaw {
+  id_paciente?: number;
+  id?: number;
+  nombre?: string;
+  apellido_paterno?: string;
+  apellido_materno?: string;
+  nombre_completo?: string;
+  folio?: string;
+}
+
+interface ComodatoEditForm {
+  id_paciente: number | null;
+  id_equipo: number | null;
+  fecha_prestamo: string;
+  fecha_devolucion: string | null;
+  estatus: string;
+  monto_total: number;
+  monto_pagado: number;
+  saldo_pendiente: number;
+  exento_pago: string;
+  notas: string | null;
+}
+
 @Component({
   selector: 'app-comodatos-tab',
   standalone: true,
@@ -31,7 +54,7 @@ export class ComodatosTabComponent {
   // Edit comodato
   showEditModal = false;
   editId = 0;
-  editForm: any = {};
+  editForm: ComodatoEditForm = { id_paciente: null, id_equipo: null, fecha_prestamo: '', fecha_devolucion: null, estatus: 'PRESTADO', monto_total: 0, monto_pagado: 0, saldo_pendiente: 0, exento_pago: 'N', notas: null };
   submittingEdit = false;
 
   // Confirm devolución
@@ -103,8 +126,8 @@ export class ComodatosTabComponent {
     this.comodatoForm = this._emptyForm();
     this.api.getBeneficiarios().subscribe({
       next: (data) => {
-        this.beneficiariosList = data.map((b: any) => ({
-          id: b.id_paciente ?? b.id,
+        this.beneficiariosList = data.map((b: BeneficiarioRaw) => ({
+          id: b.id_paciente ?? b.id ?? 0,
           nombre: `${b.nombre ?? ''} ${b.apellido_paterno ?? ''} ${b.apellido_materno ?? ''}`.trim()
             || b.nombre_completo || `Paciente ${b.folio}`,
         }));
@@ -119,7 +142,7 @@ export class ComodatosTabComponent {
   submitNuevo(): void {
     if (!this.comodatoForm.id_paciente || !this.comodatoForm.id_equipo || !this.comodatoForm.fecha_prestamo) return;
     this.submittingNuevo = true;
-    const payload: any = { ...this.comodatoForm };
+    const payload = { ...this.comodatoForm };
     if (!payload.fecha_devolucion) payload.fecha_devolucion = null;
 
     this.api.createComodato(payload).subscribe({
@@ -241,7 +264,7 @@ export class ComodatosTabComponent {
       id_paciente: null as number | null,
       id_equipo: null as number | null,
       fecha_prestamo: '',
-      fecha_devolucion: '',
+      fecha_devolucion: null as string | null,
       estatus: 'PRESTADO',
       monto_total: 0,
       monto_pagado: 0,

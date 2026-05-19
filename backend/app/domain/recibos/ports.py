@@ -18,6 +18,7 @@ class RecibosRepository(Protocol):
         current_user: CurrentUser | None = None,
         limit: int = 100,
         offset: int = 0,
+        solo_adeudos: bool = False,
     ) -> list[Venta]: ...
 
     def crear_venta(self, data: Any, current_user: CurrentUser | None = None) -> Venta: ...

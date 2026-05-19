@@ -1,0 +1,137 @@
+<div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" (click)="closed.emit()">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full mx-4 max-h-[92vh] flex flex-col" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between px-8 pt-7 pb-4 border-b border-slate-100 shrink-0">
+      <div>
+        <h2 class="text-xl font-black text-slate-900">Editar Beneficiario</h2>
+        <p class="text-xs text-slate-400 font-semibold mt-0.5">Paso {{ editStep }} de {{ editSteps.length }} &middot; {{ editSteps[editStep - 1] }}</p>
+      </div>
+      <button type="button" (click)="closed.emit()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="flex items-center gap-1 px-8 py-3 border-b border-slate-100 shrink-0">
+      @for (s of editSteps; track s; let i = $index) {
+        <div class="flex-1 h-1.5 rounded-full transition-all" [class.bg-\[#00328b\]]="editStep > i" [class.bg-slate-200]="editStep <= i"></div>
+      }
+    </div>
+    <div class="overflow-y-auto flex-1 px-8 py-6">
+      @if (editFormData) {
+        <form id="editBeneficiarioForm" (ngSubmit)="guardarEdicionBeneficiario()">
+          @if (editStep === 1) {
+            <div class="mb-6 rounded-2xl border-2 border-slate-200 p-4 flex flex-col sm:flex-row gap-4 bg-slate-50">
+              <div class="w-24 h-32 rounded-xl border-2 border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
+                @if (editFotoPreviewUrl) { <img [src]="editFotoPreviewUrl" alt="Foto" class="w-full h-full object-cover" /> }
+                @else { <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg> }
+              </div>
+              <div class="flex-1 space-y-2">
+                <p class="text-sm font-bold text-slate-800">Fotografía del beneficiario</p>
+                <p class="text-xs text-slate-500">Se usa en el avatar y en la credencial generada.</p>
+                <input type="file" accept="image/png,image/jpeg,image/jpg" (change)="onFotoBeneficiarioSeleccionada($event)" class="w-full text-sm font-semibold text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[#00328b] file:px-4 file:py-2.5 file:text-sm file:font-bold file:text-white hover:file:bg-[#002266] cursor-pointer" />
+                @if (editFotoFile) { <p class="text-xs font-semibold text-emerald-700">{{ editFotoFile.name }}</p> }
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Nombre <span class="text-red-500">*</span></label><input type="text" [(ngModel)]="editFormData.nombre" name="editNombre" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label><input type="text" [(ngModel)]="editFormData.apellido_paterno" name="editApPaterno" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Materno</label><input type="text" [(ngModel)]="editFormData.apellido_materno" name="editApMaterno" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">G&eacute;nero <span class="text-red-500">*</span></label>
+                <select [(ngModel)]="editFormData.genero" name="editGenero" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                  <option value="Masculino">Masculino</option><option value="Femenino">Femenino</option>
+                </select>
+              </div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento <span class="text-red-500">*</span></label><input type="date" [(ngModel)]="editFormData.fecha_nacimiento" name="editFechaNac" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">CURP <span class="text-red-500">*</span></label><input type="text" [(ngModel)]="editFormData.curp" name="editCurp" required maxlength="18" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all uppercase" /></div>
+              <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del Padre/Madre</label><input type="text" [(ngModel)]="editFormData.nombre_padre_madre" name="editPadreMadre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+            </div>
+          }
+          @if (editStep === 2) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Pa&iacute;s</label><select [(ngModel)]="editFormDataPais" name="editPais" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all bg-white"><option value="">Seleccionar</option>@for (p of paises; track p.nombre) { <option [value]="p.nombre">{{ p.bandera }} {{ p.nombre }}</option> }</select></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+                @if (editFormDataPais === 'México' || !editFormDataPais) {
+                  <select [(ngModel)]="editFormData.estado" name="editEstado" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                    <option value="">Seleccionar</option>
+                    @for (e of estadosMexicanos; track e) { <option [value]="e">{{ e }}</option> }
+                  </select>
+                } @else {
+                  <input type="text" [(ngModel)]="editFormData.estado" name="editEstadoTexto" placeholder="Estado / Provincia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+                }
+              </div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Ciudad</label><input type="text" list="municipios-edit" [(ngModel)]="editFormData.ciudad" name="editCiudad" autocomplete="off" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /><datalist id="municipios-edit">@for (m of getMunicipiosParaEstado(editFormData.estado); track m) { <option [value]="m"></option> }</datalist></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Colonia</label><input type="text" [(ngModel)]="editFormData.colonia" name="editColonia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Direcci&oacute;n</label><input type="text" [(ngModel)]="editFormData.direccion" name="editDireccion" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">C&oacute;digo Postal</label><input type="text" [(ngModel)]="editFormData.codigo_postal" name="editCP" maxlength="5" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+            </div>
+          }
+          @if (editStep === 3) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Tel&eacute;fono Casa</label><input type="tel" [(ngModel)]="editFormData.telefono_casa" name="editTelCasa" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Tel&eacute;fono Celular</label><input type="tel" [(ngModel)]="editFormData.telefono_celular" name="editTelCel" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electr&oacute;nico</label><input type="email" [(ngModel)]="editFormData.correo_electronico" name="editCorreo" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">En emergencia avisar a</label><input type="text" [(ngModel)]="editFormData.en_emergencia_avisar_a" name="editEmergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Tel&eacute;fono Emergencia</label><input type="tel" [(ngModel)]="editFormData.telefono_emergencia" name="editTelEmergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+            </div>
+          }
+          @if (editStep === 4) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Sangre</label>
+                <select [(ngModel)]="editFormData.tipo_sangre" name="editTipoSangre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                  <option value="">Seleccionar</option>
+                  @for (ts of tiposSangre; track ts) { <option [value]="ts">{{ ts }}</option> }
+                </select>
+              </div>
+              <div class="flex items-center gap-3 pt-7">
+                <input type="checkbox" [(ngModel)]="editFormDataUsaValvula" name="editUsaValvula" id="editUsaValvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+                <label for="editUsaValvula" class="text-sm font-semibold text-slate-700">Usa V&aacute;lvula</label>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo(s) de Espina B&iacute;fida</label>
+                <div class="flex flex-wrap gap-4">
+                  @for (te of tiposEspinaCatalogo; track te) {
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                      <input type="checkbox" [checked]="isEditEspinaSelected(te.id_tipo_espina)" (change)="toggleEditEspina(te.id_tipo_espina)" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+                      <span class="text-sm font-semibold text-slate-700">{{ te.nombre }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+              <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Notas adicionales</label>
+                <textarea [(ngModel)]="editFormData.notas_adicionales" name="editNotas" rows="3" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all resize-none text-sm"></textarea>
+              </div>
+            </div>
+          }
+          @if (editStep === 5) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota <span class="text-red-500">*</span></label>
+                <select [(ngModel)]="editFormData.tipo_cuota" name="editTipoCuota" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                  <option value="CUOTA A">A</option><option value="CUOTA B">B</option>
+                </select>
+              </div>
+              <div><label class="block text-sm font-semibold text-slate-700 mb-1">Estatus de Membres&iacute;a <span class="text-red-500">*</span></label>
+                <select [(ngModel)]="editFormData.membresia_estatus" name="editMembresiaEstatus" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+                  <option value="ACTIVO">ACTIVO</option><option value="INACTIVO">INACTIVO</option>
+                </select>
+              </div>
+            </div>
+          }
+        </form>
+      }
+    </div>
+    <div class="px-8 py-5 border-t border-slate-100 shrink-0">
+      @if (editError) { <p class="text-sm text-red-600 font-semibold mb-3">{{ editError }}</p> }
+      <div class="flex items-center justify-between gap-3">
+        <button type="button" (click)="editStep > 1 ? editPrevStep() : closed.emit()"
+          class="px-5 py-2.5 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all text-sm cursor-pointer">
+          {{ editStep > 1 ? 'Atrás' : 'Cancelar' }}
+        </button>
+        @if (editStep < editSteps.length) {
+          <button type="button" (click)="editNextStep()" class="px-6 py-2.5 bg-[#00328b] text-white rounded-xl font-bold text-sm hover:bg-[#002a75] transition-all cursor-pointer">Siguiente</button>
+        } @else {
+          <button type="submit" form="editBeneficiarioForm" [disabled]="submittingEdit" class="px-6 py-2.5 bg-gradient-to-r from-[#00328b] to-[#0052cc] text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer">
+            {{ submittingEdit ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</div>

@@ -3,6 +3,20 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { buildParams } from './api-helpers';
+import { Cita, CitasStats, CitasHoyResponse } from '../shared/models/cita.models';
+import {
+  Doctor, DoctorHoyResponse, Disponibilidad,
+  DisponibilidadEspecial, DisponibilidadSemana, DoctorServicio,
+} from '../shared/models/doctor.models';
+
+export interface CitasFilter {
+  fecha?: string;
+  estatus?: string;
+  id_paciente?: number;
+  busqueda?: string;
+  limit?: number;
+  offset?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CitasApiService {
@@ -13,101 +27,101 @@ export class CitasApiService {
 
   // ── Citas ──
 
-  getCitas(filters?: Record<string, any>): Observable<any[]> {
-    return this.http.get<any[]>(this.citasBase, { params: buildParams(filters) });
+  getCitas(filters?: CitasFilter): Observable<Cita[]> {
+    return this.http.get<Cita[]>(this.citasBase, { params: buildParams(filters) });
   }
 
-  getCita(id: number): Observable<any> {
-    return this.http.get<any>(`${this.citasBase}/${id}`);
+  getCita(id: number): Observable<Cita> {
+    return this.http.get<Cita>(`${this.citasBase}/${id}`);
   }
 
-  createCita(data: any): Observable<any> {
-    return this.http.post<any>(this.citasBase, data);
+  createCita(data: Partial<Cita>): Observable<Cita> {
+    return this.http.post<Cita>(this.citasBase, data);
   }
 
-  updateCita(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.citasBase}/${id}`, data);
+  updateCita(id: number, data: Partial<Cita>): Observable<Cita> {
+    return this.http.put<Cita>(`${this.citasBase}/${id}`, data);
   }
 
-  iniciarCita(id: number): Observable<any> {
-    return this.http.put<any>(`${this.citasBase}/${id}/iniciar`, {});
+  iniciarCita(id: number): Observable<Cita> {
+    return this.http.put<Cita>(`${this.citasBase}/${id}/iniciar`, {});
   }
 
-  completarCita(id: number): Observable<any> {
-    return this.http.put<any>(`${this.citasBase}/${id}/completar`, {});
+  completarCita(id: number): Observable<Cita> {
+    return this.http.put<Cita>(`${this.citasBase}/${id}/completar`, {});
   }
 
-  cancelarCita(id: number): Observable<any> {
-    return this.http.put<any>(`${this.citasBase}/${id}/cancelar`, {});
+  cancelarCita(id: number): Observable<Cita> {
+    return this.http.put<Cita>(`${this.citasBase}/${id}/cancelar`, {});
   }
 
-  deleteCita(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.citasBase}/${id}`);
+  deleteCita(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.citasBase}/${id}`);
   }
 
-  getCitasStats(): Observable<any> {
-    return this.http.get<any>(`${this.citasBase}/stats`);
+  getCitasStats(): Observable<CitasStats> {
+    return this.http.get<CitasStats>(`${this.citasBase}/stats`);
   }
 
-  getCitasHoy(): Observable<any> {
-    return this.http.get<any>(`${this.citasBase}/hoy`);
+  getCitasHoy(): Observable<CitasHoyResponse> {
+    return this.http.get<CitasHoyResponse>(`${this.citasBase}/hoy`);
   }
 
   // ── Doctores ──
 
-  getDoctores(): Observable<any[]> {
-    return this.http.get<any[]>(this.doctoresBase);
+  getDoctores(): Observable<Doctor[]> {
+    return this.http.get<Doctor[]>(this.doctoresBase);
   }
 
-  getDoctorHoy(): Observable<any> {
-    return this.http.get<any>(`${this.doctoresBase}/hoy`);
+  getDoctorHoy(): Observable<DoctorHoyResponse> {
+    return this.http.get<DoctorHoyResponse>(`${this.doctoresBase}/hoy`);
   }
 
-  getDoctor(id: number): Observable<any> {
-    return this.http.get<any>(`${this.doctoresBase}/${id}`);
+  getDoctor(id: number): Observable<Doctor> {
+    return this.http.get<Doctor>(`${this.doctoresBase}/${id}`);
   }
 
-  createDoctor(data: any): Observable<any> {
-    return this.http.post<any>(this.doctoresBase, data);
+  createDoctor(data: Partial<Doctor>): Observable<Doctor> {
+    return this.http.post<Doctor>(this.doctoresBase, data);
   }
 
-  updateDoctor(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.doctoresBase}/${id}`, data);
+  updateDoctor(id: number, data: Partial<Doctor>): Observable<Doctor> {
+    return this.http.put<Doctor>(`${this.doctoresBase}/${id}`, data);
   }
 
-  deleteDoctor(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.doctoresBase}/${id}`);
+  deleteDoctor(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.doctoresBase}/${id}`);
   }
 
-  getDoctorDisponibilidad(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.doctoresBase}/${id}/disponibilidad`);
+  getDoctorDisponibilidad(id: number): Observable<Disponibilidad[]> {
+    return this.http.get<Disponibilidad[]>(`${this.doctoresBase}/${id}/disponibilidad`);
   }
 
-  getDisponibilidadSemana(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.doctoresBase}/disponibilidad/semana`);
+  getDisponibilidadSemana(): Observable<DisponibilidadSemana[]> {
+    return this.http.get<DisponibilidadSemana[]>(`${this.doctoresBase}/disponibilidad/semana`);
   }
 
-  createDoctorDisponibilidad(idDoctor: number, data: any): Observable<any> {
-    return this.http.post<any>(`${this.doctoresBase}/${idDoctor}/disponibilidad`, data);
+  createDoctorDisponibilidad(idDoctor: number, data: Partial<Disponibilidad>): Observable<Disponibilidad> {
+    return this.http.post<Disponibilidad>(`${this.doctoresBase}/${idDoctor}/disponibilidad`, data);
   }
 
-  deleteDoctorDisponibilidad(idDoctor: number, idDisponibilidad: number): Observable<any> {
-    return this.http.delete<any>(`${this.doctoresBase}/${idDoctor}/disponibilidad/${idDisponibilidad}`);
+  deleteDoctorDisponibilidad(idDoctor: number, idDisponibilidad: number): Observable<void> {
+    return this.http.delete<void>(`${this.doctoresBase}/${idDoctor}/disponibilidad/${idDisponibilidad}`);
   }
 
-  getDoctorServicios(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.doctoresBase}/${id}/servicios`);
+  getDoctorServicios(id: number): Observable<DoctorServicio[]> {
+    return this.http.get<DoctorServicio[]>(`${this.doctoresBase}/${id}/servicios`);
   }
 
-  getDoctorDisponibilidadEspecial(id: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.doctoresBase}/${id}/disponibilidad-especial`);
+  getDoctorDisponibilidadEspecial(id: number): Observable<DisponibilidadEspecial[]> {
+    return this.http.get<DisponibilidadEspecial[]>(`${this.doctoresBase}/${id}/disponibilidad-especial`);
   }
 
-  createDoctorDisponibilidadEspecial(idDoctor: number, data: any): Observable<any> {
-    return this.http.post<any>(`${this.doctoresBase}/${idDoctor}/disponibilidad-especial`, data);
+  createDoctorDisponibilidadEspecial(idDoctor: number, data: Partial<DisponibilidadEspecial>): Observable<DisponibilidadEspecial> {
+    return this.http.post<DisponibilidadEspecial>(`${this.doctoresBase}/${idDoctor}/disponibilidad-especial`, data);
   }
 
-  deleteDoctorDisponibilidadEspecial(idDoctor: number, idDispEspecial: number): Observable<any> {
-    return this.http.delete<any>(`${this.doctoresBase}/${idDoctor}/disponibilidad-especial/${idDispEspecial}`);
+  deleteDoctorDisponibilidadEspecial(idDoctor: number, idDispEspecial: number): Observable<void> {
+    return this.http.delete<void>(`${this.doctoresBase}/${idDoctor}/disponibilidad-especial/${idDispEspecial}`);
   }
 }

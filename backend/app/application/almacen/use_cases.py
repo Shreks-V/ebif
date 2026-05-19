@@ -2,6 +2,7 @@ from typing import Optional
 from app.application.almacen.dtos import ProductoCreate, ServicioCreate, ComodatoCreate
 from app.domain.almacen.ports import AlmacenRepository
 from app.domain.shared.current_user import CurrentUser
+from app.domain.exceptions import ValidationError
 
 _service: "AlmacenService | None" = None
 
@@ -17,10 +18,17 @@ class AlmacenService:
         return self._repository.obtener_producto(id_producto, current_user)
 
     def crear_producto(self, data: ProductoCreate, current_user: CurrentUser | None = None):
-        return self._repository.crear_producto(data, current_user)
+        return self._repository.crear_producto(self._normalize_producto(data), current_user)
 
     def actualizar_producto(self, id_producto: int, data: ProductoCreate, current_user: CurrentUser | None = None):
-        return self._repository.actualizar_producto(id_producto, data, current_user)
+        return self._repository.actualizar_producto(id_producto, self._normalize_producto(data), current_user)
+
+    @staticmethod
+    def _normalize_producto(data: ProductoCreate) -> ProductoCreate:
+        return data.model_copy(update={
+            'clave_interna': data.clave_interna.strip().upper(),
+            'nombre': data.nombre.strip(),
+        })
 
     def desactivar_producto(self, id_producto: int, current_user: CurrentUser | None = None):
         return self._repository.desactivar_producto(id_producto, current_user)
@@ -32,10 +40,14 @@ class AlmacenService:
         return self._repository.obtener_servicio(id_servicio, current_user)
 
     def crear_servicio(self, data: ServicioCreate, current_user: CurrentUser | None = None):
-        return self._repository.crear_servicio(data, current_user)
+        return self._repository.crear_servicio(self._normalize_servicio(data), current_user)
 
     def actualizar_servicio(self, id_servicio: int, data: ServicioCreate, current_user: CurrentUser | None = None):
-        return self._repository.actualizar_servicio(id_servicio, data, current_user)
+        return self._repository.actualizar_servicio(id_servicio, self._normalize_servicio(data), current_user)
+
+    @staticmethod
+    def _normalize_servicio(data: ServicioCreate) -> ServicioCreate:
+        return data.model_copy(update={'nombre': data.nombre.strip()})
 
     def desactivar_servicio(self, id_servicio: int, current_user: CurrentUser | None = None):
         return self._repository.desactivar_servicio(id_servicio, current_user)
@@ -59,7 +71,10 @@ class AlmacenService:
         return self._repository.almacen_stats(current_user)
 
     def ajustar_existencia(self, id_producto: int, stock_nuevo: int, motivo: str, current_user: CurrentUser | None = None):
-        return self._repository.ajustar_existencia(id_producto, stock_nuevo, motivo, current_user)
+        motivo_limpio = motivo.strip() if motivo else ''
+        if not motivo_limpio:
+            raise ValidationError('El motivo del ajuste es requerido')
+        return self._repository.ajustar_existencia(id_producto, stock_nuevo, motivo_limpio, current_user)
 
 
 def configure_service(service: AlmacenService) -> None:

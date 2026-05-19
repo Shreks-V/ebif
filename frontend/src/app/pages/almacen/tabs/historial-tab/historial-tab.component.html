@@ -36,10 +36,11 @@
           class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none bg-white transition-colors text-slate-700">
           <option value="">Todos los tipos</option>
           <option value="ENTRADA">Entrada</option>
+          <option value="AJUSTE_POS">Ajuste positivo</option>
+          <option value="AJUSTE_NEG">Ajuste negativo</option>
           <option value="SALIDA_VENTA">Salida — Venta</option>
           <option value="SALIDA_COMODATO">Salida — Comodato</option>
           <option value="SALIDA">Salida general</option>
-          <option value="AJUSTE">Ajuste</option>
           <option value="SALIDA_MERMA">Merma</option>
         </select>
       </div>
@@ -129,10 +130,7 @@
                   {{ tipoLabel(m.tipo_movimiento) }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-right font-mono font-bold text-sm"
-                [class.text-emerald-600]="m.tipo_movimiento === 'ENTRADA'"
-                [class.text-red-600]="m.tipo_movimiento !== 'ENTRADA' && m.tipo_movimiento !== 'AJUSTE'"
-                [class.text-blue-600]="m.tipo_movimiento === 'AJUSTE'">
+              <td class="px-4 py-3 text-right font-mono font-bold text-sm" [ngClass]="cantidadClass(m.tipo_movimiento)">
                 {{ tipoSigno(m.tipo_movimiento) }}{{ m.cantidad }}
               </td>
               <td class="px-4 py-3 text-slate-400 text-xs max-w-[220px] truncate" [title]="m.observaciones || ''">{{ m.observaciones || '—' }}</td>

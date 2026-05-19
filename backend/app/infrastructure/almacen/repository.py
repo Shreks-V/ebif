@@ -99,7 +99,7 @@ def _generate_internal_key(conn, tipo_producto: str) -> str:
     next_seq = int(row.get('max_seq') or 0) + 1
     return f'{prefix}-{next_seq:03d}'
 
-def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=None, activo: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar productos del almacen con filtros opcionales."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _PRODUCTOS_BASE_SQL + ' WHERE 1=1'
@@ -122,7 +122,7 @@ def listar_productos(tipo_producto: Optional[str]=None, busqueda: Optional[str]=
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
 
-def obtener_producto(id_producto: int, current_user: CurrentUser | None = None):
+def _obtener_producto(id_producto: int, current_user: CurrentUser | None = None):
     """Obtener un producto por ID."""
     sql = _PRODUCTOS_BASE_SQL + ' WHERE p.ID_PRODUCTO = :id_producto'
     with get_db() as conn:
@@ -133,7 +133,7 @@ def obtener_producto(id_producto: int, current_user: CurrentUser | None = None):
         raise NotFoundError('Producto no encontrado')
     return _serialize(row)
 
-def crear_producto(data, current_user: CurrentUser | None = None):
+def _crear_producto(data, current_user: CurrentUser | None = None):
     """Crear un nuevo producto vía SP_CREAR_PRODUCTO_CON_EXISTENCIA."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -218,7 +218,7 @@ def _fetch_producto(id_producto: int) -> dict:
         raise NotFoundError('Producto no encontrado')
     return _serialize(row)
 
-def actualizar_producto(id_producto: int, data, current_user: CurrentUser | None = None):
+def _actualizar_producto(id_producto: int, data, current_user: CurrentUser | None = None):
     """Actualizar un producto existente."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -258,7 +258,7 @@ def actualizar_producto(id_producto: int, data, current_user: CurrentUser | None
         conn.commit()
     return _fetch_producto(id_producto)
 
-def desactivar_producto(id_producto: int, current_user: CurrentUser | None = None):
+def _desactivar_producto(id_producto: int, current_user: CurrentUser | None = None):
     """Desactivar un producto (soft delete)."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -268,7 +268,7 @@ def desactivar_producto(id_producto: int, current_user: CurrentUser | None = Non
         conn.commit()
     return {'message': 'Producto desactivado correctamente'}
 
-def listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, categoria: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, categoria: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar servicios con filtros opcionales."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = '\n        SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n               ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n               PRECIO_CUOTA_A, PRECIO_CUOTA_B, CATEGORIA\n        FROM SERVICIO WHERE 1=1\n    '
@@ -291,7 +291,7 @@ def listar_servicios(busqueda: Optional[str]=None, activo: Optional[str]=None, c
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
 
-def obtener_servicio(id_servicio: int, current_user: CurrentUser | None = None):
+def _obtener_servicio(id_servicio: int, current_user: CurrentUser | None = None):
     """Obtener un servicio por ID."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -301,7 +301,7 @@ def obtener_servicio(id_servicio: int, current_user: CurrentUser | None = None):
         raise NotFoundError('Servicio no encontrado')
     return _serialize(row)
 
-def crear_servicio(data, current_user: CurrentUser | None = None):
+def _crear_servicio(data, current_user: CurrentUser | None = None):
     """Crear un nuevo servicio."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -323,7 +323,7 @@ def _fetch_servicio(id_servicio: int) -> dict:
         raise NotFoundError('Servicio no encontrado')
     return _serialize(row)
 
-def actualizar_servicio(id_servicio: int, data, current_user: CurrentUser | None = None):
+def _actualizar_servicio(id_servicio: int, data, current_user: CurrentUser | None = None):
     """Actualizar un servicio existente."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -334,7 +334,7 @@ def actualizar_servicio(id_servicio: int, data, current_user: CurrentUser | None
         conn.commit()
     return _fetch_servicio(id_servicio)
 
-def desactivar_servicio(id_servicio: int, current_user: CurrentUser | None = None):
+def _desactivar_servicio(id_servicio: int, current_user: CurrentUser | None = None):
     """Desactivar un servicio (soft delete)."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -345,7 +345,7 @@ def desactivar_servicio(id_servicio: int, current_user: CurrentUser | None = Non
     return {'message': 'Servicio desactivado correctamente'}
 _COMODATOS_BASE_SQL = "\n    SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.ID_EQUIPO, c.ID_PACIENTE,\n           c.ID_USUARIO_REGISTRO, c.FECHA_PRESTAMO, c.FECHA_DEVOLUCION,\n           c.ESTATUS, c.MONTO_TOTAL, c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n           c.EXENTO_PAGO, c.NOTAS,\n           pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO || ' ' || NVL(pa.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           pa.FOLIO AS FOLIO_PACIENTE,\n           pr.NOMBRE AS NOMBRE_EQUIPO\n    FROM COMODATO c\n    LEFT JOIN PACIENTE pa ON pa.ID_PACIENTE = c.ID_PACIENTE\n    LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n"
 
-def listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar comodatos con filtros opcionales."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _COMODATOS_BASE_SQL + ' WHERE 1=1'
@@ -365,7 +365,7 @@ def listar_comodatos(estatus: Optional[str]=None, busqueda: Optional[str]=None, 
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
 
-def obtener_comodato(id_comodato: int, current_user: CurrentUser | None = None):
+def _obtener_comodato(id_comodato: int, current_user: CurrentUser | None = None):
     """Obtener un comodato por ID."""
     sql = _COMODATOS_BASE_SQL + ' WHERE c.ID_COMODATO = :id'
     with get_db() as conn:
@@ -376,7 +376,7 @@ def obtener_comodato(id_comodato: int, current_user: CurrentUser | None = None):
         raise NotFoundError('Comodato no encontrado')
     return _serialize(row)
 
-def crear_comodato(data, current_user: CurrentUser | None = None):
+def _crear_comodato(data, current_user: CurrentUser | None = None):
     """Registrar un nuevo comodato (RF-PS-06). Stock vía SP_REGISTRAR_MOVIMIENTO_STOCK."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -416,7 +416,7 @@ def _fetch_comodato(id_comodato: int) -> dict:
         raise NotFoundError('Comodato no encontrado')
     return _serialize(row)
 
-def actualizar_comodato(id_comodato: int, data, current_user: CurrentUser | None = None):
+def _actualizar_comodato(id_comodato: int, data, current_user: CurrentUser | None = None):
     """Actualizar un comodato existente (RF-PS-07: auto-update stock on return)."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -447,7 +447,7 @@ def actualizar_comodato(id_comodato: int, data, current_user: CurrentUser | None
         conn.commit()
     return _fetch_comodato(id_comodato)
 
-def ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current_user: CurrentUser | None = None):
+def _ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current_user: CurrentUser | None = None):
     """Ajustar stock objetivo de un producto vía SP_AJUSTAR_EXISTENCIA_PRODUCTO."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -466,7 +466,7 @@ def ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current_
     return _fetch_producto(id_producto)
 
 
-def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optional[str]=None,
+def _listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optional[str]=None,
                        busqueda: Optional[str]=None, fecha_inicio: Optional[str]=None,
                        fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None,
                        limit: int=100, offset: int=0):
@@ -506,7 +506,7 @@ def listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optiona
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
 
-def almacen_stats(current_user: CurrentUser | None = None):
+def _almacen_stats(current_user: CurrentUser | None = None):
     """Estadisticas del almacen para dashboard."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -528,60 +528,60 @@ def almacen_stats(current_user: CurrentUser | None = None):
         try:
             cursor.execute("SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE,\n                          ex.FECHA_CADUCIDAD, ex.CANTIDAD_DISPONIBLE,\n                          CASE WHEN ex.FECHA_CADUCIDAD < TRUNC(SYSDATE)\n                               THEN 'VENCIDO' ELSE 'PROXIMO' END AS ESTATUS_CADUCIDAD\n                   FROM PRODUCTO p\n                   JOIN EXISTENCIA_PRODUCTO ex\n                       ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'\n                   JOIN MEDICAMENTO m ON m.ID_PRODUCTO = p.ID_PRODUCTO\n                   WHERE p.ACTIVO = 'S'\n                     AND m.REQUIERE_CADUCIDAD = 'S'\n                     AND ex.FECHA_CADUCIDAD IS NOT NULL\n                     AND ex.FECHA_CADUCIDAD <= TRUNC(SYSDATE) + 30\n                   ORDER BY ex.FECHA_CADUCIDAD")
             proximos_vencer = [_serialize(r) for r in rows_to_dicts(cursor)]
-        except Exception:
-            logging.warning("No se pudo consultar productos próximos a vencer", exc_info=True)
+        except oracledb.DatabaseError:
+            logger.warning("No se pudo consultar productos próximos a vencer", exc_info=True)
             proximos_vencer = []
     return {'total_productos': total_productos, 'total_unidades': total_unidades, 'stock_bajo': stock_bajo, 'alertas_stock_bajo': len(stock_bajo), 'por_tipo': por_tipo, 'comodatos_activos': comodatos_activos, 'servicios_activos': servicios_activos, 'total_movimientos': total_movimientos, 'proximos_vencer': proximos_vencer, 'alertas_caducidad': len(proximos_vencer)}
 
 
 class OracleAlmacenRepository(AlmacenRepository):
     def listar_productos(self, tipo_producto=None, busqueda=None, activo=None, current_user=None, limit=100, offset=0):
-        return listar_productos(tipo_producto, busqueda, activo, current_user, limit, offset)
+        return _listar_productos(tipo_producto, busqueda, activo, current_user, limit, offset)
 
     def obtener_producto(self, id_producto, current_user=None):
-        return obtener_producto(id_producto, current_user)
+        return _obtener_producto(id_producto, current_user)
 
     def crear_producto(self, data, current_user=None):
-        return crear_producto(data, current_user)
+        return _crear_producto(data, current_user)
 
     def actualizar_producto(self, id_producto, data, current_user=None):
-        return actualizar_producto(id_producto, data, current_user)
+        return _actualizar_producto(id_producto, data, current_user)
 
     def desactivar_producto(self, id_producto, current_user=None):
-        return desactivar_producto(id_producto, current_user)
+        return _desactivar_producto(id_producto, current_user)
 
     def listar_servicios(self, busqueda=None, activo=None, categoria=None, current_user=None, limit=100, offset=0):
-        return listar_servicios(busqueda, activo, categoria, current_user, limit, offset)
+        return _listar_servicios(busqueda, activo, categoria, current_user, limit, offset)
 
     def obtener_servicio(self, id_servicio, current_user=None):
-        return obtener_servicio(id_servicio, current_user)
+        return _obtener_servicio(id_servicio, current_user)
 
     def crear_servicio(self, data, current_user=None):
-        return crear_servicio(data, current_user)
+        return _crear_servicio(data, current_user)
 
     def actualizar_servicio(self, id_servicio, data, current_user=None):
-        return actualizar_servicio(id_servicio, data, current_user)
+        return _actualizar_servicio(id_servicio, data, current_user)
 
     def desactivar_servicio(self, id_servicio, current_user=None):
-        return desactivar_servicio(id_servicio, current_user)
+        return _desactivar_servicio(id_servicio, current_user)
 
     def listar_comodatos(self, estatus=None, busqueda=None, current_user=None, limit=100, offset=0):
-        return listar_comodatos(estatus, busqueda, current_user, limit, offset)
+        return _listar_comodatos(estatus, busqueda, current_user, limit, offset)
 
     def obtener_comodato(self, id_comodato, current_user=None):
-        return obtener_comodato(id_comodato, current_user)
+        return _obtener_comodato(id_comodato, current_user)
 
     def crear_comodato(self, data, current_user=None):
-        return crear_comodato(data, current_user)
+        return _crear_comodato(data, current_user)
 
     def actualizar_comodato(self, id_comodato, data, current_user=None):
-        return actualizar_comodato(id_comodato, data, current_user)
+        return _actualizar_comodato(id_comodato, data, current_user)
 
     def listar_movimientos(self, id_producto=None, tipo_movimiento=None, busqueda=None, fecha_inicio=None, fecha_fin=None, current_user=None, limit=100, offset=0):
-        return listar_movimientos(id_producto, tipo_movimiento, busqueda, fecha_inicio, fecha_fin, current_user, limit, offset)
+        return _listar_movimientos(id_producto, tipo_movimiento, busqueda, fecha_inicio, fecha_fin, current_user, limit, offset)
 
     def almacen_stats(self, current_user=None):
-        return almacen_stats(current_user)
+        return _almacen_stats(current_user)
 
     def ajustar_existencia(self, id_producto, stock_nuevo, motivo, current_user=None):
-        return ajustar_existencia(id_producto, stock_nuevo, motivo, current_user)
+        return _ajustar_existencia(id_producto, stock_nuevo, motivo, current_user)

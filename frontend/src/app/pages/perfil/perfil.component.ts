@@ -5,6 +5,7 @@ import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { getApiError } from '../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-perfil',
@@ -53,8 +54,8 @@ export class PerfilComponent {
         this.form = { contrasena_actual: '', contrasena_nueva: '', confirmar: '' };
         this.saving = false;
       },
-      error: (err: any) => {
-        this.errorMsg = err?.error?.detail ?? 'Error al actualizar la contraseña. Verifica tu contraseña actual.';
+      error: (err: unknown) => {
+        this.errorMsg = getApiError(err, 'Error al actualizar la contraseña. Verifica tu contraseña actual.');
         this.saving = false;
       },
     });

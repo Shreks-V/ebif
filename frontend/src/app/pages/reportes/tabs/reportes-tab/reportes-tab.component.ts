@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../../services/api.service';
+import { getApiError } from '../../../../shared/utils/error.utils';
 
 interface CrossTabRow {
   etapa: string;
@@ -147,14 +148,14 @@ export class ReportesTabComponent implements OnInit {
         const eValues: number[] = estudios.values ?? [];
         this.sec1EstudiosList = eLabels.map((nombre, i) => ({ nombre, cantidad: eValues[i] ?? 0 }));
 
-        this.sec1PagosPorMetodo = pagosPorMetodo.detalle ?? [];
+        this.sec1PagosPorMetodo = (pagosPorMetodo.detalle ?? []) as typeof this.sec1PagosPorMetodo;
         this.sec1TotalPagado = pagosPorMetodo.total ?? 0;
 
         this.sec1Loaded = true;
         this.sec1Loading = false;
       },
-      error: (err: any) => {
-        this.sec1Error = err?.error?.detail || 'Error al cargar los datos del resumen.';
+      error: (err: unknown) => {
+        this.sec1Error = getApiError(err, 'Error al cargar los datos del resumen.');
         this.sec1Loading = false;
       },
     });
@@ -181,28 +182,28 @@ export class ReportesTabComponent implements OnInit {
     this.indicError = '';
     this.indicLoaded = false;
     this.api.getIndicadoresDesempeno({ fecha_inicio: this.indicFechaInicio, fecha_fin: this.indicFechaFin }).subscribe({
-      next: (data: any) => {
+      next: (data) => {
         this.indicActivos = data.beneficiarios_activos ?? 0;
         this.indicNuevos = data.nuevos_en_periodo ?? 0;
         this.indicHombres = data.hombres ?? 0;
         this.indicMujeres = data.mujeres ?? 0;
         this.indicMunicipios = data.municipios ?? [];
 
-        const tablas = data.tablas ?? {};
+        const tablas = data.tablas ?? {} as typeof data.tablas;
         this.indicTables = [
-          { titulo: 'Sujetos de derecho por CURP', cols: ['CURP N.L.', 'CURP Foráneo'], rows: tablas.por_curp ?? [] },
-          { titulo: 'Sujetos de derecho por CURP N.L.', cols: ['Hombre', 'Mujer'], rows: tablas.curp_nl_genero ?? [] },
-          { titulo: 'Sujetos de derecho foráneos', cols: ['Hombre', 'Mujer'], rows: tablas.curp_foraneo_genero ?? [] },
-          { titulo: 'Sujetos de derecho por lugar de residencia', cols: ['Viven en N.L.', 'Viven en otros estados'], rows: tablas.residencia ?? [] },
-          { titulo: 'Sujetos de derecho por nacimiento', cols: ['Mexicanos', 'Nac. extranjera'], rows: tablas.nacimiento ?? [] },
-          { titulo: 'Sujetos de derecho por etapa de vida', cols: ['Hombre', 'Mujer'], rows: tablas.etapa_vida_genero ?? [] },
+          { titulo: 'Sujetos de derecho por CURP', cols: ['CURP N.L.', 'CURP Foráneo'], rows: (tablas.por_curp ?? []) as CrossTabRow[] },
+          { titulo: 'Sujetos de derecho por CURP N.L.', cols: ['Hombre', 'Mujer'], rows: (tablas.curp_nl_genero ?? []) as CrossTabRow[] },
+          { titulo: 'Sujetos de derecho foráneos', cols: ['Hombre', 'Mujer'], rows: (tablas.curp_foraneo_genero ?? []) as CrossTabRow[] },
+          { titulo: 'Sujetos de derecho por lugar de residencia', cols: ['Viven en N.L.', 'Viven en otros estados'], rows: (tablas.residencia ?? []) as CrossTabRow[] },
+          { titulo: 'Sujetos de derecho por nacimiento', cols: ['Mexicanos', 'Nac. extranjera'], rows: (tablas.nacimiento ?? []) as CrossTabRow[] },
+          { titulo: 'Sujetos de derecho por etapa de vida', cols: ['Hombre', 'Mujer'], rows: (tablas.etapa_vida_genero ?? []) as CrossTabRow[] },
         ];
 
         this.indicLoaded = true;
         this.indicLoading = false;
       },
-      error: (err: any) => {
-        this.indicError = err?.error?.detail || 'Error al cargar los indicadores.';
+      error: (err: unknown) => {
+        this.indicError = getApiError(err, 'Error al cargar los indicadores.');
         this.indicLoading = false;
       },
     });
@@ -234,8 +235,8 @@ export class ReportesTabComponent implements OnInit {
         this.seg3Loaded = true;
         this.seg3Loading = false;
       },
-      error: (err: any) => {
-        this.seg3Error = err?.error?.detail || 'Error al cargar la segmentación.';
+      error: (err: unknown) => {
+        this.seg3Error = getApiError(err, 'Error al cargar la segmentación.');
         this.seg3Loading = false;
       },
     });

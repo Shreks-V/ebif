@@ -1,6 +1,7 @@
 from app.application.doctores.dtos import DoctorCreate, DisponibilidadCreate, DisponibilidadEspecialCreate
 from app.domain.doctores.ports import DoctoresRepository
 from app.domain.shared.current_user import CurrentUser
+from app.domain.exceptions import ValidationError
 
 _service: "DoctoresService | None" = None
 
@@ -22,10 +23,21 @@ class DoctoresService:
         return self._repository.obtener_doctor(id_doctor, current_user)
 
     def crear_doctor(self, data: DoctorCreate, current_user: CurrentUser | None = None):
-        return self._repository.crear_doctor(data, current_user)
+        return self._repository.crear_doctor(self._normalize_doctor(data), current_user)
 
     def actualizar_doctor(self, id_doctor: int, data: DoctorCreate, current_user: CurrentUser | None = None):
-        return self._repository.actualizar_doctor(id_doctor, data, current_user)
+        return self._repository.actualizar_doctor(id_doctor, self._normalize_doctor(data), current_user)
+
+    @staticmethod
+    def _normalize_doctor(data: DoctorCreate) -> DoctorCreate:
+        updates: dict = {'nombre': data.nombre.strip()}
+        if data.apellido_paterno is not None:
+            updates['apellido_paterno'] = data.apellido_paterno.strip()
+        if data.apellido_materno is not None:
+            updates['apellido_materno'] = data.apellido_materno.strip()
+        if data.correo:
+            updates['correo'] = data.correo.strip().lower()
+        return data.model_copy(update=updates)
 
     def desactivar_doctor(self, id_doctor: int, current_user: CurrentUser | None = None):
         return self._repository.desactivar_doctor(id_doctor, current_user)

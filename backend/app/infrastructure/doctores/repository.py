@@ -78,7 +78,7 @@ def _match_especial_hoy(fecha_inicio_date: date, tipo: str) -> bool:
     return False
 
 
-def doctor_del_dia(current_user: CurrentUser | None = None):
+def _doctor_del_dia(current_user: CurrentUser | None = None):
     """Doctor asignado hoy: primero busca en disponibilidad especial, luego en semanal."""
     hoy = date.today()
     dia_semana = hoy.weekday() + 1
@@ -140,11 +140,11 @@ def doctor_del_dia(current_user: CurrentUser | None = None):
             doctor['hora_fin'] = hora_fin.isoformat() if isinstance(hora_fin, datetime) else str(hora_fin) if hora_fin else None
             doctor['fuente'] = 'semanal'
             return {'doctor': doctor, 'hora_inicio': doctor['hora_inicio'], 'hora_fin': doctor['hora_fin']}
-    except Exception:
+    except oracledb.DatabaseError:
         logger.exception('Error al consultar doctor del día')
         raise InternalError('Error interno del servidor')
 
-def listar_doctores(current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_doctores(current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar todos los doctores con sus servicios."""
     try:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -153,11 +153,11 @@ def listar_doctores(current_user: CurrentUser | None = None, limit: int=100, off
             cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR ORDER BY ID_DOCTOR OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY', {'offset': safe_offset, 'limit': safe_limit})
             rows = rows_to_dicts(cursor)
             return [_doctor_with_servicios(conn, r) for r in rows]
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al consultar doctores')
         raise InternalError('Error interno del servidor')
 
-def obtener_disponibilidad_semana(current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
+def _obtener_disponibilidad_semana(current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Obtener toda la disponibilidad de todos los doctores (para validar conflictos)."""
     try:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -166,11 +166,11 @@ def obtener_disponibilidad_semana(current_user: CurrentUser | None = None, limit
             cursor.execute("SELECT dd.ID_DISPONIBILIDAD, dd.ID_DOCTOR, dd.DIA_SEMANA, TO_CHAR(dd.HORA_INICIO, 'HH24:MI') AS HORA_INICIO, TO_CHAR(dd.HORA_FIN, 'HH24:MI') AS HORA_FIN, dd.DISPONIBLE, d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS NOMBRE_DOCTOR FROM DISPONIBILIDAD_DOCTOR dd JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR WHERE d.ACTIVO = 'S' AND dd.DISPONIBLE = 'S' ORDER BY dd.DIA_SEMANA, dd.HORA_INICIO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY", {'offset': safe_offset, 'limit': safe_limit})
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al consultar disponibilidad semanal')
         raise InternalError('Error interno del servidor')
 
-def obtener_doctor(id_doctor: int, current_user: CurrentUser | None = None):
+def _obtener_doctor(id_doctor: int, current_user: CurrentUser | None = None):
     """Obtener un doctor por ID."""
     try:
         with get_db() as conn:
@@ -182,11 +182,11 @@ def obtener_doctor(id_doctor: int, current_user: CurrentUser | None = None):
             return _doctor_with_servicios(conn, row)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al consultar doctor')
         raise InternalError('Error interno del servidor')
 
-def crear_doctor(data, current_user: CurrentUser | None = None):
+def _crear_doctor(data, current_user: CurrentUser | None = None):
     """Crear nuevo doctor con servicios asociados."""
     try:
         with get_db() as conn:
@@ -218,11 +218,11 @@ def crear_doctor(data, current_user: CurrentUser | None = None):
             cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': new_id})
             row = row_to_dict(cursor)
             return _doctor_with_servicios(conn, row)
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al crear doctor')
         raise InternalError('Error interno del servidor')
 
-def actualizar_doctor(id_doctor: int, data, current_user: CurrentUser | None = None):
+def _actualizar_doctor(id_doctor: int, data, current_user: CurrentUser | None = None):
     """Actualizar doctor existente y sus servicios."""
     try:
         with get_db() as conn:
@@ -239,11 +239,11 @@ def actualizar_doctor(id_doctor: int, data, current_user: CurrentUser | None = N
             return _doctor_with_servicios(conn, row)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al actualizar doctor')
         raise InternalError('Error interno del servidor')
 
-def desactivar_doctor(id_doctor: int, current_user: CurrentUser | None = None):
+def _desactivar_doctor(id_doctor: int, current_user: CurrentUser | None = None):
     """Desactivar doctor (soft delete, ACTIVO = 'N')."""
     try:
         with get_db() as conn:
@@ -256,11 +256,11 @@ def desactivar_doctor(id_doctor: int, current_user: CurrentUser | None = None):
             return {'message': 'Doctor desactivado', 'id_doctor': id_doctor}
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al desactivar doctor')
         raise InternalError('Error interno del servidor')
 
-def obtener_disponibilidad(id_doctor: int, current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
+def _obtener_disponibilidad(id_doctor: int, current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Obtener disponibilidad semanal de un doctor."""
     try:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -274,11 +274,11 @@ def obtener_disponibilidad(id_doctor: int, current_user: CurrentUser | None = No
             return [_serialize(r) for r in rows]
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al consultar disponibilidad')
         raise InternalError('Error interno del servidor')
 
-def crear_disponibilidad(id_doctor: int, data, current_user: CurrentUser | None = None):
+def _crear_disponibilidad(id_doctor: int, data, current_user: CurrentUser | None = None):
     """Crear un slot de disponibilidad semanal para un doctor (por día de la semana)."""
     if data.dia_semana < 1 or data.dia_semana > 7:
         raise ValidationError('dia_semana debe ser entre 1 (Lunes) y 7 (Domingo)')
@@ -308,11 +308,11 @@ def crear_disponibilidad(id_doctor: int, data, current_user: CurrentUser | None 
             return _serialize(row)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al crear disponibilidad')
         raise InternalError('Error interno del servidor')
 
-def eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_user: CurrentUser | None = None):
+def _eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_user: CurrentUser | None = None):
     """Eliminar un slot de disponibilidad de un doctor."""
     try:
         with get_db() as conn:
@@ -324,11 +324,11 @@ def eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, current_user
             return {'message': 'Disponibilidad eliminada correctamente'}
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al eliminar disponibilidad')
         raise InternalError('Error interno del servidor')
 
-def obtener_servicios_doctor(id_doctor: int, current_user: CurrentUser | None = None):
+def _obtener_servicios_doctor(id_doctor: int, current_user: CurrentUser | None = None):
     """Obtener los servicios asociados a un doctor."""
     try:
         with get_db() as conn:
@@ -339,12 +339,12 @@ def obtener_servicios_doctor(id_doctor: int, current_user: CurrentUser | None = 
             return _get_servicios_for_doctor(conn, id_doctor)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception as e:
+    except oracledb.DatabaseError as e:
         logger.exception('Error al consultar servicios del doctor')
         raise InternalError('Error interno del servidor')
 
 
-def listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | None = None):
+def _listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | None = None):
     """Listar todos los slots de disponibilidad especial de un doctor."""
     try:
         with get_db() as conn:
@@ -367,12 +367,12 @@ def listar_disponibilidad_especial(id_doctor: int, current_user: CurrentUser | N
             return [_serialize(r) for r in rows_to_dicts(cursor)]
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception:
+    except oracledb.DatabaseError:
         logger.exception('Error al listar disponibilidad especial')
         raise InternalError('Error interno del servidor')
 
 
-def crear_disponibilidad_especial(id_doctor: int, data, current_user: CurrentUser | None = None):
+def _crear_disponibilidad_especial(id_doctor: int, data, current_user: CurrentUser | None = None):
     """Crear un slot de disponibilidad especial para un doctor."""
     tipos_validos = ('UNICA', 'QUINCENAL', 'CADA_3_SEMANAS', 'MENSUAL')
     if data.tipo_recurrencia not in tipos_validos:
@@ -421,12 +421,12 @@ def crear_disponibilidad_especial(id_doctor: int, data, current_user: CurrentUse
             return _serialize(row_to_dict(cursor))
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception:
+    except oracledb.DatabaseError:
         logger.exception('Error al crear disponibilidad especial')
         raise InternalError('Error interno del servidor')
 
 
-def eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, current_user: CurrentUser | None = None):
+def _eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, current_user: CurrentUser | None = None):
     """Eliminar (soft-delete) un slot de disponibilidad especial."""
     try:
         with get_db() as conn:
@@ -441,50 +441,50 @@ def eliminar_disponibilidad_especial(id_doctor: int, id_disp_especial: int, curr
             return {'message': 'Disponibilidad especial eliminada'}
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except Exception:
+    except oracledb.DatabaseError:
         logger.exception('Error al eliminar disponibilidad especial')
         raise InternalError('Error interno del servidor')
 
 
 class OracleDoctoresRepository(DoctoresRepository):
     def doctor_del_dia(self, current_user=None):
-        return doctor_del_dia(current_user)
+        return _doctor_del_dia(current_user)
 
     def listar_doctores(self, current_user=None, limit=100, offset=0):
-        return listar_doctores(current_user, limit, offset)
+        return _listar_doctores(current_user, limit, offset)
 
     def obtener_disponibilidad_semana(self, current_user=None, limit=500, offset=0):
-        return obtener_disponibilidad_semana(current_user, limit, offset)
+        return _obtener_disponibilidad_semana(current_user, limit, offset)
 
     def obtener_doctor(self, id_doctor, current_user=None):
-        return obtener_doctor(id_doctor, current_user)
+        return _obtener_doctor(id_doctor, current_user)
 
     def crear_doctor(self, data, current_user=None):
-        return crear_doctor(data, current_user)
+        return _crear_doctor(data, current_user)
 
     def actualizar_doctor(self, id_doctor, data, current_user=None):
-        return actualizar_doctor(id_doctor, data, current_user)
+        return _actualizar_doctor(id_doctor, data, current_user)
 
     def desactivar_doctor(self, id_doctor, current_user=None):
-        return desactivar_doctor(id_doctor, current_user)
+        return _desactivar_doctor(id_doctor, current_user)
 
     def obtener_disponibilidad(self, id_doctor, current_user=None, limit=500, offset=0):
-        return obtener_disponibilidad(id_doctor, current_user, limit, offset)
+        return _obtener_disponibilidad(id_doctor, current_user, limit, offset)
 
     def crear_disponibilidad(self, id_doctor, data, current_user=None):
-        return crear_disponibilidad(id_doctor, data, current_user)
+        return _crear_disponibilidad(id_doctor, data, current_user)
 
     def eliminar_disponibilidad(self, id_doctor, id_disponibilidad, current_user=None):
-        return eliminar_disponibilidad(id_doctor, id_disponibilidad, current_user)
+        return _eliminar_disponibilidad(id_doctor, id_disponibilidad, current_user)
 
     def obtener_servicios_doctor(self, id_doctor, current_user=None):
-        return obtener_servicios_doctor(id_doctor, current_user)
+        return _obtener_servicios_doctor(id_doctor, current_user)
 
     def listar_disponibilidad_especial(self, id_doctor, current_user=None):
-        return listar_disponibilidad_especial(id_doctor, current_user)
+        return _listar_disponibilidad_especial(id_doctor, current_user)
 
     def crear_disponibilidad_especial(self, id_doctor, data, current_user=None):
-        return crear_disponibilidad_especial(id_doctor, data, current_user)
+        return _crear_disponibilidad_especial(id_doctor, data, current_user)
 
     def eliminar_disponibilidad_especial(self, id_doctor, id_disp_especial, current_user=None):
-        return eliminar_disponibilidad_especial(id_doctor, id_disp_especial, current_user)
+        return _eliminar_disponibilidad_especial(id_doctor, id_disp_especial, current_user)

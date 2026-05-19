@@ -107,7 +107,7 @@ export class AuthService {
         sessionStorage.setItem('token', res.access_token);
         this._refreshing = false;
       }),
-      catchError(() => { this._refreshing = false; return of(undefined as any); }),
+      catchError(() => { this._refreshing = false; return of(undefined as void); }),
     ) as Observable<void>;
   }
 

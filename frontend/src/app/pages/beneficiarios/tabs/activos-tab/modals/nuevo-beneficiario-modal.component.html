@@ -1,0 +1,125 @@
+<div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-black text-slate-900">Nuevo Beneficiario</h2>
+      <button (click)="closed.emit()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form (ngSubmit)="submitNuevoBeneficiario()">
+      <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Datos Personales</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label><input type="text" [(ngModel)]="formData.nombre" name="nombre" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Paterno *</label><input type="text" [(ngModel)]="formData.apellido_paterno" name="apellido_paterno" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Apellido Materno</label><input type="text" [(ngModel)]="formData.apellido_materno" name="apellido_materno" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Genero *</label>
+          <select [(ngModel)]="formData.genero" name="genero" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+            <option value="">Seleccionar</option><option value="Masculino">Masculino</option><option value="Femenino">Femenino</option>
+          </select>
+        </div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento *</label><input type="date" [(ngModel)]="formData.fecha_nacimiento" name="fecha_nacimiento" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">CURP *</label><input type="text" [(ngModel)]="formData.curp" name="curp" required maxlength="18" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all uppercase" /></div>
+        <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del Padre/Madre</label><input type="text" [(ngModel)]="formData.nombre_padre_madre" name="nombre_padre_madre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+      </div>
+      <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Direccion</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Pa&iacute;s</label><select [(ngModel)]="formDataPais" name="pais" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all bg-white"><option value="">Seleccionar</option>@for (p of paises; track p.nombre) { <option [value]="p.nombre">{{ p.bandera }} {{ p.nombre }}</option> }</select></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+          @if (formDataPais === 'México' || !formDataPais) {
+            <select [(ngModel)]="formData.estado" name="estado" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+              <option value="">Seleccionar</option>
+              @for (e of estadosMexicanos; track e) { <option [value]="e">{{ e }}</option> }
+            </select>
+          } @else {
+            <input type="text" [(ngModel)]="formData.estado" name="estadoTexto" placeholder="Estado / Provincia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" />
+          }
+        </div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Ciudad</label><input type="text" list="municipios-nuevo" [(ngModel)]="formData.ciudad" name="ciudad" autocomplete="off" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /><datalist id="municipios-nuevo">@for (m of getMunicipiosParaEstado(formData.estado); track m) { <option [value]="m"></option> }</datalist></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Colonia</label><input type="text" [(ngModel)]="formData.colonia" name="colonia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Direccion</label><input type="text" [(ngModel)]="formData.direccion" name="direccion" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Codigo Postal</label><input type="text" [(ngModel)]="formData.codigo_postal" name="codigo_postal" maxlength="5" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+      </div>
+      <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Contacto</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Casa</label><input type="tel" [(ngModel)]="formData.telefono_casa" name="telefono_casa" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Celular</label><input type="tel" [(ngModel)]="formData.telefono_celular" name="telefono_celular" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div class="md:col-span-2"><label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electronico</label><input type="email" [(ngModel)]="formData.correo_electronico" name="correo_electronico" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">En emergencia avisar a</label><input type="text" [(ngModel)]="formData.en_emergencia_avisar_a" name="en_emergencia_avisar_a" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Telefono Emergencia</label><input type="tel" [(ngModel)]="formData.telefono_emergencia" name="telefono_emergencia" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all" /></div>
+      </div>
+      <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Informacion Medica</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Sangre</label>
+          <select [(ngModel)]="formData.tipo_sangre" name="tipo_sangre" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+            <option value="">Seleccionar</option>
+            @for (ts of tiposSangre; track ts) { <option [value]="ts">{{ ts }}</option> }
+          </select>
+        </div>
+        <div class="flex items-center gap-3 pt-7">
+          <input type="checkbox" [(ngModel)]="formDataUsaValvula" name="usa_valvula" id="usa_valvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+          <label for="usa_valvula" class="text-sm font-semibold text-slate-700">Usa Valvula</label>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Tipo(s) de Espina Bifida</label>
+          <div class="flex flex-wrap gap-4">
+            @for (te of tiposEspinaCatalogo; track te) {
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" [checked]="isNuevoEspinaSelected(te.id_tipo_espina)" (change)="toggleNuevoEspina(te.id_tipo_espina)" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
+                <span class="text-sm font-semibold text-slate-700">{{ te.nombre }}</span>
+              </label>
+            }
+            @if (tiposEspinaCatalogo.length === 0) { <span class="text-sm text-slate-400">Cargando...</span> }
+          </div>
+        </div>
+      </div>
+      <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Membresia</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Cuota *</label>
+          <select [(ngModel)]="formData.tipo_cuota" name="tipo_cuota" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+            <option value="">Seleccionar</option><option value="CUOTA A">A</option><option value="CUOTA B">B</option>
+          </select>
+        </div>
+        <div><label class="block text-sm font-semibold text-slate-700 mb-1">Estatus de Membresia *</label>
+          <select [(ngModel)]="formData.membresia_estatus" name="membresia_estatus" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all">
+            <option value="">Seleccionar</option><option value="ACTIVO">ACTIVO</option><option value="VENCIDO">VENCIDO</option><option value="SUSPENDIDO">SUSPENDIDO</option>
+          </select>
+        </div>
+      </div>
+      <h3 class="text-sm font-bold text-[#00328b] uppercase tracking-wider mb-3">Documentos (Opcional)</h3>
+      <div class="mb-8 p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 space-y-3">
+        <p class="text-xs text-slate-600 font-semibold">Los documentos se suben autom&aacute;ticamente despu&eacute;s de guardar al beneficiario.</p>
+        @for (doc of nuevoBeneficiarioDocumentos; track doc; let i = $index) {
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+            <div class="md:col-span-5">
+              <select [(ngModel)]="doc.id_tipo_documento" [name]="'nuevoDocTipo' + i" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all text-sm bg-white">
+                <option [ngValue]="0">Tipo de documento...</option>
+                @for (td of tiposDocumentoCatalogo; track td) { <option [ngValue]="td.id_tipo_documento">{{ td.nombre }}</option> }
+              </select>
+            </div>
+            <div class="md:col-span-5">
+              <input type="file" [name]="'nuevoDocArchivo' + i" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" (change)="onNuevoBeneficiarioDocSelected($event, i)" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm bg-white" />
+            </div>
+            <div class="md:col-span-2 flex justify-end">
+              <button type="button" (click)="eliminarDocumentoNuevoBeneficiario(i)" class="w-10 h-10 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors" title="Quitar documento">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+        }
+        <button type="button" (click)="agregarDocumentoNuevoBeneficiario()" class="px-4 py-2 rounded-xl text-sm font-bold border-2 border-slate-200 text-slate-700 hover:bg-white transition-all inline-flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Agregar documento
+        </button>
+      </div>
+      @if (nuevoError) {
+        <div class="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-sm font-semibold">{{ nuevoError }}</div>
+      }
+      <div class="flex items-center justify-end gap-3">
+        <button type="button" (click)="closed.emit()" class="px-6 py-3 rounded-xl font-bold border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">Cancelar</button>
+        <button type="submit" [disabled]="submittingNuevo" class="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-[#00328b] to-[#0052cc] text-white hover:shadow-lg transition-all disabled:opacity-50">
+          {{ submittingNuevo ? 'Guardando...' : 'Guardar Beneficiario' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

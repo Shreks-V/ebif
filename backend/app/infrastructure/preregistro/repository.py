@@ -87,7 +87,7 @@ def _resolve_usuario_registro_id(conn, current_user: CurrentUser | None) -> int:
 
 _BASE_SQL = '\n    SELECT ID_PACIENTE, FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n           FECHA_NACIMIENTO, GENERO, CURP,\n           ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,\n           DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n           TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n           TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL, ESTATUS_REGISTRO,\n           FECHA_REGISTRO, EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n           TIPO_SANGRE, USA_VALVULA\n    FROM PACIENTE\n'
 
-def listar_preregistros(estatus: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_preregistros(estatus: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar todos los pre-registros (pacientes pendientes de aprobación)."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     sql = _BASE_SQL + " WHERE ESTATUS_REGISTRO IN ('PENDIENTE', 'RECHAZADO')"
@@ -104,7 +104,7 @@ def listar_preregistros(estatus: Optional[str]=None, current_user: CurrentUser |
         rows = rows_to_dicts(cursor)
     return [_serialize(decrypt_row(r, PACIENTE_ENCRYPTED_FIELDS)) for r in rows]
 
-def crear_preregistro(data):
+def _crear_preregistro(data):
     """Enviar un nuevo pre-registro vía SP_REGISTRAR_PACIENTE_COMPLETO."""
     if not data.tipos_espina:
         raise ValidationError('Debe especificar al menos un tipo de espina bífida')
@@ -186,7 +186,7 @@ def _fetch_preregistro(id_paciente: int) -> dict:
         raise NotFoundError('Pre-registro no encontrado')
     return _serialize(decrypt_row(row, PACIENTE_ENCRYPTED_FIELDS))
 
-def check_curp_disponible(curp: str) -> dict:
+def _check_curp_disponible(curp: str) -> dict:
     """Verificar si un CURP ya está registrado. Endpoint público sin auth."""
     from app.infrastructure.privacy.crypto import decrypt
     normalized = (curp or '').strip().upper()
@@ -205,13 +205,13 @@ def check_curp_disponible(curp: str) -> dict:
                 except Exception:
                     continue
         return {'disponible': True}
-    except Exception:
+    except oracledb.DatabaseError:
         logger.exception('Error al verificar disponibilidad de CURP')
         # On error, allow the form to proceed; server-side insert will still enforce uniqueness
         return {'disponible': True}
 
 
-def listar_tipos_espina_publico():
+def _listar_tipos_espina_publico():
     """Listar tipos de espina bífida (endpoint público para pre-registro)."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -219,7 +219,7 @@ def listar_tipos_espina_publico():
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
 
-def listar_tipos_documento_publico():
+def _listar_tipos_documento_publico():
     """Listar tipos de documento (endpoint público para pre-registro)."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -227,11 +227,11 @@ def listar_tipos_documento_publico():
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
 
-def obtener_preregistro(id_paciente: int):
+def _obtener_preregistro(id_paciente: int):
     """Obtener detalle de un pre-registro."""
     return _fetch_preregistro(id_paciente)
 
-def actualizar_preregistro(id_paciente: int, data):
+def _actualizar_preregistro(id_paciente: int, data):
     """Actualizar un pre-registro existente (formulario multi-paso)."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -246,7 +246,7 @@ def actualizar_preregistro(id_paciente: int, data):
         conn.commit()
     return _fetch_preregistro(id_paciente)
 
-def aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: CurrentUser | None = None):
+def _aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: CurrentUser | None = None):
     """Aprobar un pre-registro y convertirlo en beneficiario aprobado."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -281,7 +281,7 @@ def aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, current_user: 
     preregistro = _fetch_preregistro(id_paciente)
     return {'message': 'Pre-registro aprobado exitosamente', 'preregistro': preregistro}
 
-async def subir_documento(
+async def _subir_documento(
     id_paciente: int,
     id_tipo_documento: int,
     archivo: UploadedFile,
@@ -332,7 +332,7 @@ async def subir_documento(
         conn.commit()
     return {'id_documento': new_id, 'nombre_archivo': archivo.filename, 'formato': ext.lstrip('.').upper() if ext else 'OTRO'}
 
-def listar_documentos(id_paciente: int, limit: int=100, offset: int=0):
+def _listar_documentos(id_paciente: int, limit: int=100, offset: int=0):
     """Listar documentos de un pre-registro."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
@@ -350,7 +350,7 @@ def listar_documentos(id_paciente: int, limit: int=100, offset: int=0):
         rows = rows_to_dicts(cursor)
     return [_serialize(r) for r in rows]
 
-def obtener_documento_archivo(id_paciente: int, id_documento: int):
+def _obtener_documento_archivo(id_paciente: int, id_documento: int):
     """Leer y desencriptar el archivo físico de un documento activo."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -385,7 +385,7 @@ def obtener_documento_archivo(id_paciente: int, id_documento: int):
         content_type=content_type or 'application/octet-stream',
     )
 
-def eliminar_documento(id_paciente: int, id_documento: int):
+def _eliminar_documento(id_paciente: int, id_documento: int):
     """Eliminar (soft delete) un documento."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -395,7 +395,7 @@ def eliminar_documento(id_paciente: int, id_documento: int):
         conn.commit()
     return {'message': 'Documento eliminado correctamente'}
 
-def rechazar_preregistro(id_paciente: int, current_user: CurrentUser | None = None):
+def _rechazar_preregistro(id_paciente: int, current_user: CurrentUser | None = None):
     """Rechazar un pre-registro."""
     with get_db() as conn:
         cursor = conn.cursor()
@@ -411,37 +411,37 @@ def rechazar_preregistro(id_paciente: int, current_user: CurrentUser | None = No
 
 class OraclePreregistroRepository(PreregistroRepository):
     def listar_preregistros(self, estatus=None, current_user=None, limit=100, offset=0):
-        return listar_preregistros(estatus, current_user, limit, offset)
+        return _listar_preregistros(estatus, current_user, limit, offset)
 
     def crear_preregistro(self, data):
-        return crear_preregistro(data)
+        return _crear_preregistro(data)
 
     def listar_tipos_espina_publico(self):
-        return listar_tipos_espina_publico()
+        return _listar_tipos_espina_publico()
 
     def listar_tipos_documento_publico(self):
-        return listar_tipos_documento_publico()
+        return _listar_tipos_documento_publico()
 
     def obtener_preregistro(self, id_paciente):
-        return obtener_preregistro(id_paciente)
+        return _obtener_preregistro(id_paciente)
 
     def actualizar_preregistro(self, id_paciente, data):
-        return actualizar_preregistro(id_paciente, data)
+        return _actualizar_preregistro(id_paciente, data)
 
     def aprobar_preregistro(self, id_paciente, tipo_cuota=None, current_user=None):
-        return aprobar_preregistro(id_paciente, tipo_cuota, current_user)
+        return _aprobar_preregistro(id_paciente, tipo_cuota, current_user)
 
     async def subir_documento(self, id_paciente, id_tipo_documento, archivo, current_user=None):
-        return await subir_documento(id_paciente, id_tipo_documento, archivo, current_user)
+        return await _subir_documento(id_paciente, id_tipo_documento, archivo, current_user)
 
     def listar_documentos(self, id_paciente, limit=100, offset=0):
-        return listar_documentos(id_paciente, limit, offset)
+        return _listar_documentos(id_paciente, limit, offset)
 
     def obtener_documento_archivo(self, id_paciente, id_documento):
-        return obtener_documento_archivo(id_paciente, id_documento)
+        return _obtener_documento_archivo(id_paciente, id_documento)
 
     def eliminar_documento(self, id_paciente, id_documento):
-        return eliminar_documento(id_paciente, id_documento)
+        return _eliminar_documento(id_paciente, id_documento)
 
     def rechazar_preregistro(self, id_paciente, current_user=None):
-        return rechazar_preregistro(id_paciente, current_user)
+        return _rechazar_preregistro(id_paciente, current_user)

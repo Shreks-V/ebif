@@ -1,3 +1,4 @@
+<div class="space-y-5">
 <!-- Alert: comodatos vencidos -->
 @if (comodatosVencidos.length > 0) {
   <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-start gap-3">
@@ -24,7 +25,7 @@
 }
 
 <!-- Search + Nuevo -->
-<div class="flex flex-col sm:flex-row gap-4">
+<div class="flex flex-col sm:flex-row gap-4 items-center">
   <div class="relative flex-1">
     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
       <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.3-4.3"/>
@@ -149,6 +150,7 @@
     </table>
   </div>
 </div>
+</div><!-- /space-y-5 -->
 
 <!-- MODAL: Confirmar Devolución -->
 @if (showDevolucionModal && comodatoToDevolver) {

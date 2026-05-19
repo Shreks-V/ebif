@@ -84,8 +84,8 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadBeneficiarios(): void {
     this.api.getBeneficiarios({ activo: 'S', limit: 500 }).subscribe({
-      next: (data: any[]) => {
-        this.beneficiarios = data.map((b: any) => ({
+      next: (data) => {
+        this.beneficiarios = data.map((b) => ({
           id: b.id_paciente ?? b.idPaciente,
           folio: b.folio_paciente ?? b.folio ?? '',
           nombre: `${b.nombre ?? ''} ${b.apellido_paterno ?? b.apellidoPaterno ?? ''} ${b.apellido_materno ?? b.apellidoMaterno ?? ''}`.trim(),
@@ -122,7 +122,7 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
           `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`,
           { headers: { 'Accept-Language': 'es', 'User-Agent': 'EBIF-Espina-Bifida/1.0' } }
         );
-        const results: any[] = await resp.json();
+        const results = await resp.json() as { lat: string; lon: string }[];
         if (results.length > 0) {
           b.lat = parseFloat(results[0].lat);
           b.lng = parseFloat(results[0].lon);

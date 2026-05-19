@@ -1,3 +1,4 @@
+from app.application.bitacora.use_cases import BitacoraService, configure_service as configure_bitacora
 from app.application.almacen.use_cases import AlmacenService, configure_service as configure_almacen
 from app.application.beneficiarios.use_cases import BeneficiariosService, configure_service as configure_beneficiarios
 from app.application.citas.use_cases import CitasService, configure_service as configure_citas
@@ -7,6 +8,7 @@ from app.application.geocoding.use_cases import GeocodingService, configure_serv
 from app.application.preregistro.use_cases import PreregistroService, configure_service as configure_preregistro
 from app.application.recibos.use_cases import RecibosService, configure_service as configure_recibos
 from app.application.reportes.use_cases import ReportesService, configure_service as configure_reportes
+from app.infrastructure.bitacora.repository import OracleBitacoraRepository
 from app.infrastructure.almacen.repository import OracleAlmacenRepository
 from app.infrastructure.beneficiarios.repository import OracleBeneficiariosRepository
 from app.infrastructure.citas.repository import OracleCitasRepository
@@ -19,6 +21,7 @@ from app.infrastructure.reportes.repository import OracleReportesRepository
 
 
 def wire_application() -> None:
+    configure_bitacora(BitacoraService(OracleBitacoraRepository()))
     beneficiarios_repo = OracleBeneficiariosRepository()
     configure_almacen(AlmacenService(OracleAlmacenRepository()))
     configure_beneficiarios(BeneficiariosService(beneficiarios_repo))

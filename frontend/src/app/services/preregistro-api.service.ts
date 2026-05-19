@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { PreRegistro, TipoDocumento, Documento, CurpCheckResponse } from '../shared/models/preregistro.models';
+import { TipoEspina } from '../shared/models/beneficiario.models';
 
 @Injectable({ providedIn: 'root' })
 export class PreregistroApiService {
@@ -9,53 +11,53 @@ export class PreregistroApiService {
 
   constructor(private http: HttpClient) {}
 
-  getPreRegistros(): Observable<any[]> {
-    return this.http.get<any[]>(this.base);
+  getPreRegistros(): Observable<PreRegistro[]> {
+    return this.http.get<PreRegistro[]>(this.base);
   }
 
-  getPreRegistro(id: number): Observable<any> {
-    return this.http.get<any>(`${this.base}/${id}`);
+  getPreRegistro(id: number): Observable<PreRegistro> {
+    return this.http.get<PreRegistro>(`${this.base}/${id}`);
   }
 
-  createPreRegistro(data: any): Observable<any> {
-    return this.http.post<any>(this.base, data);
+  createPreRegistro(data: Partial<PreRegistro>): Observable<PreRegistro> {
+    return this.http.post<PreRegistro>(this.base, data);
   }
 
-  updatePreRegistro(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.base}/${id}`, data);
+  updatePreRegistro(id: number, data: Partial<PreRegistro>): Observable<PreRegistro> {
+    return this.http.put<PreRegistro>(`${this.base}/${id}`, data);
   }
 
-  aprobarPreRegistro(id: number, tipoCuota?: string): Observable<any> {
-    return this.http.post<any>(`${this.base}/${id}/aprobar`, { tipo_cuota: tipoCuota || null });
+  aprobarPreRegistro(id: number, tipoCuota?: string): Observable<PreRegistro> {
+    return this.http.post<PreRegistro>(`${this.base}/${id}/aprobar`, { tipo_cuota: tipoCuota || null });
   }
 
-  rechazarPreRegistro(id: number): Observable<any> {
-    return this.http.post<any>(`${this.base}/${id}/rechazar`, {});
+  rechazarPreRegistro(id: number): Observable<PreRegistro> {
+    return this.http.post<PreRegistro>(`${this.base}/${id}/rechazar`, {});
   }
 
-  getTiposEspinaPublic(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/tipos-espina`);
+  getTiposEspinaPublic(): Observable<TipoEspina[]> {
+    return this.http.get<TipoEspina[]>(`${this.base}/tipos-espina`);
   }
 
-  getTiposDocumentoPublic(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/tipos-documento`);
+  getTiposDocumentoPublic(): Observable<TipoDocumento[]> {
+    return this.http.get<TipoDocumento[]>(`${this.base}/tipos-documento`);
   }
 
-  checkCurpDisponible(curp: string): Observable<{ disponible: boolean }> {
-    return this.http.get<{ disponible: boolean }>(`${this.base}/check-curp`, {
+  checkCurpDisponible(curp: string): Observable<CurpCheckResponse> {
+    return this.http.get<CurpCheckResponse>(`${this.base}/check-curp`, {
       params: new HttpParams().set('curp', curp),
     });
   }
 
-  uploadDocumento(idPaciente: number, idTipoDocumento: number, file: File): Observable<any> {
+  uploadDocumento(idPaciente: number, idTipoDocumento: number, file: File): Observable<Documento> {
     const formData = new FormData();
     formData.append('id_tipo_documento', idTipoDocumento.toString());
     formData.append('archivo', file);
-    return this.http.post<any>(`${this.base}/${idPaciente}/documentos`, formData);
+    return this.http.post<Documento>(`${this.base}/${idPaciente}/documentos`, formData);
   }
 
-  getDocumentos(idPaciente: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/${idPaciente}/documentos`);
+  getDocumentos(idPaciente: number): Observable<Documento[]> {
+    return this.http.get<Documento[]>(`${this.base}/${idPaciente}/documentos`);
   }
 
   getDocumentoArchivoUrl(idPaciente: number, idDocumento: number): string {
@@ -68,7 +70,7 @@ export class PreregistroApiService {
     });
   }
 
-  deleteDocumento(idPaciente: number, idDocumento: number): Observable<any> {
-    return this.http.delete<any>(`${this.base}/${idPaciente}/documentos/${idDocumento}`);
+  deleteDocumento(idPaciente: number, idDocumento: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${idPaciente}/documentos/${idDocumento}`);
   }
 }

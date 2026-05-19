@@ -10,12 +10,12 @@ export class ExportacionesApiService {
 
   constructor(private http: HttpClient) {}
 
-  exportarReportePdf(tipo: string, filters?: Record<string, any>): Observable<Blob> {
+  exportarReportePdf(tipo: string, filters?: Record<string, unknown>): Observable<Blob> {
     const params = buildParams({ tipo, ...filters });
     return this.http.get(`${this.base}/reportes/pdf`, { params, responseType: 'blob' });
   }
 
-  exportarReporteExcel(tipo: string, filters?: Record<string, any>): Observable<Blob> {
+  exportarReporteExcel(tipo: string, filters?: Record<string, unknown>): Observable<Blob> {
     const params = buildParams({ tipo, ...filters });
     return this.http.get(`${this.base}/reportes/excel`, { params, responseType: 'blob' });
   }
@@ -28,7 +28,7 @@ export class ExportacionesApiService {
     return this.http.get(`${this.base}/beneficiario/${folio}/credencial`, { responseType: 'blob' });
   }
 
-  exportarBeneficiariosExcel(filters?: Record<string, any>): Observable<Blob> {
+  exportarBeneficiariosExcel(filters?: Record<string, unknown>): Observable<Blob> {
     return this.http.get(`${this.base}/beneficiarios/excel`, { params: buildParams(filters), responseType: 'blob' });
   }
 

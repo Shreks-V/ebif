@@ -13,6 +13,24 @@ interface DocumentoPendiente {
   file: File | null;
 }
 
+interface PreRegistroFormData {
+  nombre: string; apellidoPaterno: string; apellidoMaterno: string;
+  fechaNacimiento: string; sexo: string; curp: string; nombrePadreMadre: string;
+  pais: string; calle: string; numeroExterior: string; numeroInterior: string;
+  colonia: string; municipio: string; ciudad: string; estado: string; codigoPostal: string;
+  telefonoCasaCodigo: string; telefonoCasa: string;
+  telefonoCelularCodigo: string; telefonoCelular: string;
+  correoElectronico: string; enEmergenciaAvisarA: string;
+  telefonoEmergenciaCodigo: string; telefonoEmergencia: string;
+  requiereTutor: boolean; nombreTutor: string;
+  telefonoTutorCodigo: string; telefonoTutor: string; relacionTutor: string;
+  tipoSangre: string; usaValvula: boolean;
+  tiposEspinaIds: number[];
+  alergias: string; medicamentosActuales: string; notasAdicionales: string;
+}
+
+interface PreRegistroCreatedResponse { id_paciente?: number; preregistro_token?: string; }
+
 @Component({
   selector: 'app-pre-registro',
   standalone: true,
@@ -58,8 +76,8 @@ export class PreRegistroComponent implements OnInit {
     { bandera: '🇨🇷', nombre: 'Costa Rica',       codigo: '+506' },
   ];
 
-  tiposEspinaList: any[] = [];
-  tiposDocumento: any[] = [];
+  tiposEspinaList: { id_tipo_espina: number; nombre: string; descripcion?: string }[] = [];
+  tiposDocumento: { id_tipo_documento: number; nombre: string }[] = [];
 
   estados = [
     'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua',
@@ -73,7 +91,7 @@ export class PreRegistroComponent implements OnInit {
     return getMunicipiosParaEstado(estado);
   }
 
-  formData: any = {
+  formData: PreRegistroFormData = {
     nombre: '', apellidoPaterno: '', apellidoMaterno: '',
     fechaNacimiento: '', sexo: '', curp: '', nombrePadreMadre: '',
     pais: 'México', calle: '', numeroExterior: '', numeroInterior: '',
@@ -90,7 +108,7 @@ export class PreRegistroComponent implements OnInit {
     alergias: '', medicamentosActuales: '', notasAdicionales: ''
   };
 
-  // Document upload state
+  // Document upload state (raw API response includes nombre_archivo not in Documento model)
   documentosSubidos: any[] = [];
   documentosPendientes: DocumentoPendiente[] = [{ id: 1, tipoId: 0, file: null }];
   private siguienteDocumentoPendienteId = 2;
@@ -212,9 +230,10 @@ export class PreRegistroComponent implements OnInit {
     this.stepError = '';
     this.validationAttempted = true;
 
+    const formAsRecord = this.formData as unknown as Record<string, unknown>;
     const required = this.requiredByStep[step] || [];
     for (const field of required) {
-      const val = this.formData[field];
+      const val = formAsRecord[field];
       if (!val || (typeof val === 'string' && val.trim() === '')) {
         this.invalidFields.push(field);
       }
@@ -223,7 +242,7 @@ export class PreRegistroComponent implements OnInit {
     if (step === 1) {
       // Name fields: letters only
       for (const f of ['nombre', 'apellidoPaterno', 'apellidoMaterno', 'nombrePadreMadre']) {
-        const v = (this.formData[f] || '').trim();
+        const v = ((formAsRecord[f] as string) || '').trim();
         if (v && !this._soloLetras(v)) {
           if (!this.invalidFields.includes(f)) this.invalidFields.push(f);
           this.fieldErrors[f] = 'Solo se permiten letras en este campo.';
@@ -258,9 +277,9 @@ export class PreRegistroComponent implements OnInit {
         ['telefonoEmergencia', 'telefonoEmergenciaCodigo'],
       ];
       for (const [f, cf] of phoneFields) {
-        if (this.formData[f] && !this._esTelefono(this.formData[f], this.formData[cf])) {
+        if (formAsRecord[f] && !this._esTelefono(formAsRecord[f] as string, formAsRecord[cf] as string)) {
           if (!this.invalidFields.includes(f)) this.invalidFields.push(f);
-          this.fieldErrors[f] = this.formData[cf] === '+52'
+          this.fieldErrors[f] = formAsRecord[cf] === '+52'
             ? 'El teléfono debe tener exactamente 10 dígitos.'
             : 'Número de teléfono inválido.';
         }
@@ -275,7 +294,8 @@ export class PreRegistroComponent implements OnInit {
       // Tutor fields
       if (this.formData.requiereTutor) {
         for (const f of ['nombreTutor', 'telefonoTutor', 'relacionTutor']) {
-          if (!this.formData[f] || this.formData[f].trim() === '') {
+          const fval = formAsRecord[f] as string;
+          if (!fval || fval.trim() === '') {
             this.invalidFields.push(f);
           }
         }
@@ -362,9 +382,9 @@ export class PreRegistroComponent implements OnInit {
     };
 
     this.api.createPreRegistro(payload).subscribe({
-      next: (res: any) => {
+      next: (res: PreRegistroCreatedResponse) => {
         this.submitting = false;
-        this.createdPacienteId = res.id_paciente;
+        this.createdPacienteId = res.id_paciente ?? null;
         if (res.preregistro_token) {
           sessionStorage.setItem('preregistro_token', res.preregistro_token);
         }
@@ -373,17 +393,17 @@ export class PreRegistroComponent implements OnInit {
             t.nombre?.toLowerCase().includes('fotograf')
           );
           if (tipoFoto) {
-            this.api.uploadDocumento(res.id_paciente, tipoFoto.id_tipo_documento, this.fotografiaFile)
+            this.api.uploadDocumento(res.id_paciente!, tipoFoto.id_tipo_documento, this.fotografiaFile)
               .subscribe({ error: (e) => console.error('Error al subir fotografía:', e) });
           }
         }
         this.currentStep = 5;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.submitting = false;
         console.error('Error al crear pre-registro:', err);
-        const detail = err?.error?.detail;
+        const detail = (err as { error?: { detail?: string } })?.error?.detail;
         if (detail && detail.includes('folio o CURP')) {
           this.stepError = 'Ya existe un registro con ese CURP. Si ya enviaste un pre-registro, cont\u00e1ctanos.';
         } else {

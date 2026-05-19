@@ -90,18 +90,18 @@ export class MapaTabComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.mapaLoading = true;
     this.mapaError = '';
     this.api.getMapaBeneficiarios().subscribe({
-      next: (data: any[]) => {
+      next: (data: MapBeneficiario[]) => {
         this.mapaBeneficiarios = data;
         this.mapaEstados = [...new Set(
-          data.map((b: any) => (b.estado || '').trim()).filter(Boolean)
+          data.map((b) => (b.estado || '').trim()).filter(Boolean)
         )].sort();
         this.mapaLoading = false;
         if (this._map) this._renderMarkers();
         if (this.mapaPendientesGeocode > 0) this._startAutoPoll();
       },
-      error: (err: any) => {
+      error: (err: unknown) => {
         this.mapaLoading = false;
-        this.mapaError = err?.error?.detail || 'No se pudo cargar el mapa. Verifica que el servidor esté corriendo.';
+        this.mapaError = (err as { error?: { detail?: string } })?.error?.detail || 'No se pudo cargar el mapa. Verifica que el servidor esté corriendo.';
       },
     });
   }
@@ -114,10 +114,10 @@ export class MapaTabComponent implements OnInit, OnDestroy, AfterViewChecked {
     this._stopAutoPoll();
     this._pollInterval = setInterval(() => {
       this.api.getMapaBeneficiarios().subscribe({
-        next: (data: any[]) => {
+        next: (data: MapBeneficiario[]) => {
           this.mapaBeneficiarios = data;
           this.mapaEstados = [...new Set(
-            data.map((b: any) => (b.estado || '').trim()).filter(Boolean)
+            data.map((b) => (b.estado || '').trim()).filter(Boolean)
           )].sort();
           this._addNewMarkers();
           if (this.mapaPendientesGeocode === 0) this._stopAutoPoll();

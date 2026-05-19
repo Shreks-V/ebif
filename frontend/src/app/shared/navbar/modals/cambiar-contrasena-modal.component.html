@@ -1,0 +1,48 @@
+<div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" (click)="close()">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-[#00328b] rounded-xl flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h2 class="text-base font-bold text-slate-900">Cambiar contraseña</h2>
+      </div>
+      <button (click)="close()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 transition-all cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      @if (success) {
+        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-semibold text-emerald-700 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Contraseña actualizada correctamente.
+        </div>
+      }
+      @if (error) {
+        <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-700">{{ error }}</div>
+      }
+      @if (!success) {
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Contraseña actual</label>
+          <input type="password" [(ngModel)]="data.actual" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Tu contraseña actual">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Nueva contraseña</label>
+          <input type="password" [(ngModel)]="data.nueva" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Mínimo 8 caracteres">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Confirmar nueva contraseña</label>
+          <input type="password" [(ngModel)]="data.confirmar" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm" placeholder="Repite la nueva contraseña">
+        </div>
+      }
+    </div>
+    <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+      <button (click)="close()" class="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">Cancelar</button>
+      @if (!success) {
+        <button (click)="submit()" [disabled]="loading" class="px-5 py-2 text-sm font-bold text-white bg-[#00328b] hover:bg-[#00246d] rounded-xl transition-all disabled:opacity-50">
+          {{ loading ? 'Guardando...' : 'Guardar' }}
+        </button>
+      }
+    </div>
+  </div>
+</div>

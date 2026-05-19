@@ -4,6 +4,7 @@ from app.presentation.api.routers import (
     almacen,
     auth,
     beneficiarios,
+    bitacora,
     citas,
     config,
     doctores,
@@ -28,4 +29,5 @@ def build_api_router() -> APIRouter:
     router.include_router(doctores.router, prefix="/api/doctores", tags=["Doctores"])
     router.include_router(exportaciones.router, prefix="/api/exportaciones", tags=["Exportaciones"])
     router.include_router(notificaciones.router, prefix="/api/notificaciones", tags=["Notificaciones"])
+    router.include_router(bitacora.router, prefix="/api/bitacora", tags=["Bitácora"])
     return router

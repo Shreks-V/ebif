@@ -1,5 +1,6 @@
 <!-- Category Filter Cards -->
-<div class="flex items-center justify-between mb-0">
+<div class="space-y-5">
+<div class="flex items-center justify-between">
   <div class="flex items-center gap-3">
     <h2 class="text-lg font-semibold text-slate-800">Filtrar por Categor&iacute;a</h2>
     @if (quickFilter !== 'none') {
@@ -13,7 +14,7 @@
   }
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
   <!-- Medicamentos -->
   <button
     (click)="toggleCategory('Medicamento')"
@@ -61,7 +62,7 @@
 </div>
 
 <!-- Search + Add -->
-<div class="flex flex-col sm:flex-row gap-4">
+<div class="flex flex-col sm:flex-row gap-4 items-center">
   <div class="relative flex-1">
     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
       <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.3-4.3"/>
@@ -82,7 +83,7 @@
 </div>
 
 <!-- Inventory Table -->
-<div class="bg-white rounded-2xl shadow-lg border border-slate-200">
+<div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
   <div>
     <table class="w-full text-sm">
       <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
@@ -148,8 +149,8 @@
           </td></tr>
         }
         @for (item of filteredRows; track item.id + '-' + item.categoria) {
-          <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-            <td class="px-5 py-4 text-slate-600 font-mono">{{ item.id }}</td>
+          <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
+            <td class="px-5 py-4 text-slate-500 font-mono text-xs">{{ item.id }}</td>
             <td class="px-5 py-4">
               <div class="flex items-center gap-2">
                 <div [ngClass]="getCategoryIconBg(item.categoria)" class="w-7 h-7 rounded-lg flex items-center justify-center">
@@ -209,6 +210,7 @@
     </table>
   </div>
 </div>
+</div><!-- /space-y-5 -->
 
 <!-- MODAL: Quick Stock -->
 @if (quickStockItem) {

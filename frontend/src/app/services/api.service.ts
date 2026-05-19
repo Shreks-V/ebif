@@ -1,13 +1,19 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AlmacenApiService } from './almacen-api.service';
-import { BeneficiariosApiService } from './beneficiarios-api.service';
-import { CitasApiService } from './citas-api.service';
-import { RecibosApiService } from './recibos-api.service';
-import { ReportesApiService } from './reportes-api.service';
+import { BeneficiariosApiService, BeneficiariosFilter } from './beneficiarios-api.service';
+import { BitacoraApiService } from './bitacora-api.service';
+import { CitasApiService, CitasFilter } from './citas-api.service';
+import { RecibosApiService, RecibosFilter, PagoPayload } from './recibos-api.service';
+import { ReportesApiService, ReporteFilter } from './reportes-api.service';
 import { ExportacionesApiService } from './exportaciones-api.service';
 import { AuthApiService } from './auth-api.service';
 import { PreregistroApiService } from './preregistro-api.service';
+import { BitacoraFilter } from '../shared/models/bitacora.models';
+import {
+  CambiarContrasenaPayload, CrearUsuarioPayload,
+  ActualizarUsuarioPayload, ResetContrasenaPayload,
+} from '../shared/models/usuario-sistema.models';
 
 /**
  * Facade kept for backward compatibility. Inject domain services directly in new code:
@@ -19,6 +25,7 @@ export class ApiService {
   constructor(
     private almacen: AlmacenApiService,
     private beneficiarios: BeneficiariosApiService,
+    private bitacora: BitacoraApiService,
     private citas: CitasApiService,
     private recibos: RecibosApiService,
     private reportes: ReportesApiService,
@@ -28,7 +35,7 @@ export class ApiService {
   ) {}
 
   // ── Beneficiarios ──
-  getBeneficiarios(filters?: any) { return this.beneficiarios.getBeneficiarios(filters); }
+  getBeneficiarios(filters?: BeneficiariosFilter) { return this.beneficiarios.getBeneficiarios(filters); }
   getBeneficiario(folio: string) { return this.beneficiarios.getBeneficiario(folio); }
   createBeneficiario(data: any) { return this.beneficiarios.createBeneficiario(data); }
   updateBeneficiario(folio: string, data: any) { return this.beneficiarios.updateBeneficiario(folio, data); }
@@ -43,7 +50,7 @@ export class ApiService {
   renovarMembresia(folio: string, data: any) { return this.beneficiarios.renovarMembresia(folio, data); }
 
   // ── Citas ──
-  getCitas(filters?: any) { return this.citas.getCitas(filters); }
+  getCitas(filters?: CitasFilter) { return this.citas.getCitas(filters); }
   getCita(id: number) { return this.citas.getCita(id); }
   createCita(data: any) { return this.citas.createCita(data); }
   updateCita(id: number, data: any) { return this.citas.updateCita(id, data); }
@@ -87,14 +94,14 @@ export class ApiService {
   getMovimientos(filters?: any) { return this.almacen.getMovimientos(filters); }
 
   // ── Recibos ──
-  getRecibos(filters?: any) { return this.recibos.getRecibos(filters); }
+  getRecibos(filters?: RecibosFilter) { return this.recibos.getRecibos(filters); }
   createRecibo(data: any) { return this.recibos.createRecibo(data); }
   getRecibo(id: number) { return this.recibos.getRecibo(id); }
   cancelarRecibo(id: number, motivo?: string) { return this.recibos.cancelarRecibo(id, motivo); }
   getRecibosStats() { return this.recibos.getRecibosStats(); }
   getMetodosPago() { return this.recibos.getMetodosPago(); }
   getReciboItems(id: number) { return this.recibos.getReciboItems(id); }
-  registrarPagoParcial(idVenta: number, data: any) { return this.recibos.registrarPagoParcial(idVenta, data); }
+  registrarPagoParcial(idVenta: number, data: PagoPayload) { return this.recibos.registrarPagoParcial(idVenta, data); }
   exentarVenta(idVenta: number, nota?: string) { return this.recibos.exentarVenta(idVenta, nota); }
 
   // ── Exportaciones ──
@@ -107,14 +114,14 @@ export class ApiService {
   exportarContratoComodatoPdf(idComodato: number): Observable<Blob> { return this.exportaciones.exportarContratoComodatoPdf(idComodato); }
 
   // ── Reportes ──
-  getReportePorGenero(filters?: any) { return this.reportes.getReportePorGenero(filters); }
-  getReportePorEtapaVida(filters?: any) { return this.reportes.getReportePorEtapaVida(filters); }
-  getReportePorTipoEspina(filters?: any) { return this.reportes.getReportePorTipoEspina(filters); }
-  getReportePorEstado(filters?: any) { return this.reportes.getReportePorEstado(filters); }
-  getReporteResumen(filters?: any) { return this.reportes.getReporteResumen(filters); }
-  getReporteServiciosPorTipo(filters?: any) { return this.reportes.getReporteServiciosPorTipo(filters); }
-  getReporteEstudiosPorTipo(filters?: any) { return this.reportes.getReporteEstudiosPorTipo(filters); }
-  getReportePagosExentos(filters?: any) { return this.reportes.getReportePagosExentos(filters); }
+  getReportePorGenero(filters?: ReporteFilter) { return this.reportes.getReportePorGenero(filters); }
+  getReportePorEtapaVida(filters?: ReporteFilter) { return this.reportes.getReportePorEtapaVida(filters); }
+  getReportePorTipoEspina(filters?: ReporteFilter) { return this.reportes.getReportePorTipoEspina(filters); }
+  getReportePorEstado(filters?: ReporteFilter) { return this.reportes.getReportePorEstado(filters); }
+  getReporteResumen(filters?: ReporteFilter) { return this.reportes.getReporteResumen(filters); }
+  getReporteServiciosPorTipo(filters?: ReporteFilter) { return this.reportes.getReporteServiciosPorTipo(filters); }
+  getReporteEstudiosPorTipo(filters?: ReporteFilter) { return this.reportes.getReporteEstudiosPorTipo(filters); }
+  getReportePagosExentos(filters?: ReporteFilter) { return this.reportes.getReportePagosExentos(filters); }
   getReportePagosPorMetodo(fechaInicio?: string, fechaFin?: string) { return this.reportes.getReportePagosPorMetodo(fechaInicio, fechaFin); }
   getReporteConsolidadoMensual(mes?: number, anio?: number) { return this.reportes.getReporteConsolidadoMensual(mes, anio); }
   getHistorialReportes(filters?: any) { return this.reportes.getHistorialReportes(filters); }
@@ -137,11 +144,14 @@ export class ApiService {
   getDocumentoBlob(idPaciente: number, idDocumento: number): Observable<Blob> { return this.preregistro.getDocumentoBlob(idPaciente, idDocumento); }
   deleteDocumento(idPaciente: number, idDocumento: number) { return this.preregistro.deleteDocumento(idPaciente, idDocumento); }
 
+  // ── Bitácora ──
+  getBitacora(filters?: BitacoraFilter) { return this.bitacora.getBitacora(filters); }
+
   // ── Auth ──
-  cambiarContrasena(data: any) { return this.auth.cambiarContrasena(data); }
+  cambiarContrasena(data: CambiarContrasenaPayload) { return this.auth.cambiarContrasena(data); }
   listarUsuariosSistema() { return this.auth.listarUsuariosSistema(); }
-  adminResetContrasena(idUsuario: number, data: any) { return this.auth.adminResetContrasena(idUsuario, data); }
-  crearUsuarioSistema(data: any) { return this.auth.crearUsuarioSistema(data); }
-  actualizarUsuarioSistema(idUsuario: number, data: any) { return this.auth.actualizarUsuarioSistema(idUsuario, data); }
+  adminResetContrasena(idUsuario: number, data: ResetContrasenaPayload) { return this.auth.adminResetContrasena(idUsuario, data); }
+  crearUsuarioSistema(data: CrearUsuarioPayload) { return this.auth.crearUsuarioSistema(data); }
+  actualizarUsuarioSistema(idUsuario: number, data: ActualizarUsuarioPayload) { return this.auth.actualizarUsuarioSistema(idUsuario, data); }
   seedUsers() { return this.auth.seedUsers(); }
 }

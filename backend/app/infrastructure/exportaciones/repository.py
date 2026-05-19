@@ -46,7 +46,7 @@ def _excel_payload(buffer: io.BytesIO, filename: str) -> FilePayload:
     buffer.seek(0)
     return FilePayload(content=buffer.read(), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=filename)
 
-def exportar_reporte_pdf(  # noqa: C901
+def _exportar_reporte_pdf(  # noqa: C901
     tipo: str = 'resumen',
     genero: Optional[str] = None,
     estado: Optional[str] = None,
@@ -506,7 +506,7 @@ def exportar_reporte_pdf(  # noqa: C901
         logger.exception('Error al generar PDF de reporte')
         raise InternalError('Error interno del servidor')
 
-def exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = None):
+def _exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = None):
     """Generar reporte PDF de un beneficiario con sus datos y documentos (RF-ER-06)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -550,7 +550,7 @@ def exportar_beneficiario_pdf(folio: str, current_user: CurrentUser | None = Non
         logger.exception('Error al generar PDF del beneficiario')
         raise InternalError('Error interno del servidor')
 
-def exportar_credencial_pdf(folio: str, current_user: CurrentUser | None = None):
+def _exportar_credencial_pdf(folio: str, current_user: CurrentUser | None = None):
     """Generar credencial del beneficiario en PDF (RF-RB-06)."""
     from reportlab.lib.pagesizes import landscape, A6
     from reportlab.lib.units import cm
@@ -747,7 +747,7 @@ def exportar_credencial_pdf(folio: str, current_user: CurrentUser | None = None)
         raise InternalError('Error interno del servidor')
 
 
-def exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = None):
+def _exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = None):
     """Generar comprobante PDF de una cita con sus servicios (RF-SO-10)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -811,7 +811,7 @@ def exportar_comprobante_cita(id_cita: int, current_user: CurrentUser | None = N
         logger.exception('Error al generar comprobante PDF')
         raise InternalError('Error interno del servidor')
 
-def exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | None = None):
+def _exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | None = None):
     """Generar contrato de comodato en PDF (RF-PS-05)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -876,7 +876,7 @@ def exportar_contrato_comodato(id_comodato: int, current_user: CurrentUser | Non
         logger.exception('Error al generar contrato de comodato PDF')
         raise InternalError('Error interno del servidor')
 
-def exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[str]=None, membresia_estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: CurrentUser | None = None):
+def _exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[str]=None, membresia_estatus: Optional[str]=None, busqueda: Optional[str]=None, current_user: CurrentUser | None = None):
     """Exportar lista filtrada de beneficiarios a Excel (RF-RB-07)."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -933,7 +933,7 @@ def exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[st
         logger.exception('Error al generar Excel de beneficiarios')
         raise InternalError('Error interno del servidor')
 
-def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):
+def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):
     """Exportar datos de reportes a Excel (RF-ER-11)."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -1064,22 +1064,22 @@ def exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None
 
 class OracleExportacionesRepository(ExportacionesRepository):
     def exportar_reporte_pdf(self, tipo='resumen', genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, mes=None, anio=None, current_user=None):
-        return exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user)
+        return _exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user)
 
     def exportar_beneficiario_pdf(self, folio, current_user=None):
-        return exportar_beneficiario_pdf(folio, current_user)
+        return _exportar_beneficiario_pdf(folio, current_user)
 
     def exportar_credencial_pdf(self, folio, current_user=None):
-        return exportar_credencial_pdf(folio, current_user)
+        return _exportar_credencial_pdf(folio, current_user)
 
     def exportar_comprobante_cita(self, id_cita, current_user=None):
-        return exportar_comprobante_cita(id_cita, current_user)
+        return _exportar_comprobante_cita(id_cita, current_user)
 
     def exportar_contrato_comodato(self, id_comodato, current_user=None):
-        return exportar_contrato_comodato(id_comodato, current_user)
+        return _exportar_contrato_comodato(id_comodato, current_user)
 
     def exportar_beneficiarios_excel(self, genero=None, estado=None, membresia_estatus=None, busqueda=None, current_user=None):
-        return exportar_beneficiarios_excel(genero, estado, membresia_estatus, busqueda, current_user)
+        return _exportar_beneficiarios_excel(genero, estado, membresia_estatus, busqueda, current_user)
 
     def exportar_reporte_excel(self, tipo='resumen', fecha_inicio=None, fecha_fin=None, mes=None, anio=None, current_user=None):
-        return exportar_reporte_excel(tipo, fecha_inicio, fecha_fin, mes, anio, current_user)
+        return _exportar_reporte_excel(tipo, fecha_inicio, fecha_fin, mes, anio, current_user)

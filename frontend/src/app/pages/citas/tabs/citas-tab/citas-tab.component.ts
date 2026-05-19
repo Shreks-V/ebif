@@ -3,13 +3,31 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../../services/api.service';
+import { ServicioRaw } from '../../../../shared/models/almacen.models';
+import { NuevaCitaModalComponent } from './modals/nueva-cita-modal.component';
+import { DetalleCitaModalComponent } from './modals/detalle-cita-modal.component';
+import { EditarCitaModalComponent } from './modals/editar-cita-modal.component';
+import { ConfirmarEliminarCitaModalComponent } from './modals/confirmar-eliminar-cita-modal.component';
 
 interface TableSortState { key: string; direction: 'asc' | 'desc'; }
+interface MedicoLocal { idDoctor: number; nombre: string; apellidoPaterno: string; especialidad?: string; }
+
+interface CitaServicioLocal { idServicio: number; nombre: string; cantidad: number; montoPagado: number; }
+interface CitaLocal {
+  idCita: number;
+  idPaciente: number;
+  nombrePaciente: string;
+  folioPaciente: string;
+  fechaHora: string;
+  estatus: string;
+  notas: string | null;
+  servicios: CitaServicioLocal[];
+}
 
 @Component({
   selector: 'app-citas-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NuevaCitaModalComponent, DetalleCitaModalComponent, EditarCitaModalComponent, ConfirmarEliminarCitaModalComponent],
   templateUrl: './citas-tab.component.html',
 })
 export class CitasTabComponent implements OnInit, OnDestroy {
@@ -31,11 +49,11 @@ export class CitasTabComponent implements OnInit, OnDestroy {
 
   // Data
   loading = true;
-  citas: any[] = [];
-  citasFiltradas: any[] = [];
+  citas: CitaLocal[] = [];
+  citasFiltradas: CitaLocal[] = [];
   citasSort: TableSortState = { key: 'fechaHora', direction: 'asc' };
-  serviciosList: any[] = [];
-  medicos: any[] = [];
+  serviciosList: ServicioRaw[] = [];
+  medicos: MedicoLocal[] = [];
 
   // Pagination
   readonly citasPageSize = 20;
@@ -43,33 +61,14 @@ export class CitasTabComponent implements OnInit, OnDestroy {
 
   // Modals
   showNuevaCitaModal = false;
-  showDetalleCitaModal = false;
-  showEditCitaModal = false;
-  showConfirmDeleteCita = false;
-  citaSeleccionada: any = null;
-  citaAEliminar: any = null;
-
-  // Nueva cita form
-  beneficiariosList: any[] = [];
-  beneficiariosFiltrados: any[] = [];
-  busquedaPaciente = '';
-  showPacienteDropdown = false;
-  nuevaCita: any = { id_paciente: null, estatus: 'PROGRAMADA', notas: '', servicios: [] };
-  nuevaCitaFechaHora = '';
-  nuevaCitaIdDoctor: number | null = null;
-  nuevaCitaServiciosFiltrados: any[] = [];
-  nuevaCitaLoadingServicios = false;
-  guardandoCita = false;
-
-  // Edit cita
-  editCita: any = null;
-  editCitaFechaHora = '';
-  guardandoEdicionCita = false;
+  citaParaDetalle: CitaLocal | null = null;
+  citaParaEditar: CitaLocal | null = null;
+  citaParaEliminar: CitaLocal | null = null;
 
   // Context menu
   openCitaMenu: number | null = null;
   menuCitaPosition = { top: 0, left: 0 };
-  menuCita: any = null;
+  menuCita: CitaLocal | null = null;
   private citaMenuTriggerElement: HTMLElement | null = null;
   private readonly actionMenuWidth = 192;
   private readonly citaMenuEstimatedHeight = 340;
@@ -82,23 +81,21 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this._cargarCitas();
     this.api.getServicios().subscribe({
-      next: (data) => { this.serviciosList = data; this.nuevaCitaServiciosFiltrados = data; },
+      next: (data) => { this.serviciosList = data; },
       error: (err) => console.error('Error al cargar servicios:', err),
     });
     this.api.getDoctores().subscribe({
       next: (data) => {
-        this.medicos = data.map((d: any) => ({
-          idDoctor: d.id_doctor,
-          nombre: d.nombre,
-          apellidoPaterno: d.apellido_paterno,
-          especialidad: d.especialidad,
+        this.medicos = data.map((d) => ({
+          idDoctor: d.id_doctor, nombre: d.nombre,
+          apellidoPaterno: d.apellido_paterno, especialidad: d.especialidad,
         }));
       },
       error: (err) => console.error('Error al cargar médicos:', err),
     });
     this.route.queryParams.subscribe(params => {
       if (params['action'] === 'nueva') {
-        setTimeout(() => this.abrirNuevaCita(), 0);
+        setTimeout(() => { this.showNuevaCitaModal = true; }, 0);
       }
     });
     window.visualViewport?.addEventListener('resize', this._onViewportChange, { passive: true });
@@ -120,7 +117,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
       .toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
   }
 
-  get calendarDays(): { dateStr: string; day: number; isCurrentMonth: boolean; isToday: boolean; citas: any[] }[] {
+  get calendarDays(): { dateStr: string; day: number; isCurrentMonth: boolean; isToday: boolean; citas: CitaLocal[] }[] {
     const first = new Date(this.calendarYear, this.calendarMonth, 1);
     const start = new Date(first);
     start.setDate(1 - first.getDay());
@@ -156,7 +153,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
     return Math.max(1, Math.ceil(this.citasFiltradas.length / this.citasPageSize));
   }
 
-  get citasPaginadas(): any[] {
+  get citasPaginadas(): CitaLocal[] {
     const start = (this.citasPaginaActual - 1) * this.citasPageSize;
     return this.citasFiltradas.slice(start, start + this.citasPageSize);
   }
@@ -196,7 +193,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
       });
     }
     if (this.filtroEstado !== 'Todas') resultado = resultado.filter(c => c.estatus === this.filtroEstado);
-    if (this.filtroTipo !== 'Todas') resultado = resultado.filter(c => c.servicios.some((s: any) => s.nombre === this.filtroTipo));
+    if (this.filtroTipo !== 'Todas') resultado = resultado.filter(c => c.servicios.some((s: CitaServicioLocal) => s.nombre === this.filtroTipo));
     this.citasPaginaActual = 1;
     this.citasFiltradas = this._sortRows(resultado, this.citasSort, (cita, key) => {
       switch (key) {
@@ -221,7 +218,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
     return sort.direction === 'asc' ? '^' : 'v';
   }
 
-  // ── Date helpers ──
+  // ── Date helpers (used in table and CSV export) ──
 
   private _toMXDate(fechaHora: string): Date {
     const clean = fechaHora.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(fechaHora)
@@ -241,12 +238,6 @@ export class CitasTabComponent implements OnInit, OnDestroy {
       .toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'America/Monterrey' });
   }
 
-  formatFechaHora(fechaHora: string): string {
-    if (!fechaHora) return '';
-    return this._toMXDate(fechaHora)
-      .toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Monterrey' });
-  }
-
   getEstadoBadgeClass(estatus: string): string {
     switch (estatus) {
       case 'COMPLETADA': return 'bg-green-100 text-green-800 border-green-200';
@@ -257,140 +248,27 @@ export class CitasTabComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── Nueva Cita ──
+  // ── Modal handlers ──
 
-  abrirNuevaCita(): void {
-    this.nuevaCita = { id_paciente: null, estatus: 'PROGRAMADA', notas: '', servicios: [] };
-    this.nuevaCitaFechaHora = '';
-    this.nuevaCitaIdDoctor = null;
-    this.nuevaCitaServiciosFiltrados = this.serviciosList;
-    this.busquedaPaciente = '';
-    this.showPacienteDropdown = false;
-    this.beneficiariosFiltrados = [];
-    this.showNuevaCitaModal = true;
-    this.api.getBeneficiarios().subscribe({
-      next: (data) => {
-        this.beneficiariosList = data.map((b: any) => ({
-          id_paciente: b.id_paciente,
-          folio: b.folio,
-          nombre_completo: `${b.nombre || ''} ${b.apellido_paterno || ''} ${b.apellido_materno || ''}`.trim(),
-        }));
-      },
-      error: (err) => console.error('Error al cargar beneficiarios:', err),
-    });
-  }
+  abrirNuevaCita(): void { this.showNuevaCitaModal = true; }
+  verDetalleCita(cita: CitaLocal): void { this.citaParaDetalle = cita; }
+  editarCita(cita: CitaLocal): void { this.citaParaEditar = cita; }
+  confirmarEliminarCita(cita: CitaLocal): void { this.citaParaEliminar = cita; }
+  onNuevaCitaGuardada(): void { this.showNuevaCitaModal = false; this._cargarCitas(); }
+  onEdicionGuardada(): void { this.citaParaEditar = null; this._cargarCitas(); }
+  onCitaEliminada(): void { this.citaParaEliminar = null; this._cargarCitas(); }
 
-  filtrarBeneficiarios(): void {
-    this.showPacienteDropdown = true;
-    if (!this.busquedaPaciente) {
-      this.beneficiariosFiltrados = [];
-      this.nuevaCita.id_paciente = null;
-      return;
-    }
-    const term = this.busquedaPaciente.toLowerCase();
-    this.beneficiariosFiltrados = this.beneficiariosList
-      .filter(b => b.folio?.toLowerCase().includes(term) || b.nombre_completo.toLowerCase().includes(term))
-      .slice(0, 10);
-  }
+  // ── Inline actions ──
 
-  seleccionarPaciente(b: any): void {
-    this.nuevaCita.id_paciente = b.id_paciente;
-    this.busquedaPaciente = `${b.folio} - ${b.nombre_completo}`;
-    this.showPacienteDropdown = false;
-    this.beneficiariosFiltrados = [];
-  }
-
-  agregarServicioCita(): void {
-    this.nuevaCita.servicios.push({ id_servicio: null, cantidad: 1, monto_pagado: 0 });
-  }
-
-  quitarServicioCita(index: number): void { this.nuevaCita.servicios.splice(index, 1); }
-
-  onDoctorNuevaCitaChange(): void {
-    this.nuevaCita.servicios.forEach((s: any) => { s.id_servicio = null; s.monto_pagado = 0; });
-    if (!this.nuevaCitaIdDoctor) { this.nuevaCitaServiciosFiltrados = this.serviciosList; return; }
-    this.nuevaCitaLoadingServicios = true;
-    this.api.getDoctorServicios(this.nuevaCitaIdDoctor).subscribe({
-      next: (doctorServs: any[]) => {
-        const ids = new Set(doctorServs.map((s: any) => s.id_servicio));
-        this.nuevaCitaServiciosFiltrados = this.serviciosList.filter(s => ids.has(s.id_servicio));
-        this.nuevaCitaLoadingServicios = false;
-      },
-      error: () => { this.nuevaCitaServiciosFiltrados = this.serviciosList; this.nuevaCitaLoadingServicios = false; },
-    });
-  }
-
-  onServicioNuevaCitaChange(srv: any): void {
-    if (!srv.id_servicio) { srv.monto_pagado = 0; return; }
-    const found = this.serviciosList.find((s: any) => s.id_servicio === srv.id_servicio);
-    if (found) srv.monto_pagado = found.cuota_recuperacion ?? found.precio_cuota_a ?? 0;
-  }
-
-  guardarCita(): void {
-    if (!this.nuevaCita.id_paciente || !this.nuevaCitaFechaHora) return;
-    this.guardandoCita = true;
-    const payload = {
-      id_paciente: this.nuevaCita.id_paciente,
-      fecha_hora: this.nuevaCitaFechaHora.length === 16 ? this.nuevaCitaFechaHora + ':00' : this.nuevaCitaFechaHora,
-      estatus: this.nuevaCita.estatus,
-      notas: this.nuevaCita.notas,
-      servicios: this.nuevaCita.servicios
-        .filter((s: any) => s.id_servicio !== null)
-        .map((s: any) => ({ id_servicio: s.id_servicio, id_doctor: this.nuevaCitaIdDoctor ?? null, cantidad: s.cantidad, monto_pagado: s.monto_pagado })),
-    };
-    this.api.createCita(payload).subscribe({
-      next: () => { this.showNuevaCitaModal = false; this.guardandoCita = false; this._cargarCitas(); },
-      error: (err) => { console.error('Error al crear cita:', err); this.guardandoCita = false; },
-    });
-  }
-
-  // ── Detalle Cita ──
-
-  verDetalleCita(cita: any): void {
-    this.citaSeleccionada = cita;
-    this.showDetalleCitaModal = true;
-  }
-
-  // ── Editar Cita ──
-
-  editarCita(cita: any): void {
-    this.editCita = {
-      idCita: cita.idCita, idPaciente: cita.idPaciente, nombrePaciente: cita.nombrePaciente,
-      estatus: cita.estatus, notas: cita.notas || '', servicios: cita.servicios.map((s: any) => ({ ...s })),
-    };
-    this.editCitaFechaHora = cita.fechaHora ? cita.fechaHora.substring(0, 16) : '';
-    this.showEditCitaModal = true;
-  }
-
-  agregarServicioEditCita(): void {
-    this.editCita.servicios.push({ idServicio: null, cantidad: 1, montoPagado: 0 });
-  }
-
-  guardarEdicionCita(): void {
-    if (!this.editCitaFechaHora) return;
-    this.guardandoEdicionCita = true;
-    const payload = {
-      id_paciente: this.editCita.idPaciente,
-      fecha_hora: this.editCitaFechaHora.length === 16 ? this.editCitaFechaHora + ':00' : this.editCitaFechaHora,
-      estatus: this.editCita.estatus, notas: this.editCita.notas,
-      servicios: this.editCita.servicios.filter((s: any) => s.idServicio !== null)
-        .map((s: any) => ({ id_servicio: s.idServicio, cantidad: s.cantidad, monto_pagado: s.montoPagado })),
-    };
-    this.api.updateCita(this.editCita.idCita, payload).subscribe({
-      next: () => { this.showEditCitaModal = false; this.guardandoEdicionCita = false; this._cargarCitas(); },
-      error: (err) => { console.error('Error al actualizar cita:', err); this.guardandoEdicionCita = false; },
-    });
-  }
-
-  completarCitaInline(cita: any): void {
+  completarCitaInline(cita: CitaLocal): void {
     this.api.completarCita(cita.idCita).subscribe({ next: () => this._cargarCitas(), error: (err) => console.error(err) });
   }
 
-  cancelarCitaInline(cita: any): void {
+  cancelarCitaInline(cita: CitaLocal): void {
     this.api.cancelarCita(cita.idCita).subscribe({ next: () => this._cargarCitas(), error: (err) => console.error(err) });
   }
 
-  descargarComprobante(cita: any): void {
+  descargarComprobante(cita: CitaLocal): void {
     this.api.exportarComprobanteCitaPdf(cita.idCita).subscribe({
       next: (blob) => this._abrirPdfEnNuevaTab(blob),
       error: () => alert('Error al generar comprobante'),
@@ -415,22 +293,9 @@ export class CitasTabComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(url);
   }
 
-  confirmarEliminarCita(cita: any): void {
-    this.citaAEliminar = cita;
-    this.showConfirmDeleteCita = true;
-  }
-
-  eliminarCita(): void {
-    if (!this.citaAEliminar) return;
-    this.api.deleteCita(this.citaAEliminar.idCita).subscribe({
-      next: () => { this.showConfirmDeleteCita = false; this.citaAEliminar = null; this._cargarCitas(); },
-      error: (err) => { console.error('Error al eliminar cita:', err); this.showConfirmDeleteCita = false; },
-    });
-  }
-
   // ── Context menu ──
 
-  toggleCitaMenu(cita: any, event: MouseEvent): void {
+  toggleCitaMenu(cita: CitaLocal, event: MouseEvent): void {
     event.stopPropagation();
     if (this.openCitaMenu === cita.idCita) { this.closeCitaMenu(); return; }
     this.citaMenuTriggerElement = event.currentTarget as HTMLElement;
@@ -451,10 +316,10 @@ export class CitasTabComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.api.getCitas().subscribe({
       next: (data) => {
-        this.citas = data.map((c: any) => ({
-          idCita: c.id_cita, idPaciente: c.id_paciente, nombrePaciente: c.nombre_paciente,
-          folioPaciente: c.folio_paciente, fechaHora: c.fecha_hora, estatus: c.estatus, notas: c.notas,
-          servicios: (c.servicios || []).map((s: any) => ({ idServicio: s.id_servicio, nombre: s.nombre, cantidad: s.cantidad, montoPagado: s.monto_pagado })),
+        this.citas = data.map((c) => ({
+          idCita: c.id_cita, idPaciente: c.id_paciente ?? 0, nombrePaciente: c.nombre_paciente ?? '',
+          folioPaciente: c.folio_paciente ?? '', fechaHora: c.fecha_hora, estatus: c.estatus, notas: c.notas ?? null,
+          servicios: (c.servicios || []).map((s) => ({ idServicio: s.id_servicio, nombre: s.nombre, cantidad: s.cantidad ?? 1, montoPagado: s.monto_pagado ?? 0 })),
         }));
         this.filtrarCitas();
         this.loading = false;

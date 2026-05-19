@@ -3,6 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { buildParams } from './api-helpers';
+import {
+  ProductoRaw, ServicioRaw, ComodatoRaw,
+  AlmacenStats, Movimiento, AjusteExistenciaPayload,
+} from '../shared/models/almacen.models';
+
+export interface ProductosFilter {
+  activo?: string;
+  tipo_producto?: string;
+  busqueda?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AlmacenApiService {
@@ -10,59 +20,60 @@ export class AlmacenApiService {
 
   constructor(private http: HttpClient) {}
 
-  getProductos(filters?: Record<string, any>): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/productos`, { params: buildParams(filters) });
+  getProductos(filters?: ProductosFilter): Observable<ProductoRaw[]> {
+    return this.http.get<ProductoRaw[]>(`${this.base}/productos`, { params: buildParams(filters) });
   }
 
-  createProducto(data: any): Observable<any> {
-    return this.http.post<any>(`${this.base}/productos`, data);
+  createProducto(data: Partial<ProductoRaw>): Observable<ProductoRaw> {
+    return this.http.post<ProductoRaw>(`${this.base}/productos`, data);
   }
 
-  updateProducto(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.base}/productos/${id}`, data);
+  updateProducto(id: number, data: Partial<ProductoRaw>): Observable<ProductoRaw> {
+    return this.http.put<ProductoRaw>(`${this.base}/productos/${id}`, data);
   }
 
-  deleteProducto(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.base}/productos/${id}`);
+  deleteProducto(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/productos/${id}`);
   }
 
-  ajustarExistencia(id: number, stockNuevo: number, motivo: string): Observable<any> {
-    return this.http.patch<any>(`${this.base}/productos/${id}/existencia`, { stock_nuevo: stockNuevo, motivo });
+  ajustarExistencia(id: number, stockNuevo: number, motivo: string): Observable<ProductoRaw> {
+    const payload: AjusteExistenciaPayload = { stock_nuevo: stockNuevo, motivo };
+    return this.http.patch<ProductoRaw>(`${this.base}/productos/${id}/existencia`, payload);
   }
 
-  getServicios(filters?: Record<string, any>): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/servicios`, { params: buildParams(filters) });
+  getServicios(filters?: ProductosFilter): Observable<ServicioRaw[]> {
+    return this.http.get<ServicioRaw[]>(`${this.base}/servicios`, { params: buildParams(filters) });
   }
 
-  createServicio(data: any): Observable<any> {
-    return this.http.post<any>(`${this.base}/servicios`, data);
+  createServicio(data: Partial<ServicioRaw>): Observable<ServicioRaw> {
+    return this.http.post<ServicioRaw>(`${this.base}/servicios`, data);
   }
 
-  updateServicio(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.base}/servicios/${id}`, data);
+  updateServicio(id: number, data: Partial<ServicioRaw>): Observable<ServicioRaw> {
+    return this.http.put<ServicioRaw>(`${this.base}/servicios/${id}`, data);
   }
 
-  deleteServicio(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.base}/servicios/${id}`);
+  deleteServicio(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/servicios/${id}`);
   }
 
-  getComodatos(filters?: Record<string, any>): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/comodatos`, { params: buildParams(filters) });
+  getComodatos(filters?: Record<string, string | number>): Observable<ComodatoRaw[]> {
+    return this.http.get<ComodatoRaw[]>(`${this.base}/comodatos`, { params: buildParams(filters) });
   }
 
-  createComodato(data: any): Observable<any> {
-    return this.http.post<any>(`${this.base}/comodatos`, data);
+  createComodato(data: Partial<ComodatoRaw>): Observable<ComodatoRaw> {
+    return this.http.post<ComodatoRaw>(`${this.base}/comodatos`, data);
   }
 
-  updateComodato(id: number, data: any): Observable<any> {
-    return this.http.put<any>(`${this.base}/comodatos/${id}`, data);
+  updateComodato(id: number, data: Partial<ComodatoRaw>): Observable<ComodatoRaw> {
+    return this.http.put<ComodatoRaw>(`${this.base}/comodatos/${id}`, data);
   }
 
-  getAlmacenStats(): Observable<any> {
-    return this.http.get<any>(`${this.base}/stats`);
+  getAlmacenStats(): Observable<AlmacenStats> {
+    return this.http.get<AlmacenStats>(`${this.base}/stats`);
   }
 
-  getMovimientos(filters?: Record<string, any>): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/movimientos`, { params: buildParams(filters) });
+  getMovimientos(filters?: Record<string, string | number>): Observable<Movimiento[]> {
+    return this.http.get<Movimiento[]>(`${this.base}/movimientos`, { params: buildParams(filters) });
   }
 }

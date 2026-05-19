@@ -2,6 +2,15 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
+import { Movimiento } from '../../../../shared/models/almacen.models';
+
+interface MovimientoParams {
+  limit: number;
+  busqueda?: string;
+  tipo_movimiento?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+}
 
 @Component({
   selector: 'app-historial-tab',
@@ -10,7 +19,7 @@ import { ApiService } from '../../../../services/api.service';
   templateUrl: './historial-tab.component.html',
 })
 export class HistorialTabComponent implements OnInit, OnDestroy {
-  items: any[] = [];
+  items: Movimiento[] = [];
   loading = false;
   filtroProducto = '';
   filtroTipo = '';
@@ -43,18 +52,18 @@ export class HistorialTabComponent implements OnInit, OnDestroy {
   get totalPages(): number { return Math.max(1, Math.ceil(this.items.length / this.pageSize)); }
   get pageEnd(): number { return Math.min(this.page * this.pageSize, this.items.length); }
 
-  get sorted(): any[] {
+  get sorted(): Movimiento[] {
     const dir = this.sortDir === 'asc' ? 1 : -1;
     return [...this.items].sort((a, b) => {
-      const av = a[this.sortKey] ?? '';
-      const bv = b[this.sortKey] ?? '';
+      const av = (a as unknown as Record<string, unknown>)[this.sortKey] ?? '';
+      const bv = (b as unknown as Record<string, unknown>)[this.sortKey] ?? '';
       if (av < bv) return -dir;
       if (av > bv) return dir;
       return 0;
     });
   }
 
-  get paginated(): any[] {
+  get paginated(): Movimiento[] {
     const start = (this.page - 1) * this.pageSize;
     return this.sorted.slice(start, start + this.pageSize);
   }
@@ -99,23 +108,35 @@ export class HistorialTabComponent implements OnInit, OnDestroy {
 
   tipoLabel(tipo: string): string {
     const map: Record<string, string> = {
-      ENTRADA: 'Entrada', SALIDA: 'Salida', AJUSTE: 'Ajuste',
-      SALIDA_MERMA: 'Merma', SALIDA_VENTA: 'Venta', SALIDA_COMODATO: 'Comodato',
+      ENTRADA: 'Entrada',
+      SALIDA: 'Salida',
+      AJUSTE: 'Ajuste',
+      AJUSTE_POS: 'Ajuste +',
+      AJUSTE_NEG: 'Ajuste −',
+      SALIDA_MERMA: 'Merma',
+      SALIDA_VENTA: 'Venta',
+      SALIDA_COMODATO: 'Comodato',
     };
     return map[tipo] ?? tipo;
   }
 
   tipoClass(tipo: string): string {
-    if (tipo === 'ENTRADA') return 'bg-emerald-100 text-emerald-700';
+    if (tipo === 'ENTRADA' || tipo === 'AJUSTE_POS') return 'bg-emerald-100 text-emerald-700';
     if (tipo === 'SALIDA' || tipo === 'SALIDA_VENTA') return 'bg-red-100 text-red-700';
     if (tipo === 'SALIDA_COMODATO') return 'bg-purple-100 text-purple-700';
-    if (tipo === 'AJUSTE') return 'bg-blue-100 text-blue-700';
+    if (tipo === 'AJUSTE' || tipo === 'AJUSTE_NEG') return 'bg-blue-100 text-blue-700';
     if (tipo === 'SALIDA_MERMA') return 'bg-amber-100 text-amber-700';
     return 'bg-slate-100 text-slate-600';
   }
 
   tipoSigno(tipo: string): string {
-    return (tipo === 'ENTRADA' || tipo === 'AJUSTE') ? '+' : '-';
+    return (tipo === 'ENTRADA' || tipo === 'AJUSTE' || tipo === 'AJUSTE_POS') ? '+' : '-';
+  }
+
+  cantidadClass(tipo: string): string {
+    if (tipo === 'ENTRADA' || tipo === 'AJUSTE_POS') return 'text-emerald-600';
+    if (tipo === 'SALIDA_VENTA' || tipo === 'SALIDA' || tipo === 'SALIDA_MERMA' || tipo === 'SALIDA_COMODATO') return 'text-red-600';
+    return 'text-blue-600';
   }
 
   private _silentRefresh(): void {
@@ -125,8 +146,8 @@ export class HistorialTabComponent implements OnInit, OnDestroy {
     });
   }
 
-  private _buildParams(): any {
-    const params: any = { limit: 500 };
+  private _buildParams(): MovimientoParams {
+    const params: MovimientoParams = { limit: 500 };
     if (this.filtroProducto) params['busqueda'] = this.filtroProducto;
     if (this.filtroTipo) params['tipo_movimiento'] = this.filtroTipo;
     if (this.fechaInicio) params['fecha_inicio'] = this.fechaInicio;

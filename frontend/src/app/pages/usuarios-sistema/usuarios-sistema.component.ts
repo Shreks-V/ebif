@@ -6,6 +6,18 @@ import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { UsuarioSistema } from '../../shared/models/usuario-sistema.models';
+import { getApiError } from '../../shared/utils/error.utils';
+
+interface UsuarioFormData {
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  correo: string;
+  rol: string;
+  estatus: string;
+  contrasena: string;
+}
 
 const ROLES = [
   { value: 'ADMINISTRADOR', label: 'Administrador' },
@@ -28,7 +40,7 @@ const ROL_LABELS: Record<string, string> = {
   templateUrl: './usuarios-sistema.component.html',
 })
 export class UsuariosSistemaComponent implements OnInit {
-  usuarios: any[] = [];
+  usuarios: UsuarioSistema[] = [];
   loading = false;
   globalMsg = '';
   globalMsgType: 'success' | 'error' = 'success';
@@ -38,14 +50,14 @@ export class UsuariosSistemaComponent implements OnInit {
   // Form modal
   showFormModal = false;
   editMode = false;
-  editTarget: any = null;
-  formData: any = {};
+  editTarget: UsuarioSistema | null = null;
+  formData: UsuarioFormData = { nombre: '', apellido_paterno: '', apellido_materno: '', correo: '', rol: '', estatus: 'ACTIVO', contrasena: '' };
   formLoading = false;
   formError = '';
 
   // Reset modal
   showResetModal = false;
-  resetTarget: any = null;
+  resetTarget: UsuarioSistema | null = null;
   resetNueva = '';
   resetLoading = false;
   resetError = '';
@@ -73,7 +85,7 @@ export class UsuariosSistemaComponent implements OnInit {
     });
   }
 
-  initials(u: any): string {
+  initials(u: UsuarioSistema): string {
     const n = (u.nombre || '').charAt(0).toUpperCase();
     const a = (u.apellido_paterno || '').charAt(0).toUpperCase();
     return n + a || 'US';
@@ -91,10 +103,10 @@ export class UsuariosSistemaComponent implements OnInit {
     this.showFormModal = true;
   }
 
-  openEditModal(u: any): void {
+  openEditModal(u: UsuarioSistema): void {
     this.editMode = true;
     this.editTarget = u;
-    this.formData = { nombre: u.nombre || '', apellido_paterno: u.apellido_paterno || '', apellido_materno: u.apellido_materno || '', rol: u.rol || 'RECEPCIONISTA', estatus: u.estatus || 'ACTIVO' };
+    this.formData = { nombre: u.nombre || '', apellido_paterno: u.apellido_paterno || '', apellido_materno: u.apellido_materno || '', correo: '', rol: u.rol || 'RECEPCIONISTA', estatus: u.estatus || 'ACTIVO', contrasena: '' };
     this.formError = '';
     this.showFormModal = true;
   }
@@ -112,7 +124,7 @@ export class UsuariosSistemaComponent implements OnInit {
 
     this.formLoading = true;
     const obs = this.editMode
-      ? this.api.actualizarUsuarioSistema(this.editTarget.id_usuario, {
+      ? this.api.actualizarUsuarioSistema(this.editTarget!.id_usuario, {
           nombre: this.formData.nombre,
           apellido_paterno: this.formData.apellido_paterno || null,
           apellido_materno: this.formData.apellido_materno || null,
@@ -136,14 +148,14 @@ export class UsuariosSistemaComponent implements OnInit {
         this.showGlobalMsg(this.editMode ? 'Usuario actualizado correctamente.' : 'Usuario creado correctamente.', 'success');
         this.cargarUsuarios();
       },
-      error: (err: any) => {
+      error: (err: unknown) => {
         this.formLoading = false;
-        this.formError = err?.error?.detail ?? 'Error al guardar el usuario.';
+        this.formError = getApiError(err, 'Error al guardar el usuario.');
       },
     });
   }
 
-  toggleEstatus(u: any): void {
+  toggleEstatus(u: UsuarioSistema): void {
     const nuevoEstatus = u.estatus === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
     this.api.actualizarUsuarioSistema(u.id_usuario, {
       nombre: u.nombre,
@@ -156,13 +168,13 @@ export class UsuariosSistemaComponent implements OnInit {
         u.estatus = nuevoEstatus;
         this.showGlobalMsg(`Usuario ${nuevoEstatus === 'ACTIVO' ? 'activado' : 'desactivado'} correctamente.`, 'success');
       },
-      error: (err: any) => {
-        this.showGlobalMsg(err?.error?.detail ?? 'Error al cambiar el estatus.', 'error');
+      error: (err: unknown) => {
+        this.showGlobalMsg(getApiError(err, 'Error al cambiar el estatus.'), 'error');
       },
     });
   }
 
-  openResetModal(u: any): void {
+  openResetModal(u: UsuarioSistema): void {
     this.resetTarget = u;
     this.resetNueva = '';
     this.resetError = '';
@@ -181,9 +193,9 @@ export class UsuariosSistemaComponent implements OnInit {
       return;
     }
     this.resetLoading = true;
-    this.api.adminResetContrasena(this.resetTarget.id_usuario, { contrasena_nueva: this.resetNueva }).subscribe({
+    this.api.adminResetContrasena(this.resetTarget!.id_usuario, { contrasena_nueva: this.resetNueva }).subscribe({
       next: () => { this.resetLoading = false; this.resetSuccess = true; },
-      error: (err: any) => { this.resetLoading = false; this.resetError = err?.error?.detail ?? 'Error al restablecer la contraseña.'; },
+      error: (err: unknown) => { this.resetLoading = false; this.resetError = getApiError(err, 'Error al restablecer la contraseña.'); },
     });
   }
 

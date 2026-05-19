@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import oracledb
 from app.domain.beneficiarios.ports import BeneficiariosRepository
 from app.domain.shared.current_user import CurrentUser
 from app.domain.exceptions import NotFoundError, InternalError
@@ -9,8 +10,13 @@ from datetime import date, datetime, timedelta
 from app.infrastructure.audit.bitacora import log_insert, log_delete
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.privacy.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS
+from app.domain.beneficiarios.services import calculate_age, etapa_vida, normalize_genero, is_nuevo_leon
 
 logger = logging.getLogger(__name__)
+
+# Shared WHERE predicates — single source of truth for the active/approved patient filter
+_ACTIVO_APROBADO = "ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'"
+_P_ACTIVO_APROBADO = "p.ACTIVO = 'S' AND p.ESTATUS_REGISTRO = 'APROBADO'"
 
 
 def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
@@ -51,29 +57,12 @@ def _strip_char(val) -> str | None:
         return None
     return str(val).strip()
 
-def _genero_label(value: str | None) -> str | None:
-    genero = (value or '').strip().upper()
-    if genero in {'H', 'HOMBRE', 'MASCULINO'}:
-        return 'Hombre'
-    if genero in {'M', 'MUJER', 'F', 'FEMENINO'}:
-        return 'Mujer'
-    return None
-
-def _estado_es_nuevo_leon(value: str | None) -> bool:
-    normalized = (
-        (value or '')
-        .strip()
-        .upper()
-        .translate(str.maketrans('ÁÉÍÓÚÜ', 'AEIOUU'))
-    )
-    return 'NUEVO' in normalized and 'LEON' in normalized
-
 def _safe_rows_query(cur, sql: str, params: dict, context: str) -> list[dict]:
     """Execute a read query and return an empty list if it fails."""
     try:
         cur.execute(sql, params)
         return rows_to_dicts(cur)
-    except Exception as exc:
+    except oracledb.DatabaseError as exc:
         logger.warning('No se pudo cargar %s: %s', context, exc)
         return []
 
@@ -119,38 +108,7 @@ def _batch_fetch_tipos_espina(conn, patient_ids: list[int]) -> dict[int, list[di
             result[pid].append({'id_tipo_espina': row[1], 'nombre': _strip_char(row[2])})
     return result
 
-def _calculate_age(fecha_nac) -> int:
-    if not fecha_nac:
-        return 0
-    try:
-        if isinstance(fecha_nac, str):
-            fn = datetime.strptime(fecha_nac, '%Y-%m-%d').date()
-        elif isinstance(fecha_nac, datetime):
-            fn = fecha_nac.date()
-        elif isinstance(fecha_nac, date):
-            fn = fecha_nac
-        else:
-            return 0
-        today = date.today()
-        return today.year - fn.year - ((today.month, today.day) < (fn.month, fn.day))
-    except Exception:
-        return 0
-
-def _etapa_vida(edad: int) -> str:
-    if edad <= 5:
-        return 'Primera Infancia (0-5)'
-    elif edad <= 11:
-        return 'Infancia (6-11)'
-    elif edad <= 17:
-        return 'Adolescencia (12-17)'
-    elif edad <= 29:
-        return 'Juventud (18-29)'
-    elif edad <= 59:
-        return 'Adultez (30-59)'
-    else:
-        return 'Adulto Mayor (60+)'
-
-def listar_tipos_espina(current_user: CurrentUser | None = None):
+def _listar_tipos_espina(current_user: CurrentUser | None = None):
     """Listar todos los tipos de espina bífida."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -161,48 +119,48 @@ def listar_tipos_espina(current_user: CurrentUser | None = None):
             r['nombre'] = _strip_char(r.get('nombre'))
         return rows
 
-def stats_beneficiarios(current_user: CurrentUser | None = None):
+def _stats_beneficiarios(current_user: CurrentUser | None = None):
     """Conteo total de beneficiarios."""
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'")
+        cur.execute(f"SELECT COUNT(*) FROM PACIENTE WHERE {_ACTIVO_APROBADO}")
         total_activos = cur.fetchone()[0]
         cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ESTATUS_REGISTRO = 'APROBADO'")
         total = cur.fetchone()[0]
         return {'total': total, 'activos': total_activos, 'inactivos': total - total_activos}
 
-def dashboard_stats(current_user: CurrentUser | None = None):
+def _dashboard_stats(current_user: CurrentUser | None = None):
     """Estadísticas generales para el dashboard."""
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'")
+        cur.execute(f"SELECT COUNT(*) FROM PACIENTE WHERE {_ACTIVO_APROBADO}")
         total = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' AND MEMBRESIA_ESTATUS = 'ACTIVO'")
+        cur.execute(f"SELECT COUNT(*) FROM PACIENTE WHERE {_ACTIVO_APROBADO} AND MEMBRESIA_ESTATUS = 'ACTIVO'")
         activos = cur.fetchone()[0]
         inactivos = total - activos
-        cur.execute("""
+        cur.execute(f"""
             SELECT GENERO, COUNT(*) AS cnt
               FROM PACIENTE
-             WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'
+             WHERE {_ACTIVO_APROBADO}
              GROUP BY GENERO
         """)
         por_genero = {'Hombre': 0, 'Mujer': 0}
         for row in rows_to_dicts(cur):
-            genero = _genero_label(row.get('genero'))
+            genero = normalize_genero(row.get('genero'))
             if genero:
                 por_genero[genero] += int(row.get('cnt') or 0)
-        cur.execute("SELECT ESTADO, COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO' GROUP BY ESTADO")
+        cur.execute(f"SELECT ESTADO, COUNT(*) AS cnt FROM PACIENTE WHERE {_ACTIVO_APROBADO} GROUP BY ESTADO")
         nuevo_leon = 0
         for row in rows_to_dicts(cur):
-            if _estado_es_nuevo_leon(row.get('estado')):
+            if is_nuevo_leon(row.get('estado')):
                 nuevo_leon += int(row.get('cnt') or 0)
         foraneos = total - nuevo_leon
-        cur.execute("SELECT FECHA_NACIMIENTO FROM PACIENTE WHERE ACTIVO = 'S' AND ESTATUS_REGISTRO = 'APROBADO'")
+        cur.execute(f"SELECT FECHA_NACIMIENTO FROM PACIENTE WHERE {_ACTIVO_APROBADO}")
         fechas = [row[0] for row in cur.fetchall()]
         etapas: dict[str, int] = {}
         for fn in fechas:
-            edad = _calculate_age(fn)
-            e = _etapa_vida(edad)
+            edad = calculate_age(fn)
+            e = etapa_vida(edad)
             etapas[e] = etapas.get(e, 0) + 1
         hoy = date.today()
         inicio_semana = hoy - timedelta(days=hoy.weekday())
@@ -253,7 +211,7 @@ def _sync_membresias_vencidas(conn) -> int:
     return updated
 
 
-def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None, genero: Optional[str]=None, busqueda: Optional[str]=None, membresia_estatus: Optional[str]=None, tipo_cuota: Optional[str]=None, current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar beneficiarios con filtros opcionales."""
     with get_db() as conn:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
@@ -289,7 +247,7 @@ def listar_beneficiarios(nombre: Optional[str]=None, estado: Optional[str]=None,
         tipos_map = _batch_fetch_tipos_espina(conn, patient_ids)
         return [_patient_row_to_response(row, tipos_map=tipos_map) for row in rows]
 
-def obtener_beneficiario(folio: str, current_user: CurrentUser | None = None):
+def _obtener_beneficiario(folio: str, current_user: CurrentUser | None = None):
     """Obtener beneficiario por folio."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -299,7 +257,7 @@ def obtener_beneficiario(folio: str, current_user: CurrentUser | None = None):
             raise NotFoundError('Beneficiario no encontrado')
         return _patient_row_to_response(row, conn)
 
-def crear_beneficiario(data, current_user: CurrentUser | None = None):
+def _crear_beneficiario(data, current_user: CurrentUser | None = None):
     """Crear nuevo beneficiario con folio auto-generado."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -319,7 +277,7 @@ def crear_beneficiario(data, current_user: CurrentUser | None = None):
         row = row_to_dict(cur)
         return _patient_row_to_response(row, conn)
 
-def actualizar_beneficiario(folio: str, data, current_user: CurrentUser | None = None):
+def _actualizar_beneficiario(folio: str, data, current_user: CurrentUser | None = None):
     """Actualizar beneficiario existente."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -350,7 +308,7 @@ def actualizar_beneficiario(folio: str, data, current_user: CurrentUser | None =
         row = row_to_dict(cur)
         return _patient_row_to_response(row, conn)
 
-def eliminar_beneficiario(folio: str, current_user: CurrentUser | None = None):
+def _eliminar_beneficiario(folio: str, current_user: CurrentUser | None = None):
     """Soft delete: marcar beneficiario como inactivo."""
     with get_db() as conn:
         cur = conn.cursor()
@@ -364,7 +322,7 @@ def eliminar_beneficiario(folio: str, current_user: CurrentUser | None = None):
         conn.commit()
         return {'detail': 'Beneficiario eliminado correctamente'}
 
-def historial_beneficiario(
+def _historial_beneficiario(
     folio: str,
     current_user: CurrentUser | None = None,
     limit_citas: int=100,
@@ -458,7 +416,7 @@ def historial_beneficiario(
         return {'folio': folio, 'nombre': nombre_completo, 'citas': citas, 'pagos': pagos, 'comodatos': comodatos}
 
 
-def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
+def _listar_membresias_proximas_a_vencer(dias: int = 30, current_user: CurrentUser | None = None, limit: int=500, offset: int=0):
     """Beneficiarios con membresía que vence en los próximos N días."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
@@ -481,7 +439,7 @@ def listar_membresias_proximas_a_vencer(dias: int = 30, current_user: CurrentUse
         return [_patient_row_to_response(row, tipos_map=tipos_map) for row in rows]
 
 
-def renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None = None):
+def _renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None = None):
     """Renueva la membresía por 12 meses y crea el cobro correspondiente."""
     from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
     import oracledb
@@ -550,7 +508,7 @@ def renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None =
         }
 
 
-def mapa_beneficiarios(current_user=None):
+def _mapa_beneficiarios(current_user=None):
     """Devuelve todos los beneficiarios activos con sus coordenadas geocodificadas para el mapa."""
     try:
         with get_db() as conn:
@@ -572,7 +530,7 @@ def mapa_beneficiarios(current_user=None):
                        AND p.ESTATUS_REGISTRO = 'APROBADO'
                      ORDER BY p.NOMBRE, p.APELLIDO_PATERNO
                 """)
-            except Exception:
+            except oracledb.DatabaseError:
                 # Geocoding columns not yet added — return rows without them
                 cur.execute("""
                     SELECT p.ID_PACIENTE,
@@ -591,17 +549,17 @@ def mapa_beneficiarios(current_user=None):
                 """)
             cols = [c[0].lower() for c in cur.description]
             return [dict(zip(cols, row)) for row in cur.fetchall()]
-    except Exception:
-        logger.exception('Error en mapa_beneficiarios')
+    except oracledb.DatabaseError:
+        logger.exception('Error en _mapa_beneficiarios')
         raise InternalError('Error interno del servidor')
 
 
-def expirar_membresias_vencidas() -> int:
+def _expirar_membresias_vencidas() -> int:
     with get_db() as conn:
         return _sync_membresias_vencidas(conn)
 
 
-def get_sin_geocodificar(limit: int) -> list[dict]:
+def _get_sin_geocodificar(limit: int) -> list[dict]:
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
@@ -615,7 +573,7 @@ def get_sin_geocodificar(limit: int) -> list[dict]:
         return [{"id": r[0], "ciudad": r[1], "estado": r[2]} for r in cur.fetchall()]
 
 
-def guardar_geocodificacion(id_paciente: int, lat: float, lon: float) -> None:
+def _guardar_geocodificacion(id_paciente: int, lat: float, lon: float) -> None:
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
@@ -625,7 +583,7 @@ def guardar_geocodificacion(id_paciente: int, lat: float, lon: float) -> None:
         conn.commit()
 
 
-def marcar_geocodificacion_fallida(id_paciente: int) -> None:
+def _marcar_geocodificacion_fallida(id_paciente: int) -> None:
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
@@ -637,49 +595,49 @@ def marcar_geocodificacion_fallida(id_paciente: int) -> None:
 
 class OracleBeneficiariosRepository(BeneficiariosRepository):
     def listar_tipos_espina(self, current_user=None):
-        return listar_tipos_espina(current_user)
+        return _listar_tipos_espina(current_user)
 
     def stats_beneficiarios(self, current_user=None):
-        return stats_beneficiarios(current_user)
+        return _stats_beneficiarios(current_user)
 
     def dashboard_stats(self, current_user=None):
-        return dashboard_stats(current_user)
+        return _dashboard_stats(current_user)
 
     def listar_beneficiarios(self, nombre=None, estado=None, genero=None, busqueda=None, membresia_estatus=None, tipo_cuota=None, current_user=None, limit=100, offset=0):
-        return listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
+        return _listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
 
     def obtener_beneficiario(self, folio, current_user=None):
-        return obtener_beneficiario(folio, current_user)
+        return _obtener_beneficiario(folio, current_user)
 
     def crear_beneficiario(self, data, current_user=None):
-        return crear_beneficiario(data, current_user)
+        return _crear_beneficiario(data, current_user)
 
     def actualizar_beneficiario(self, folio, data, current_user=None):
-        return actualizar_beneficiario(folio, data, current_user)
+        return _actualizar_beneficiario(folio, data, current_user)
 
     def eliminar_beneficiario(self, folio, current_user=None):
-        return eliminar_beneficiario(folio, current_user)
+        return _eliminar_beneficiario(folio, current_user)
 
     def historial_beneficiario(self, folio, current_user=None, limit_citas=100, offset_citas=0, limit_pagos=100, offset_pagos=0, limit_comodatos=100, offset_comodatos=0):
-        return historial_beneficiario(folio, current_user, limit_citas, offset_citas, limit_pagos, offset_pagos, limit_comodatos, offset_comodatos)
+        return _historial_beneficiario(folio, current_user, limit_citas, offset_citas, limit_pagos, offset_pagos, limit_comodatos, offset_comodatos)
 
     def listar_membresias_proximas_a_vencer(self, dias=30, current_user=None, limit=500, offset=0):
-        return listar_membresias_proximas_a_vencer(dias, current_user, limit, offset)
+        return _listar_membresias_proximas_a_vencer(dias, current_user, limit, offset)
 
     def renovar_membresia(self, folio, data, current_user=None):
-        return renovar_membresia(folio, data, current_user)
+        return _renovar_membresia(folio, data, current_user)
 
     def mapa_beneficiarios(self, current_user=None):
-        return mapa_beneficiarios(current_user)
+        return _mapa_beneficiarios(current_user)
 
     def expirar_membresias_vencidas(self) -> int:
-        return expirar_membresias_vencidas()
+        return _expirar_membresias_vencidas()
 
     def get_sin_geocodificar(self, limit: int) -> list[dict]:
-        return get_sin_geocodificar(limit)
+        return _get_sin_geocodificar(limit)
 
     def guardar_geocodificacion(self, id_paciente: int, lat: float, lon: float) -> None:
-        guardar_geocodificacion(id_paciente, lat, lon)
+        _guardar_geocodificacion(id_paciente, lat, lon)
 
     def marcar_geocodificacion_fallida(self, id_paciente: int) -> None:
-        marcar_geocodificacion_fallida(id_paciente)
+        _marcar_geocodificacion_fallida(id_paciente)

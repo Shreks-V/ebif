@@ -29,7 +29,8 @@ class OracleUserRepository(UserRepository):
                 )
                 row = row_to_dict(cursor)
                 return self._to_user(row) if row is not None else None
-        except Exception:
+        except oracledb.DatabaseError:
+            logger.exception("Error de BD al buscar usuario ID=%s", id_usuario)
             return None
 
     def list_all(self) -> list[User]:
@@ -43,7 +44,8 @@ class OracleUserRepository(UserRepository):
                 )
                 rows = rows_to_dicts(cursor)
                 return [self._to_user(r) for r in rows]
-        except Exception:
+        except oracledb.DatabaseError:
+            logger.exception("Error de BD al listar usuarios")
             return []
 
     def create_user(self, user: NewUser, hashed_password: str) -> User:
@@ -119,7 +121,8 @@ class OracleUserRepository(UserRepository):
                 )
                 row = row_to_dict(cursor)
                 return self._to_user(row) if row is not None else None
-        except Exception:
+        except oracledb.DatabaseError:
+            logger.exception("Error de BD al buscar usuario por correo")
             return None
 
     def has_users(self) -> bool:
@@ -129,7 +132,8 @@ class OracleUserRepository(UserRepository):
                 cursor.execute("SELECT COUNT(*) AS cnt FROM USUARIO_SISTEMA")
                 row = row_to_dict(cursor)
                 return row is not None and row.get("cnt", 0) > 0
-        except Exception:
+        except oracledb.DatabaseError:
+            logger.exception("Error de BD al verificar existencia de usuarios")
             return False
 
     def seed_users(self, users: list[SeedUser]) -> list[str]:
