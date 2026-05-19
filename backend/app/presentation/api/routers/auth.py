@@ -8,15 +8,16 @@ from app.domain.auth.exceptions import AuthError, UserAlreadyExistsError, UserNo
 
 logger = logging.getLogger(__name__)
 from app.application.auth.use_cases import AuthService
+from app.application.auth.dtos import (
+    AdminResetContrasenaRequest, CambiarContrasenaRequest,
+    UserLogin, UsuarioCreate, UsuarioUpdate,
+)
 from app.presentation.api.dependencies import get_auth_service, get_token_decoder
 from app.presentation.api.security import get_current_user
 from app.domain.auth.ports import AccessTokenIssuer
 from app.core.config import settings
 from datetime import timedelta
-from app.presentation.api.schemas import (
-    AdminResetContrasenaRequest, CambiarContrasenaRequest,
-    Token, UserLogin, UserResponse, UsuarioCreate, UsuarioUpdate,
-)
+from app.presentation.api.schemas import Token, UserResponse
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)

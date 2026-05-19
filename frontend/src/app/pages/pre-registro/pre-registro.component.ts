@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { Documento } from '../../shared/models/preregistro.models';
 import { getMunicipiosParaEstado } from '../../shared/data/mexico-municipios';
 import { PAISES } from '../../shared/data/paises';
 
@@ -109,7 +110,7 @@ export class PreRegistroComponent implements OnInit {
   };
 
   // Document upload state (raw API response includes nombre_archivo not in Documento model)
-  documentosSubidos: any[] = [];
+  documentosSubidos: Documento[] = [];
   documentosPendientes: DocumentoPendiente[] = [{ id: 1, tipoId: 0, file: null }];
   private siguienteDocumentoPendienteId = 2;
   subiendoDoc = false;
@@ -483,7 +484,7 @@ export class PreRegistroComponent implements OnInit {
     });
   }
 
-  eliminarDocumento(doc: any): void {
+  eliminarDocumento(doc: Documento): void {
     if (!this.createdPacienteId) return;
     this.api.deleteDocumento(this.createdPacienteId, doc.id_documento).subscribe({
       next: () => this.cargarDocumentos(),

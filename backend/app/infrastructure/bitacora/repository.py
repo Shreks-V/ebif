@@ -114,7 +114,7 @@ def _contar_bitacora(
 
 
 class OracleBitacoraRepository:
-    def _listar_bitacora(
+    def listar_bitacora(
         self,
         tabla: Optional[str] = None,
         tipo_operacion: Optional[str] = None,
@@ -126,7 +126,7 @@ class OracleBitacoraRepository:
     ) -> list[dict]:
         return _listar_bitacora(tabla, tipo_operacion, fecha_inicio, fecha_fin, busqueda, limit, offset)
 
-    def _contar_bitacora(
+    def contar_bitacora(
         self,
         tabla: Optional[str] = None,
         tipo_operacion: Optional[str] = None,

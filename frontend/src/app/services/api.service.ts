@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AlmacenApiService } from './almacen-api.service';
+import { AlmacenApiService, ProductosFilter } from './almacen-api.service';
 import { BeneficiariosApiService, BeneficiariosFilter } from './beneficiarios-api.service';
 import { BitacoraApiService } from './bitacora-api.service';
 import { CitasApiService, CitasFilter } from './citas-api.service';
@@ -14,6 +14,11 @@ import {
   CambiarContrasenaPayload, CrearUsuarioPayload,
   ActualizarUsuarioPayload, ResetContrasenaPayload,
 } from '../shared/models/usuario-sistema.models';
+import { Beneficiario, RenovarMembresiaPayload } from '../shared/models/beneficiario.models';
+import { Cita } from '../shared/models/cita.models';
+import { Doctor, Disponibilidad, DisponibilidadEspecial } from '../shared/models/doctor.models';
+import { ProductoRaw, ServicioRaw, ComodatoRaw } from '../shared/models/almacen.models';
+import { PreRegistro } from '../shared/models/preregistro.models';
 
 /**
  * Facade kept for backward compatibility. Inject domain services directly in new code:
@@ -37,8 +42,8 @@ export class ApiService {
   // ── Beneficiarios ──
   getBeneficiarios(filters?: BeneficiariosFilter) { return this.beneficiarios.getBeneficiarios(filters); }
   getBeneficiario(folio: string) { return this.beneficiarios.getBeneficiario(folio); }
-  createBeneficiario(data: any) { return this.beneficiarios.createBeneficiario(data); }
-  updateBeneficiario(folio: string, data: any) { return this.beneficiarios.updateBeneficiario(folio, data); }
+  createBeneficiario(data: object) { return this.beneficiarios.createBeneficiario(data as Partial<Beneficiario>); }
+  updateBeneficiario(folio: string, data: object) { return this.beneficiarios.updateBeneficiario(folio, data as Partial<Beneficiario>); }
   deleteBeneficiario(folio: string) { return this.beneficiarios.deleteBeneficiario(folio); }
   getBeneficiarioHistorial(folio: string) { return this.beneficiarios.getBeneficiarioHistorial(folio); }
   getBeneficiariosStats() { return this.beneficiarios.getBeneficiariosStats(); }
@@ -47,13 +52,13 @@ export class ApiService {
   getTiposEspina() { return this.beneficiarios.getTiposEspina(); }
   getNotificaciones() { return this.beneficiarios.getNotificaciones(); }
   getMembresiasProximasAVencer(dias: number = 30) { return this.beneficiarios.getMembresiasProximasAVencer(dias); }
-  renovarMembresia(folio: string, data: any) { return this.beneficiarios.renovarMembresia(folio, data); }
+  renovarMembresia(folio: string, data: object) { return this.beneficiarios.renovarMembresia(folio, data as RenovarMembresiaPayload); }
 
   // ── Citas ──
   getCitas(filters?: CitasFilter) { return this.citas.getCitas(filters); }
   getCita(id: number) { return this.citas.getCita(id); }
-  createCita(data: any) { return this.citas.createCita(data); }
-  updateCita(id: number, data: any) { return this.citas.updateCita(id, data); }
+  createCita(data: object) { return this.citas.createCita(data as Partial<Cita>); }
+  updateCita(id: number, data: object) { return this.citas.updateCita(id, data as Partial<Cita>); }
   iniciarCita(id: number) { return this.citas.iniciarCita(id); }
   completarCita(id: number) { return this.citas.completarCita(id); }
   cancelarCita(id: number) { return this.citas.cancelarCita(id); }
@@ -65,37 +70,37 @@ export class ApiService {
   getDoctores() { return this.citas.getDoctores(); }
   getDoctorHoy() { return this.citas.getDoctorHoy(); }
   getDoctor(id: number) { return this.citas.getDoctor(id); }
-  createDoctor(data: any) { return this.citas.createDoctor(data); }
-  updateDoctor(id: number, data: any) { return this.citas.updateDoctor(id, data); }
+  createDoctor(data: object) { return this.citas.createDoctor(data as Partial<Doctor>); }
+  updateDoctor(id: number, data: object) { return this.citas.updateDoctor(id, data as Partial<Doctor>); }
   deleteDoctor(id: number) { return this.citas.deleteDoctor(id); }
   getDoctorDisponibilidad(id: number) { return this.citas.getDoctorDisponibilidad(id); }
   getDisponibilidadSemana() { return this.citas.getDisponibilidadSemana(); }
-  createDoctorDisponibilidad(idDoctor: number, data: any) { return this.citas.createDoctorDisponibilidad(idDoctor, data); }
+  createDoctorDisponibilidad(idDoctor: number, data: object) { return this.citas.createDoctorDisponibilidad(idDoctor, data as Partial<Disponibilidad>); }
   deleteDoctorDisponibilidad(idDoctor: number, idDisponibilidad: number) { return this.citas.deleteDoctorDisponibilidad(idDoctor, idDisponibilidad); }
   getDoctorServicios(id: number) { return this.citas.getDoctorServicios(id); }
   getDoctorDisponibilidadEspecial(id: number) { return this.citas.getDoctorDisponibilidadEspecial(id); }
-  createDoctorDisponibilidadEspecial(idDoctor: number, data: any) { return this.citas.createDoctorDisponibilidadEspecial(idDoctor, data); }
+  createDoctorDisponibilidadEspecial(idDoctor: number, data: object) { return this.citas.createDoctorDisponibilidadEspecial(idDoctor, data as Partial<DisponibilidadEspecial>); }
   deleteDoctorDisponibilidadEspecial(idDoctor: number, idDispEspecial: number) { return this.citas.deleteDoctorDisponibilidadEspecial(idDoctor, idDispEspecial); }
 
   // ── Almacén ──
-  getProductos(filters?: any) { return this.almacen.getProductos(filters); }
-  createProducto(data: any) { return this.almacen.createProducto(data); }
-  updateProducto(id: number, data: any) { return this.almacen.updateProducto(id, data); }
+  getProductos(filters?: ProductosFilter) { return this.almacen.getProductos(filters); }
+  createProducto(data: object) { return this.almacen.createProducto(data as Partial<ProductoRaw>); }
+  updateProducto(id: number, data: object) { return this.almacen.updateProducto(id, data as Partial<ProductoRaw>); }
   deleteProducto(id: number) { return this.almacen.deleteProducto(id); }
   ajustarExistencia(id: number, stockNuevo: number, motivo: string) { return this.almacen.ajustarExistencia(id, stockNuevo, motivo); }
-  getServicios(filters?: any) { return this.almacen.getServicios(filters); }
-  createServicio(data: any) { return this.almacen.createServicio(data); }
-  updateServicio(id: number, data: any) { return this.almacen.updateServicio(id, data); }
+  getServicios(filters?: ProductosFilter) { return this.almacen.getServicios(filters); }
+  createServicio(data: object) { return this.almacen.createServicio(data as Partial<ServicioRaw>); }
+  updateServicio(id: number, data: object) { return this.almacen.updateServicio(id, data as Partial<ServicioRaw>); }
   deleteServicio(id: number) { return this.almacen.deleteServicio(id); }
-  getComodatos(filters?: any) { return this.almacen.getComodatos(filters); }
-  createComodato(data: any) { return this.almacen.createComodato(data); }
-  updateComodato(id: number, data: any) { return this.almacen.updateComodato(id, data); }
+  getComodatos(filters?: object) { return this.almacen.getComodatos(filters as Record<string, string | number> | undefined); }
+  createComodato(data: object) { return this.almacen.createComodato(data as Partial<ComodatoRaw>); }
+  updateComodato(id: number, data: object) { return this.almacen.updateComodato(id, data as Partial<ComodatoRaw>); }
   getAlmacenStats() { return this.almacen.getAlmacenStats(); }
-  getMovimientos(filters?: any) { return this.almacen.getMovimientos(filters); }
+  getMovimientos(filters?: object) { return this.almacen.getMovimientos(filters as Record<string, string | number> | undefined); }
 
   // ── Recibos ──
   getRecibos(filters?: RecibosFilter) { return this.recibos.getRecibos(filters); }
-  createRecibo(data: any) { return this.recibos.createRecibo(data); }
+  createRecibo(data: object) { return this.recibos.createRecibo(data as unknown as Record<string, unknown>); }
   getRecibo(id: number) { return this.recibos.getRecibo(id); }
   cancelarRecibo(id: number, motivo?: string) { return this.recibos.cancelarRecibo(id, motivo); }
   getRecibosStats() { return this.recibos.getRecibosStats(); }
@@ -105,11 +110,11 @@ export class ApiService {
   exentarVenta(idVenta: number, nota?: string) { return this.recibos.exentarVenta(idVenta, nota); }
 
   // ── Exportaciones ──
-  exportarReportePdf(tipo: string, filters?: any): Observable<Blob> { return this.exportaciones.exportarReportePdf(tipo, filters); }
-  exportarReporteExcel(tipo: string, filters?: any): Observable<Blob> { return this.exportaciones.exportarReporteExcel(tipo, filters); }
+  exportarReportePdf(tipo: string, filters?: object): Observable<Blob> { return this.exportaciones.exportarReportePdf(tipo, filters as unknown as Record<string, unknown>); }
+  exportarReporteExcel(tipo: string, filters?: object): Observable<Blob> { return this.exportaciones.exportarReporteExcel(tipo, filters as unknown as Record<string, unknown>); }
   exportarBeneficiarioPdf(folio: string): Observable<Blob> { return this.exportaciones.exportarBeneficiarioPdf(folio); }
   exportarCredencialPdf(folio: string): Observable<Blob> { return this.exportaciones.exportarCredencialPdf(folio); }
-  exportarBeneficiariosExcel(filters?: any): Observable<Blob> { return this.exportaciones.exportarBeneficiariosExcel(filters); }
+  exportarBeneficiariosExcel(filters?: object): Observable<Blob> { return this.exportaciones.exportarBeneficiariosExcel(filters as unknown as Record<string, unknown>); }
   exportarComprobanteCitaPdf(idCita: number): Observable<Blob> { return this.exportaciones.exportarComprobanteCitaPdf(idCita); }
   exportarContratoComodatoPdf(idComodato: number): Observable<Blob> { return this.exportaciones.exportarContratoComodatoPdf(idComodato); }
 
@@ -124,15 +129,15 @@ export class ApiService {
   getReportePagosExentos(filters?: ReporteFilter) { return this.reportes.getReportePagosExentos(filters); }
   getReportePagosPorMetodo(fechaInicio?: string, fechaFin?: string) { return this.reportes.getReportePagosPorMetodo(fechaInicio, fechaFin); }
   getReporteConsolidadoMensual(mes?: number, anio?: number) { return this.reportes.getReporteConsolidadoMensual(mes, anio); }
-  getHistorialReportes(filters?: any) { return this.reportes.getHistorialReportes(filters); }
+  getHistorialReportes(filters?: Record<string, string>) { return this.reportes.getHistorialReportes(filters); }
   getReportePorCiudad() { return this.reportes.getReportePorCiudad(); }
-  getIndicadoresDesempeno(filters?: any) { return this.reportes.getIndicadoresDesempeno(filters); }
+  getIndicadoresDesempeno(filters?: ReporteFilter) { return this.reportes.getIndicadoresDesempeno(filters); }
 
   // ── Pre-registro ──
   getPreRegistros() { return this.preregistro.getPreRegistros(); }
   getPreRegistro(id: number) { return this.preregistro.getPreRegistro(id); }
-  createPreRegistro(data: any) { return this.preregistro.createPreRegistro(data); }
-  updatePreRegistro(id: number, data: any) { return this.preregistro.updatePreRegistro(id, data); }
+  createPreRegistro(data: object) { return this.preregistro.createPreRegistro(data as Partial<PreRegistro>); }
+  updatePreRegistro(id: number, data: object) { return this.preregistro.updatePreRegistro(id, data as Partial<PreRegistro>); }
   aprobarPreRegistro(id: number, tipoCuota?: string) { return this.preregistro.aprobarPreRegistro(id, tipoCuota); }
   rechazarPreRegistro(id: number) { return this.preregistro.rechazarPreRegistro(id); }
   getTiposEspinaPublic() { return this.preregistro.getTiposEspinaPublic(); }

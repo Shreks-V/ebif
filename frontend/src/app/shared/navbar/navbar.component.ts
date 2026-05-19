@@ -179,7 +179,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.notifications = data || [];
         this.notifLoading = false;
         const now = new Date();
-        this.lastRefresh = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        this.lastRefresh = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
       },
       error: () => { this.notifLoading = false; },
     });

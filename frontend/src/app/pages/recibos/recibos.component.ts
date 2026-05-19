@@ -10,6 +10,7 @@ import { NuevoCobroComponent } from './nuevo-cobro/nuevo-cobro.component';
 import { DetalleReciboModalComponent } from './modals/detalle-recibo-modal.component';
 import { CancelarReciboModalComponent } from './modals/cancelar-recibo-modal.component';
 import { PagoReciboModalComponent } from './modals/pago-recibo-modal.component';
+import { Recibo as ReciboAPI, MetodoPagoReciboItem } from '../../shared/models/recibo.models';
 
 interface MetodoPagoItem {
   idMetodoPago: number;
@@ -107,7 +108,7 @@ export class RecibosComponent implements OnInit {
 
   private cargarStats(): void {
     this.api.getRecibosStats().subscribe({
-      next: (stats: any) => {
+      next: (stats) => {
         this.montoTotal = stats.monto_total_sum ?? 0;
         this.montoEfectivo = stats.monto_efectivo ?? 0;
         this.montoTarjeta = stats.monto_tarjeta ?? 0;
@@ -193,7 +194,7 @@ export class RecibosComponent implements OnInit {
 
   abrirPagoModal(recibo: Recibo): void { this.reciboParaPago = recibo; }
 
-  onPagado(raw: any): void {
+  onPagado(raw: ReciboAPI): void {
     this.reciboParaPago = null;
     this._actualizarReciboEnLista(raw);
     this.cargarStats();
@@ -222,25 +223,25 @@ export class RecibosComponent implements OnInit {
 
   // ── Private helpers ──
 
-  private _mapearRecibo(r: any): Recibo {
+  private _mapearRecibo(r: ReciboAPI): Recibo {
     return {
       idVenta: r.id_venta,
-      folioVenta: r.folio_venta,
-      idPaciente: r.id_paciente,
-      nombrePaciente: r.nombre_paciente,
-      folioPaciente: r.folio_paciente,
-      fechaVenta: r.fecha_venta,
+      folioVenta: r.folio_venta ?? '',
+      idPaciente: r.id_paciente ?? 0,
+      nombrePaciente: r.nombre_paciente ?? '',
+      folioPaciente: r.folio_paciente ?? '',
+      fechaVenta: r.fecha_venta ?? '',
       montoTotal: r.monto_total,
       montoPagado: r.monto_pagado,
       saldoPendiente: r.saldo_pendiente,
-      exentoPago: r.exento_pago,
-      cancelada: r.cancelada,
-      motivoCancelacion: r.motivo_cancelacion,
-      metodosPago: (r.metodos_pago || []).map((mp: any) => ({ idMetodoPago: mp.id_metodo_pago, nombre: mp.nombre, monto: mp.monto }))
+      exentoPago: r.exento_pago ?? '',
+      cancelada: r.cancelada ?? '',
+      motivoCancelacion: r.motivo_cancelacion ?? null,
+      metodosPago: (r.metodos_pago || []).map((mp: MetodoPagoReciboItem) => ({ idMetodoPago: mp.id_metodo_pago, nombre: mp.nombre, monto: mp.monto }))
     };
   }
 
-  private _actualizarReciboEnLista(raw: any): void {
+  private _actualizarReciboEnLista(raw: ReciboAPI): void {
     const mapped = this._mapearRecibo(raw);
     const idx = this.recibos.findIndex(r => r.idVenta === mapped.idVenta);
     if (idx !== -1) this.recibos[idx] = mapped;

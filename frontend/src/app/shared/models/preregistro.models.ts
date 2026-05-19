@@ -43,6 +43,7 @@ export interface Documento {
   id_documento: number;
   id_tipo_documento: number;
   tipo_nombre?: string;
+  nombre_archivo?: string;
   ruta_archivo?: string;
   formato_archivo?: string;
   fecha_carga?: string;

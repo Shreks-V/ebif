@@ -12,6 +12,7 @@ export interface ProductosFilter {
   activo?: string;
   tipo_producto?: string;
   busqueda?: string;
+  categoria?: string;
 }
 
 @Injectable({ providedIn: 'root' })

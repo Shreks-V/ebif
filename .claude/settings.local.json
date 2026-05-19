@@ -201,7 +201,8 @@
       "Bash(sed -n '80,95p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/citas-tab/citas-tab.component.ts\")",
       "Bash(sed -n '1,25p' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/citas-tab/citas-tab.component.ts\")",
       "Bash(sed *)",
-      "Bash(grep -v \"^--$\")"
+      "Bash(grep -v \"^--$\")",
+      "Bash(python -c \"from app.presentation.api.app_factory import create_app; app = create_app\\(\\); print\\('OK'\\)\")"
     ]
   },
   "enableAllProjectMcpServers": true,

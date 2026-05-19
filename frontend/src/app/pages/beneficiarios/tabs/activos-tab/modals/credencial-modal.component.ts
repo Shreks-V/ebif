@@ -37,7 +37,7 @@ export class CredencialModalComponent {
     });
   }
 
-  private abrirPdfEnNuevaTab(blob: Blob, filename: string): void {
+  private abrirPdfEnNuevaTab(blob: Blob, _filename: string): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';

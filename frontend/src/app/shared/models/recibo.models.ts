@@ -1,3 +1,9 @@
+export interface MetodoPagoReciboItem {
+  id_metodo_pago: number;
+  nombre: string;
+  monto: number;
+}
+
 export interface Recibo {
   id_venta: number;
   folio?: string;
@@ -18,6 +24,7 @@ export interface Recibo {
   usuario_nombre?: string;
   usuario_apellido?: string;
   metodo_pago_nombre?: string;
+  metodos_pago?: MetodoPagoReciboItem[];
 }
 
 export interface ReciboItem {
@@ -26,7 +33,10 @@ export interface ReciboItem {
   cantidad: number;
   precio_unitario: number;
   monto_pagado?: number;
+  subtotal?: number;
   cancelado?: string;
+  tipo?: string;
+  descripcion?: string;
 }
 
 export interface MetodoPago {
@@ -39,4 +49,8 @@ export interface RecibosStats {
   total?: number;
   pendientes?: number;
   total_ayer?: number;
+  monto_total_sum?: number;
+  monto_efectivo?: number;
+  monto_tarjeta?: number;
+  monto_transferencia?: number;
 }

@@ -2,7 +2,10 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { Recibo } from '../../../shared/models/recibo.models';
 import { getApiError } from '../../../shared/utils/error.utils';
+
+interface ReciboInput { idVenta: number; saldoPendiente: number; folioVenta?: string; }
 
 @Component({
   selector: 'app-pago-recibo-modal',
@@ -11,9 +14,9 @@ import { getApiError } from '../../../shared/utils/error.utils';
   templateUrl: './pago-recibo-modal.component.html',
 })
 export class PagoReciboModalComponent implements OnChanges {
-  @Input() recibo: any = null;
+  @Input() recibo: ReciboInput | null = null;
   @Output() closed = new EventEmitter<void>();
-  @Output() pagado = new EventEmitter<any>();
+  @Output() pagado = new EventEmitter<Recibo>();
 
   tipo: 'abono' | 'liquidar' | 'exentar' = 'abono';
   monto = 0;

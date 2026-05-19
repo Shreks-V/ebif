@@ -24,7 +24,7 @@ def registrar_bitacora(
         ) VALUES (
             :tabla, :id_reg, :campo,
             :val_ant, :val_new, :tipo,
-            :id_usr, SYSTIMESTAMP, :obs
+            :id_usr, SYSDATE, :obs
         )
         """,
         {

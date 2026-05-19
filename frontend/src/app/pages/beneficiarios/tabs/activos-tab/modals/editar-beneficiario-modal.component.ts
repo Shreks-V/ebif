@@ -1,11 +1,10 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
 import { ApiService } from '../../../../../services/api.service';
 import { getMunicipiosParaEstado } from '../../../../../shared/data/mexico-municipios';
 import { PAISES } from '../../../../../shared/data/paises';
-import { Beneficiario, BeneficiarioEditFormData, Documento, TipoDocumento, TipoEspinaCatalogo } from '../activos-tab.types';
+import { Beneficiario, BeneficiarioEditFormData, TipoDocumento, TipoEspinaCatalogo } from '../activos-tab.types';
 import { getApiError } from '../../../../../shared/utils/error.utils';
 
 @Component({

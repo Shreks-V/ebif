@@ -41,7 +41,7 @@ def decrypt(ciphertext: str | None) -> str | None:
         aesgcm = AESGCM(key)
         return aesgcm.decrypt(nonce, ct, None).decode("utf-8")
     except Exception:
-        logger.warning("Fallo al descifrar campo — se retorna el valor sin descifrar", exc_info=True)
+        logger.debug("Campo no cifrado o llave distinta — se retorna valor original")
         return ciphertext
 
 

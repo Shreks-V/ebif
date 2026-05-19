@@ -166,9 +166,10 @@ export class BitacoraComponent implements OnInit, OnDestroy {
   formatFecha(iso: string | undefined): string {
     if (!iso) return '—';
     try {
-      return new Date(iso).toLocaleString('es-MX', {
+      const utc = /[Z+]/.test(iso) ? iso : iso + 'Z';
+      return new Date(utc).toLocaleString('es-MX', {
         year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
       });
     } catch {
       return iso;

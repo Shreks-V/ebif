@@ -3,7 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { buildParams } from './api-helpers';
-import { Beneficiario, BeneficiariosStats, TipoEspina } from '../shared/models/beneficiario.models';
+import {
+  Beneficiario, BeneficiariosStats, TipoEspina,
+  MapaBeneficiario, HistorialData, NotificacionSistema, RenovarMembresiaPayload,
+} from '../shared/models/beneficiario.models';
 
 export interface BeneficiariosFilter {
   nombre?: string;
@@ -42,8 +45,8 @@ export class BeneficiariosApiService {
     return this.http.delete<void>(`${this.base}/${folio}`);
   }
 
-  getBeneficiarioHistorial(folio: string): Observable<any> {
-    return this.http.get<any>(`${this.base}/${folio}/historial`);
+  getBeneficiarioHistorial(folio: string): Observable<HistorialData> {
+    return this.http.get<HistorialData>(`${this.base}/${folio}/historial`);
   }
 
   getBeneficiariosStats(): Observable<BeneficiariosStats> {
@@ -54,8 +57,8 @@ export class BeneficiariosApiService {
     return this.http.get<BeneficiariosStats>(`${this.base}/stats/dashboard`);
   }
 
-  getMapaBeneficiarios(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/mapa`);
+  getMapaBeneficiarios(): Observable<MapaBeneficiario[]> {
+    return this.http.get<MapaBeneficiario[]>(`${this.base}/mapa`);
   }
 
   getTiposEspina(): Observable<TipoEspina[]> {
@@ -66,11 +69,11 @@ export class BeneficiariosApiService {
     return this.http.get<Beneficiario[]>(`${this.base}/membresias/proximas-a-vencer?dias=${dias}`);
   }
 
-  renovarMembresia(folio: string, data: { monto_total: number; exento_pago: string; metodos_pago: { id_metodo_pago: number; monto: number }[] }): Observable<any> {
-    return this.http.post<any>(`${this.base}/${folio}/renovar-membresia`, data);
+  renovarMembresia(folio: string, data: RenovarMembresiaPayload): Observable<{ folio_venta?: string }> {
+    return this.http.post<{ folio_venta?: string }>(`${this.base}/${folio}/renovar-membresia`, data);
   }
 
-  getNotificaciones(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/notificaciones`);
+  getNotificaciones(): Observable<NotificacionSistema[]> {
+    return this.http.get<NotificacionSistema[]>(`${environment.apiUrl}/notificaciones`);
   }
 }

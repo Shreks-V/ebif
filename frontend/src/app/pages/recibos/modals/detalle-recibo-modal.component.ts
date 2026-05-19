@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
+import { ReciboItem } from '../../../shared/models/recibo.models';
 
 interface MetodoPagoItem { idMetodoPago?: number; nombre: string; monto: number; }
 interface ReciboInput {
@@ -21,7 +22,7 @@ export class DetalleReciboModalComponent implements OnChanges {
   @Output() closed = new EventEmitter<void>();
   @Output() abrirPago = new EventEmitter<void>();
 
-  items: any[] = [];
+  items: ReciboItem[] = [];
   loadingItems = false;
 
   constructor(private api: ApiService) {}
@@ -48,7 +49,7 @@ export class DetalleReciboModalComponent implements OnChanges {
         <td>${item.descripcion ?? ''}</td>
         <td class="right">${fmtMoney(item.precio_unitario)}</td>
         <td class="right">${item.cantidad}</td>
-        <td class="right bold">${fmtMoney(item.subtotal)}</td>
+        <td class="right bold">${fmtMoney(item.subtotal ?? 0)}</td>
       </tr>`).join('');
     const metodosRows = (r.metodosPago ?? []).map((mp) => `
       <tr>

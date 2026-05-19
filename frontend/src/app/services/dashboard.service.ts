@@ -4,7 +4,12 @@ import { ApiService } from './api.service';
 import {
   DashboardData, PacienteDashboard, DoctorDashboard, AlmacenAlerta,
 } from '../shared/models/dashboard.models';
-import { Cita } from '../shared/models/cita.models';
+import { Cita, CitasHoyResponse, CitasStats } from '../shared/models/cita.models';
+import { DoctorHoyResponse } from '../shared/models/doctor.models';
+import { AlmacenStats } from '../shared/models/almacen.models';
+import { RecibosStats, Recibo } from '../shared/models/recibo.models';
+import { BeneficiariosStats } from '../shared/models/beneficiario.models';
+import { ConsolidadoMensual } from '../shared/models/reporte.models';
 
 const AVATAR_COLORS = [
   'bg-pink-400', 'bg-blue-400', 'bg-purple-400',
@@ -29,7 +34,7 @@ export class DashboardService {
     }).pipe(map(res => this._transform(res)));
   }
 
-  private _transform(res: any): DashboardData & { doctorAtendidos: number; doctorTotalHoy: number } {
+  private _transform(res: { citasHoy: CitasHoyResponse; recibosStats: RecibosStats; citasStats: CitasStats; almacenStats: AlmacenStats; doctor: DoctorHoyResponse; benefStats: BeneficiariosStats; resumen: ConsolidadoMensual; adeudos: Recibo[] }): DashboardData & { doctorAtendidos: number; doctorTotalHoy: number } {
     const citasHoy = res.citasHoy;
     const citas: Cita[] = citasHoy.citas || citasHoy || [];
 
@@ -58,7 +63,7 @@ export class DashboardService {
       deltaCitas: (citasStats.total_hoy ?? 0) - (citasStats.total_ayer ?? 0),
       deltaRecibos: (recibosStats.total_hoy ?? 0) - (recibosStats.total_ayer ?? 0),
       resumenNuevosBeneficiarios: resumen.pacientes_atendidos ?? 0,
-      resumenCitasCompletadas: resumen.citas_por_estatus?.COMPLETADA ?? 0,
+      resumenCitasCompletadas: resumen.citas_por_estatus?.['COMPLETADA'] ?? 0,
       resumenRecibosGenerados: resumen.total_ventas ?? 0,
       resumenMontoRecaudado: resumen.monto_ventas ?? 0,
       doctorAtendidos: citasHoy.completadas ?? 0,
@@ -70,7 +75,7 @@ export class DashboardService {
     return citas
       .filter(c => c.estatus === 'PROGRAMADA' || c.estatus === 'EN_CURSO')
       .map((cita, i) => {
-        const fullName = (cita as any).nombre_paciente || '';
+        const fullName = cita.nombre_paciente || '';
         const parts = fullName.trim().split(/\s+/);
         const nombre = parts[0] || '';
         const apellido = parts.slice(1).join(' ') || '';
@@ -83,11 +88,11 @@ export class DashboardService {
         }
         return {
           idCita: cita.id_cita,
-          idPaciente: (cita as any).id_paciente ?? 0,
+          idPaciente: cita.id_paciente ?? 0,
           nombre,
           apellido,
-          folio: (cita as any).folio_paciente || '',
-          tipoCuota: (cita as any).tipo_cuota || 'A',
+          folio: cita.folio_paciente || '',
+          tipoCuota: cita.tipo_cuota || 'A',
           hora,
           iniciales,
           servicio: cita.servicios?.[0]?.nombre || 'Consulta',
@@ -98,7 +103,7 @@ export class DashboardService {
       });
   }
 
-  private _buildDoctor(resp: any): DoctorDashboard {
+  private _buildDoctor(resp: DoctorHoyResponse): DoctorDashboard {
     const doctor = resp?.doctor;
     if (!doctor) {
       return { nombre: 'Sin doctor asignado', especialidad: '', iniciales: '--', horario: '—', atendidos: 0, totalHoy: 0 };
@@ -107,8 +112,8 @@ export class DashboardService {
     const apellido = doctor.apellido_paterno || '';
     const formatTime = (ts: string) =>
       ts ? new Date(ts).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
-    const inicio = formatTime(resp.hora_inicio);
-    const fin = formatTime(resp.hora_fin);
+    const inicio = formatTime(resp.hora_inicio ?? '');
+    const fin = formatTime(resp.hora_fin ?? '');
     return {
       nombre: `Dr. ${nombre} ${apellido}`.trim(),
       especialidad: doctor.especialidad || '',

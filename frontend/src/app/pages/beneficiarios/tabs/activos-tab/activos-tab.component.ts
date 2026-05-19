@@ -111,7 +111,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.api.getBeneficiarios({ membresia_estatus: 'ACTIVO' }).subscribe({
       next: (data) => {
-        this.beneficiarios = data.map((item: any, index: number) => ({
+        this.beneficiarios = data.map((item, index) => ({
           idPaciente: item.id_paciente,
           folio: item.folio,
           nombre: item.nombre,
@@ -141,7 +141,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
           membresiaEstatus: item.membresia_estatus,
           tipoCuota: item.tipo_cuota,
           activo: item.activo,
-          tiposEspina: (item.tipos_espina || []).map((te: any) => ({
+          tiposEspina: (item.tipos_espina || []).map((te) => ({
             idTipoEspina: te.id_tipo_espina,
             nombre: te.nombre
           })),

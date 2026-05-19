@@ -6,6 +6,7 @@ import { ApiService } from '../../../../../services/api.service';
 interface MedicoInput { idDoctor: number; nombre?: string; apellidoPaterno?: string; }
 interface SlotDisponibilidad { id_disponibilidad: number; dia_semana: number; hora_inicio: string; hora_fin: string; }
 interface DispEspecial { id_disp_especial: number; fecha_inicio: string; hora_inicio: string; hora_fin: string; tipo_recurrencia: string; descripcion?: string; }
+interface SemanaSlot { dia_semana: number; id_doctor: number; hora_inicio: string; hora_fin: string; nombre_doctor: string; }
 interface NuevoSlotForm { dia_semana: number; hora_inicio: string; hora_fin: string; }
 
 @Component({
@@ -19,7 +20,7 @@ export class DisponibilidadModalComponent implements OnChanges {
   @Output() closed = new EventEmitter<void>();
 
   slots: SlotDisponibilidad[] = [];
-  semana: any[] = [];
+  semana: SemanaSlot[] = [];
   especial: DispEspecial[] = [];
   error = '';
   dispEspecialError = '';
@@ -60,7 +61,7 @@ export class DisponibilidadModalComponent implements OnChanges {
       this.cargarSlots();
       this.cargarEspecial();
       this.api.getDisponibilidadSemana().subscribe({
-        next: (data) => { this.semana = data; },
+        next: (data) => { this.semana = data as unknown as SemanaSlot[]; },
         error: () => { this.semana = []; },
       });
     }
@@ -98,7 +99,7 @@ export class DisponibilidadModalComponent implements OnChanges {
         this.guardandoSlot = false;
         this.nuevoSlot = { dia_semana: 0, hora_inicio: '', hora_fin: '' };
         this.cargarSlots();
-        this.api.getDisponibilidadSemana().subscribe({ next: (data) => { this.semana = data; } });
+        this.api.getDisponibilidadSemana().subscribe({ next: (data) => { this.semana = data as unknown as SemanaSlot[]; } });
       },
       error: (err) => {
         this.guardandoSlot = false;
@@ -112,7 +113,7 @@ export class DisponibilidadModalComponent implements OnChanges {
     this.api.deleteDoctorDisponibilidad(this.medico.idDoctor, slot.id_disponibilidad).subscribe({
       next: () => {
         this.cargarSlots();
-        this.api.getDisponibilidadSemana().subscribe({ next: (data) => { this.semana = data; } });
+        this.api.getDisponibilidadSemana().subscribe({ next: (data) => { this.semana = data as unknown as SemanaSlot[]; } });
       },
     });
   }

@@ -2,6 +2,10 @@ from pydantic import BaseModel
 from typing import Optional, List, Literal
 from datetime import datetime
 
+from app.application.auth.dtos import (
+    UserLogin, CambiarContrasenaRequest, AdminResetContrasenaRequest,
+    UsuarioBase, UsuarioCreate, UsuarioUpdate,
+)
 from app.application.beneficiarios.dtos import BeneficiarioBase, BeneficiarioCreate, RenovarMembresiaCreate
 from app.application.citas.dtos import CitaBase, CitaCreate
 from app.application.almacen.dtos import (
@@ -17,6 +21,8 @@ from app.domain.reportes.entities import ReporteFilter
 
 __all__ = [
     # re-exported input DTOs (kept for backward compat with any direct schemas import)
+    "UserLogin", "CambiarContrasenaRequest", "AdminResetContrasenaRequest",
+    "UsuarioBase", "UsuarioCreate", "UsuarioUpdate",
     "BeneficiarioBase", "BeneficiarioCreate", "RenovarMembresiaCreate",
     "CitaBase", "CitaCreate",
     "ServicioBase", "ServicioCreate",
@@ -32,20 +38,6 @@ __all__ = [
 
 # ──────────────────────────── AUTH / USUARIO_SISTEMA ────────────────────────────
 
-class UserLogin(BaseModel):
-    correo: str
-    password: str
-
-
-class CambiarContrasenaRequest(BaseModel):
-    contrasena_actual: str
-    contrasena_nueva: str
-
-
-class AdminResetContrasenaRequest(BaseModel):
-    contrasena_nueva: str
-
-
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -59,27 +51,6 @@ class UserResponse(BaseModel):
     correo: str
     rol: str
     estatus: str
-
-
-class UsuarioBase(BaseModel):
-    nombre: str
-    apellido_paterno: Optional[str] = None
-    apellido_materno: Optional[str] = None
-    correo: str
-    rol: str
-    estatus: str = "ACTIVO"
-
-
-class UsuarioCreate(UsuarioBase):
-    contrasena: str
-
-
-class UsuarioUpdate(BaseModel):
-    nombre: str
-    apellido_paterno: Optional[str] = None
-    apellido_materno: Optional[str] = None
-    rol: str
-    estatus: str = "ACTIVO"
 
 
 class UsuarioResponse(UsuarioBase):
