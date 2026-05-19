@@ -256,7 +256,8 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
       const bv = this.sortValue(b);
       const ac = this.toComparable(av);
       const bc = this.toComparable(bv);
-      return ac < bc ? -dir : ac > bc ? dir : 0;
+      if (ac < bc) return -dir;
+      return ac > bc ? dir : 0;
     });
     return sorted.slice(this.start, this.end);
   }

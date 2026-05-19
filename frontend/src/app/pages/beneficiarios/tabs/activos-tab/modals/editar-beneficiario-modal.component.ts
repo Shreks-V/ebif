@@ -112,7 +112,7 @@ export class EditarBeneficiarioModalComponent implements OnChanges {
 
   onFotoBeneficiarioSeleccionada(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files && input.files.length ? input.files[0] : null;
+    const file = input.files?.length ? input.files[0] : null;
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       this.editError = 'Selecciona un archivo de imagen valido.';

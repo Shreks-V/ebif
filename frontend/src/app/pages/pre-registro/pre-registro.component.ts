@@ -8,6 +8,8 @@ import { Documento } from '../../shared/models/preregistro.models';
 import { getMunicipiosParaEstado } from '../../shared/data/mexico-municipios';
 import { PAISES } from '../../shared/data/paises';
 
+const CURP_REGEX = /^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
+
 interface DocumentoPendiente {
   id: number;
   tipoId: number;
@@ -162,7 +164,7 @@ export class PreRegistroComponent implements OnInit {
   onCurpBlur(): void {
     const curp = (this.formData.curp || '').trim().toUpperCase();
     if (curp.length !== 18) return;
-    const curpRegex = /^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
+    const curpRegex = CURP_REGEX;
     if (!curpRegex.test(curp)) return;
     this.checkingCurp = true;
     this.curpDisponible = null;
@@ -252,7 +254,7 @@ export class PreRegistroComponent implements OnInit {
 
       // CURP format
       if (this.formData.curp) {
-        const curpRegex = /^[A-Z][AEIOU][A-Z]{2}\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[HM](AS|BC|BS|CC|CL|CM|CS|CH|DF|DG|GT|GR|HG|JC|MC|MN|MS|NT|NL|OC|PL|QT|QR|SP|SL|SR|TC|TS|TL|VZ|YN|ZS|NE)[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
+        const curpRegex = CURP_REGEX;
         if (!curpRegex.test(this.formData.curp.trim().toUpperCase())) {
           if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
           this.fieldErrors['curp'] = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial).';
@@ -405,7 +407,7 @@ export class PreRegistroComponent implements OnInit {
         this.submitting = false;
         console.error('Error al crear pre-registro:', err);
         const detail = (err as { error?: { detail?: string } })?.error?.detail;
-        if (detail && detail.includes('folio o CURP')) {
+        if (detail?.includes('folio o CURP')) {
           this.stepError = 'Ya existe un registro con ese CURP. Si ya enviaste un pre-registro, cont\u00e1ctanos.';
         } else {
           this.stepError = detail || 'Ocurri\u00f3 un error al guardar. Intenta de nuevo.';
@@ -424,8 +426,8 @@ export class PreRegistroComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
+    const file = input.files?.[0];
+    if (file) {
       this.fotografiaFile = file;
       this.fotografiaName = file.name;
       const reader = new FileReader();
@@ -459,7 +461,7 @@ export class PreRegistroComponent implements OnInit {
 
   onDocFileSelected(event: Event, doc: DocumentoPendiente): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
+    if (input.files?.[0]) {
       doc.file = input.files[0];
     }
     input.value = '';

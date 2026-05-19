@@ -72,7 +72,7 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
 
   onNuevoBeneficiarioDocSelected(event: Event, index: number): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files && input.files.length ? input.files[0] : null;
+    const file = input.files?.length ? input.files[0] : null;
     if (this.nuevoBeneficiarioDocumentos[index]) {
       this.nuevoBeneficiarioDocumentos[index].archivo = file;
     }

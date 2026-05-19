@@ -187,7 +187,8 @@ export class PreregistrosTabComponent implements OnInit {
     const sorted = [...this.filteredPreregistros].sort((a, b) => {
       const av = this.sortValue(a);
       const bv = this.sortValue(b);
-      return av < bv ? -dir : av > bv ? dir : 0;
+      if (av < bv) return -dir;
+      return av > bv ? dir : 0;
     });
     return sorted.slice(this.start, this.end);
   }

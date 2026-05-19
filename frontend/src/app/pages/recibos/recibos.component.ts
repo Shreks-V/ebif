@@ -260,7 +260,10 @@ export class RecibosComponent implements OnInit {
       case 'montoPagado': return recibo.montoPagado;
       case 'saldoPendiente': return recibo.saldoPendiente;
       case 'pago': return this.getPagoLabel(recibo);
-      case 'estado': return recibo.cancelada === 'S' ? 'cancelada' : (recibo.saldoPendiente === 0 ? 'pagada' : 'pendiente');
+      case 'estado': {
+        if (recibo.cancelada === 'S') return 'cancelada';
+        return recibo.saldoPendiente === 0 ? 'pagada' : 'pendiente';
+      }
       default: return recibo.fechaVenta;
     }
   }
