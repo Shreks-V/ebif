@@ -27,6 +27,13 @@ CREATE TABLE VENTA_LINEA (
 CREATE INDEX IDX_VENTA_LINEA_VENTA ON VENTA_LINEA(ID_VENTA);
 
 -- 2. SP_REGISTRAR_VENTA_COMPLETA actualizado (líneas de venta + stock)
+/**
+ * SP_REGISTRAR_VENTA_COMPLETA — Versión actualizada que acepta líneas de venta tipadas.
+ * Reemplaza la versión de migration 004; recibe arrays de líneas (PRODUCTO o SERVICIO)
+ * con descripción y precio capturados en el momento, inserta en VENTA_LINEA y sigue
+ * llamando SP_REGISTRAR_MOVIMIENTO_STOCK para descontar stock de productos.
+ * Errores: -20401..-20405.
+ */
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_VENTA_COMPLETA (
   p_id_paciente         IN  NUMBER,
   p_id_usuario_registro IN  NUMBER,

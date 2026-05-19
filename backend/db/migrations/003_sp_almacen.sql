@@ -17,6 +17,12 @@
 -- automáticamente. El SP acepta la clave ya calculada por el backend para
 -- respetar los prefijos MED-xxx / EQP-xxx que ya existen.
 
+/**
+ * SP_CREAR_PRODUCTO_CON_EXISTENCIA — Alta atómica de producto con existencia inicial.
+ * Inserta PRODUCTO, la tabla hija (MEDICAMENTO o EQUIPO_MEDICO) y la fila inicial
+ * en EXISTENCIA_PRODUCTO en una sola transacción.
+ * Errores: -20701 tipo inválido, -20702 clave interna vacía, -20703 clave duplicada.
+ */
 CREATE OR REPLACE PROCEDURE SP_CREAR_PRODUCTO_CON_EXISTENCIA (
   p_clave_interna       IN  VARCHAR2,
   p_nombre              IN  VARCHAR2,
@@ -91,6 +97,12 @@ BEGIN
 END SP_CREAR_PRODUCTO_CON_EXISTENCIA;
 /
 
+/**
+ * SP_REGISTRAR_MOVIMIENTO_STOCK — Aplica un movimiento de inventario con bloqueo optimista.
+ * Valida el stock con SELECT FOR UPDATE, aplica el delta y registra en MOVIMIENTO_INVENTARIO.
+ * Tipos válidos: ENTRADA, SALIDA_VENTA, SALIDA_MERMA, AJUSTE_POS, AJUSTE_NEG.
+ * Errores: -20501..-20505.
+ */
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_MOVIMIENTO_STOCK (
   p_id_producto    IN NUMBER,
   p_tipo           IN VARCHAR2,  -- ENTRADA | SALIDA_VENTA | SALIDA_MERMA | AJUSTE_POS | AJUSTE_NEG
@@ -153,6 +165,12 @@ BEGIN
 END SP_REGISTRAR_MOVIMIENTO_STOCK;
 /
 
+/**
+ * SP_AJUSTAR_EXISTENCIA_PRODUCTO — Wrapper de SP_REGISTRAR_MOVIMIENTO_STOCK para ajustes manuales.
+ * Acepta el stock objetivo en lugar de un delta; calcula la diferencia internamente
+ * y delega a SP_REGISTRAR_MOVIMIENTO_STOCK con AJUSTE_POS o AJUSTE_NEG según corresponda.
+ * Errores: -20504 sin existencia, -20506 stock negativo.
+ */
 CREATE OR REPLACE PROCEDURE SP_AJUSTAR_EXISTENCIA_PRODUCTO (
   p_id_producto  IN NUMBER,
   p_stock_nuevo  IN NUMBER,

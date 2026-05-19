@@ -17,6 +17,12 @@
 --   -20600..-20699 doctores
 -- ============================================================================
 
+/**
+ * SP_ASIGNAR_SERVICIOS_DOCTOR — Reemplaza el conjunto de servicios de un doctor.
+ * Elimina los servicios que ya no están en la nueva lista e inserta los nuevos,
+ * todo en una sola transacción. Lista vacía elimina todos los servicios del doctor.
+ * Errores: -20601 doctor inactivo o inexistente.
+ */
 CREATE OR REPLACE PROCEDURE SP_ASIGNAR_SERVICIOS_DOCTOR (
   p_id_doctor IN NUMBER,
   p_servicios IN SYS.ODCINUMBERLIST
@@ -58,6 +64,12 @@ BEGIN
 END SP_ASIGNAR_SERVICIOS_DOCTOR;
 /
 
+/**
+ * SP_CREAR_USUARIO_SISTEMA — Alta de usuario del sistema con validación de rol y correo único.
+ * Valida que el rol sea uno de los cuatro permitidos y que el correo no esté en blanco.
+ * La bitácora de alta la inserta TRG_BITACORA_USUARIO_AIUD automáticamente al hacer INSERT.
+ * Errores: -20101 rol inválido, -20102 correo vacío, -20103 hash vacío, -20104 correo duplicado.
+ */
 CREATE OR REPLACE PROCEDURE SP_CREAR_USUARIO_SISTEMA (
   p_nombre            IN  VARCHAR2,
   p_apellido_paterno  IN  VARCHAR2,
@@ -99,6 +111,12 @@ BEGIN
 END SP_CREAR_USUARIO_SISTEMA;
 /
 
+/**
+ * SP_REGISTRAR_LOGIN_USUARIO — Registra un intento de login en la bitácora de cambios.
+ * En logins exitosos (p_exito = 'S') actualiza FECHA_ULTIMO_LOGIN en USUARIO_SISTEMA.
+ * En ambos casos (éxito o fallo) inserta una entrada en BITACORA_CAMBIOS con la IP.
+ * Es un no-op silencioso si p_id_usuario es NULL.
+ */
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_LOGIN_USUARIO (
   p_id_usuario IN NUMBER,
   p_exito      IN CHAR,

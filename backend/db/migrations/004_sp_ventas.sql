@@ -15,6 +15,13 @@
 -- Convención de errores: -20400..-20499.
 -- ============================================================================
 
+/**
+ * SP_REGISTRAR_VENTA_COMPLETA — Registra una venta completa en una transacción atómica.
+ * Inserta VENTA (el folio lo genera TRG_VENTA_FOLIO_BI), los VENTA_METODO_PAGO
+ * y descuenta stock llamando a SP_REGISTRAR_MOVIMIENTO_STOCK por cada producto.
+ * Calcula MONTO_PAGADO y SALDO_PENDIENTE a partir de la suma de los pagos recibidos.
+ * Errores: -20401..-20405.
+ */
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_VENTA_COMPLETA (
   p_id_paciente         IN  NUMBER,
   p_id_usuario_registro IN  NUMBER,
@@ -110,6 +117,13 @@ BEGIN
 END SP_REGISTRAR_VENTA_COMPLETA;
 /
 
+/**
+ * SP_REGISTRAR_PAGO_PARCIAL — Agrega un pago parcial a una venta existente.
+ * Bloquea la fila VENTA con SELECT FOR UPDATE, valida que la venta no esté
+ * cancelada ni exenta, verifica que el monto no exceda el saldo pendiente
+ * y actualiza MONTO_PAGADO y SALDO_PENDIENTE.
+ * Errores: -20406..-20410.
+ */
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_PAGO_PARCIAL (
   p_id_venta      IN NUMBER,
   p_id_metodo     IN NUMBER,

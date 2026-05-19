@@ -17,6 +17,13 @@
 --   -20300..-20399 citas
 -- ============================================================================
 
+/**
+ * SP_REGISTRAR_PACIENTE_COMPLETO — Alta atómica de paciente con tipos de espina bífida.
+ * Inserta PACIENTE y N filas en PACIENTE_TIPO_ESPINA en una sola transacción.
+ * El FOLIO debe ser generado por el caller (prefijo BEN o PRE según el flujo).
+ * Requiere al menos un tipo de espina bífida.
+ * Errores: -20201 folio vacío, -20202 CURP vacío, -20203 sin tipos espina, -20204 duplicado.
+ */
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_PACIENTE_COMPLETO (
   p_folio                 IN  VARCHAR2,
   p_nombre                IN  VARCHAR2,
@@ -106,6 +113,13 @@ BEGIN
 END SP_REGISTRAR_PACIENTE_COMPLETO;
 /
 
+/**
+ * SP_CREAR_CITA_CON_SERVICIOS — Crea una cita con sus líneas de servicio en una transacción.
+ * Valida traslape con otras citas del mismo paciente en ±1 hora y que cada doctor
+ * tenga asignado el servicio correspondiente en DOCTOR_SERVICIO.
+ * Inserta CITA y N filas en DETALLE_CITA_SERVICIO.
+ * Errores: -20301..-20305.
+ */
 CREATE OR REPLACE PROCEDURE SP_CREAR_CITA_CON_SERVICIOS (
   p_id_paciente         IN  NUMBER,
   p_id_usuario_registro IN  NUMBER,
@@ -185,6 +199,12 @@ BEGIN
 END SP_CREAR_CITA_CON_SERVICIOS;
 /
 
+/**
+ * SP_CANCELAR_CITA — Cancela una cita y todos sus detalles de servicio.
+ * Bloquea la fila CITA con SELECT FOR UPDATE y valida que no esté ya cancelada
+ * ni completada antes de marcar la cita y sus DETALLE_CITA_SERVICIO como cancelados.
+ * Errores: -20306 cita inexistente, -20307 estado no cancelable.
+ */
 CREATE OR REPLACE PROCEDURE SP_CANCELAR_CITA (
   p_id_cita    IN NUMBER,
   p_motivo     IN VARCHAR2,

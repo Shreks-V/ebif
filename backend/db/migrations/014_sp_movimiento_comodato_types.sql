@@ -8,6 +8,13 @@
 -- como proxy para préstamos. Esto generaba historial de inventario incorrecto.
 -- ============================================================================
 
+/**
+ * SP_REGISTRAR_MOVIMIENTO_STOCK — Extiende los tipos de movimiento de inventario.
+ * Reemplaza la versión de migration 003 para incluir SALIDA_COMODATO y DEVOLUCION_COMODATO.
+ * Tipos válidos: ENTRADA, SALIDA_VENTA, SALIDA_COMODATO, DEVOLUCION_COMODATO,
+ * SALIDA_MERMA, AJUSTE_POS, AJUSTE_NEG. Requiere id_comodato para tipos de comodato.
+ * Errores: -20501..-20505.
+ */
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_MOVIMIENTO_STOCK (
   p_id_producto    IN NUMBER,
   p_tipo           IN VARCHAR2,  -- ENTRADA | SALIDA_VENTA | SALIDA_COMODATO |
