@@ -472,7 +472,7 @@ def _ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current
 
 def _listar_movimientos(id_producto: Optional[int]=None, tipo_movimiento: Optional[str]=None,
                        busqueda: Optional[str]=None, fecha_inicio: Optional[str]=None,
-                       fecha_fin: Optional[str]=None, current_user: CurrentUser | None = None,
+                       fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None,
                        limit: int=100, offset: int=0):
     """Listar movimientos de inventario con filtros opcionales."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
