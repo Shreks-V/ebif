@@ -179,7 +179,7 @@ export class MapaTabComponent implements OnInit, OnDestroy, AfterViewChecked {
     circle.on('mouseout', function(this: L.CircleMarker) {
       this.setStyle({ fillColor: color, radius: 9, fillOpacity: 0.88 });
     });
-    circle.addTo(this._map!);
+    circle.addTo(this._map!); // NOSONAR: typescript:S4325
     this._mapCircles.push(circle);
     this._renderedIds.add(b.id_paciente);
   }

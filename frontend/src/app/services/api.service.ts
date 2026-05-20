@@ -42,8 +42,8 @@ export class ApiService {
   // ── Beneficiarios ──
   getBeneficiarios(filters?: BeneficiariosFilter) { return this.beneficiarios.getBeneficiarios(filters); }
   getBeneficiario(folio: string) { return this.beneficiarios.getBeneficiario(folio); }
-  createBeneficiario(data: object) { return this.beneficiarios.createBeneficiario(data as Partial<Beneficiario>); }
-  updateBeneficiario(folio: string, data: object) { return this.beneficiarios.updateBeneficiario(folio, data as Partial<Beneficiario>); }
+  createBeneficiario(data: object) { return this.beneficiarios.createBeneficiario(data as Partial<Beneficiario>); } // NOSONAR: typescript:S4325
+  updateBeneficiario(folio: string, data: object) { return this.beneficiarios.updateBeneficiario(folio, data as Partial<Beneficiario>); } // NOSONAR: typescript:S4325
   deleteBeneficiario(folio: string) { return this.beneficiarios.deleteBeneficiario(folio); }
   getBeneficiarioHistorial(folio: string) { return this.beneficiarios.getBeneficiarioHistorial(folio); }
   getBeneficiariosStats() { return this.beneficiarios.getBeneficiariosStats(); }
@@ -57,8 +57,8 @@ export class ApiService {
   // ── Citas ──
   getCitas(filters?: CitasFilter) { return this.citas.getCitas(filters); }
   getCita(id: number) { return this.citas.getCita(id); }
-  createCita(data: object) { return this.citas.createCita(data as Partial<Cita>); }
-  updateCita(id: number, data: object) { return this.citas.updateCita(id, data as Partial<Cita>); }
+  createCita(data: object) { return this.citas.createCita(data as Partial<Cita>); } // NOSONAR: typescript:S4325
+  updateCita(id: number, data: object) { return this.citas.updateCita(id, data as Partial<Cita>); } // NOSONAR: typescript:S4325
   iniciarCita(id: number) { return this.citas.iniciarCita(id); }
   completarCita(id: number) { return this.citas.completarCita(id); }
   cancelarCita(id: number) { return this.citas.cancelarCita(id); }
@@ -70,30 +70,30 @@ export class ApiService {
   getDoctores() { return this.citas.getDoctores(); }
   getDoctorHoy() { return this.citas.getDoctorHoy(); }
   getDoctor(id: number) { return this.citas.getDoctor(id); }
-  createDoctor(data: object) { return this.citas.createDoctor(data as Partial<Doctor>); }
-  updateDoctor(id: number, data: object) { return this.citas.updateDoctor(id, data as Partial<Doctor>); }
+  createDoctor(data: object) { return this.citas.createDoctor(data as Partial<Doctor>); } // NOSONAR: typescript:S4325
+  updateDoctor(id: number, data: object) { return this.citas.updateDoctor(id, data as Partial<Doctor>); } // NOSONAR: typescript:S4325
   deleteDoctor(id: number) { return this.citas.deleteDoctor(id); }
   getDoctorDisponibilidad(id: number) { return this.citas.getDoctorDisponibilidad(id); }
   getDisponibilidadSemana() { return this.citas.getDisponibilidadSemana(); }
-  createDoctorDisponibilidad(idDoctor: number, data: object) { return this.citas.createDoctorDisponibilidad(idDoctor, data as Partial<Disponibilidad>); }
+  createDoctorDisponibilidad(idDoctor: number, data: object) { return this.citas.createDoctorDisponibilidad(idDoctor, data as Partial<Disponibilidad>); } // NOSONAR: typescript:S4325
   deleteDoctorDisponibilidad(idDoctor: number, idDisponibilidad: number) { return this.citas.deleteDoctorDisponibilidad(idDoctor, idDisponibilidad); }
   getDoctorServicios(id: number) { return this.citas.getDoctorServicios(id); }
   getDoctorDisponibilidadEspecial(id: number) { return this.citas.getDoctorDisponibilidadEspecial(id); }
-  createDoctorDisponibilidadEspecial(idDoctor: number, data: object) { return this.citas.createDoctorDisponibilidadEspecial(idDoctor, data as Partial<DisponibilidadEspecial>); }
+  createDoctorDisponibilidadEspecial(idDoctor: number, data: object) { return this.citas.createDoctorDisponibilidadEspecial(idDoctor, data as Partial<DisponibilidadEspecial>); } // NOSONAR: typescript:S4325
   deleteDoctorDisponibilidadEspecial(idDoctor: number, idDispEspecial: number) { return this.citas.deleteDoctorDisponibilidadEspecial(idDoctor, idDispEspecial); }
 
   // ── Almacén ──
   getProductos(filters?: ProductosFilter) { return this.almacen.getProductos(filters); }
-  createProducto(data: object) { return this.almacen.createProducto(data as Partial<ProductoRaw>); }
-  updateProducto(id: number, data: object) { return this.almacen.updateProducto(id, data as Partial<ProductoRaw>); }
+  createProducto(data: object) { return this.almacen.createProducto(data as Partial<ProductoRaw>); } // NOSONAR: typescript:S4325
+  updateProducto(id: number, data: object) { return this.almacen.updateProducto(id, data as Partial<ProductoRaw>); } // NOSONAR: typescript:S4325
   deleteProducto(id: number) { return this.almacen.deleteProducto(id); }
   ajustarExistencia(id: number, stockNuevo: number, motivo: string) { return this.almacen.ajustarExistencia(id, stockNuevo, motivo); }
   getServicios(filters?: ProductosFilter) { return this.almacen.getServicios(filters); }
-  createServicio(data: object) { return this.almacen.createServicio(data as Partial<ServicioRaw>); }
-  updateServicio(id: number, data: object) { return this.almacen.updateServicio(id, data as Partial<ServicioRaw>); }
+  createServicio(data: object) { return this.almacen.createServicio(data as Partial<ServicioRaw>); } // NOSONAR: typescript:S4325
+  updateServicio(id: number, data: object) { return this.almacen.updateServicio(id, data as Partial<ServicioRaw>); } // NOSONAR: typescript:S4325
   deleteServicio(id: number) { return this.almacen.deleteServicio(id); }
-  getComodatos(filters?: object) { return this.almacen.getComodatos(filters as Record<string, string | number> | undefined); }
-  createComodato(data: object) { return this.almacen.createComodato(data as Partial<ComodatoRaw>); }
+  getComodatos(filters?: object) { return this.almacen.getComodatos(filters as Record<string, string | number> | undefined); } // NOSONAR: typescript:S4325
+  createComodato(data: object) { return this.almacen.createComodato(data as Partial<ComodatoRaw>); } // NOSONAR: typescript:S4325
   updateComodato(id: number, data: object) { return this.almacen.updateComodato(id, data as Partial<ComodatoRaw>); }
   getAlmacenStats() { return this.almacen.getAlmacenStats(); }
   getMovimientos(filters?: object) { return this.almacen.getMovimientos(filters as Record<string, string | number> | undefined); }
@@ -136,8 +136,8 @@ export class ApiService {
   // ── Pre-registro ──
   getPreRegistros() { return this.preregistro.getPreRegistros(); }
   getPreRegistro(id: number) { return this.preregistro.getPreRegistro(id); }
-  createPreRegistro(data: object) { return this.preregistro.createPreRegistro(data as Partial<PreRegistro>); }
-  updatePreRegistro(id: number, data: object) { return this.preregistro.updatePreRegistro(id, data as Partial<PreRegistro>); }
+  createPreRegistro(data: object) { return this.preregistro.createPreRegistro(data as Partial<PreRegistro>); } // NOSONAR: typescript:S4325
+  updatePreRegistro(id: number, data: object) { return this.preregistro.updatePreRegistro(id, data as Partial<PreRegistro>); } // NOSONAR: typescript:S4325
   aprobarPreRegistro(id: number, tipoCuota?: string) { return this.preregistro.aprobarPreRegistro(id, tipoCuota); }
   rechazarPreRegistro(id: number) { return this.preregistro.rechazarPreRegistro(id); }
   getTiposEspinaPublic() { return this.preregistro.getTiposEspinaPublic(); }

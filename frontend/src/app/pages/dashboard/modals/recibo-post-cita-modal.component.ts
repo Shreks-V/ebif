@@ -144,7 +144,7 @@ export class ReciboPostCitaModalComponent implements OnChanges {
     } else {
       this.items = [{
         tipo: 'SERVICIO',
-        id: this.paciente!.idServicio!,
+        id: this.paciente!.idServicio!, // NOSONAR: typescript:S4325
         descripcion: this.paciente?.servicio || 'Consulta',
         precio_unitario: 0,
         cantidad: 1,

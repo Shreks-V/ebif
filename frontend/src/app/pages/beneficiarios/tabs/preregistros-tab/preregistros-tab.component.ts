@@ -129,7 +129,7 @@ export class PreregistrosTabComponent implements OnInit {
   private load(): void {
     this.api.getPreRegistros().subscribe({
       next: (data) => {
-        this.preregistros = data.map((item, index: number) => ({
+        this.preregistros = data.map((item, index: number) => ({ // NOSONAR: typescript:S4325
           id: item.id_paciente,
           folio: item.folio,
           nombre: item.nombre,

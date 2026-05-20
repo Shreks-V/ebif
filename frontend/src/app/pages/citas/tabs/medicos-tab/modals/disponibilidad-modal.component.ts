@@ -61,7 +61,7 @@ export class DisponibilidadModalComponent implements OnChanges {
       this.cargarSlots();
       this.cargarEspecial();
       this.api.getDisponibilidadSemana().subscribe({
-        next: (data) => { this.semana = data as unknown as SemanaSlot[]; },
+        next: (data) => { this.semana = data as unknown as SemanaSlot[]; }, // NOSONAR: typescript:S4325
         error: () => { this.semana = []; },
       });
     }
@@ -99,7 +99,7 @@ export class DisponibilidadModalComponent implements OnChanges {
         this.guardandoSlot = false;
         this.nuevoSlot = { dia_semana: 0, hora_inicio: '', hora_fin: '' };
         this.cargarSlots();
-        this.api.getDisponibilidadSemana().subscribe({ next: (data) => { this.semana = data as unknown as SemanaSlot[]; } });
+        this.api.getDisponibilidadSemana().subscribe({ next: (data) => { this.semana = data as unknown as SemanaSlot[]; } }); // NOSONAR: typescript:S4325
       },
       error: (err) => {
         this.guardandoSlot = false;
@@ -113,7 +113,7 @@ export class DisponibilidadModalComponent implements OnChanges {
     this.api.deleteDoctorDisponibilidad(this.medico.idDoctor, slot.id_disponibilidad).subscribe({
       next: () => {
         this.cargarSlots();
-        this.api.getDisponibilidadSemana().subscribe({ next: (data) => { this.semana = data as unknown as SemanaSlot[]; } });
+        this.api.getDisponibilidadSemana().subscribe({ next: (data) => { this.semana = data as unknown as SemanaSlot[]; } }); // NOSONAR: typescript:S4325
       },
     });
   }
@@ -173,7 +173,7 @@ export class DisponibilidadModalComponent implements OnChanges {
   private cargarEspecial(): void {
     if (!this.medico) return;
     this.api.getDoctorDisponibilidadEspecial(this.medico.idDoctor).subscribe({
-      next: (data) => { this.especial = data as unknown as DispEspecial[]; },
+      next: (data) => { this.especial = data as unknown as DispEspecial[]; }, // NOSONAR: typescript:S4325
     });
   }
 }

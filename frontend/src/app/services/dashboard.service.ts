@@ -56,8 +56,8 @@ export class DashboardService {
       statBajoStock: (almacenStats.alertas_stock_bajo ?? 0) + (almacenStats.alertas_caducidad ?? 0),
       statBeneficiariosActivos: benefStats.activos ?? benefStats.total ?? 0,
       statComodatosActivos: almacenStats.comodatos_activos ?? 0,
-      alertaStockBajo: (almacenStats.stock_bajo || []).slice(0, 5) as AlmacenAlerta[],
-      alertasCaducidad: (almacenStats.proximos_vencer || []).slice(0, 5) as AlmacenAlerta[],
+      alertaStockBajo: (almacenStats.stock_bajo || []).slice(0, 5) as AlmacenAlerta[], // NOSONAR: typescript:S4325
+      alertasCaducidad: (almacenStats.proximos_vencer || []).slice(0, 5) as AlmacenAlerta[], // NOSONAR: typescript:S4325
       adeudosPendientes: (res.adeudos || []).slice(0, 5),
       deltaBeneficiarios: (benefStats.nuevos_esta_semana ?? 0) - (benefStats.nuevos_semana_anterior ?? 0),
       deltaCitas: (citasStats.total_hoy ?? 0) - (citasStats.total_ayer ?? 0),

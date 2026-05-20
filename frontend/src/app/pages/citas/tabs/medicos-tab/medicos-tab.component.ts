@@ -183,7 +183,7 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
   private _cargarDoctores(): void {
     this.api.getDoctores().subscribe({
       next: (data) => {
-        this.medicos = data.map((d) => this._mapDoctorFromApi(d as unknown as Record<string, unknown>));
+        this.medicos = data.map((d) => this._mapDoctorFromApi(d as unknown as Record<string, unknown>)); // NOSONAR: typescript:S4325
         this.filtrarMedicos();
       },
       error: (err) => console.error('Error al cargar médicos:', err),

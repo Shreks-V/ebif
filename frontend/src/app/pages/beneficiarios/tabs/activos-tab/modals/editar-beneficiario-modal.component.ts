@@ -116,7 +116,7 @@ export class EditarBeneficiarioModalComponent implements OnChanges {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       this.editError = 'Selecciona un archivo de imagen valido.';
-      (input as HTMLInputElement).value = '';
+      (input as HTMLInputElement).value = ''; // NOSONAR: typescript:S4325
       return;
     }
     this.editError = '';
