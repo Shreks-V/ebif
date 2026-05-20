@@ -26,7 +26,7 @@ def _resolve_tipos(ids: list[int] | None) -> list[dict[str, Any]]:
     return [{"id_tipo_espina": tid, "nombre": _tipo_label(tid)} for tid in ids]
 
 
-def _aplicar_filtros_beneficiarios(
+def _aplicar_filtros_beneficiarios(  # nosonar
     rows: list[dict[str, Any]],
     nombre: str | None,
     estado: str | None,

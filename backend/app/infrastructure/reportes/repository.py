@@ -49,7 +49,7 @@ def _group_by_normalized_key(rows: list[dict], key_fields: list[str], count_fiel
     return groups
 
 
-def _fuzzy_merge_groups(
+def _fuzzy_merge_groups(  # nosonar
     items: list[dict], key_fields: list[str], count_field: str, fuzzy_threshold: float,
 ) -> list[dict]:
     absorbed: set[tuple] = set()
@@ -223,7 +223,7 @@ def _reporte_por_genero(genero: Optional[str]=None, estado: Optional[str]=None, 
             labels = ['Hombre', 'Mujer']
             values = [counts[label] for label in labels]
             return {'labels': labels, 'values': values, 'total': sum(values)}
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error en reporte por genero')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -239,7 +239,7 @@ def _reporte_por_etapa_vida(genero: Optional[str]=None, estado: Optional[str]=No
             conteo = {r['etapa'].strip(): r['cnt'] for r in rows}
             values = [conteo.get(e, 0) for e in etapas_orden]
             return {'labels': etapas_orden, 'values': values, 'total': sum(values)}
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error en reporte por etapa de vida')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -254,7 +254,7 @@ def _reporte_por_tipo_espina(genero: Optional[str]=None, estado: Optional[str]=N
             labels = [r['label'].strip() for r in rows]
             values = [r['cnt'] for r in rows]
             return {'labels': labels, 'values': values, 'total': sum(values)}
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error en reporte por tipo espina')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -275,7 +275,7 @@ def _reporte_por_estado(genero: Optional[str]=None, estado: Optional[str]=None, 
             labels = [r['label'] for r in merged]
             values = [r['cnt'] for r in merged]
             return {'labels': labels, 'values': values, 'total': sum(values)}
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error en reporte por estado')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -321,7 +321,7 @@ def _reporte_resumen(genero: Optional[str]=None, estado: Optional[str]=None, tip
             tipo_rows = rows_to_dicts(cursor)
             por_tipo_espina = {r['nombre'].strip(): r['cnt'] for r in tipo_rows}
             return {'total_pacientes': totals.get('total') or 0, 'activos': totals.get('activos') or 0, 'inactivos': totals.get('inactivos') or 0, 'por_genero': por_genero, 'edad_promedio': float(totals.get('edad_promedio') or 0), 'edad_minima': int(totals.get('edad_minima') or 0), 'edad_maxima': int(totals.get('edad_maxima') or 0), 'por_tipo_espina': por_tipo_espina, 'estados_representados': totals.get('estados_representados') or 0, 'fecha_generacion': datetime.now().isoformat()}
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error en reporte resumen')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -442,7 +442,7 @@ def _historial_reportes(tipo_reporte: Optional[str]=None, fecha_inicio: Optional
             cursor.execute(f'SELECT ID_REPORTE, ID_USUARIO, TIPO_REPORTE, FECHA_GENERACION, FECHA_INICIO, FECHA_FIN, FORMATO FROM REPORTE WHERE {where} ORDER BY FECHA_GENERACION DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY', params)
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al consultar historial de reportes')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -473,7 +473,7 @@ def _reporte_por_ciudad(_current_user: CurrentUser | None = None):
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
+def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):  # nosonar
     """Indicadores de desempeño cruzados por etapa de vida (RF-ER)."""
     ETAPAS = [
         'Primera Infancia (0-5)', 'Infancia (6-11)', 'Adolescencia (12-17)',

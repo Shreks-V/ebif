@@ -90,7 +90,7 @@ def _exportar_reporte_pdf(  # noqa: C901  # nosonar
     ROW_ALT  = colors.HexColor('#f8fafc')
     WHITE    = colors.white
 
-    PAGE_W, PAGE_H = letter
+    PAGE_W, _ = letter
     L_MARGIN = R_MARGIN = 0.75 * inch
     COL = PAGE_W - L_MARGIN - R_MARGIN   # ~7 inches usable
 
