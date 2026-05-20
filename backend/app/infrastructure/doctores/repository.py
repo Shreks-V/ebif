@@ -157,7 +157,7 @@ def _listar_doctores(_current_user: CurrentUser | None = None, limit: int=100, o
             cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR ORDER BY ID_DOCTOR OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY', {'offset': safe_offset, 'limit': safe_limit})
             rows = rows_to_dicts(cursor)
             return [_doctor_with_servicios(conn, r) for r in rows]
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al consultar doctores')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -170,7 +170,7 @@ def _obtener_disponibilidad_semana(_current_user: CurrentUser | None = None, lim
             cursor.execute("SELECT dd.ID_DISPONIBILIDAD, dd.ID_DOCTOR, dd.DIA_SEMANA, TO_CHAR(dd.HORA_INICIO, 'HH24:MI') AS HORA_INICIO, TO_CHAR(dd.HORA_FIN, 'HH24:MI') AS HORA_FIN, dd.DISPONIBLE, d.NOMBRE || ' ' || d.APELLIDO_PATERNO AS NOMBRE_DOCTOR FROM DISPONIBILIDAD_DOCTOR dd JOIN DOCTOR d ON d.ID_DOCTOR = dd.ID_DOCTOR WHERE d.ACTIVO = 'S' AND dd.DISPONIBLE = 'S' ORDER BY dd.DIA_SEMANA, dd.HORA_INICIO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY", {'offset': safe_offset, 'limit': safe_limit})
             rows = rows_to_dicts(cursor)
             return [_serialize(r) for r in rows]
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al consultar disponibilidad semanal')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -186,7 +186,7 @@ def _obtener_doctor(id_doctor: int, _current_user: CurrentUser | None = None):
             return _doctor_with_servicios(conn, row)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al consultar doctor')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -222,7 +222,7 @@ def _crear_doctor(data, current_user: CurrentUser | None = None):
             cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': new_id})
             row = row_to_dict(cursor)
             return _doctor_with_servicios(conn, row)
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al crear doctor')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -243,7 +243,7 @@ def _actualizar_doctor(id_doctor: int, data, _current_user: CurrentUser | None =
             return _doctor_with_servicios(conn, row)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al actualizar doctor')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -260,7 +260,7 @@ def _desactivar_doctor(id_doctor: int, _current_user: CurrentUser | None = None)
             return {'message': 'Doctor desactivado', 'id_doctor': id_doctor}
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al desactivar doctor')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -278,7 +278,7 @@ def _obtener_disponibilidad(id_doctor: int, _current_user: CurrentUser | None = 
             return [_serialize(r) for r in rows]
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al consultar disponibilidad')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -312,7 +312,7 @@ def _crear_disponibilidad(id_doctor: int, data, _current_user: CurrentUser | Non
             return _serialize(row)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al crear disponibilidad')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -328,7 +328,7 @@ def _eliminar_disponibilidad(id_doctor: int, id_disponibilidad: int, _current_us
             return {'message': 'Disponibilidad eliminada correctamente'}
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al eliminar disponibilidad')
         raise InternalError(_MSG_ERROR_INTERNO)
 
@@ -343,7 +343,7 @@ def _obtener_servicios_doctor(id_doctor: int, _current_user: CurrentUser | None 
             return _get_servicios_for_doctor(conn, id_doctor)
     except (NotFoundError, ValidationError, ConflictError, InternalError):
         raise
-    except oracledb.DatabaseError as e:
+    except oracledb.DatabaseError:
         logger.exception('Error al consultar servicios del doctor')
         raise InternalError(_MSG_ERROR_INTERNO)
 

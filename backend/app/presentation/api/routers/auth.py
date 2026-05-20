@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -36,8 +37,8 @@ def _auth_error() -> HTTPException:
 
 @router.post("/seed")
 def seed_users(
-    current_user: dict = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
     try:
         return auth_service.seed_default_users(current_user)
@@ -56,7 +57,7 @@ def seed_users(
 def login(
     request: Request,
     form_data: UserLogin,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
     del request
     try:
@@ -71,8 +72,8 @@ def login(
 
 @router.post("/refresh", response_model=Token)
 def refresh_token(
-    current_user: dict = Depends(get_current_user),
-    token_issuer: AccessTokenIssuer = Depends(get_token_decoder),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+    token_issuer: Annotated[AccessTokenIssuer, Depends(get_token_decoder)] = None,
 ):
     """Re-emite un token fresco para un usuario ya autenticado."""
     payload = {"sub": current_user["correo"], "rol": current_user.get("rol")}
@@ -82,8 +83,8 @@ def refresh_token(
 
 @router.get("/me", response_model=UserResponse)
 def get_me(
-    current_user: dict = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
     try:
         return auth_service.get_me(current_user["correo"])
@@ -94,8 +95,8 @@ def get_me(
 @router.post("/cambiar-contrasena", status_code=200)
 def cambiar_contrasena(
     body: CambiarContrasenaRequest,
-    current_user: dict = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
     try:
         auth_service.change_password(current_user, body.contrasena_actual, body.contrasena_nueva)
@@ -110,8 +111,8 @@ def cambiar_contrasena(
 
 @router.get("/usuarios", response_model=list[UserResponse])
 def listar_usuarios(
-    current_user: dict = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
     try:
         return auth_service.list_users(current_user)
@@ -122,8 +123,8 @@ def listar_usuarios(
 @router.post("/usuarios", response_model=UserResponse, status_code=201)
 def crear_usuario(
     body: UsuarioCreate,
-    current_user: dict = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
     try:
         return auth_service.create_user(current_user, body.model_dump())
@@ -142,8 +143,8 @@ def crear_usuario(
 def actualizar_usuario(
     id_usuario: int,
     body: UsuarioUpdate,
-    current_user: dict = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
     try:
         return auth_service.update_user(current_user, id_usuario, body.model_dump())
@@ -160,8 +161,8 @@ def actualizar_usuario(
 def reset_contrasena_admin(
     id_usuario: int,
     body: AdminResetContrasenaRequest,
-    current_user: dict = Depends(get_current_user),
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
     try:
         auth_service.admin_reset_password(current_user, id_usuario, body.contrasena_nueva)
@@ -176,12 +177,12 @@ def reset_contrasena_admin(
 
 # ── Endpoints para Opción C: recuperación por correo (descomentar al configurar SMTP) ─
 # @router.post("/recuperar-contrasena", status_code=202)
-# def solicitar_recuperacion(correo: str, auth_service: AuthService = Depends(get_auth_service)):
+# def solicitar_recuperacion(correo: str, auth_service: Annotated[AuthService, Depends(get_auth_service)] = None):
 #     auth_service.request_password_reset(correo)
 #     return {"message": "Si el correo existe, recibirás un enlace de recuperación"}
 #
 # @router.post("/confirmar-reset", status_code=200)
-# def confirmar_reset(token: str, nueva: str, auth_service: AuthService = Depends(get_auth_service)):
+# def confirmar_reset(token: str, nueva: str, auth_service: Annotated[AuthService, Depends(get_auth_service)] = None):
 #     auth_service.confirm_password_reset(token, nueva)
 #     return {"message": "Contraseña restablecida correctamente"}
 # ────────────────────────────────────────────────────────────────────────────

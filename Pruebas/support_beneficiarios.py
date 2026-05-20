@@ -83,11 +83,10 @@ class InMemoryBeneficiariosRepository:
         busqueda: str | None = None,
         membresia_estatus: str | None = None,
         tipo_cuota: str | None = None,
-        current_user: dict | None = None,
-        limit: int = 100,
-        offset: int = 0,
+        _current_user: dict | None = None,
+        _limit: int = 100,
+        _offset: int = 0,
     ) -> list[dict[str, Any]]:
-        del current_user
         rows = [p for p in self._all() if _visible(p)]
 
         if nombre:
@@ -128,7 +127,7 @@ class InMemoryBeneficiariosRepository:
         return self._response_dict(row)
 
     def crear_beneficiario(
-        self, data: BeneficiarioCreate, current_user: dict | None = None
+        self, data: BeneficiarioCreate, _current_user: dict | None = None
     ) -> dict[str, Any]:
         payload = data.model_dump()
         tipos_ids = payload.pop("tipos_espina", None) or []
@@ -174,8 +173,7 @@ class InMemoryBeneficiariosRepository:
         self._by_folio[folio]["activo"] = "N"
         return {"detail": "Beneficiario eliminado correctamente"}
 
-    def historial_beneficiario(self, folio: str, current_user: dict | None = None, limit_citas: int = 100, offset_citas: int = 0, limit_pagos: int = 100, offset_pagos: int = 0, limit_comodatos: int = 100, offset_comodatos: int = 0) -> dict[str, Any]:
-        del current_user
+    def historial_beneficiario(self, folio: str, _current_user: dict | None = None, _limit_citas: int = 100, _offset_citas: int = 0, _limit_pagos: int = 100, _offset_pagos: int = 0, _limit_comodatos: int = 100, _offset_comodatos: int = 0) -> dict[str, Any]:
         if folio not in self._by_folio:
             raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         row = self._by_folio[folio]

@@ -11,7 +11,7 @@ Cubre:
   RF-PS-05  Contrato de comodato en PDF
 """
 import io
-from typing import Optional
+from typing import Annotated, Optional
 from fastapi import APIRouter, Query, Depends
 from fastapi.responses import StreamingResponse
 from app.domain.exportaciones.entities import FilePayload
@@ -39,30 +39,30 @@ def exportar_reporte_pdf(
     fecha_fin: Optional[str] = Query(None),
     mes: Optional[int] = Query(None),
     anio: Optional[int] = Query(None),
-    current_user: dict = Depends(get_current_user),
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
 ):
     return _payload_response(service.exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user))
 
 @router.get('/beneficiario/{folio}/pdf')
-def exportar_beneficiario_pdf(folio: str, current_user: dict=Depends(get_current_user)):
+def exportar_beneficiario_pdf(folio: str, current_user: Annotated[dict, Depends(get_current_user)] = None):
     return _payload_response(service.exportar_beneficiario_pdf(folio, current_user))
 
 @router.get('/beneficiario/{folio}/credencial')
-def exportar_credencial_pdf(folio: str, current_user: dict=Depends(get_current_user)):
+def exportar_credencial_pdf(folio: str, current_user: Annotated[dict, Depends(get_current_user)] = None):
     return _payload_response(service.exportar_credencial_pdf(folio, current_user))
 
 @router.get('/cita/{id_cita}/comprobante')
-def exportar_comprobante_cita(id_cita: int, current_user: dict=Depends(get_current_user)):
+def exportar_comprobante_cita(id_cita: int, current_user: Annotated[dict, Depends(get_current_user)] = None):
     return _payload_response(service.exportar_comprobante_cita(id_cita, current_user))
 
 @router.get('/comodato/{id_comodato}/contrato')
-def exportar_contrato_comodato(id_comodato: int, current_user: dict=Depends(get_current_user)):
+def exportar_contrato_comodato(id_comodato: int, current_user: Annotated[dict, Depends(get_current_user)] = None):
     return _payload_response(service.exportar_contrato_comodato(id_comodato, current_user))
 
 @router.get('/beneficiarios/excel')
-def exportar_beneficiarios_excel(genero: Optional[str]=Query(None), estado: Optional[str]=Query(None), membresia_estatus: Optional[str]=Query(None), busqueda: Optional[str]=Query(None), current_user: dict=Depends(get_current_user)):
+def exportar_beneficiarios_excel(genero: Optional[str]=Query(None), estado: Optional[str]=Query(None), membresia_estatus: Optional[str]=Query(None), busqueda: Optional[str]=Query(None), current_user: Annotated[dict, Depends(get_current_user)] = None):
     return _payload_response(service.exportar_beneficiarios_excel(genero, estado, membresia_estatus, busqueda, current_user))
 
 @router.get('/reportes/excel')
-def exportar_reporte_excel(tipo: str=Query('resumen', description='resumen | servicios-por-tipo | pagos-exentos | consolidado-mensual'), fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), mes: Optional[int]=Query(None), anio: Optional[int]=Query(None), current_user: dict=Depends(get_current_user)):
+def exportar_reporte_excel(tipo: str=Query('resumen', description='resumen | servicios-por-tipo | pagos-exentos | consolidado-mensual'), fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), mes: Optional[int]=Query(None), anio: Optional[int]=Query(None), current_user: Annotated[dict, Depends(get_current_user)] = None):
     return _payload_response(service.exportar_reporte_excel(tipo, fecha_inicio, fecha_fin, mes, anio, current_user))

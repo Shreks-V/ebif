@@ -170,10 +170,10 @@ class InMemoryRecibosRepository:
         fecha_fin: Optional[str] = None,
         id_paciente: Optional[int] = None,
         search: Optional[str] = None,
-        current_user: dict | None = None,
-        limit: int = 100,
-        offset: int = 0,
-        solo_adeudos: bool = False,
+        _current_user: dict | None = None,
+        _limit: int = 100,
+        _offset: int = 0,
+        _solo_adeudos: bool = False,
     ) -> list[dict[str, Any]]:
         rows = list(self._ventas.values())
         filtered: list[dict[str, Any]] = []
@@ -195,7 +195,7 @@ class InMemoryRecibosRepository:
         filtered.sort(key=lambda x: str(x.get("fecha_venta") or ""), reverse=True)
         return [self._public_row(v) for v in filtered]
 
-    def obtener_venta(self, id_venta: int, current_user: dict | None = None) -> dict[str, Any]:
+    def obtener_venta(self, id_venta: int, _current_user: dict | None = None) -> dict[str, Any]:
         row = self._ventas.get(int(id_venta))
         if row is None:
             raise HTTPException(status_code=404, detail="Venta no encontrada")
@@ -278,7 +278,7 @@ class InMemoryRecibosRepository:
         self,
         id_venta: int,
         motivo: Optional[str] = None,
-        current_user: dict | None = None,
+        _current_user: dict | None = None,
     ) -> dict[str, Any]:
         row = self._ventas.get(int(id_venta))
         if row is None:
@@ -292,14 +292,14 @@ class InMemoryRecibosRepository:
 
     def registrar_pago(
         self,
-        id_venta: int,
-        id_metodo_pago: int,
-        monto: float,
-        current_user: dict | None = None,
+        _id_venta: int,
+        _id_metodo_pago: int,
+        _monto: float,
+        _current_user: dict | None = None,
     ) -> dict[str, Any]:
         raise HTTPException(status_code=501, detail="No implementado en memoria para pruebas")
 
-    def stats_ventas(self, current_user: dict | None = None) -> dict[str, Any]:
+    def stats_ventas(self, _current_user: dict | None = None) -> dict[str, Any]:
         activas = [v for v in self._ventas.values() if v.get("cancelada") != "S"]
         hoy = date.today().isoformat()
         ayer = (date.today() - timedelta(days=1)).isoformat()

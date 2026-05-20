@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 from fastapi import APIRouter, Depends
 from app.presentation.api.security import get_current_user
 from app.application.citas import use_cases as citas_svc
@@ -11,7 +12,7 @@ router = APIRouter()
 
 
 @router.get('')
-def get_notificaciones(current_user: dict = Depends(get_current_user)):
+def get_notificaciones(current_user: Annotated[dict, Depends(get_current_user)] = None):
     """Agrega alertas de todos los módulos en una respuesta unificada."""
     notificaciones = []
 
