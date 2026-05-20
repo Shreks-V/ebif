@@ -2,7 +2,6 @@
 -- Idempotent: drops the constraint by its system name via a loop.
 
 DECLARE
-  v_count NUMBER;
 BEGIN
   FOR c IN (
     SELECT constraint_name

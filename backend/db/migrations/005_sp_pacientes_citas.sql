@@ -130,7 +130,6 @@ CREATE OR REPLACE PROCEDURE SP_CREAR_CITA_CON_SERVICIOS (
   p_id_cita_out         OUT NUMBER
 )
 AS
-  v_count     NUMBER;
   v_traslape  NUMBER;
   v_asignado  NUMBER;
   v_i         NUMBER;
