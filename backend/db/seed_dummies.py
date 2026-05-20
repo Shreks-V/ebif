@@ -49,6 +49,14 @@ def exists(cur, table, col, val):
 
 ADMIN_ID = 4   # ID del usuario ADMINISTRADOR creado en seed
 
+_NL      = "Nuevo León"
+_MTY     = "Monterrey"
+_SPN     = "San Pedro"
+_HSJ     = "Hospital San José"
+_CUOTA_A = "CUOTA A"
+_CUOTA_B = "CUOTA B"
+_ODCI_NL = "SYS.ODCINUMBERLIST"
+
 DOCTORES = [
     ("Carlos",   "Mendoza",   "López",    "Neurología Pediátrica",      "8141112233", "carlos.mendoza@ebif.mx"),
     ("Ana",      "Ruiz",      "Torres",   "Fisiatría y Rehabilitación",  "8142223344", "ana.ruiz@ebif.mx"),
@@ -74,65 +82,65 @@ PRODUCTOS = [
 # CURPs válidos (18 chars, formato oficial)
 PACIENTES = [
     ("BEN-000001","GARCÍA",   "LÓPEZ",    "JUAN CARLOS", "H","1998-05-14",
-     "GALJ980514HNLRPN09","Martina López","Calle Roble 12","Centro","Monterrey","Nuevo León","64000",
+     "GALJ980514HNLRPN09","Martina López","Calle Roble 12","Centro",_MTY,_NL,"64000",
      "8181234567","8181234568","jc.garcia@gmail.com","Martina López","8181234567",
-     "Monterrey","Nuevo León","Hospital Universitario","O+","N","Tiene derivación VP","CUOTA A"),
+     _MTY,_NL,"Hospital Universitario","O+","N","Tiene derivación VP",_CUOTA_A),
     ("BEN-000002","HERNÁNDEZ","MARTÍNEZ",  "SOFÍA",       "M","2005-11-22",
-     "HEMS051122MNLRRF01","Pedro Hernández","Av. Constitución 45","Obrera","Monterrey","Nuevo León","64010",
+     "HEMS051122MNLRRF01","Pedro Hernández","Av. Constitución 45","Obrera",_MTY,_NL,"64010",
      "8182345678","8182345679","sofia.h@hotmail.com","Pedro Hernández","8182345678",
-     "Monterrey","Nuevo León","Hospital Metropolitano","A+","S","Hipersensibilidad látex","CUOTA B"),
+     _MTY,_NL,"Hospital Metropolitano","A+","S","Hipersensibilidad látex",_CUOTA_B),
     ("BEN-000003","LÓPEZ",    "RAMÍREZ",   "DIEGO ALBERTO","H","2001-03-08",
-     "LORD010308HNLPMG00","Rosa Ramírez","Paseo del Nogal 7","Cumbres","Monterrey","Nuevo León","64610",
+     "LORD010308HNLPMG00","Rosa Ramírez","Paseo del Nogal 7","Cumbres",_MTY,_NL,"64610",
      "8183456789","8183456780","diego.lr@yahoo.com","Rosa Ramírez","8183456789",
-     "San Pedro","Nuevo León","Hospital San José","B+","N","Mielomeningocele L4-L5","CUOTA A"),
+     _SPN,_NL,_HSJ,"B+","N","Mielomeningocele L4-L5",_CUOTA_A),
     ("BEN-000004","TORRES",   "SÁNCHEZ",   "VALERIA",     "M","2010-07-30",
-     "TOSV100730MNLRLN06","Ernesto Torres","Calle Cedro 33","Del Valle","San Pedro","Nuevo León","66220",
+     "TOSV100730MNLRLN06","Ernesto Torres","Calle Cedro 33","Del Valle",_SPN,_NL,"66220",
      "8184567890","8184567891","valeria.ts@gmail.com","Ernesto Torres","8184567890",
-     "San Pedro","Nuevo León","Hospital San José","AB+","N","Usa AFO bilateral","CUOTA B"),
+     _SPN,_NL,_HSJ,"AB+","N","Usa AFO bilateral",_CUOTA_B),
     ("BEN-000005","REYES",    "FLORES",    "MIGUEL ÁNGEL","H","2015-01-19",
-     "REFM150119HNLYLN05","Carmen Flores","Blvd. Díaz Ordaz 88","Linda Vista","Guadalupe","Nuevo León","67140",
+     "REFM150119HNLYLN05","Carmen Flores","Blvd. Díaz Ordaz 88","Linda Vista","Guadalupe",_NL,"67140",
      "8185678901","8185678902","miguel.rf@live.com","Carmen Flores","8185678901",
-     "Guadalupe","Nuevo León","Hospital de la Mujer","A-","S","Meningocele dorsal","CUOTA A"),
+     "Guadalupe",_NL,"Hospital de la Mujer","A-","S","Meningocele dorsal",_CUOTA_A),
     ("BEN-000006","MORALES",  "JIMÉNEZ",   "ANDREA",      "M","2008-09-05",
-     "MOJA080905MNLRND02","Luis Morales","Calle Pino 15","Mitras","Monterrey","Nuevo León","64460",
+     "MOJA080905MNLRND02","Luis Morales","Calle Pino 15","Mitras",_MTY,_NL,"64460",
      "8186789012","8186789013","andrea.mj@gmail.com","Luis Morales","8186789012",
-     "Monterrey","Nuevo León","IMSS Clínica 25","O-","N","Terapia física 3x/semana","CUOTA B"),
+     _MTY,_NL,"IMSS Clínica 25","O-","N","Terapia física 3x/semana",_CUOTA_B),
     ("BEN-000007","RAMÍREZ",  "GUTIÉRREZ", "CARLOS",      "H","1995-12-25",
-     "RAGC951225HNLMTR08","Ana Gutiérrez","Av. Morones Prieto 200","Roma","Monterrey","Nuevo León","64700",
+     "RAGC951225HNLMTR08","Ana Gutiérrez","Av. Morones Prieto 200","Roma",_MTY,_NL,"64700",
      "8187890123","8187890124","carlos.rg@outlook.com","Ana Gutiérrez","8187890123",
-     "Monterrey","Nuevo León","Hospital Christus","A+","N","Espina bífida oculta, asintomático","CUOTA A"),
+     _MTY,_NL,"Hospital Christus","A+","N","Espina bífida oculta, asintomático",_CUOTA_A),
     ("BEN-000008","VÁZQUEZ",  "LUNA",      "ISABELLA",    "M","2018-06-11",
-     "VALI180611MNLZNS04","Ricardo Vázquez","Río Bravo 56","Río","Monterrey","Nuevo León","64890",
+     "VALI180611MNLZNS04","Ricardo Vázquez","Río Bravo 56","Río",_MTY,_NL,"64890",
      "8188901234","8188901235","isabella.vl@gmail.com","Ricardo Vázquez","8188901234",
-     "Apodaca","Nuevo León","Hospital Ángeles","B-","S","Lipomeningocele, cirugía 2019","CUOTA B"),
+     "Apodaca",_NL,"Hospital Ángeles","B-","S","Lipomeningocele, cirugía 2019",_CUOTA_B),
     ("BEN-000009","GÓMEZ",    "RAMOS",     "FERNANDA",    "M","2003-04-17",
-     "GORF030417MNLMRS00","Martha Ramos","Calle Aguacate 9","Bosques","Apodaca","Nuevo León","66600",
+     "GORF030417MNLMRS00","Martha Ramos","Calle Aguacate 9","Bosques","Apodaca",_NL,"66600",
      "8189012345","8189012346","fernanda.gr@gmail.com","Martha Ramos","8189012345",
-     "Apodaca","Nuevo León","IMSS Clínica 67","O+","N","Seguimiento ortopédico anual","CUOTA B"),
+     "Apodaca",_NL,"IMSS Clínica 67","O+","N","Seguimiento ortopédico anual",_CUOTA_B),
     ("BEN-000010","DÍAZ",     "CASTILLO",  "RODRIGO",     "H","2012-08-03",
-     "DICR120803HNLZSR07","Patricia Castillo","Av. Lincoln 340","Tecnológico","Monterrey","Nuevo León","64700",
+     "DICR120803HNLZSR07","Patricia Castillo","Av. Lincoln 340","Tecnológico",_MTY,_NL,"64700",
      "8180123456","8180123457","rodrigo.dc@gmail.com","Patricia Castillo","8180123456",
-     "Monterrey","Nuevo León","Tec de Monterrey Hospital","AB-","N","Usa silla de ruedas","CUOTA A"),
+     _MTY,_NL,"Tec de Monterrey Hospital","AB-","N","Usa silla de ruedas",_CUOTA_A),
     ("BEN-000011","CERVANTES","ORTEGA",    "CAMILA",      "M","2007-02-28",
-     "CEOC070228MNLRRL03","Jorge Cervantes","Calle Olmo 77","Jardines","Santa Catarina","Nuevo León","66350",
+     "CEOC070228MNLRRL03","Jorge Cervantes","Calle Olmo 77","Jardines","Santa Catarina",_NL,"66350",
      "8181234560","8181234561","camila.co@hotmail.com","Jorge Cervantes","8181234560",
-     "Santa Catarina","Nuevo León","Hospital General","A+","S","Cateterismo intermitente","CUOTA B"),
+     "Santa Catarina",_NL,"Hospital General","A+","S","Cateterismo intermitente",_CUOTA_B),
     ("BEN-000012","JIMÉNEZ",  "VEGA",      "EMILIO",      "H","2000-10-14",
-     "JIVE001014HNLMGL09","Lucia Vega","Prol. Hidalgo 123","Independencia","Monterrey","Nuevo León","64290",
+     "JIVE001014HNLMGL09","Lucia Vega","Prol. Hidalgo 123","Independencia",_MTY,_NL,"64290",
      "8182345670","8182345671","emilio.jv@gmail.com","Lucia Vega","8182345670",
-     "Monterrey","Nuevo León","Hospital Naval","B+","N","Mielomeningocele L2-L3","CUOTA B"),
+     _MTY,_NL,"Hospital Naval","B+","N","Mielomeningocele L2-L3",_CUOTA_B),
     ("BEN-000013","AGUILAR",  "SALINAS",   "NATALIA",     "M","2013-05-20",
-     "AGSN130520MNLGLT05","Fernando Aguilar","Insurgentes 456","Centro","Monterrey","Nuevo León","64000",
+     "AGSN130520MNLGLT05","Fernando Aguilar","Insurgentes 456","Centro",_MTY,_NL,"64000",
      "8183456780","8183456781","natalia.as@yahoo.com","Fernando Aguilar","8183456780",
-     "Monterrey","Nuevo León","Hospital Universitario","O+","N","Terapia ocupacional 2x/semana","CUOTA A"),
+     _MTY,_NL,"Hospital Universitario","O+","N","Terapia ocupacional 2x/semana",_CUOTA_A),
     ("BEN-000014","MENDOZA",  "HERRERA",   "PABLO",       "H","2016-03-07",
-     "MEHP160307HNLNRB06","Claudia Herrera","Av. Revolución 789","Contry","Monterrey","Nuevo León","64830",
+     "MEHP160307HNLNRB06","Claudia Herrera","Av. Revolución 789","Contry",_MTY,_NL,"64830",
      "8184567891","8184567892","pablo.mh@gmail.com","Claudia Herrera","8184567891",
-     "Monterrey","Nuevo León","Hospital de Pediatría","A+","S","Hidrocefalia tratada","CUOTA B"),
+     _MTY,_NL,"Hospital de Pediatría","A+","S","Hidrocefalia tratada",_CUOTA_B),
     ("BEN-000015","FLORES",   "MEDINA",    "ELENA",       "M","1990-07-22",
-     "FOME900722MNLLDL08","Roberto Medina","Calle Fresno 34","Las Brisas","Monterrey","Nuevo León","64850",
+     "FOME900722MNLLDL08","Roberto Medina","Calle Fresno 34","Las Brisas",_MTY,_NL,"64850",
      "8185678902","8185678903","elena.fm@live.com","Roberto Medina","8185678902",
-     "Monterrey","Nuevo León","Hospital San José","A-","N","Espina bífida oculta sacra","CUOTA A"),
+     _MTY,_NL,_HSJ,"A-","N","Espina bífida oculta sacra",_CUOTA_A),
 ]
 
 # Tipo espina por paciente (índice base-0 → ID en BD)
@@ -219,7 +227,7 @@ def seed_all():
                 paciente_ids.append(cur.fetchone()[0])
                 print(f"  -- {folio} ya existe")
                 continue
-            num_list_type = conn.gettype("SYS.ODCINUMBERLIST")
+            num_list_type = conn.gettype(_ODCI_NL)
             tipos_espina = num_list_type.newobject()
             for t in TIPOS_ESPINA_PAC[i]:
                 tipos_espina.append(t)
@@ -270,7 +278,7 @@ def seed_all():
         }
         for idx, svc_ids in asignaciones.items():
             did = doctor_ids[idx]
-            num_list_type = conn.gettype("SYS.ODCINUMBERLIST")
+            num_list_type = conn.gettype(_ODCI_NL)
             svc_list = num_list_type.newobject()
             for s in svc_ids:
                 svc_list.append(s)
@@ -330,7 +338,7 @@ def seed_all():
                 doc_id = doctor_ids[doc_i]
                 fh = datetime.now() + timedelta(days=days)
                 fh = fh.replace(hour=10 + (days % 4), minute=0, second=0, microsecond=0)
-                nlt = conn.gettype("SYS.ODCINUMBERLIST")
+                nlt = conn.gettype(_ODCI_NL)
                 def nl(*vals):
                     o = nlt.newobject(); [o.append(v) for v in vals]; return o
                 id_out = cur.var(int)
@@ -371,7 +379,7 @@ def seed_all():
                 if pac_i >= len(paciente_ids):
                     continue
                 pac_id = paciente_ids[pac_i]
-                nlt = conn.gettype("SYS.ODCINUMBERLIST")
+                nlt = conn.gettype(_ODCI_NL)
                 vlt = conn.gettype("SYS.ODCIVARCHAR2LIST")
                 def nl2(*vals):
                     o = nlt.newobject(); [o.append(v) for v in vals]; return o
@@ -438,16 +446,10 @@ def seed_all():
 
         # ── Resumen ───────────────────────────────────────────────────────────
         print("\n=== RESUMEN FINAL ===")
-        for tbl, col in [
-            ("DOCTOR",             "COUNT(*)"),
-            ("PRODUCTO",           "COUNT(*)"),
-            ("PACIENTE",           "COUNT(*)"),
-            ("DOCTOR_SERVICIO",    "COUNT(*)"),
-            ("DISPONIBILIDAD_DOCTOR","COUNT(*)"),
-            ("CITA",               "COUNT(*)"),
-            ("VENTA",              "COUNT(*)"),
-            ("COMODATO",           "COUNT(*)"),
-            ("MOVIMIENTO_INVENTARIO","COUNT(*)"),
+        for tbl in [
+            "DOCTOR", "PRODUCTO", "PACIENTE",
+            "DOCTOR_SERVICIO", "DISPONIBILIDAD_DOCTOR",
+            "CITA", "VENTA", "COMODATO", "MOVIMIENTO_INVENTARIO",
         ]:
             cur.execute(f"SELECT COUNT(*) FROM {tbl}")
             print(f"  {tbl}: {cur.fetchone()[0]}")
