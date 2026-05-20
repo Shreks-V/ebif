@@ -312,12 +312,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
-            <input type="date" [(ngModel)]="editForm.fecha_prestamo" name="ecFechaPrest" required aria-label="Edit form.fecha prestamo"
+            <input type="date" [(ngModel)]="editForm.fecha_prestamo" name="ecFechaPrest" required aria-label="Fecha de Préstamo"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
-            <input type="date" [(ngModel)]="editForm.fecha_devolucion" name="ecFechaDev" aria-label="Edit form.fecha devolucion"
+            <input type="date" [(ngModel)]="editForm.fecha_devolucion" name="ecFechaDev" aria-label="Fecha de Devolución"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
         </div>
@@ -325,7 +325,7 @@
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
             <select [(ngModel)]="editForm.estatus" name="ecEstatus"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Ecestatus">
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Estatus">
               <option value="PRESTADO">Prestado</option>
               <option value="DEVUELTO">Devuelto</option>
               <option value="CANCELADO">Cancelado</option>
@@ -335,7 +335,7 @@
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
             <select [(ngModel)]="editForm.exento_pago" name="ecExento"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Ecexento">
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Exento de Pago">
               <option value="N">No</option>
               <option value="S">S&iacute;</option>
             </select>
@@ -344,24 +344,24 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
-            <input type="number" [(ngModel)]="editForm.monto_total" name="ecMontoTotal" step="0.01" min="0" aria-label="Edit form.monto total"
+            <input type="number" [(ngModel)]="editForm.monto_total" name="ecMontoTotal" step="0.01" min="0" aria-label="Monto Total"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
-            <input type="number" [(ngModel)]="editForm.monto_pagado" name="ecMontoPagado" step="0.01" min="0" aria-label="Edit form.monto pagado"
+            <input type="number" [(ngModel)]="editForm.monto_pagado" name="ecMontoPagado" step="0.01" min="0" aria-label="Monto Pagado"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
           <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
-            <input type="number" [(ngModel)]="editForm.saldo_pendiente" name="ecSaldo" step="0.01" min="0" aria-label="Edit form.saldo pendiente"
+            <input type="number" [(ngModel)]="editForm.saldo_pendiente" name="ecSaldo" step="0.01" min="0" aria-label="Saldo Pendiente"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
           <textarea autoGrow [(ngModel)]="editForm.notas" name="ecNotas" rows="3"
-          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" aria-label="Ecnotas"></textarea>
+          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" aria-label="Notas"></textarea>
         </div>
         <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
           <button type="button" (click)="showEditModal = false"
