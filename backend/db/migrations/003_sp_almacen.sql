@@ -113,19 +113,21 @@ CREATE OR REPLACE PROCEDURE SP_REGISTRAR_MOVIMIENTO_STOCK (
   p_observaciones  IN VARCHAR2 DEFAULT NULL
 )
 AS
-  v_stock NUMBER;
-  v_delta NUMBER;
+  v_stock       NUMBER;
+  v_delta       NUMBER;
+  c_salida_venta CONSTANT VARCHAR2(20) := 'SALIDA_VENTA';
+  c_ajuste_neg   CONSTANT VARCHAR2(20) := 'AJUSTE_NEG';
 BEGIN
   IF p_cantidad IS NULL OR p_cantidad <= 0 THEN
     RAISE_APPLICATION_ERROR(-20501, 'La cantidad debe ser un entero positivo.');
   END IF;
 
-  IF p_tipo NOT IN ('ENTRADA','SALIDA_VENTA','SALIDA_MERMA','AJUSTE_POS','AJUSTE_NEG') THEN
+  IF p_tipo NOT IN ('ENTRADA',c_salida_venta,'SALIDA_MERMA','AJUSTE_POS',c_ajuste_neg) THEN
     RAISE_APPLICATION_ERROR(-20502,
       'Tipo de movimiento invalido. Usa ENTRADA, SALIDA_VENTA, SALIDA_MERMA, AJUSTE_POS o AJUSTE_NEG.');
   END IF;
 
-  IF p_tipo = 'SALIDA_VENTA' AND p_id_venta IS NULL THEN
+  IF p_tipo = c_salida_venta AND p_id_venta IS NULL THEN
     RAISE_APPLICATION_ERROR(-20503, 'SALIDA_VENTA requiere id_venta.');
   END IF;
 
@@ -140,7 +142,7 @@ BEGIN
         'El producto no tiene registro de existencia.');
   END;
 
-  IF p_tipo IN ('SALIDA_VENTA','SALIDA_MERMA','AJUSTE_NEG') THEN
+  IF p_tipo IN (c_salida_venta,'SALIDA_MERMA',c_ajuste_neg) THEN
     v_delta := -p_cantidad;
   ELSE
     v_delta := p_cantidad;
@@ -180,6 +182,7 @@ CREATE OR REPLACE PROCEDURE SP_AJUSTAR_EXISTENCIA_PRODUCTO (
 AS
   v_stock_actual NUMBER;
   v_delta        NUMBER;
+  c_ajuste_neg   CONSTANT VARCHAR2(20) := 'AJUSTE_NEG';
 BEGIN
   IF p_stock_nuevo IS NULL OR p_stock_nuevo < 0 THEN
     RAISE_APPLICATION_ERROR(-20506, 'El stock nuevo no puede ser negativo.');
@@ -210,7 +213,7 @@ BEGIN
   ELSE
     SP_REGISTRAR_MOVIMIENTO_STOCK(
       p_id_producto   => p_id_producto,
-      p_tipo          => 'AJUSTE_NEG',
+      p_tipo          => c_ajuste_neg,
       p_cantidad      => -v_delta,
       p_id_usuario    => p_id_usuario,
       p_observaciones => p_motivo

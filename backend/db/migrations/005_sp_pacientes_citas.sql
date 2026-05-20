@@ -135,6 +135,7 @@ AS
   v_traslape  NUMBER;
   v_asignado  NUMBER;
   v_i         NUMBER;
+  c_cancelada CONSTANT VARCHAR2(10) := 'CANCELADA';
 BEGIN
   IF p_servicios IS NULL OR p_servicios.COUNT = 0 THEN
     RAISE_APPLICATION_ERROR(-20301, 'La cita requiere al menos un servicio.');
@@ -150,7 +151,7 @@ BEGIN
   SELECT COUNT(*) INTO v_traslape
   FROM CITA
   WHERE ID_PACIENTE = p_id_paciente
-    AND ESTATUS <> 'CANCELADA'
+    AND ESTATUS <> c_cancelada
     AND FECHA_HORA BETWEEN p_fecha_hora - INTERVAL '1' HOUR
                        AND p_fecha_hora + INTERVAL '1' HOUR;
   IF v_traslape > 0 THEN
@@ -211,7 +212,8 @@ CREATE OR REPLACE PROCEDURE SP_CANCELAR_CITA (
   p_id_usuario IN NUMBER
 )
 AS
-  v_estatus VARCHAR2(20);
+  v_estatus   VARCHAR2(20);
+  c_cancelada CONSTANT VARCHAR2(10) := 'CANCELADA';
 BEGIN
   BEGIN
     SELECT ESTATUS INTO v_estatus
@@ -223,13 +225,13 @@ BEGIN
       RAISE_APPLICATION_ERROR(-20306, 'La cita no existe.');
   END;
 
-  IF v_estatus IN ('CANCELADA', 'COMPLETADA') THEN
+  IF v_estatus IN (c_cancelada, 'COMPLETADA') THEN
     RAISE_APPLICATION_ERROR(-20307,
       'La cita no es cancelable en su estado actual: ' || v_estatus || '.');
   END IF;
 
   UPDATE CITA
-     SET ESTATUS = 'CANCELADA',
+     SET ESTATUS = c_cancelada,
          NOTAS   = SUBSTR(
            NVL(NOTAS, '') || ' | CANCELACION: ' || NVL(p_motivo, ''),
            1, 500

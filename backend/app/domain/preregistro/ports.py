@@ -30,7 +30,7 @@ class PreregistroRepository(Protocol):
         current_user: CurrentUser | None = None,
     ) -> dict: ...
 
-    async def subir_documento(
+    def subir_documento(
         self,
         id_paciente: int,
         id_tipo_documento: int,

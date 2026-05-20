@@ -27,15 +27,17 @@ CREATE OR REPLACE PROCEDURE SP_REGISTRAR_MOVIMIENTO_STOCK (
   p_observaciones  IN VARCHAR2 DEFAULT NULL
 )
 AS
-  v_stock NUMBER;
-  v_delta NUMBER;
+  v_stock        NUMBER;
+  v_delta        NUMBER;
+  c_salida_venta CONSTANT VARCHAR2(20) := 'SALIDA_VENTA';
+  c_salida_como  CONSTANT VARCHAR2(20) := 'SALIDA_COMODATO';
 BEGIN
   IF p_cantidad IS NULL OR p_cantidad <= 0 THEN
     RAISE_APPLICATION_ERROR(-20501, 'La cantidad debe ser un entero positivo.');
   END IF;
 
   IF p_tipo NOT IN (
-      'ENTRADA', 'SALIDA_VENTA', 'SALIDA_COMODATO',
+      'ENTRADA', c_salida_venta, c_salida_como,
       'DEVOLUCION_COMODATO', 'SALIDA_MERMA', 'AJUSTE_POS', 'AJUSTE_NEG'
   ) THEN
     RAISE_APPLICATION_ERROR(-20502,
@@ -43,11 +45,11 @@ BEGIN
       || 'DEVOLUCION_COMODATO, SALIDA_MERMA, AJUSTE_POS o AJUSTE_NEG.');
   END IF;
 
-  IF p_tipo = 'SALIDA_VENTA' AND p_id_venta IS NULL THEN
+  IF p_tipo = c_salida_venta AND p_id_venta IS NULL THEN
     RAISE_APPLICATION_ERROR(-20503, 'SALIDA_VENTA requiere id_venta.');
   END IF;
 
-  IF p_tipo = 'SALIDA_COMODATO' AND p_id_comodato IS NULL THEN
+  IF p_tipo = c_salida_como AND p_id_comodato IS NULL THEN
     RAISE_APPLICATION_ERROR(-20503, 'SALIDA_COMODATO requiere id_comodato.');
   END IF;
 
@@ -68,7 +70,7 @@ BEGIN
 
   -- Salidas (decremento): SALIDA_VENTA, SALIDA_COMODATO, SALIDA_MERMA, AJUSTE_NEG
   -- Entradas (incremento): ENTRADA, DEVOLUCION_COMODATO, AJUSTE_POS
-  IF p_tipo IN ('SALIDA_VENTA', 'SALIDA_COMODATO', 'SALIDA_MERMA', 'AJUSTE_NEG') THEN
+  IF p_tipo IN (c_salida_venta, c_salida_como, 'SALIDA_MERMA', 'AJUSTE_NEG') THEN
     v_delta := -p_cantidad;
   ELSE
     v_delta := p_cantidad;

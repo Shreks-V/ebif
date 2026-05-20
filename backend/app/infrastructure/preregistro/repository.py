@@ -434,8 +434,8 @@ class OraclePreregistroRepository(PreregistroRepository):
     def aprobar_preregistro(self, id_paciente, tipo_cuota=None, current_user=None):
         return _aprobar_preregistro(id_paciente, tipo_cuota, current_user)
 
-    async def subir_documento(self, id_paciente, id_tipo_documento, archivo, current_user=None):
-        return await _subir_documento(id_paciente, id_tipo_documento, archivo, current_user)
+    def subir_documento(self, id_paciente, id_tipo_documento, archivo, current_user=None):
+        return _subir_documento(id_paciente, id_tipo_documento, archivo, current_user)
 
     def listar_documentos(self, id_paciente, limit=100, offset=0):
         return _listar_documentos(id_paciente, limit, offset)

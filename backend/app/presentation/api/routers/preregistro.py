@@ -66,11 +66,12 @@ async def subir_documento(
     _access=Depends(ensure_preregistro_access),
     current_user: Annotated[dict | None, Depends(get_optional_current_user)] = None,
 ):
-    return await service.subir_documento(
+    content = await archivo.read()
+    return service.subir_documento(
         id_paciente,
         id_tipo_documento,
         archivo.filename or "",
-        await archivo.read(),
+        content,
         archivo.content_type or "application/octet-stream",
         current_user,
     )
