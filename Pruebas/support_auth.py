@@ -20,11 +20,11 @@ class InMemoryUserRepository:
     def has_users(self) -> bool:
         return self._has_users
 
-    def seed_users(self, users: list[SeedUser]) -> list[str]:
+    def seed_users(self, _users: list[SeedUser]) -> list[str]:
         return []
 
     def log_login_attempt(
-        self, id_usuario: int | None, success: bool, ip: str | None = None
+        self, _id_usuario: int | None, _success: bool, ip: str | None = None
     ) -> None:
         return None
 

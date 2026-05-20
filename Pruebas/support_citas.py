@@ -114,11 +114,10 @@ class InMemoryCitasRepository:
         estatus: str | None = None,
         id_paciente: int | None = None,
         busqueda: str | None = None,
-        current_user: dict | None = None,
-        limit: int = 100,
-        offset: int = 0,
+        _current_user: dict | None = None,
+        _limit: int = 100,
+        _offset: int = 0,
     ) -> list[dict[str, Any]]:
-        del current_user
         rows = [self._enriquecer(dict(c)) for c in self._citas.values()]
         if fecha:
             rows = [r for r in rows if _fecha_iso_dia(str(r.get("fecha_hora") or "")) == fecha]

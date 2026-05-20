@@ -41,9 +41,8 @@ class InMemoryPreregistroRepository:
         return d
 
     def listar_preregistros(
-        self, estatus: str | None = None, current_user: dict | None = None, limit: int = 100, offset: int = 0
+        self, estatus: str | None = None, _current_user: dict | None = None, _limit: int = 100, _offset: int = 0
     ) -> list[dict[str, Any]]:
-        del current_user
         rows = []
         for r in self._by_id.values():
             er = r.get("estatus_registro")
@@ -151,11 +150,10 @@ class InMemoryPreregistroRepository:
     async def subir_documento(
         self,
         id_paciente: int,
-        id_tipo_documento: int,
+        _id_tipo_documento: int,
         archivo: UploadFile,
-        current_user: dict | None = None,
+        _current_user: dict | None = None,
     ) -> dict[str, Any]:
-        del current_user
         if id_paciente not in self._by_id:
             raise HTTPException(status_code=404, detail=_MSG_PREREGISTRO_NO_ENCONTRADO)
         ext = os.path.splitext(archivo.filename or "")[1].lower() or ".pdf"
