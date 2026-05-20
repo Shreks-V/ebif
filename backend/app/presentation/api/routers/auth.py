@@ -35,7 +35,7 @@ def _auth_error() -> HTTPException:
     )
 
 
-@router.post("/seed")
+@router.post("/seed", responses={403: {"description": "Forbidden — only admins may run seed"}})
 def seed_users(
     current_user: Annotated[dict, Depends(get_current_user)] = None,
     auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,

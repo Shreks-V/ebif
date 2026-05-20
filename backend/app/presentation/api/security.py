@@ -103,7 +103,7 @@ async def get_optional_current_user(
         clear_current_user_id()
 
 
-async def ensure_preregistro_access(
+def ensure_preregistro_access(
     id_paciente: int,
     current_user: dict | None = Depends(get_optional_current_user),
     x_preregistro_token: str | None = Header(default=None, alias="X-Preregistro-Token"),

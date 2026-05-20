@@ -502,7 +502,7 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
 
             def build_rows(cross: dict, col_keys: list, col_labels: list | None = None) -> list:
                 labels = col_labels or col_keys
-                col_totals: dict = {k: 0 for k in col_keys}
+                col_totals: dict = dict.fromkeys(col_keys, 0)
                 out = []
                 for etapa in ETAPAS:
                     row: dict = {'etapa': etapa, 'total': 0}

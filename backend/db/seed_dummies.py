@@ -322,8 +322,6 @@ def seed_all():
         cita_ids = []
         if citas_existentes >= len(citas_data):
             print(f"  -- {citas_existentes} citas ya existen, omitiendo")
-            cur.execute("SELECT ID_CITA FROM CITA ORDER BY ID_CITA")
-            cita_ids = [r[0] for r in cur.fetchall()]
         else:
             for pac_i, doc_i, svc_id, days, estatus in citas_data:
                 if pac_i >= len(paciente_ids) or doc_i >= len(doctor_ids):

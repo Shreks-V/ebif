@@ -125,13 +125,13 @@ def svc():
     return AlmacenService(repository=StubAlmacenRepository())
 
 
-_PRODUCTO_BASE = dict(
-    clave_interna="MED-001",
-    nombre="Paracetamol 500mg",
-    tipo_producto="MEDICAMENTO",
-    cantidad_disponible=20,
-    nivel_minimo=5,
-)
+_PRODUCTO_BASE = {
+    "clave_interna": "MED-001",
+    "nombre": "Paracetamol 500mg",
+    "tipo_producto": "MEDICAMENTO",
+    "cantidad_disponible": 20,
+    "nivel_minimo": 5,
+}
 
 
 # ── Tests ──────────────────────────────────────────────────────────────────────

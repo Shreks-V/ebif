@@ -194,8 +194,8 @@ def _exportar_reporte_pdf(  # noqa: C901
             f'{periodo_str}Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}', note))
         els.append(HRFlowable(width='100%', thickness=1, color=NAVY, spaceAfter=10, spaceBefore=6))
 
-        kwargs = dict(genero=genero, estado=estado, tipo_espina=tipo_espina,
-                      fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+        kwargs = {"genero": genero, "estado": estado, "tipo_espina": tipo_espina,
+                  "fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin, "current_user": current_user}
 
         # ═══════════════════════════════════════════════════════
         # RESUMEN DE PERÍODO — multi-sección completo
@@ -339,7 +339,7 @@ def _exportar_reporte_pdf(  # noqa: C901
                     rows.append([l, e, str(v), _pct(v, ci_tot)])
                 if len(d_ciu['labels']) > top:
                     resto = ci_tot - sum(d_ciu['values'][:top])
-                    rows.append([f'Otras ciudades', '', str(resto), _pct(resto, ci_tot)])
+                    rows.append(['Otras ciudades', '', str(resto), _pct(resto, ci_tot)])
                 rows.append(['Total', '', str(ci_tot), '100%'])
                 els.append(KeepTogether([
                     Paragraph(f'Distribución por Ciudad de Residencia (Top {top})', h2),

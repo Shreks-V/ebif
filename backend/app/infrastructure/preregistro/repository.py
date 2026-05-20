@@ -284,7 +284,7 @@ def _aprobar_preregistro(id_paciente: int, tipo_cuota: str = None, _current_user
     preregistro = _fetch_preregistro(id_paciente)
     return {'message': 'Pre-registro aprobado exitosamente', 'preregistro': preregistro}
 
-async def _subir_documento(
+def _subir_documento(
     id_paciente: int,
     id_tipo_documento: int,
     archivo: UploadedFile,

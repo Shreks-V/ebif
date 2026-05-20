@@ -236,7 +236,7 @@ def test_sv50_validacion_api_sin_beneficiario_sin_monto_sin_metodos(recibos_clie
     assert r_met.status_code == 400
 
 
-def test_sv50_ui_guardarCobro_validaciones_en_fuente():
+def test_sv50_ui_guardar_cobro_validaciones_en_fuente():
     """La UI no confirma cobro sin paciente, sin monto válido o sin métodos (exento N)."""
     src = _RECIBOS_COMPONENT.read_text(encoding="utf-8")
     assert "if (!this.nuevoCobro.id_paciente)" in src
