@@ -123,8 +123,7 @@ class InMemoryBeneficiariosRepository:
         rows = _aplicar_filtros_beneficiarios(rows, nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota)
         return [self._response_dict(p) for p in rows]
 
-    def obtener_beneficiario(self, folio: str, current_user: dict | None = None) -> dict[str, Any]:
-        del current_user
+    def obtener_beneficiario(self, folio: str, _current_user: dict | None = None) -> dict[str, Any]:
         row = self._by_folio.get(folio)
         if row is None:
             raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
@@ -156,9 +155,8 @@ class InMemoryBeneficiariosRepository:
         return self._response_dict(row)
 
     def actualizar_beneficiario(
-        self, folio: str, data: BeneficiarioCreate, current_user: dict | None = None
+        self, folio: str, data: BeneficiarioCreate, _current_user: dict | None = None
     ) -> dict[str, Any]:
-        del current_user
         if folio not in self._by_folio:
             raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         payload = data.model_dump()
@@ -170,8 +168,7 @@ class InMemoryBeneficiariosRepository:
             row["tipos_espina"] = _resolve_tipos(tipos_ids)
         return self._response_dict(row)
 
-    def eliminar_beneficiario(self, folio: str, current_user: dict | None = None) -> dict[str, str]:
-        del current_user
+    def eliminar_beneficiario(self, folio: str, _current_user: dict | None = None) -> dict[str, str]:
         if folio not in self._by_folio:
             raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         self._by_folio[folio]["activo"] = "N"

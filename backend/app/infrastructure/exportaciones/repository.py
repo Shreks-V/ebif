@@ -56,7 +56,7 @@ def _excel_payload(buffer: io.BytesIO, filename: str) -> FilePayload:
     buffer.seek(0)
     return FilePayload(content=buffer.read(), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=filename)
 
-def _exportar_reporte_pdf(  # noqa: C901
+def _exportar_reporte_pdf(  # noqa: C901  # NOSONAR: python:S3776
     tipo: str = 'resumen',
     genero: Optional[str] = None,
     estado: Optional[str] = None,
@@ -516,7 +516,7 @@ def _exportar_reporte_pdf(  # noqa: C901
         logger.exception('Error al generar PDF de reporte')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = None):
+def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = None):  # NOSONAR: python:S3776
     """Generar reporte PDF de un beneficiario con sus datos y documentos (RF-ER-06)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -560,7 +560,7 @@ def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = N
         logger.exception('Error al generar PDF del beneficiario')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_credencial_pdf(folio: str, _current_user: CurrentUser | None = None):
+def _exportar_credencial_pdf(folio: str, _current_user: CurrentUser | None = None):  # NOSONAR: python:S3776
     """Generar credencial del beneficiario en PDF (RF-RB-06)."""
     from reportlab.lib.pagesizes import landscape, A6
     from reportlab.lib.units import cm
@@ -943,7 +943,7 @@ def _exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[s
         logger.exception('Error al generar Excel de beneficiarios')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):
+def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):  # NOSONAR: python:S3776
     """Exportar datos de reportes a Excel (RF-ER-11)."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment

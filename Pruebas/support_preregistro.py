@@ -114,9 +114,8 @@ class InMemoryPreregistroRepository:
         self,
         id_paciente: int,
         tipo_cuota: str | None = None,
-        current_user: dict | None = None,
+        _current_user: dict | None = None,
     ) -> dict[str, Any]:
-        del current_user
         row = self._by_id.get(id_paciente)
         if not row:
             raise HTTPException(status_code=404, detail=_MSG_PREREGISTRO_NO_ENCONTRADO)
@@ -135,9 +134,8 @@ class InMemoryPreregistroRepository:
         }
 
     def rechazar_preregistro(
-        self, id_paciente: int, current_user: dict | None = None
+        self, id_paciente: int, _current_user: dict | None = None
     ) -> dict[str, Any]:
-        del current_user
         row = self._by_id.get(id_paciente)
         if not row:
             raise HTTPException(status_code=404, detail=_MSG_PREREGISTRO_NO_ENCONTRADO)

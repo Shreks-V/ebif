@@ -67,8 +67,7 @@ class InMemoryCitasRepository:
             out["servicios"] = []
         return out
 
-    def citas_stats(self, current_user: dict | None = None) -> dict[str, Any]:
-        del current_user
+    def citas_stats(self, _current_user: dict | None = None) -> dict[str, Any]:
         from collections import Counter
 
         est = Counter((c.get("estatus") or "").strip() for c in self._citas.values())
@@ -83,8 +82,7 @@ class InMemoryCitasRepository:
         stats["total_ayer"] = 0
         return stats
 
-    def citas_hoy(self, current_user: dict | None = None) -> dict[str, Any]:
-        del current_user
+    def citas_hoy(self, _current_user: dict | None = None) -> dict[str, Any]:
         hoy = date.today().isoformat()
         citas = [
             self._enriquecer(dict(c))
@@ -104,8 +102,7 @@ class InMemoryCitasRepository:
             "citas": citas,
         }
 
-    def citas_proximas(self, dias: int = 7, current_user: dict | None = None) -> dict[str, Any]:
-        del dias, current_user
+    def citas_proximas(self, _dias: int = 7, _current_user: dict | None = None) -> dict[str, Any]:
         return {"count": 0, "desde": "", "hasta": ""}
 
     def listar_citas(
@@ -142,8 +139,7 @@ class InMemoryCitasRepository:
         rows.sort(key=lambda x: str(x.get("fecha_hora") or ""), reverse=True)
         return rows
 
-    def obtener_cita(self, id_cita: int, current_user: dict | None = None) -> dict[str, Any]:
-        del current_user
+    def obtener_cita(self, id_cita: int, _current_user: dict | None = None) -> dict[str, Any]:
         c = self._citas.get(id_cita)
         if not c:
             raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
@@ -200,9 +196,8 @@ class InMemoryCitasRepository:
         return self._enriquecer(dict(row))
 
     def actualizar_cita(
-        self, id_cita: int, data: CitaCreate, current_user: dict | None = None
+        self, id_cita: int, data: CitaCreate, _current_user: dict | None = None
     ) -> dict[str, Any]:
-        del current_user
         if id_cita not in self._citas:
             raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         c = self._citas[id_cita]
@@ -225,23 +220,20 @@ class InMemoryCitasRepository:
         c["folio_paciente"] = (pac.get("folio") or "").strip()
         return self._enriquecer(dict(c))
 
-    def completar_cita(self, id_cita: int, current_user: dict | None = None) -> dict[str, Any]:
-        del current_user
+    def completar_cita(self, id_cita: int, _current_user: dict | None = None) -> dict[str, Any]:
         if id_cita not in self._citas:
             raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         self._citas[id_cita]["estatus"] = "COMPLETADA"
         return self._enriquecer(dict(self._citas[id_cita]))
 
-    def cancelar_cita(self, id_cita: int, current_user: dict | None = None) -> dict[str, Any]:
-        del current_user
+    def cancelar_cita(self, id_cita: int, _current_user: dict | None = None) -> dict[str, Any]:
         if id_cita not in self._citas:
             raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         self._citas[id_cita]["estatus"] = "CANCELADA"
         self._citas[id_cita]["notas"] = "Cita cancelada"
         return self._enriquecer(dict(self._citas[id_cita]))
 
-    def eliminar_cita(self, id_cita: int, current_user: dict | None = None) -> dict[str, str]:
-        del current_user
+    def eliminar_cita(self, id_cita: int, _current_user: dict | None = None) -> dict[str, str]:
         if id_cita not in self._citas:
             raise HTTPException(status_code=404, detail=_MSG_CITA_NO_ENCONTRADA)
         del self._citas[id_cita]
