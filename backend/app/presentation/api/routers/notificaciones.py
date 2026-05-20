@@ -11,91 +11,91 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _s(n: int) -> str:
+    return 's' if n != 1 else ''
+
+
+def _noti_citas_hoy(current_user) -> dict | None:
+    hoy = citas_svc.citas_hoy(current_user)
+    n = hoy.get('programadas', 0)
+    if n <= 0:
+        return None
+    return {
+        'id': 'citas_hoy', 'categoria': 'citas', 'tipo': 'info',
+        'titulo': 'Citas de hoy',
+        'detalle': f"{n} cita{_s(n)} programada{_s(n)} para hoy.",
+        'count': n, 'link': '/citas',
+    }
+
+
+def _noti_citas_proximas(current_user) -> dict | None:
+    n = citas_svc.citas_proximas(7, current_user).get('count', 0)
+    if n <= 0:
+        return None
+    return {
+        'id': 'citas_proximas', 'categoria': 'citas', 'tipo': 'info',
+        'titulo': 'Próximas citas',
+        'detalle': f"{n} cita{_s(n)} en los próximos 7 días.",
+        'count': n, 'link': '/citas',
+    }
+
+
+def _noti_membresias(current_user) -> dict | None:
+    membresias = beneficiarios_svc.listar_membresias_proximas_a_vencer(30, current_user, 500, 0)
+    n = len(membresias) if isinstance(membresias, list) else 0
+    if n <= 0:
+        return None
+    label = '500+' if n == 500 else str(n)
+    return {
+        'id': 'membresias_vencer', 'categoria': 'membresias', 'tipo': 'warning',
+        'titulo': 'Membresías por vencer',
+        'detalle': f"{label} membresía{_s(n)} vence{'n' if n != 1 else ''} en los próximos 30 días.",
+        'count': n, 'link': '/registro-usuarios',
+    }
+
+
+def _noti_almacen(current_user) -> list[dict]:
+    stats = almacen_svc.almacen_stats(current_user)
+    stock_bajo = int(stats.get('alertas_stock_bajo', 0))
+    caducidad = int(stats.get('alertas_caducidad', 0))
+    result = []
+    if stock_bajo > 0:
+        result.append({
+            'id': 'stock_bajo', 'categoria': 'almacen', 'tipo': 'warning',
+            'titulo': 'Inventario en riesgo',
+            'detalle': f"{stock_bajo} producto{_s(stock_bajo)} con existencias bajas.",
+            'count': stock_bajo, 'link': '/almacen',
+        })
+    if caducidad > 0:
+        result.append({
+            'id': 'caducidad', 'categoria': 'almacen', 'tipo': 'warning',
+            'titulo': 'Productos por caducar',
+            'detalle': f"{caducidad} producto{_s(caducidad)} próximo{_s(caducidad)} a caducar.",
+            'count': caducidad, 'link': '/almacen',
+        })
+    return result
+
+
 @router.get('')
 def get_notificaciones(current_user: Annotated[dict, Depends(get_current_user)] = None):
     """Agrega alertas de todos los módulos en una respuesta unificada."""
     notificaciones = []
 
-    # ── Citas de hoy ──────────────────────────────────────────────────────────
+    for fn, label in [
+        (_noti_citas_hoy, 'citas de hoy'),
+        (_noti_citas_proximas, 'citas próximas'),
+        (_noti_membresias, 'membresías por vencer'),
+    ]:
+        try:
+            item = fn(current_user)
+            if item:
+                notificaciones.append(item)
+        except Exception as exc:
+            logger.warning('notificaciones: error al obtener %s: %s', label, exc)
+
     try:
-        hoy = citas_svc.citas_hoy(current_user)
-        programadas_hoy = hoy.get('programadas', 0)
-        if programadas_hoy > 0:
-            notificaciones.append({
-                'id': 'citas_hoy',
-                'categoria': 'citas',
-                'tipo': 'info',
-                'titulo': 'Citas de hoy',
-                'detalle': f"{programadas_hoy} cita{'s' if programadas_hoy != 1 else ''} programada{'s' if programadas_hoy != 1 else ''} para hoy.",
-                'count': programadas_hoy,
-                'link': '/citas',
-            })
+        notificaciones.extend(_noti_almacen(current_user))
     except Exception as exc:
-        logger.warning("notificaciones: error al obtener citas de hoy: %s", exc)
-
-    # ── Citas próximas (7 días) ───────────────────────────────────────────────
-    try:
-        proximas = citas_svc.citas_proximas(7, current_user)
-        count_prox = proximas.get('count', 0)
-        if count_prox > 0:
-            notificaciones.append({
-                'id': 'citas_proximas',
-                'categoria': 'citas',
-                'tipo': 'info',
-                'titulo': 'Próximas citas',
-                'detalle': f"{count_prox} cita{'s' if count_prox != 1 else ''} en los próximos 7 días.",
-                'count': count_prox,
-                'link': '/citas',
-            })
-    except Exception as exc:
-        logger.warning("notificaciones: error al obtener citas próximas: %s", exc)
-
-    # ── Membresías por vencer (30 días) ──────────────────────────────────────
-    try:
-        membresias = beneficiarios_svc.listar_membresias_proximas_a_vencer(30, current_user, 500, 0)
-        count_mem = len(membresias) if isinstance(membresias, list) else 0
-        if count_mem > 0:
-            count_mem_label = '500+' if count_mem == 500 else str(count_mem)
-            notificaciones.append({
-                'id': 'membresias_vencer',
-                'categoria': 'membresias',
-                'tipo': 'warning',
-                'titulo': 'Membresías por vencer',
-                'detalle': f"{count_mem_label} membresía{'s' if count_mem != 1 else ''} vence{'n' if count_mem != 1 else ''} en los próximos 30 días.",
-                'count': count_mem,
-                'link': '/registro-usuarios',
-            })
-    except Exception as exc:
-        logger.warning("notificaciones: error al obtener membresías por vencer: %s", exc)
-
-    # ── Almacén: existencias bajas ────────────────────────────────────────────
-    try:
-        stats = almacen_svc.almacen_stats(current_user)
-        stock_bajo = int(stats.get('alertas_stock_bajo', 0))
-        caducidad = int(stats.get('alertas_caducidad', 0))
-
-        if stock_bajo > 0:
-            notificaciones.append({
-                'id': 'stock_bajo',
-                'categoria': 'almacen',
-                'tipo': 'warning',
-                'titulo': 'Inventario en riesgo',
-                'detalle': f"{stock_bajo} producto{'s' if stock_bajo != 1 else ''} con existencias bajas.",
-                'count': stock_bajo,
-                'link': '/almacen',
-            })
-
-        if caducidad > 0:
-            notificaciones.append({
-                'id': 'caducidad',
-                'categoria': 'almacen',
-                'tipo': 'warning',
-                'titulo': 'Productos por caducar',
-                'detalle': f"{caducidad} producto{'s' if caducidad != 1 else ''} próximo{'s' if caducidad != 1 else ''} a caducar.",
-                'count': caducidad,
-                'link': '/almacen',
-            })
-    except Exception as exc:
-        logger.warning("notificaciones: error al obtener stats de almacén: %s", exc)
+        logger.warning('notificaciones: error al obtener stats de almacén: %s', exc)
 
     return notificaciones

@@ -26,6 +26,38 @@ def _resolve_tipos(ids: list[int] | None) -> list[dict[str, Any]]:
     return [{"id_tipo_espina": tid, "nombre": _tipo_label(tid)} for tid in ids]
 
 
+def _aplicar_filtros_beneficiarios(
+    rows: list[dict[str, Any]],
+    nombre: str | None,
+    estado: str | None,
+    genero: str | None,
+    busqueda: str | None,
+    membresia_estatus: str | None,
+    tipo_cuota: str | None,
+) -> list[dict[str, Any]]:
+    if nombre:
+        n = nombre.lower()
+        rows = [p for p in rows if n in (p.get("nombre") or "").lower()
+                or n in (p.get("apellido_paterno") or "").lower()
+                or n in (p.get("apellido_materno") or "").lower()]
+    if estado:
+        rows = [p for p in rows if p.get("membresia_estatus") == estado]
+    if membresia_estatus:
+        rows = [p for p in rows if p.get("membresia_estatus") == membresia_estatus]
+    if tipo_cuota:
+        rows = [p for p in rows if (p.get("tipo_cuota") or "") == tipo_cuota]
+    if genero:
+        rows = [p for p in rows if (p.get("genero") or "") == genero]
+    if busqueda:
+        b = busqueda.lower()
+        rows = [p for p in rows if b in (p.get("nombre") or "").lower()
+                or b in (p.get("apellido_paterno") or "").lower()
+                or b in (p.get("apellido_materno") or "").lower()
+                or b in (p.get("folio") or "").lower()
+                or b in (p.get("ciudad") or "").lower()]
+    return rows
+
+
 class InMemoryBeneficiariosRepository:
     """Repositorio en memoria para pruebas de API (sin Oracle)."""
 
@@ -88,35 +120,7 @@ class InMemoryBeneficiariosRepository:
         _offset: int = 0,
     ) -> list[dict[str, Any]]:
         rows = [p for p in self._all() if _visible(p)]
-
-        if nombre:
-            n = nombre.lower()
-            rows = [
-                p
-                for p in rows
-                if n in (p.get("nombre") or "").lower()
-                or n in (p.get("apellido_paterno") or "").lower()
-                or n in (p.get("apellido_materno") or "").lower()
-            ]
-        if estado:
-            rows = [p for p in rows if p.get("membresia_estatus") == estado]
-        if membresia_estatus:
-            rows = [p for p in rows if p.get("membresia_estatus") == membresia_estatus]
-        if tipo_cuota:
-            rows = [p for p in rows if (p.get("tipo_cuota") or "") == tipo_cuota]
-        if genero:
-            rows = [p for p in rows if (p.get("genero") or "") == genero]
-        if busqueda:
-            b = busqueda.lower()
-            rows = [
-                p
-                for p in rows
-                if b in (p.get("nombre") or "").lower()
-                or b in (p.get("apellido_paterno") or "").lower()
-                or b in (p.get("apellido_materno") or "").lower()
-                or b in (p.get("folio") or "").lower()
-                or b in (p.get("ciudad") or "").lower()
-            ]
+        rows = _aplicar_filtros_beneficiarios(rows, nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota)
         return [self._response_dict(p) for p in rows]
 
     def obtener_beneficiario(self, folio: str, current_user: dict | None = None) -> dict[str, Any]:

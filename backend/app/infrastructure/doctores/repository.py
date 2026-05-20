@@ -24,6 +24,12 @@ _SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS = {
 }
 
 
+def _serialize_hora(h) -> str | None:
+    if isinstance(h, datetime):
+        return h.isoformat()
+    return str(h) if h else None
+
+
 def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
     safe_limit = max(1, min(int(limit or 100), 500))
     safe_offset = max(0, int(offset or 0))
@@ -145,14 +151,8 @@ def _doctor_del_dia(_current_user: CurrentUser | None = None):
             hora_inicio = row.pop('hora_inicio', None)
             hora_fin = row.pop('hora_fin', None)
             doctor = _doctor_with_servicios(conn, row)
-            if isinstance(hora_inicio, datetime):
-                doctor['hora_inicio'] = hora_inicio.isoformat()
-            else:
-                doctor['hora_inicio'] = str(hora_inicio) if hora_inicio else None
-            if isinstance(hora_fin, datetime):
-                doctor['hora_fin'] = hora_fin.isoformat()
-            else:
-                doctor['hora_fin'] = str(hora_fin) if hora_fin else None
+            doctor['hora_inicio'] = _serialize_hora(hora_inicio)
+            doctor['hora_fin'] = _serialize_hora(hora_fin)
             doctor['fuente'] = 'semanal'
             return {'doctor': doctor, 'hora_inicio': doctor['hora_inicio'], 'hora_fin': doctor['hora_fin']}
     except oracledb.DatabaseError:

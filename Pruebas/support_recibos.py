@@ -20,6 +20,27 @@ def _nombre_paciente_display(p: dict[str, Any]) -> str:
     return " ".join(x for x in parts if x).strip()
 
 
+def _venta_matches(
+    v: dict[str, Any],
+    fv: str | None,
+    fecha_inicio: Optional[str],
+    fecha_fin: Optional[str],
+    id_paciente: Optional[int],
+    search: Optional[str],
+) -> bool:
+    if fecha_inicio and fv and fv < fecha_inicio:
+        return False
+    if fecha_fin and fv and fv > fecha_fin:
+        return False
+    if id_paciente is not None and int(v["id_paciente"]) != int(id_paciente):
+        return False
+    if search:
+        q = search.strip().upper()
+        if q not in str(v.get("folio_venta") or "").upper() and q not in str(v.get("nombre_paciente") or "").upper():
+            return False
+    return True
+
+
 def _build_paciente_map() -> dict[int, dict[str, str]]:
     out: dict[int, dict[str, str]] = {}
     for p in default_seed_patients():
@@ -175,23 +196,11 @@ class InMemoryRecibosRepository:
         _offset: int = 0,
         _solo_adeudos: bool = False,
     ) -> list[dict[str, Any]]:
-        rows = list(self._ventas.values())
-        filtered: list[dict[str, Any]] = []
-        for v in rows:
-            fv = self._fecha_venta_date(v.get("fecha_venta"))
-            if fecha_inicio and fv and fv < fecha_inicio:
-                continue
-            if fecha_fin and fv and fv > fecha_fin:
-                continue
-            if id_paciente is not None and int(v["id_paciente"]) != int(id_paciente):
-                continue
-            if search:
-                q = search.strip().upper()
-                folio = str(v.get("folio_venta") or "").upper()
-                nombre = str(v.get("nombre_paciente") or "").upper()
-                if q not in folio and q not in nombre:
-                    continue
-            filtered.append(v)
+        filtered = [
+            v for v in self._ventas.values()
+            if _venta_matches(v, self._fecha_venta_date(v.get("fecha_venta")),
+                              fecha_inicio, fecha_fin, id_paciente, search)
+        ]
         filtered.sort(key=lambda x: str(x.get("fecha_venta") or ""), reverse=True)
         return [self._public_row(v) for v in filtered]
 

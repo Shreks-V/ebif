@@ -215,7 +215,21 @@
       "Bash(perl -i -0pe 's/\\(def _listar_movimientos\\\\\\([^\\)]*?\\)current_user\\(\\\\s*:\\\\s*CurrentUser[^=]*=\\\\s*None\\)/$1_current_user$2/g' backend/app/infrastructure/almacen/repository.py)",
       "Bash(git commit -m ' *)",
       "Bash(git -C \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif\" add backend/db/migrations/003_sp_almacen.sql backend/db/migrations/004_sp_ventas.sql backend/db/migrations/005_sp_pacientes_citas.sql backend/db/migrations/006_sp_doctores_usuarios.sql backend/db/migrations/014_sp_movimiento_comodato_types.sql backend/db/migrations/015_venta_linea.sql)",
-      "Bash(git -C '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif' commit -m ' *)"
+      "Bash(git -C '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif' commit -m ' *)",
+      "Bash(grep -rn '^\\\\s*[a-z_][a-z_0-9]* = .*\\\\n.*return\\\\|^\\\\s*result = .*$' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app\")",
+      "mcp__sonarcloud__search_sonar_projects",
+      "mcp__sonarcloud__get_quality_gate_status",
+      "Bash(git *)",
+      "Bash(python -m pytest Pruebas/ -x -q)",
+      "Bash(.venv/bin/python -m pytest Pruebas/ -x -q)",
+      "Bash(python -m pytest ../Pruebas/ -x -q)",
+      "Bash(\"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/venv/bin/python\" -m pytest \"../Pruebas/\" -x -q)",
+      "Bash(\"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/venv/bin/python\" -m pytest \"../Pruebas/\" -q --ignore=\"../Pruebas/test_acciones_rapidas.py\")",
+      "Bash(\"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/venv/bin/python\" -m pytest \"../Pruebas/test_recibos.py::test_sv50_ui_guardarCobro_validaciones_en_fuente\" -v)",
+      "Bash(\"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/venv/bin/python\" -m pytest \"../Pruebas/test_recibos.py::test_sv50_ui_guardarCobro_validaciones_en_fuente\" -q)",
+      "mcp__sonarcloud__get_sonar_issue_context",
+      "Bash(grep -n \"^AS$\\\\|^  v_\\\\|^AS\\\\s\" \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/db/migrations/005_sp_pacientes_citas.sql\")",
+      "Bash(grep -A3 '\"rule\": \"__TRACKED_VAR__\"' /Users/maantora/.claude/projects/-Users-maantora-Desktop-Tec-Semestre-6-Parte2-ebif/4c10ea67-bcd7-4988-a6af-8fb8aefd0f83/tool-results/mcp-sonarcloud-search_sonar_issues-1779249915896.txt)"
     ]
   },
   "enableAllProjectMcpServers": true,

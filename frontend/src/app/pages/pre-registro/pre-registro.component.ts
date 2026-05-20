@@ -234,89 +234,15 @@ export class PreRegistroComponent implements OnInit {
     this.validationAttempted = true;
 
     const formAsRecord = this.formData as unknown as Record<string, unknown>;
-    const required = this.requiredByStep[step] || [];
-    for (const field of required) {
+    for (const field of (this.requiredByStep[step] || [])) {
       const val = formAsRecord[field];
       if (!val || (typeof val === 'string' && val.trim() === '')) {
         this.invalidFields.push(field);
       }
     }
 
-    if (step === 1) {
-      // Name fields: letters only
-      for (const f of ['nombre', 'apellidoPaterno', 'apellidoMaterno', 'nombrePadreMadre']) {
-        const v = ((formAsRecord[f] as string) || '').trim();
-        if (v && !this._soloLetras(v)) {
-          if (!this.invalidFields.includes(f)) this.invalidFields.push(f);
-          this.fieldErrors[f] = 'Solo se permiten letras en este campo.';
-        }
-      }
-
-      // CURP format
-      if (this.formData.curp) {
-        const curpRegex = CURP_REGEX;
-        if (!curpRegex.test(this.formData.curp.trim().toUpperCase())) {
-          if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
-          this.fieldErrors['curp'] = 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial).';
-        }
-      }
-
-      // CURP uniqueness
-      if (this.checkingCurp) {
-        if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
-        this.stepError = 'Espera a que se verifique la disponibilidad del CURP.';
-        return false;
-      }
-      if (this.curpDisponible === false) {
-        if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
-        this.fieldErrors['curp'] = 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.';
-      }
-    }
-
-    if (step === 3) {
-      // Phone format validations
-      const phoneFields: [string, string][] = [
-        ['telefonoCelular', 'telefonoCelularCodigo'],
-        ['telefonoEmergencia', 'telefonoEmergenciaCodigo'],
-      ];
-      for (const [f, cf] of phoneFields) {
-        if (formAsRecord[f] && !this._esTelefono(formAsRecord[f] as string, formAsRecord[cf] as string)) {
-          if (!this.invalidFields.includes(f)) this.invalidFields.push(f);
-          this.fieldErrors[f] = formAsRecord[cf] === '+52'
-            ? 'El teléfono debe tener exactamente 10 dígitos.'
-            : 'Número de teléfono inválido.';
-        }
-      }
-      if (this.formData.telefonoCasa && !this._esTelefono(this.formData.telefonoCasa, this.formData.telefonoCasaCodigo)) {
-        if (!this.invalidFields.includes('telefonoCasa')) this.invalidFields.push('telefonoCasa');
-        this.fieldErrors['telefonoCasa'] = this.formData.telefonoCasaCodigo === '+52'
-          ? 'El teléfono debe tener exactamente 10 dígitos.'
-          : 'Número de teléfono inválido.';
-      }
-
-      // Tutor fields
-      if (this.formData.requiereTutor) {
-        for (const f of ['nombreTutor', 'telefonoTutor', 'relacionTutor']) {
-          const fval = formAsRecord[f] as string;
-          if (!fval || fval.trim() === '') {
-            this.invalidFields.push(f);
-          }
-        }
-        const nombreTutor = (this.formData.nombreTutor || '').trim();
-        if (nombreTutor && !this._soloLetras(nombreTutor)) {
-          if (!this.invalidFields.includes('nombreTutor')) this.invalidFields.push('nombreTutor');
-          this.fieldErrors['nombreTutor'] = 'Solo se permiten letras en este campo.';
-        }
-        if (this.formData.telefonoTutor && !this._esTelefono(this.formData.telefonoTutor, this.formData.telefonoTutorCodigo)) {
-          if (!this.invalidFields.includes('telefonoTutor')) this.invalidFields.push('telefonoTutor');
-          this.fieldErrors['telefonoTutor'] = this.formData.telefonoTutorCodigo === '+52'
-            ? 'El teléfono debe tener exactamente 10 dígitos.'
-            : 'Número de teléfono inválido.';
-        }
-      }
-    }
-
-    // Step 4: at least one tipo de espina
+    if (step === 1) this._validateStep1Fields(formAsRecord);
+    if (step === 3) this._validateStep3Fields(formAsRecord);
     if (step === 4 && this.formData.tiposEspinaIds.length === 0) {
       this.invalidFields.push('tiposEspinaIds');
     }
@@ -327,8 +253,58 @@ export class PreRegistroComponent implements OnInit {
       }
       return false;
     }
-
     return true;
+  }
+
+  private _addFieldError(field: string, msg: string): void {
+    if (!this.invalidFields.includes(field)) this.invalidFields.push(field);
+    this.fieldErrors[field] = msg;
+  }
+
+  private _validateStep1Fields(formAsRecord: Record<string, unknown>): void {
+    for (const f of ['nombre', 'apellidoPaterno', 'apellidoMaterno', 'nombrePadreMadre']) {
+      const v = ((formAsRecord[f] as string) || '').trim();
+      if (v && !this._soloLetras(v)) {
+        this._addFieldError(f, 'Solo se permiten letras en este campo.');
+      }
+    }
+    if (this.formData.curp && !CURP_REGEX.test(this.formData.curp.trim().toUpperCase())) {
+      this._addFieldError('curp', 'El CURP no tiene el formato correcto (18 caracteres con el patrón oficial).');
+    }
+    if (this.checkingCurp) {
+      if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
+      this.stepError = 'Espera a que se verifique la disponibilidad del CURP.';
+      return;
+    }
+    if (this.curpDisponible === false) {
+      this._addFieldError('curp', 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.');
+    }
+  }
+
+  private _validateStep3Fields(formAsRecord: Record<string, unknown>): void {
+    const phoneMsg = (codigo: unknown) => codigo === '+52'
+      ? 'El teléfono debe tener exactamente 10 dígitos.'
+      : 'Número de teléfono inválido.';
+    for (const [f, cf] of [['telefonoCelular', 'telefonoCelularCodigo'], ['telefonoEmergencia', 'telefonoEmergenciaCodigo']] as [string, string][]) {
+      if (formAsRecord[f] && !this._esTelefono(formAsRecord[f] as string, formAsRecord[cf] as string)) {
+        this._addFieldError(f, phoneMsg(formAsRecord[cf]));
+      }
+    }
+    if (this.formData.telefonoCasa && !this._esTelefono(this.formData.telefonoCasa, this.formData.telefonoCasaCodigo)) {
+      this._addFieldError('telefonoCasa', phoneMsg(this.formData.telefonoCasaCodigo));
+    }
+    if (!this.formData.requiereTutor) return;
+    for (const f of ['nombreTutor', 'telefonoTutor', 'relacionTutor']) {
+      const fval = formAsRecord[f] as string;
+      if (!fval || fval.trim() === '') this.invalidFields.push(f);
+    }
+    const nombreTutor = (this.formData.nombreTutor || '').trim();
+    if (nombreTutor && !this._soloLetras(nombreTutor)) {
+      this._addFieldError('nombreTutor', 'Solo se permiten letras en este campo.');
+    }
+    if (this.formData.telefonoTutor && !this._esTelefono(this.formData.telefonoTutor, this.formData.telefonoTutorCodigo)) {
+      this._addFieldError('telefonoTutor', phoneMsg(this.formData.telefonoTutorCodigo));
+    }
   }
 
   nextStep(): void {

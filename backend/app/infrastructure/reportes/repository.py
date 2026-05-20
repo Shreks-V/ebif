@@ -31,21 +31,8 @@ def _normalize_key(s: str) -> str:
     return ' '.join(text.split())
 
 
-def _aggregate_normalized(
-    rows: list[dict],
-    key_fields: list[str],
-    count_field: str = 'cnt',
-    fuzzy_threshold: float = 0.90,
-) -> list[dict]:
-    """Re-aggregate rows whose key fields normalize to the same value.
-
-    Handles: case differences, accents, extra spaces (exact after normalization),
-    and likely typos (fuzzy match at fuzzy_threshold).
-    Display labels are title-cased from the normalized form.
-    """
+def _group_by_normalized_key(rows: list[dict], key_fields: list[str], count_field: str) -> dict:
     NULL_SEP = '\x00'
-
-    # Step 1 — group by normalized composite key
     groups: dict[str, dict] = {}
     for r in rows:
         norm_parts = tuple(_normalize_key(r.get(f) or '') or _SIN_DATO for f in key_fields)
@@ -59,9 +46,12 @@ def _aggregate_normalized(
                 for f in key_fields:
                     groups[composite][f] = r.get(f)
             groups[composite][count_field] += cnt
+    return groups
 
-    # Step 2 — fuzzy merge remaining groups (typos)
-    items = sorted(groups.values(), key=lambda x: x[count_field], reverse=True)
+
+def _fuzzy_merge_groups(
+    items: list[dict], key_fields: list[str], count_field: str, fuzzy_threshold: float,
+) -> list[dict]:
     absorbed: set[tuple] = set()
     merged: list[dict] = []
     for i, item_i in enumerate(items):
@@ -71,20 +61,32 @@ def _aggregate_normalized(
         for item_j in items[i + 1:]:
             if item_j['_norm'] in absorbed:
                 continue
-            ratios = [
-                SequenceMatcher(None, a, b).ratio()
-                for a, b in zip(item_i['_norm'], item_j['_norm'])
-            ]
+            ratios = [SequenceMatcher(None, a, b).ratio() for a, b in zip(item_i['_norm'], item_j['_norm'])]
             if all(r >= fuzzy_threshold for r in ratios):
                 combined[count_field] += item_j[count_field]
                 absorbed.add(item_j['_norm'])
-
-        # Format display labels: title-case the normalized (accent-free) form
         for f, norm_val in zip(key_fields, combined['_norm']):
             combined[f] = norm_val.title() if norm_val != _SIN_DATO else 'Sin dato'
         del combined['_norm']
         merged.append(combined)
+    return merged
 
+
+def _aggregate_normalized(
+    rows: list[dict],
+    key_fields: list[str],
+    count_field: str = 'cnt',
+    fuzzy_threshold: float = 0.90,
+) -> list[dict]:
+    """Re-aggregate rows whose key fields normalize to the same value.
+
+    Handles: case differences, accents, extra spaces (exact after normalization),
+    and likely typos (fuzzy match at fuzzy_threshold).
+    Display labels are title-cased from the normalized form.
+    """
+    groups = _group_by_normalized_key(rows, key_fields, count_field)
+    items = sorted(groups.values(), key=lambda x: x[count_field], reverse=True)
+    merged = _fuzzy_merge_groups(items, key_fields, count_field, fuzzy_threshold)
     return sorted(merged, key=lambda x: x[count_field], reverse=True)
 
 
@@ -107,6 +109,53 @@ def _curp_es_nl(value: str | None) -> bool:
 def _sum_nested_count(target: dict, row_key: str, col_key: str, value: int = 1) -> None:
     row = target.setdefault(row_key, {})
     row[col_key] = row.get(col_key, 0) + value
+
+
+def _build_periodo_clause(fecha_inicio: Optional[str], fecha_fin: Optional[str]) -> tuple[str, dict]:
+    if fecha_inicio and fecha_fin:
+        return (
+            "FECHA_REGISTRO >= TO_DATE(:fi,'YYYY-MM-DD') AND FECHA_REGISTRO <= TO_DATE(:ff,'YYYY-MM-DD') + 1",
+            {'fi': fecha_inicio, 'ff': fecha_fin},
+        )
+    if fecha_inicio:
+        return "FECHA_REGISTRO >= TO_DATE(:fi,'YYYY-MM-DD')", {'fi': fecha_inicio}
+    if fecha_fin:
+        return "FECHA_REGISTRO <= TO_DATE(:ff,'YYYY-MM-DD') + 1", {'ff': fecha_fin}
+    return '1=1', {}
+
+
+def _run_cross(cursor, sql: str) -> dict:
+    cursor.execute(sql)
+    result: dict = {}
+    for r in rows_to_dicts(cursor):
+        etapa = (r.get('etapa') or '').strip()
+        col_val = str(r.get('col_val') or 'Sin dato').strip()
+        result.setdefault(etapa, {})[col_val] = int(r.get('cnt') or 0)
+    return result
+
+
+def _build_indicadores_rows(cross: dict, col_keys: list, etapas: list, col_labels: list | None = None) -> list:
+    labels = col_labels or col_keys
+    col_totals: dict = dict.fromkeys(col_keys, 0)
+    out = []
+    for etapa in etapas:
+        row: dict = {'etapa': etapa, 'total': 0}
+        row_total = 0
+        for key, label in zip(col_keys, labels):
+            v = cross.get(etapa, {}).get(key, 0)
+            row[label] = v
+            col_totals[key] = col_totals.get(key, 0) + v
+            row_total += v
+        row['total'] = row_total
+        out.append(row)
+    totals_row: dict = {'etapa': 'Total', 'total': 0}
+    grand = 0
+    for key, label in zip(col_keys, labels):
+        totals_row[label] = col_totals[key]
+        grand += col_totals[key]
+    totals_row['total'] = grand
+    out.append(totals_row)
+    return out
 
 
 def _normalize_pagination(limit: int, offset: int) -> tuple[int, int]:
@@ -442,17 +491,7 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
     ESTADO_RESIDENCIA_EXPR = "TRANSLATE(UPPER(NVL(ESTADO,'')), 'ÁÉÍÓÚÜ', 'AEIOUU')"
     RESIDE_NL_EXPR = f"{ESTADO_RESIDENCIA_EXPR} LIKE '%NUEVO%LEON%'"
 
-    periodo_params: dict = {}
-    periodo_clause = '1=1'
-    if fecha_inicio and fecha_fin:
-        periodo_clause = "FECHA_REGISTRO >= TO_DATE(:fi,'YYYY-MM-DD') AND FECHA_REGISTRO <= TO_DATE(:ff,'YYYY-MM-DD') + 1"
-        periodo_params = {'fi': fecha_inicio, 'ff': fecha_fin}
-    elif fecha_inicio:
-        periodo_clause = "FECHA_REGISTRO >= TO_DATE(:fi,'YYYY-MM-DD')"
-        periodo_params = {'fi': fecha_inicio}
-    elif fecha_fin:
-        periodo_clause = "FECHA_REGISTRO <= TO_DATE(:ff,'YYYY-MM-DD') + 1"
-        periodo_params = {'ff': fecha_fin}
+    periodo_clause, periodo_params = _build_periodo_clause(fecha_inicio, fecha_fin)
 
     try:
         with get_db() as conn:
@@ -491,38 +530,6 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
             if foraneos_cnt > 0:
                 municipios.append({'label': 'Viven en otro estado', 'value': foraneos_cnt})
 
-            def run_cross(extra_sql):
-                cursor.execute(extra_sql)
-                result: dict = {}
-                for r in rows_to_dicts(cursor):
-                    etapa = (r.get('etapa') or '').strip()
-                    col_val = str(r.get('col_val') or 'Sin dato').strip()
-                    result.setdefault(etapa, {})[col_val] = int(r.get('cnt') or 0)
-                return result
-
-            def build_rows(cross: dict, col_keys: list, col_labels: list | None = None) -> list:
-                labels = col_labels or col_keys
-                col_totals: dict = dict.fromkeys(col_keys, 0)
-                out = []
-                for etapa in ETAPAS:
-                    row: dict = {'etapa': etapa, 'total': 0}
-                    row_total = 0
-                    for key, label in zip(col_keys, labels):
-                        v = cross.get(etapa, {}).get(key, 0)
-                        row[label] = v
-                        col_totals[key] = col_totals.get(key, 0) + v
-                        row_total += v
-                    row['total'] = row_total
-                    out.append(row)
-                totals_row: dict = {'etapa': 'Total', 'total': 0}
-                grand = 0
-                for key, label in zip(col_keys, labels):
-                    totals_row[label] = col_totals[key]
-                    grand += col_totals[key]
-                totals_row['total'] = grand
-                out.append(totals_row)
-                return out
-
             cursor.execute(
                 f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS genero, CURP AS curp "
                 "FROM PACIENTE WHERE ACTIVO='S'"
@@ -540,25 +547,25 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
                 elif genero:
                     _sum_nested_count(t3_cross, etapa, genero)
 
-            t1 = build_rows(t1_cross, [_CURP_NL, 'CURP Foráneo'])
-            t2 = build_rows(t2_cross, ['Hombre', 'Mujer'])
-            t3 = build_rows(t3_cross, ['Hombre', 'Mujer'])
+            t1 = _build_indicadores_rows(t1_cross, [_CURP_NL, 'CURP Foráneo'], ETAPAS)
+            t2 = _build_indicadores_rows(t2_cross, ['Hombre', 'Mujer'], ETAPAS)
+            t3 = _build_indicadores_rows(t3_cross, ['Hombre', 'Mujer'], ETAPAS)
 
-            t4_cross = run_cross(
+            t4_cross = _run_cross(cursor,
                 f"SELECT {ETAPA_EXPR} AS etapa, "
                 f"CASE WHEN {RESIDE_NL_EXPR} THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END AS col_val, "
                 f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
                 f"CASE WHEN {RESIDE_NL_EXPR} THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END"
             )
-            t4 = build_rows(t4_cross, ['Viven en N.L.', 'Viven en otros estados'])
+            t4 = _build_indicadores_rows(t4_cross, ['Viven en N.L.', 'Viven en otros estados'], ETAPAS)
 
-            t5_cross = run_cross(
+            t5_cross = _run_cross(cursor,
                 f"SELECT {ETAPA_EXPR} AS etapa, "
                 "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%EXTRAN%' THEN 'Nac. extranjera' ELSE 'Mexicanos' END AS col_val, "
                 f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
                 "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%EXTRAN%' THEN 'Nac. extranjera' ELSE 'Mexicanos' END"
             )
-            t5 = build_rows(t5_cross, ['Mexicanos', 'Nac. extranjera'])
+            t5 = _build_indicadores_rows(t5_cross, ['Mexicanos', 'Nac. extranjera'], ETAPAS)
 
             cursor.execute(
                 f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS genero, COUNT(*) AS cnt "

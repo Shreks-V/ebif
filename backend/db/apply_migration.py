@@ -35,6 +35,24 @@ def strip_line_comments(sql: str) -> str:
     return "\n".join(lines)
 
 
+def _flush(buffer: list[str], statements: list[str], strip_semicolon: bool = False) -> None:
+    chunk = "\n".join(buffer).strip()
+    if strip_semicolon:
+        chunk = chunk.rstrip(";").strip()
+    if chunk:
+        statements.append(chunk)
+    buffer.clear()
+
+
+def _handle_plsql_line(stripped: str, line: str, buffer: list[str], statements: list[str]) -> bool:
+    """Process one line in PL/SQL mode. Returns new in_plsql state."""
+    if stripped == "/":
+        _flush(buffer, statements)
+        return False
+    buffer.append(line)
+    return True
+
+
 def split_statements(sql: str) -> list[str]:
     """Split a .sql file into individual executable statements.
 
@@ -53,33 +71,19 @@ def split_statements(sql: str) -> list[str]:
         if not in_plsql and not buffer and (not stripped or stripped.startswith("--")):
             continue
 
-        if not in_plsql and PLSQL_RE.match(line):
-            if buffer:
-                chunk = "\n".join(buffer).strip()
-                if chunk:
-                    statements.append(chunk)
-                buffer = []
-            in_plsql = True
-            buffer.append(line)
+        if in_plsql:
+            in_plsql = _handle_plsql_line(stripped, line, buffer, statements)
             continue
 
-        if in_plsql:
-            if stripped == "/":
-                chunk = "\n".join(buffer).strip()
-                if chunk:
-                    statements.append(chunk)
-                buffer = []
-                in_plsql = False
-                continue
+        if PLSQL_RE.match(line):
+            _flush(buffer, statements)
+            in_plsql = True
             buffer.append(line)
             continue
 
         buffer.append(line)
         if stripped.endswith(";"):
-            chunk = "\n".join(buffer).strip().rstrip(";").strip()
-            if chunk:
-                statements.append(chunk)
-            buffer = []
+            _flush(buffer, statements, strip_semicolon=True)
 
     tail = "\n".join(buffer).strip()
     if tail:

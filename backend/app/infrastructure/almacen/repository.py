@@ -137,69 +137,58 @@ def _obtener_producto(id_producto: int, _current_user: CurrentUser | None = None
         raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
     return _serialize(row)
 
+def _sp_crear_producto_con_reintento(cursor, conn, data, tipo_producto_db, id_usuario):
+    """Llama SP_CREAR_PRODUCTO_CON_EXISTENCIA reintentando hasta 5 veces si hay colisión de clave."""
+    for _ in range(5):
+        clave_interna = _generate_internal_key(conn, tipo_producto_db)
+        id_out = cursor.var(int)
+        try:
+            cursor.callproc('SP_CREAR_PRODUCTO_CON_EXISTENCIA', [
+                clave_interna, data.nombre, data.descripcion, tipo_producto_db,
+                data.precio_cuota_a, data.precio_cuota_b, id_usuario,
+                data.nivel_minimo or 0, data.unidad_medida,
+                data.presentacion, data.dosis, data.requiere_caducidad or 'N',
+                data.numero_serie, data.marca, data.modelo, data.observaciones,
+                id_out,
+            ])
+            return id_out.getvalue(), clave_interna
+        except oracledb.DatabaseError as exc:
+            code = getattr(exc.args[0], 'code', None) if exc.args else None
+            if code == 20703:
+                logger.warning('Colision de clave interna %s al crear producto; reintentando', clave_interna)
+                continue
+            raise sp_error_to_http(exc, _SP_CREAR_PRODUCTO_ERRORS,
+                                   default_detail='No se pudo crear el producto')
+    return None, None
+
+
+def _registrar_stock_inicial(cursor, id_producto, data, id_usuario, clave_interna):
+    cantidad = data.cantidad_disponible or 0
+    if cantidad <= 0:
+        return
+    try:
+        cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
+            id_producto, 'ENTRADA', cantidad, id_usuario, None, None,
+            f'Existencia inicial alta producto {clave_interna}',
+        ])
+    except oracledb.DatabaseError as exc:
+        raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
+                               default_detail='No se pudo registrar la existencia inicial')
+
+
 def _crear_producto(data, current_user: CurrentUser | None = None):
     """Crear un nuevo producto vía SP_CREAR_PRODUCTO_CON_EXISTENCIA."""
     with get_db() as conn:
         cursor = conn.cursor()
         id_usuario = current_user.get('id_usuario', 1)
-        id_producto = None
-        clave_interna = None
         tipo_producto_db = _normalize_tipo_producto_for_db(data.tipo_producto)
 
-        for _ in range(5):
-            clave_interna = _generate_internal_key(conn, tipo_producto_db)
-            id_out = cursor.var(int)
-            try:
-                cursor.callproc('SP_CREAR_PRODUCTO_CON_EXISTENCIA', [
-                    clave_interna,
-                    data.nombre,
-                    data.descripcion,
-                    tipo_producto_db,
-                    data.precio_cuota_a,
-                    data.precio_cuota_b,
-                    id_usuario,
-                    data.nivel_minimo or 0,
-                    data.unidad_medida,
-                    data.presentacion,
-                    data.dosis,
-                    data.requiere_caducidad or 'N',
-                    data.numero_serie,
-                    data.marca,
-                    data.modelo,
-                    data.observaciones,
-                    id_out,
-                ])
-                id_producto = id_out.getvalue()
-                break
-            except oracledb.DatabaseError as exc:
-                code = getattr(exc.args[0], 'code', None) if exc.args else None
-                if code == 20703:
-                    logger.warning('Colision de clave interna %s al crear producto; reintentando', clave_interna)
-                    continue
-                raise sp_error_to_http(exc, _SP_CREAR_PRODUCTO_ERRORS,
-                                       default_detail='No se pudo crear el producto')
-
+        id_producto, clave_interna = _sp_crear_producto_con_reintento(cursor, conn, data, tipo_producto_db, id_usuario)
         if id_producto is None:
             raise ConflictError('No se pudo generar una clave interna unica para el producto')
 
-        # Stock inicial vía SP (si aplica)
-        cantidad_inicial = data.cantidad_disponible or 0
-        if cantidad_inicial > 0:
-            try:
-                cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
-                    id_producto,
-                    'ENTRADA',
-                    cantidad_inicial,
-                    id_usuario,
-                    None,
-                    None,
-                    f'Existencia inicial alta producto {clave_interna}',
-                ])
-            except oracledb.DatabaseError as exc:
-                raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
-                                       default_detail='No se pudo registrar la existencia inicial')
+        _registrar_stock_inicial(cursor, id_producto, data, id_usuario, clave_interna)
 
-        # FECHA_CADUCIDAD no la maneja el SP — update directo
         if data.fecha_caducidad:
             cursor.execute(
                 "UPDATE EXISTENCIA_PRODUCTO SET FECHA_CADUCIDAD = TO_DATE(:fc, 'YYYY-MM-DD') "
