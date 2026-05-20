@@ -215,7 +215,7 @@
       @if (nuevoCobro.exento_pago !== 'S') {
         <div>
           <div class="flex items-center justify-between mb-2">
-            <label class="text-sm font-semibold text-slate-700">M&eacute;todos de Pago</label>
+            <label class="text-sm font-semibold text-slate-700">Métodos de Pago</label>
             <button (click)="agregarMetodoPago()" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
@@ -226,8 +226,7 @@
           <div class="space-y-2">
             @for (mp of nuevoCobro.metodos_pago; track mp; let i = $index) {
               <div class="flex items-center gap-3">
-                <select [(ngModel)]="mp.id_metodo_pago"
-                  class="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm" aria-label="Métodos de Pago">
+                <select [(ngModel)]="mp.id_metodo_pago" class="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm" aria-label="Métodos de Pago">
                   <option [ngValue]="0" disabled>Seleccionar...</option>
                   @for (m of metodosPagoCatalogo; track m) {
                     <option [ngValue]="m.id">{{ m.nombre }}</option>

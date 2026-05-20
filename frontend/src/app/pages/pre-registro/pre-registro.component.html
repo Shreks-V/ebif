@@ -78,32 +78,32 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Nombre <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Nombre <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.nombre" [class]="getFieldClass('nombre')" placeholder="Nombre(s)" aria-label="Nombre(s)">
                   @if (getFieldError('nombre')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombre') }}</p>
                   }
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Apellido Paterno <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Apellido Paterno <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.apellidoPaterno" [class]="getFieldClass('apellidoPaterno')" aria-label="Apellido Paterno">
                   @if (getFieldError('apellidoPaterno')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('apellidoPaterno') }}</p>
                   }
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Apellido Materno <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Apellido Materno <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.apellidoMaterno" [class]="getFieldClass('apellidoMaterno')" aria-label="Apellido Materno">
                   @if (getFieldError('apellidoMaterno')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('apellidoMaterno') }}</p>
                   }
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Fecha de Nacimiento <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Fecha de Nacimiento <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="date" [(ngModel)]="formData.fechaNacimiento" [class]="getFieldClass('fechaNacimiento')" (change)="onFechaNacimientoChange()" aria-label="Fecha de Nacimiento">
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Sexo <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Sexo <span class="text-red-500" aria-hidden="true">*</span></label>
                   <select [(ngModel)]="formData.sexo" [class]="getFieldClass('sexo') + ' bg-white'" aria-label="Sexo">
                     <option value="">Seleccionar...</option>
                     <option value="Masculino">Masculino</option>
@@ -111,7 +111,7 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">CURP <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">CURP <span class="text-red-500" aria-hidden="true">*</span></label>
                   <div class="relative">
                     <input type="text" [ngModel]="formData.curp" (ngModelChange)="onCurpChange($event)" (blur)="onCurpBlur()" [class]="getFieldClass('curp') + ' uppercase pr-10'" maxlength="18" placeholder="18 caracteres" aria-label="18 caracteres">
                     @if (checkingCurp) {
@@ -135,7 +135,7 @@
                   }
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Nombre del Padre/Madre <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Nombre del Padre/Madre <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.nombrePadreMadre" [class]="getFieldClass('nombrePadreMadre')" aria-label="Nombre del Padre/Madre">
                   @if (getFieldError('nombrePadreMadre')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombrePadreMadre') }}</p>
@@ -178,7 +178,7 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Pa&iacute;s <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">País <span class="text-red-500" aria-hidden="true">*</span></label>
                   <select [(ngModel)]="formData.pais" [class]="getFieldClass('pais') + ' bg-white'" aria-label="País">
                     <option value="">Seleccionar...</option>
                     @for (p of paises; track p.nombre) {
@@ -187,7 +187,7 @@
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Estado <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Estado <span class="text-red-500" aria-hidden="true">*</span></label>
                   @if (formData.pais === 'México' || !formData.pais) {
                     <select [(ngModel)]="formData.estado" [class]="getFieldClass('estado') + ' bg-white'" aria-label="Estado">
                       <option value="">Seleccionar...</option>
@@ -200,7 +200,7 @@
                   }
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Municipio <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Municipio <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" list="municipios-preg-mun" [(ngModel)]="formData.municipio" [class]="getFieldClass('municipio')" autocomplete="off" aria-label="Municipio">
                   <datalist id="municipios-preg-mun">
                     @for (m of getMunicipiosParaEstado(formData.estado); track m) {
@@ -209,7 +209,7 @@
                   </datalist>
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Ciudad <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Ciudad <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" list="municipios-preg-ciu" [(ngModel)]="formData.ciudad" [class]="getFieldClass('ciudad')" autocomplete="off" aria-label="Ciudad">
                   <datalist id="municipios-preg-ciu">
                     @for (m of getMunicipiosParaEstado(formData.estado); track m) {
@@ -218,15 +218,15 @@
                   </datalist>
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Colonia <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Colonia <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.colonia" [class]="getFieldClass('colonia')" aria-label="Colonia">
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Calle <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Calle <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.calle" [class]="getFieldClass('calle')" aria-label="Calle">
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">N&uacute;mero Exterior <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">N&uacute;mero Exterior <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.numeroExterior" [class]="getFieldClass('numeroExterior')" aria-label="Número Exterior">
                 </div>
                 <div>
@@ -234,7 +234,7 @@
                   <input type="text" [(ngModel)]="formData.numeroInterior" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all" aria-label="Número Interior">
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">C&oacute;digo Postal <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">C&oacute;digo Postal <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.codigoPostal" [class]="getFieldClass('codigoPostal')" maxlength="5" aria-label="Código Postal">
                 </div>
               </div>
@@ -249,7 +249,7 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Casa</label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono Casa</label>
                   <div class="flex gap-2">
                     <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono Casa">
                       @for (p of paisesTelefono; track p.nombre) {
@@ -263,7 +263,7 @@
                   }
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Celular <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono Celular <span class="text-red-500" aria-hidden="true">*</span></label>
                   <div class="flex gap-2">
                     <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono Celular">
                       @for (p of paisesTelefono; track p.nombre) {
@@ -287,11 +287,11 @@
                   </h3>
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">En Emergencia Avisar a <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">En Emergencia Avisar a <span class="text-red-500" aria-hidden="true">*</span></label>
                   <input type="text" [(ngModel)]="formData.enEmergenciaAvisarA" [class]="getFieldClass('enEmergenciaAvisarA')" aria-label="En Emergencia Avisar a">
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono de Emergencia <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono de Emergencia <span class="text-red-500" aria-hidden="true">*</span></label>
                   <div class="flex gap-2">
                     <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono de Emergencia">
                       @for (p of paisesTelefono; track p.nombre) {
@@ -318,14 +318,14 @@
                 </div>
                 @if (formData.requiereTutor) {
                   <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Nombre del Tutor <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Nombre del Tutor <span class="text-red-500" aria-hidden="true">*</span></label>
                     <input type="text" [(ngModel)]="formData.nombreTutor" [class]="getFieldClass('nombreTutor')" aria-label="Nombre del Tutor">
                     @if (getFieldError('nombreTutor')) {
                       <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombreTutor') }}</p>
                     }
                   </div>
                   <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono del Tutor <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono del Tutor <span class="text-red-500" aria-hidden="true">*</span></label>
                     <div class="flex gap-2">
                       <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono del Tutor">
                         @for (p of paisesTelefono; track p.nombre) {
@@ -339,8 +339,8 @@
                     }
                   </div>
                   <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Relaci&oacute;n con el beneficiario <span class="text-red-500">*</span></label>
-                    <input type="text" [(ngModel)]="formData.relacionTutor" [class]="getFieldClass('relacionTutor')" placeholder="Ej: Padre, Madre, T&iacute;o..." aria-label="Ej: Padre, Madre, T&iacute;o...">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Relación con el beneficiario <span class="text-red-500" aria-hidden="true">*</span></label>
+                    <input type="text" [(ngModel)]="formData.relacionTutor" [class]="getFieldClass('relacionTutor')" placeholder="Ej: Padre, Madre, T&iacute;o..." aria-label="Relación con el beneficiario">
                   </div>
                 }
               </div>
@@ -355,7 +355,7 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Tipo de Sangre <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Tipo de Sangre <span class="text-red-500" aria-hidden="true">*</span></label>
                   <select [(ngModel)]="formData.tipoSangre" [class]="getFieldClass('tipoSangre') + ' bg-white'" aria-label="Tipo de Sangre">
                     <option value="">Seleccionar...</option>
                     @for (t of tiposSangre; track t) {
@@ -370,7 +370,7 @@
                   </label>
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-slate-700 mb-2">Tipo(s) de Espina B&iacute;fida <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-2">Tipo(s) de Espina B&iacute;fida <span class="text-red-500" aria-hidden="true">*</span></label>
                   <p class="text-xs text-slate-500 mb-3">Puedes seleccionar uno o m&aacute;s tipos</p>
                   @if (tiposEspinaList.length > 0) {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
