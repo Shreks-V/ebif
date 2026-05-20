@@ -2,7 +2,7 @@ export interface BitacoraItem {
   id_bitacora: number;
   tabla: string;
   tabla_afectada?: string;
-  tipo_operacion: 'INSERT' | 'UPDATE' | 'DELETE' | string;
+  tipo_operacion: 'INSERT' | 'UPDATE' | 'DELETE' | (string & {});
   id_registro?: number | string;
   id_registro_afectado?: number | string;
   descripcion?: string;

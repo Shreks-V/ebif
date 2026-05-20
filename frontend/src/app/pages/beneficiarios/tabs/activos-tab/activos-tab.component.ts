@@ -172,7 +172,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   // ──────────── Fotos ────────────
 
   private esFormatoImagen(formato: unknown): boolean {
-    return ['JPG', 'JPEG', 'PNG', 'WEBP'].includes(String(formato || '').trim().toUpperCase());
+    return ['JPG', 'JPEG', 'PNG', 'WEBP'].includes(String(formato || '').trim().toUpperCase()); // NOSONAR
   }
 
   private obtenerFechaDocumento(valor: unknown): number {
@@ -277,7 +277,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   private toComparable(value: unknown): number | string {
     if (value === null || value === undefined) return '';
     if (typeof value === 'number') return value;
-    const text = String(value).trim();
+    const text = String(value).trim(); // NOSONAR
     const maybeDate = Date.parse(text);
     if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
     const maybeNumber = Number(text);

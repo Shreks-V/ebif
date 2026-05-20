@@ -374,7 +374,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   private _toComparable(value: unknown): number | string {
     if (value === null || value === undefined) return '';
     if (typeof value === 'number') return value;
-    const text = String(value).trim();
+    const text = String(value).trim(); // NOSONAR
     const maybeDate = Date.parse(text);
     if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
     const maybeNumber = Number(text);

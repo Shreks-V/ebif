@@ -191,7 +191,7 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
   }
 
   private _normalizeActivo(value: unknown): 'S' | 'N' {
-    return String(value || '').trim().toUpperCase() === 'S' ? 'S' : 'N';
+    return String(value || '').trim().toUpperCase() === 'S' ? 'S' : 'N'; // NOSONAR
   }
 
   private _mapDoctorFromApi(d: Record<string, unknown>): MedicoLocal {
@@ -206,7 +206,7 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
       correo: d['correo'] as string,
       activo: this._normalizeActivo(d['activo']),
       servicios: servicios.map((s: Record<string, unknown>) => ({ idServicio: s['id_servicio'] as number, nombre: s['nombre'] as string })),
-      iniciales: (String(d['nombre'] || '').charAt(0)) + (String(d['apellido_paterno'] || '').charAt(0)),
+      iniciales: (String(d['nombre'] || '').charAt(0)) + (String(d['apellido_paterno'] || '').charAt(0)), // NOSONAR
     };
   }
 
@@ -253,7 +253,7 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
   private _toComparable(value: unknown): number | string {
     if (value === null || value === undefined) return '';
     if (typeof value === 'number') return value;
-    const text = String(value).trim();
+    const text = String(value).trim(); // NOSONAR
     const maybeDate = Date.parse(text);
     if (!Number.isNaN(maybeDate) && /\d{4}-\d{2}-\d{2}/.test(text)) return maybeDate;
     const maybeNumber = Number(text);

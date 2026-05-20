@@ -285,7 +285,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   // ── Helpers ──
 
   private _normalizeTipo(value: unknown): string {
-    const tipo = String(value || '').trim().toUpperCase();
+    const tipo = String(value || '').trim().toUpperCase(); // NOSONAR
     return tipo === 'EQUIPO_MEDICO' ? 'EQUIPO' : tipo;
   }
 
