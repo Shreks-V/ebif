@@ -80,6 +80,7 @@ CREATE OR REPLACE PROCEDURE SP_CREAR_USUARIO_SISTEMA (
   p_id_usuario_out    OUT NUMBER
 )
 AS
+  v_new_id NUMBER;
 BEGIN
   IF p_rol NOT IN ('ADMINISTRADOR','RECEPCIONISTA','DOCTOR','ENCARGADO_ALMACEN') THEN
     RAISE_APPLICATION_ERROR(-20101,
@@ -102,12 +103,13 @@ BEGIN
       p_nombre, p_apellido_paterno, p_apellido_materno,
       p_correo, p_contrasena_hash, p_rol, 'ACTIVO'
     )
-    RETURNING ID_USUARIO INTO p_id_usuario_out;
+    RETURNING ID_USUARIO INTO v_new_id;
   EXCEPTION
     WHEN DUP_VAL_ON_INDEX THEN
       RAISE_APPLICATION_ERROR(-20104,
         'Ya existe un usuario con ese correo.');
   END;
+  p_id_usuario_out := v_new_id;
 END SP_CREAR_USUARIO_SISTEMA;
 /
 

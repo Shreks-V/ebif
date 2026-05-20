@@ -45,6 +45,7 @@ CREATE OR REPLACE PROCEDURE SP_CREAR_PRODUCTO_CON_EXISTENCIA (
   p_id_producto_out     OUT NUMBER
 )
 AS
+  v_new_id NUMBER;
 BEGIN
   IF p_tipo_producto NOT IN ('MEDICAMENTO', 'EQUIPO_MEDICO') THEN
     RAISE_APPLICATION_ERROR(-20701,
@@ -63,12 +64,13 @@ BEGIN
       p_clave_interna, p_nombre, p_descripcion, p_tipo_producto,
       'S', p_id_usuario_registro, p_precio_cuota_a, p_precio_cuota_b
     )
-    RETURNING ID_PRODUCTO INTO p_id_producto_out;
+    RETURNING ID_PRODUCTO INTO v_new_id;
   EXCEPTION
     WHEN DUP_VAL_ON_INDEX THEN
       RAISE_APPLICATION_ERROR(-20703,
         'Ya existe un producto con esa clave interna.');
   END;
+  p_id_producto_out := v_new_id;
 
   IF p_tipo_producto = 'MEDICAMENTO' THEN
     INSERT INTO MEDICAMENTO (

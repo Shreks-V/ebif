@@ -57,7 +57,8 @@ CREATE OR REPLACE PROCEDURE SP_REGISTRAR_PACIENTE_COMPLETO (
   p_id_paciente_out       OUT NUMBER
 )
 AS
-  v_i NUMBER;
+  v_i      NUMBER;
+  v_new_id NUMBER;
 BEGIN
   IF p_folio IS NULL OR LENGTH(TRIM(p_folio)) = 0 THEN
     RAISE_APPLICATION_ERROR(-20201, 'Folio requerido.');
@@ -94,12 +95,13 @@ BEGIN
       p_fecha_alta, 'ACTIVO', p_id_usuario_registro,
       p_tipo_cuota, NVL(p_estatus_registro, 'APROBADO'), 1
     )
-    RETURNING ID_PACIENTE INTO p_id_paciente_out;
+    RETURNING ID_PACIENTE INTO v_new_id;
   EXCEPTION
     WHEN DUP_VAL_ON_INDEX THEN
       RAISE_APPLICATION_ERROR(-20204,
         'Ya existe un paciente con ese folio o CURP.');
   END;
+  p_id_paciente_out := v_new_id;
 
   v_i := 1;
   WHILE v_i <= p_tipos_espina.COUNT LOOP
@@ -135,6 +137,7 @@ AS
   v_traslape  NUMBER;
   v_asignado  NUMBER;
   v_i         NUMBER;
+  v_new_id    NUMBER;
   c_cancelada CONSTANT VARCHAR2(10) := 'CANCELADA';
 BEGIN
   IF p_servicios IS NULL OR p_servicios.COUNT = 0 THEN
@@ -186,7 +189,8 @@ BEGIN
   ) VALUES (
     p_id_paciente, p_id_usuario_registro, p_fecha_hora, 'PROGRAMADA', p_notas
   )
-  RETURNING ID_CITA INTO p_id_cita_out;
+  RETURNING ID_CITA INTO v_new_id;
+  p_id_cita_out := v_new_id;
 
   v_i := 1;
   WHILE v_i <= p_servicios.COUNT LOOP
