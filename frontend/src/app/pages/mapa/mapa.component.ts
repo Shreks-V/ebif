@@ -147,7 +147,7 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private addMarker(b: MapBeneficiario): void {
     if (b.lat == null || b.lng == null) return;
-    const jitter = () => (Math.random() - 0.5) * 0.01;
+    const jitter = () => (Math.random() - 0.5) * 0.01; // NOSONAR: jitter visual de marcadores en el mapa, sin uso criptográfico
     const marker = L.marker([b.lat + jitter(), b.lng + jitter()])
       .bindPopup(`
         <div style="font-family:sans-serif;min-width:160px">

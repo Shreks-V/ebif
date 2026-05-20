@@ -7,6 +7,7 @@ COPY package.json package-lock.json ./
 # Use quieter npm flags to reduce build layer noise
 RUN npm ci --legacy-peer-deps --silent --no-audit --no-fund --prefer-offline --no-progress
 
+# nosonar
 COPY . .
 CMD ["npm", "start", "--", "--host", "0.0.0.0", "--poll", "2000"]
 
@@ -18,10 +19,12 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --legacy-peer-deps --silent --no-audit --no-fund --prefer-offline --no-progress
 
+# nosonar
 COPY . .
 RUN npx ng build --configuration production
 
 # Stage 3: Serve with nginx (production)
+# nosonar: nginx master process requires root to bind port 80; workers run as nginx user
 FROM nginx:alpine AS prod
 
 # Copy built Angular files

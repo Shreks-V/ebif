@@ -31,7 +31,7 @@ BEGIN
   IF v_next_seq < v_max_seq THEN
     v_delta := v_max_seq - v_next_seq;
     BEGIN
-      EXECUTE IMMEDIATE 'ALTER SEQUENCE SEQ_VENTA_FOLIO INCREMENT BY ' || v_delta;
+      EXECUTE IMMEDIATE 'ALTER SEQUENCE SEQ_VENTA_FOLIO INCREMENT BY ' || v_delta; -- NOSONAR: v_delta es un número calculado internamente, sin input de usuario
     EXCEPTION
       WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20010, 'Error al ajustar incremento de secuencia: ' || SQLERRM);
@@ -40,7 +40,7 @@ BEGIN
       INTO v_next_seq
       FROM DUAL;
     BEGIN
-      EXECUTE IMMEDIATE 'ALTER SEQUENCE SEQ_VENTA_FOLIO INCREMENT BY 1';
+      EXECUTE IMMEDIATE 'ALTER SEQUENCE SEQ_VENTA_FOLIO INCREMENT BY 1'; -- NOSONAR: literal hardcodeado, sin input de usuario
     EXCEPTION
       WHEN OTHERS THEN
         RAISE_APPLICATION_ERROR(-20011, 'Error al restaurar incremento de secuencia: ' || SQLERRM);

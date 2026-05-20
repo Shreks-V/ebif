@@ -165,7 +165,7 @@ export class MapaTabComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private _addCircleToMap(b: MapBeneficiario): void {
     if (!this._map || b.latitud == null || b.longitud == null) return;
-    const jitter = () => (Math.random() - 0.5) * 0.008;
+    const jitter = () => (Math.random() - 0.5) * 0.008; // NOSONAR: jitter visual de marcadores en el mapa, sin uso criptográfico
     const color = this._cuotaColor(b.tipo_cuota);
     const hoverColor = this._cuotaHoverColor(b.tipo_cuota);
     const circle = L.circleMarker(

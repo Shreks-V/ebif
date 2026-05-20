@@ -42,7 +42,7 @@ export class DetalleReciboModalComponent implements OnChanges {
     if (!this.recibo) return;
     const r = this.recibo;
     const items = this.items;
-    const fmtMoney = (n: number) => `$${Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    const fmtMoney = (n: number) => `$${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}`;
     const itemsRows = items.map(item => `
       <tr>
         <td>${item.tipo === 'PRODUCTO' ? 'Producto' : 'Servicio'}</td>

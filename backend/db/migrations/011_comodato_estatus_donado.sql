@@ -11,7 +11,7 @@ BEGIN
        AND search_condition_vc LIKE '%PRESTADO%' -- NOSONAR
   ) LOOP
     BEGIN
-      EXECUTE IMMEDIATE 'ALTER TABLE COMODATO DROP CONSTRAINT ' || c.constraint_name;
+      EXECUTE IMMEDIATE 'ALTER TABLE COMODATO DROP CONSTRAINT ' || c.constraint_name; -- NOSONAR: constraint_name proviene de user_constraints (vista del sistema), no de input externo
     EXCEPTION
       WHEN OTHERS THEN
         NULL; -- NOSONAR: idempotent — ignore if constraint was already dropped
