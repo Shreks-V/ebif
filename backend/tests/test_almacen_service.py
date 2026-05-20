@@ -185,7 +185,7 @@ class TestServicios:
         data = ServicioCreate(nombre="Hemograma", categoria="LABORATORIO", cuota_recuperacion=80.0)
         result = svc.crear_servicio(data)
         assert result["categoria"] == "LABORATORIO"
-        assert result["cuota_recuperacion"] == pytest.approx(80.0)  # NOSONAR: python:S1244
+        assert result["cuota_recuperacion"] == pytest.approx(80.0)  # nosonar
 
     def test_listar_filtra_por_categoria(self, svc):
         svc.crear_servicio(ServicioCreate(nombre="Consulta", categoria="SERVICIO"))

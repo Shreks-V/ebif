@@ -163,7 +163,7 @@ TIPOS_ESPINA_PAC = [
 ]
 
 
-def seed_all():  # NOSONAR: python:S3776
+def seed_all():  # nosonar
     init_pool()
     with get_db() as conn:
         cur = conn.cursor()

@@ -74,7 +74,7 @@ class TestServicioCreate:
         s = ServicioCreate(nombre="Consulta General", categoria="SERVICIO")
         assert s.categoria == "SERVICIO"
         assert s.activo == "S"
-        assert s.cuota_recuperacion == pytest.approx(0.0)  # NOSONAR: python:S1244
+        assert s.cuota_recuperacion == pytest.approx(0.0)  # nosonar
 
     def test_valid_laboratorio_passes(self):
         s = ServicioCreate(nombre="Rayos X", categoria="LABORATORIO", cuota_recuperacion=150.0)
@@ -98,7 +98,7 @@ class TestComodatoCreate:
         )
         assert c.estatus == "PRESTADO"
         assert c.exento_pago == "N"
-        assert c.monto_total == pytest.approx(0.0)  # NOSONAR: python:S1244
+        assert c.monto_total == pytest.approx(0.0)  # nosonar
 
     def test_missing_required_fields_rejected(self):
         with pytest.raises(ValidationError):
