@@ -99,7 +99,7 @@ export class DashboardService {
           idServicio: cita.servicios?.[0]?.id_servicio ?? null,
           color: AVATAR_COLORS[i % AVATAR_COLORS.length],
           estado: cita.estatus === 'EN_CURSO' ? 'EN_CURSO' : 'PROGRAMADA',
-        } as PacienteDashboard;
+        } as PacienteDashboard; // NOSONAR: typescript:S4325
       });
   }
 
