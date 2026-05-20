@@ -103,7 +103,7 @@ BEGIN
   END;
   p_id_paciente_out := v_new_id;
 
-  FORALL v_i IN 1..p_tipos_espina.COUNT
+  FORALL v_i IN 1..p_tipos_espina.COUNT -- NOSONAR: falla atómica deseada — no usar SAVE EXCEPTIONS
     INSERT INTO PACIENTE_TIPO_ESPINA (
       ID_PACIENTE, ID_TIPO_ESPINA
     ) VALUES (
@@ -188,7 +188,7 @@ BEGIN
   RETURNING ID_CITA INTO v_new_id;
   p_id_cita_out := v_new_id;
 
-  FORALL v_i IN 1..p_servicios.COUNT
+  FORALL v_i IN 1..p_servicios.COUNT -- NOSONAR: falla atómica deseada — no usar SAVE EXCEPTIONS
     INSERT INTO DETALLE_CITA_SERVICIO (
       ID_CITA, ID_SERVICIO, ID_DOCTOR, CANTIDAD, MONTO_PAGADO, CANCELADO
     ) VALUES (

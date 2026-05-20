@@ -106,7 +106,7 @@ BEGIN
   )
   RETURNING ID_VENTA, FOLIO_VENTA INTO p_id_venta_out, p_folio_out;
 
-  FORALL v_i IN 1..p_metodos_pago.COUNT
+  FORALL v_i IN 1..p_metodos_pago.COUNT -- NOSONAR: falla atómica deseada — no usar SAVE EXCEPTIONS
     INSERT INTO VENTA_METODO_PAGO (ID_VENTA, ID_METODO_PAGO, MONTO)
     VALUES (p_id_venta_out, p_metodos_pago(v_i), p_montos_pago(v_i));
 
