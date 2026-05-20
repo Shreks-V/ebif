@@ -24,7 +24,7 @@ class InMemoryUserRepository:
         return []
 
     def log_login_attempt(
-        self, _id_usuario: int | None, _success: bool, ip: str | None = None
+        self, _id_usuario: int | None, _success: bool, _ip: str | None = None
     ) -> None:
         return None
 

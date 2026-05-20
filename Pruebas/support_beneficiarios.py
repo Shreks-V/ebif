@@ -206,15 +206,13 @@ class InMemoryBeneficiariosRepository:
         }
 
     def listar_membresias_proximas_a_vencer(
-        self, dias: int = 30, current_user: dict | None = None
+        self, _dias: int = 30, _current_user: dict | None = None
     ) -> list[dict[str, Any]]:
-        del dias, current_user
         return []
 
     def renovar_membresia(
-        self, folio: str, data: dict, current_user: dict | None = None
+        self, folio: str, _data: dict, _current_user: dict | None = None
     ) -> dict[str, Any]:
-        del data, current_user
         if folio not in self._by_folio:
             raise HTTPException(status_code=404, detail=_MSG_BENEFICIARIO_NO_ENCONTRADO)
         row = self._by_folio[folio]

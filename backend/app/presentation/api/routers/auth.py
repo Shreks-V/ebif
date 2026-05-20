@@ -55,11 +55,10 @@ def seed_users(
 @router.post("/login", response_model=Token)
 @limiter.limit("10/minute")
 def login(
-    request: Request,
+    request: Request,  # NOSONAR: python:S1172 — required by slowapi rate-limiter
     form_data: UserLogin,
     auth_service: Annotated[AuthService, Depends(get_auth_service)] = None,
 ):
-    del request
     try:
         token = auth_service.login(correo=form_data.correo, password=form_data.password)
         return {
