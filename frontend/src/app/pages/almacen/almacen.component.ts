@@ -277,7 +277,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   handlePrintComodato(com: ComodatoItem): void {
     this.printingComodato = com;
     setTimeout(() => {
-      window.print();
+      globalThis.print();
       this.printingComodato = null;
     }, 300);
   }

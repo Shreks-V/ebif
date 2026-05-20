@@ -230,11 +230,11 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
 
   private _repositionMedicoMenu(): void {
     if (this.openMedicoMenu !== null && this.medicoMenuTriggerElement) {
-      if (!document.body.contains(this.medicoMenuTriggerElement)) {
-        this.closeMedicoMenu();
-      } else {
+      if (document.body.contains(this.medicoMenuTriggerElement)) {
         this.menuMedicoPosition = this._getMenuPosition(
           this.medicoMenuTriggerElement.getBoundingClientRect(), this.medicoMenuEstimatedHeight);
+      } else {
+        this.closeMedicoMenu();
       }
     }
   }

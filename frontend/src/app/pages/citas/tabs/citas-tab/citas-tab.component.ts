@@ -280,10 +280,10 @@ export class CitasTabComponent implements OnInit, OnDestroy {
       ['Fecha', 'Hora', 'Paciente', 'Tipo de consulta', 'Estado', 'Notas'],
       ...this.citasFiltradas.map(c => [
         this.getFecha(c.fechaHora), this.getHora(c.fechaHora), c.nombrePaciente,
-        c.servicios?.[0]?.nombre || '', c.estatus, (c.notas || '').replace(/\n/g, ' '),
+        c.servicios?.[0]?.nombre || '', c.estatus, (c.notas || '').replaceAll('\n', ' '),
       ]),
     ];
-    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -351,11 +351,11 @@ export class CitasTabComponent implements OnInit, OnDestroy {
 
   private _repositionCitaMenu(): void {
     if (this.openCitaMenu !== null && this.citaMenuTriggerElement) {
-      if (!document.body.contains(this.citaMenuTriggerElement)) {
-        this.closeCitaMenu();
-      } else {
+      if (document.body.contains(this.citaMenuTriggerElement)) {
         this.menuCitaPosition = this._getMenuPosition(
           this.citaMenuTriggerElement.getBoundingClientRect(), this.citaMenuEstimatedHeight);
+      } else {
+        this.closeCitaMenu();
       }
     }
   }

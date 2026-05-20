@@ -172,12 +172,12 @@ export class PreRegistroComponent implements OnInit {
       next: (res) => {
         this.checkingCurp = false;
         this.curpDisponible = res.disponible;
-        if (!res.disponible) {
-          if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
-          this.fieldErrors['curp'] = 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.';
-        } else {
+        if (res.disponible) {
           this.invalidFields = this.invalidFields.filter(f => f !== 'curp');
           delete this.fieldErrors['curp'];
+        } else {
+          if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
+          this.fieldErrors['curp'] = 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.';
         }
       },
       error: () => { this.checkingCurp = false; },

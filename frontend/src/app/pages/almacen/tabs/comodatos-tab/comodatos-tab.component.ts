@@ -76,14 +76,14 @@ export class ComodatosTabComponent {
   }
 
   get filtered(): ComodatoItem[] {
-    const base = !this.search.trim()
-      ? this.comodatos
-      : this.comodatos.filter(c => {
+    const base = this.search.trim()
+      ? this.comodatos.filter(c => {
           const q = this.search.toLowerCase();
           return c.nombrePaciente.toLowerCase().includes(q)
             || c.folioComodato.toLowerCase().includes(q)
             || c.nombreEquipo.toLowerCase().includes(q);
-        });
+        })
+      : this.comodatos;
 
     return sortRows(base, this.sort, (com, key) => {
       switch (key) {
