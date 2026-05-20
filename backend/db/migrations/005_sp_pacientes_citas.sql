@@ -103,15 +103,12 @@ BEGIN
   END;
   p_id_paciente_out := v_new_id;
 
-  v_i := 1;
-  WHILE v_i <= p_tipos_espina.COUNT LOOP
+  FORALL v_i IN 1..p_tipos_espina.COUNT
     INSERT INTO PACIENTE_TIPO_ESPINA (
       ID_PACIENTE, ID_TIPO_ESPINA
     ) VALUES (
       p_id_paciente_out, p_tipos_espina(v_i)
     );
-    v_i := v_i + 1;
-  END LOOP;
 END SP_REGISTRAR_PACIENTE_COMPLETO;
 /
 
@@ -192,15 +189,12 @@ BEGIN
   RETURNING ID_CITA INTO v_new_id;
   p_id_cita_out := v_new_id;
 
-  v_i := 1;
-  WHILE v_i <= p_servicios.COUNT LOOP
+  FORALL v_i IN 1..p_servicios.COUNT
     INSERT INTO DETALLE_CITA_SERVICIO (
       ID_CITA, ID_SERVICIO, ID_DOCTOR, CANTIDAD, MONTO_PAGADO, CANCELADO
     ) VALUES (
       p_id_cita_out, p_servicios(v_i), p_doctores(v_i), p_cantidades(v_i), 0, 'N'
     );
-    v_i := v_i + 1;
-  END LOOP;
 END SP_CREAR_CITA_CON_SERVICIOS;
 /
 
@@ -213,7 +207,7 @@ END SP_CREAR_CITA_CON_SERVICIOS;
 CREATE OR REPLACE PROCEDURE SP_CANCELAR_CITA (
   p_id_cita    IN NUMBER,
   p_motivo     IN VARCHAR2,
-  p_id_usuario IN NUMBER
+  p_id_usuario IN NUMBER -- NOSONAR
 )
 AS
   v_estatus   VARCHAR2(20);

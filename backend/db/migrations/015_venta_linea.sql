@@ -106,12 +106,9 @@ BEGIN
   )
   RETURNING ID_VENTA, FOLIO_VENTA INTO p_id_venta_out, p_folio_out;
 
-  v_i := 1;
-  WHILE v_i <= p_metodos_pago.COUNT LOOP
+  FORALL v_i IN 1..p_metodos_pago.COUNT
     INSERT INTO VENTA_METODO_PAGO (ID_VENTA, ID_METODO_PAGO, MONTO)
     VALUES (p_id_venta_out, p_metodos_pago(v_i), p_montos_pago(v_i));
-    v_i := v_i + 1;
-  END LOOP;
 
   v_i := 1;
   WHILE v_i <= p_linea_tipos.COUNT LOOP
@@ -121,7 +118,7 @@ BEGIN
     v_cant     := p_linea_cantidades(v_i);
     v_subtotal := v_precio * v_cant;
 
-    INSERT INTO VENTA_LINEA (
+    INSERT INTO VENTA_LINEA ( -- NOSONAR: loop has IF+proc-call so FORALL is not applicable
       ID_VENTA, TIPO, ID_REFERENCIA, DESCRIPCION,
       PRECIO_UNITARIO, CANTIDAD, SUBTOTAL
     ) VALUES (

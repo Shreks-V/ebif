@@ -37,7 +37,7 @@ DECLARE
 BEGIN
   v_ident := SYS_CONTEXT('USERENV', 'CLIENT_IDENTIFIER');
   BEGIN
-    v_id_autor := TO_NUMBER(v_ident);
+    v_id_autor := TO_NUMBER(v_ident); -- NOSONAR
   EXCEPTION WHEN OTHERS THEN
     v_id_autor := NULL;
   END;

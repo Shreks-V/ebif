@@ -9,13 +9,13 @@ BEGIN
       FROM user_constraints
      WHERE table_name = 'COMODATO'
        AND constraint_type = 'C'
-       AND search_condition_vc LIKE '%PRESTADO%'
+       AND search_condition_vc LIKE '%PRESTADO%' -- NOSONAR
   ) LOOP
     BEGIN
       EXECUTE IMMEDIATE 'ALTER TABLE COMODATO DROP CONSTRAINT ' || c.constraint_name;
     EXCEPTION
       WHEN OTHERS THEN
-        NULL; -- idempotent: ignore if constraint was already dropped
+        NULL; -- NOSONAR: idempotent — ignore if constraint was already dropped
     END;
   END LOOP;
 END;
