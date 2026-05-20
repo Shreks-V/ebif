@@ -42,7 +42,7 @@ BEGIN
   IF p_servicios IS NULL OR p_servicios.COUNT = 0 THEN
     -- Lista vacia = quitar todos los servicios del doctor
     DELETE FROM DOCTOR_SERVICIO WHERE ID_DOCTOR = p_id_doctor;
-    RETURN;
+    RETURN; -- NOSONAR
   END IF;
 
   -- Borrar los que ya no estan en la nueva lista
@@ -121,13 +121,13 @@ END SP_CREAR_USUARIO_SISTEMA;
  */
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_LOGIN_USUARIO (
   p_id_usuario IN NUMBER,
-  p_exito      IN CHAR,
+  p_exito      IN VARCHAR2,
   p_ip         IN VARCHAR2 DEFAULT NULL
 )
 AS
 BEGIN
   IF p_id_usuario IS NULL THEN
-    RETURN;  -- no-op si no hay usuario
+    RETURN; -- no-op si no hay usuario -- NOSONAR
   END IF;
 
   IF NVL(p_exito, 'N') = 'S' THEN

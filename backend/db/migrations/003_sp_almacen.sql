@@ -36,7 +36,7 @@ CREATE OR REPLACE PROCEDURE SP_CREAR_PRODUCTO_CON_EXISTENCIA (
   -- Campos específicos MEDICAMENTO (ignorados si p_tipo_producto <> 'MEDICAMENTO')
   p_med_presentacion    IN  VARCHAR2 DEFAULT NULL,
   p_med_dosis           IN  VARCHAR2 DEFAULT NULL,
-  p_med_req_caducidad   IN  CHAR     DEFAULT 'S',
+  p_med_req_caducidad   IN  VARCHAR2 DEFAULT 'S',
   -- Campos específicos EQUIPO_MEDICO (ignorados si p_tipo_producto <> 'EQUIPO_MEDICO')
   p_eq_numero_serie     IN  VARCHAR2 DEFAULT NULL,
   p_eq_marca            IN  VARCHAR2 DEFAULT NULL,
@@ -203,7 +203,7 @@ BEGIN
   v_delta := p_stock_nuevo - v_stock_actual;
 
   IF v_delta = 0 THEN
-    RETURN;  -- nada que ajustar
+    RETURN;  -- nada que ajustar -- NOSONAR
   ELSIF v_delta > 0 THEN
     SP_REGISTRAR_MOVIMIENTO_STOCK(
       p_id_producto   => p_id_producto,

@@ -26,7 +26,7 @@ CREATE OR REPLACE PROCEDURE SP_REGISTRAR_VENTA_COMPLETA (
   p_id_paciente         IN  NUMBER,
   p_id_usuario_registro IN  NUMBER,
   p_monto_total         IN  NUMBER,
-  p_exento_pago         IN  CHAR DEFAULT 'N',
+  p_exento_pago         IN  VARCHAR2 DEFAULT 'N',
   -- Líneas de productos (alineadas por índice). Entradas NULL en p_productos
   -- significan "línea de solo servicio" y no descuentan stock.
   p_productos           IN  SYS.ODCINUMBERLIST,
@@ -132,8 +132,8 @@ CREATE OR REPLACE PROCEDURE SP_REGISTRAR_PAGO_PARCIAL (
 AS
   v_total         NUMBER;
   v_pagado_actual NUMBER;
-  v_cancelada     CHAR(1);
-  v_exento        CHAR(1);
+  v_cancelada     VARCHAR2(1);
+  v_exento        VARCHAR2(1);
 BEGIN
   IF p_monto IS NULL OR p_monto <= 0 THEN
     RAISE_APPLICATION_ERROR(-20406, 'El monto del pago debe ser positivo.');

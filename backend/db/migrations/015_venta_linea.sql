@@ -38,7 +38,7 @@ CREATE OR REPLACE PROCEDURE SP_REGISTRAR_VENTA_COMPLETA (
   p_id_paciente         IN  NUMBER,
   p_id_usuario_registro IN  NUMBER,
   p_monto_total         IN  NUMBER,
-  p_exento_pago         IN  CHAR DEFAULT 'N',
+  p_exento_pago         IN  VARCHAR2 DEFAULT 'N',
   -- Líneas de venta (arrays alineados por índice)
   p_linea_tipos         IN  SYS.ODCIVARCHAR2LIST,   -- 'PRODUCTO' | 'SERVICIO'
   p_linea_ids           IN  SYS.ODCINUMBERLIST,     -- id_producto / id_servicio

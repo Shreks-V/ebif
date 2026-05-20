@@ -47,7 +47,7 @@ CREATE OR REPLACE PROCEDURE SP_REGISTRAR_PACIENTE_COMPLETO (
   p_estado_nacimiento     IN  VARCHAR2,
   p_hospital_nacimiento   IN  VARCHAR2,
   p_tipo_sangre           IN  VARCHAR2,
-  p_usa_valvula           IN  CHAR,
+  p_usa_valvula           IN  VARCHAR2,
   p_notas_adicionales     IN  VARCHAR2,
   p_fecha_alta            IN  DATE,
   p_tipo_cuota            IN  VARCHAR2,
