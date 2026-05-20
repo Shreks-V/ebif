@@ -284,11 +284,7 @@
   <div class="fixed inset-0 z-40" (click)="closeCitaMenu()"></div><!-- NOSONAR -->
 }
 @if (openCitaMenu !== null && menuCita) {
-  <div<!-- NOSONAR -->
-    class="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 w-48 overflow-hidden"
-    [style.top.px]="menuCitaPosition.top"
-    [style.left.px]="menuCitaPosition.left"
-    (click)="$event.stopPropagation()">
+  <div class="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 w-48 overflow-hidden" [style.top.px]="menuCitaPosition.top" [style.left.px]="menuCitaPosition.left" (click)="$event.stopPropagation()"><!-- NOSONAR -->
     <button (click)="verDetalleCita(menuCita); closeCitaMenu()"
       class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
