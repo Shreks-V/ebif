@@ -124,8 +124,8 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
         );
         const results = await resp.json() as { lat: string; lon: string }[];
         if (results.length > 0) {
-          b.lat = parseFloat(results[0].lat);
-          b.lng = parseFloat(results[0].lon);
+          b.lat = Number.parseFloat(results[0].lat);
+          b.lng = Number.parseFloat(results[0].lon);
           this.geocodeCache[key] = { lat: b.lat, lng: b.lng };
           this.addMarker(b);
         } else {

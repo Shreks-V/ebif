@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
-const ADMIN_ROLES = ['ADMINISTRADOR', 'ADMIN'];
+const ADMIN_ROLES = new Set(['ADMINISTRADOR', 'ADMIN']);
 
 export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
@@ -14,7 +14,7 @@ export const adminGuard: CanActivateFn = () => {
   }
 
   const rol = (auth.getUser()?.rol || '').toString().toUpperCase();
-  if (ADMIN_ROLES.includes(rol)) {
+  if (ADMIN_ROLES.has(rol)) {
     return true;
   }
 

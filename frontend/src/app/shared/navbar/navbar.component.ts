@@ -34,9 +34,9 @@ const ROLE_LABELS: Record<string, string> = {
   templateUrl: './navbar.component.html',
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  private router = inject(Router);
-  private api = inject(ApiService);
-  private host = inject(ElementRef);
+  private readonly router = inject(Router);
+  private readonly api = inject(ApiService);
+  private readonly host = inject(ElementRef);
   auth = inject(AuthService);
   mobileMenuOpen = false;
   userMenuOpen = false;

@@ -30,7 +30,7 @@ export class MapaTabComponent implements OnInit, OnDestroy, AfterViewChecked {
   private _mapInitialized = false;
   private _mapNeedsInit = false;
   private _pollInterval: ReturnType<typeof setInterval> | null = null;
-  private _renderedIds = new Set<number>();
+  private readonly _renderedIds = new Set<number>();
 
   mapaBeneficiarios: MapBeneficiario[] = [];
   mapaLoading = false;

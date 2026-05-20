@@ -84,9 +84,14 @@ export class InventarioTabComponent {
 
     if (showMeds) {
       this.productos.filter(p => p.tipoProducto === 'MEDICAMENTO').forEach(p => {
-        const estado = (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo)
-          ? 'Existencias bajas'
-          : (p.cantidadDisponible === 0 ? 'Agotado' : 'Normal');
+        let estado: string;
+        if (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo) {
+          estado = 'Existencias bajas';
+        } else if (p.cantidadDisponible === 0) {
+          estado = 'Agotado';
+        } else {
+          estado = 'Normal';
+        }
         items.push({
           id: p.idProducto, categoria: 'MEDICAMENTO', nombre: p.nombre, unidadMedida: p.unidadMedida,
           cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,

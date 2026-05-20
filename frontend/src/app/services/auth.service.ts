@@ -18,8 +18,8 @@ interface UserInfo {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = `${environment.apiUrl}/auth`;
-  private userSubject = new BehaviorSubject<UserInfo | null>(null);
+  private readonly apiUrl = `${environment.apiUrl}/auth`;
+  private readonly userSubject = new BehaviorSubject<UserInfo | null>(null);
   user$ = this.userSubject.asObservable();
 
   constructor(private readonly http: HttpClient, private readonly router: Router) {

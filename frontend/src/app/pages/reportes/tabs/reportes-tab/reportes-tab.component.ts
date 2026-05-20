@@ -253,7 +253,7 @@ export class ReportesTabComponent implements OnInit {
     a.download = filename;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 150);
   }
 }

@@ -334,7 +334,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
     a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 

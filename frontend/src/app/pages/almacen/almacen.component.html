@@ -200,16 +200,16 @@
   <div id="print-comodato" class="hidden print:block print:p-8">
     <h1 class="text-2xl font-bold mb-4">Comodato {{ printingComodato.folioComodato }}</h1>
     <table class="w-full border-collapse text-sm">
-      <tr class="border-b"><td class="py-2 font-semibold w-40">Folio:</td><td class="py-2">{{ printingComodato.folioComodato }}</td></tr>
-      <tr class="border-b"><td class="py-2 font-semibold">Paciente:</td><td class="py-2">{{ printingComodato.nombrePaciente }} ({{ printingComodato.folioPaciente }})</td></tr>
-      <tr class="border-b"><td class="py-2 font-semibold">Equipo:</td><td class="py-2">{{ printingComodato.nombreEquipo }}</td></tr>
-      <tr class="border-b"><td class="py-2 font-semibold">Fecha Pr&eacute;stamo:</td><td class="py-2">{{ printingComodato.fechaPrestamo }}</td></tr>
-      <tr class="border-b"><td class="py-2 font-semibold">Fecha Devoluci&oacute;n:</td><td class="py-2">{{ printingComodato.fechaDevolucion ?? 'Pendiente' }}</td></tr>
-      <tr class="border-b"><td class="py-2 font-semibold">Estatus:</td><td class="py-2">{{ printingComodato.estatus }}</td></tr>
-      <tr class="border-b"><td class="py-2 font-semibold">Monto Total:</td><td class="py-2">${{ printingComodato.montoTotal.toFixed(2) }}</td></tr>
-      <tr class="border-b"><td class="py-2 font-semibold">Monto Pagado:</td><td class="py-2">${{ printingComodato.montoPagado.toFixed(2) }}</td></tr>
-      <tr class="border-b"><td class="py-2 font-semibold">Saldo Pendiente:</td><td class="py-2">${{ printingComodato.saldoPendiente.toFixed(2) }}</td></tr>
-      <tr><td class="py-2 font-semibold">Exento de Pago:</td><td class="py-2">{{ printingComodato.exentoPago === 'S' ? 'S&iacute;' : 'No' }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold w-40 text-left">Folio:</th><td class="py-2">{{ printingComodato.folioComodato }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Paciente:</th><td class="py-2">{{ printingComodato.nombrePaciente }} ({{ printingComodato.folioPaciente }})</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Equipo:</th><td class="py-2">{{ printingComodato.nombreEquipo }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Fecha Pr&eacute;stamo:</th><td class="py-2">{{ printingComodato.fechaPrestamo }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Fecha Devoluci&oacute;n:</th><td class="py-2">{{ printingComodato.fechaDevolucion ?? 'Pendiente' }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Estatus:</th><td class="py-2">{{ printingComodato.estatus }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Monto Total:</th><td class="py-2">${{ printingComodato.montoTotal.toFixed(2) }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Monto Pagado:</th><td class="py-2">${{ printingComodato.montoPagado.toFixed(2) }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Saldo Pendiente:</th><td class="py-2">${{ printingComodato.saldoPendiente.toFixed(2) }}</td></tr>
+      <tr><th scope="row" class="py-2 font-semibold text-left">Exento de Pago:</th><td class="py-2">{{ printingComodato.exentoPago === 'S' ? 'S&iacute;' : 'No' }}</td></tr>
     </table>
   </div>
 }

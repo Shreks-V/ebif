@@ -43,7 +43,7 @@ interface PreRegistroCreatedResponse { id_paciente?: number; preregistro_token?:
 })
 export class PreRegistroComponent implements OnInit {
   router = inject(Router);
-  private api = inject(ApiService);
+  private readonly api = inject(ApiService);
   currentStep = 1;
   submitted = false;
   submitting = false;
@@ -190,7 +190,7 @@ export class PreRegistroComponent implements OnInit {
 
   // ── Validators ─────────────────────────────────────────────
   private _soloLetras(s: string): boolean {
-    return /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s'\-]+$/.test(s.trim());
+    return /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s'-]+$/.test(s.trim());
   }
 
   private _soloDigitos(s: string): string {

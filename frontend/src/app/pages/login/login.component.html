@@ -87,13 +87,13 @@
                     <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                   </svg>
                 </div>
-                <input aria-label="admin@espinabifida.org"
+                <input
                   id="correo"
                   type="email"
                   [(ngModel)]="correo"
                   name="correo"
                   placeholder="admin@espinabifida.org"
-                  autocomplete="email"
+                  autocomplete="username"
                   [disabled]="loading"
                   required
                   class="w-full pl-16 h-14 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:bg-white focus:border-[#00328b] outline-none transition-colors text-slate-900"
@@ -111,7 +111,7 @@
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
                 </div>
-                <input aria-label="admin123"
+                <input
                   id="password"
                   [type]="showPassword ? 'text' : 'password'"
                   [(ngModel)]="password"
