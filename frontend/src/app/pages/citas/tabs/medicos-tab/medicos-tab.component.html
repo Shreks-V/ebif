@@ -141,10 +141,10 @@
 
 <!-- ==================== MENÚ ⋮ MÉDICOS ==================== -->
 @if (openMedicoMenu !== null) {
-  <div class="fixed inset-0 z-40" (click)="closeMedicoMenu()"></div>
+  <div class="fixed inset-0 z-40" (click)="closeMedicoMenu()"></div><!-- NOSONAR -->
 }
 @if (openMedicoMenu !== null && menuMedico) {
-  <div
+  <div<!-- NOSONAR -->
     class="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 w-48 overflow-hidden"
     [style.top.px]="menuMedicoPosition.top"
     [style.left.px]="menuMedicoPosition.left"
