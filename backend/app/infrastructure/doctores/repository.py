@@ -108,7 +108,12 @@ def _doctor_del_dia(_current_user: CurrentUser | None = None):
             rows_esp = rows_to_dicts(cursor)
             for r in rows_esp:
                 fi = r.get('fecha_inicio')
-                fi_date = fi.date() if isinstance(fi, datetime) else (fi if isinstance(fi, date) else None)
+                if isinstance(fi, datetime):
+                    fi_date = fi.date()
+                elif isinstance(fi, date):
+                    fi_date = fi
+                else:
+                    fi_date = None
                 if fi_date and _match_especial_hoy(fi_date, str(r.get('tipo_recurrencia', 'UNICA')).strip()):
                     hora_inicio = r.get('hora_inicio', '')
                     hora_fin = r.get('hora_fin', '')
@@ -140,8 +145,14 @@ def _doctor_del_dia(_current_user: CurrentUser | None = None):
             hora_inicio = row.pop('hora_inicio', None)
             hora_fin = row.pop('hora_fin', None)
             doctor = _doctor_with_servicios(conn, row)
-            doctor['hora_inicio'] = hora_inicio.isoformat() if isinstance(hora_inicio, datetime) else str(hora_inicio) if hora_inicio else None
-            doctor['hora_fin'] = hora_fin.isoformat() if isinstance(hora_fin, datetime) else str(hora_fin) if hora_fin else None
+            if isinstance(hora_inicio, datetime):
+                doctor['hora_inicio'] = hora_inicio.isoformat()
+            else:
+                doctor['hora_inicio'] = str(hora_inicio) if hora_inicio else None
+            if isinstance(hora_fin, datetime):
+                doctor['hora_fin'] = hora_fin.isoformat()
+            else:
+                doctor['hora_fin'] = str(hora_fin) if hora_fin else None
             doctor['fuente'] = 'semanal'
             return {'doctor': doctor, 'hora_inicio': doctor['hora_inicio'], 'hora_fin': doctor['hora_fin']}
     except oracledb.DatabaseError:

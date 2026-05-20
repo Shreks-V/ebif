@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.infrastructure.security.adapters import JwtAccessTokenIssuer
@@ -123,9 +125,9 @@ def test_sv46_nuevo_cobro_un_metodo_total_y_saldo(recibos_client: TestClient):
     r = recibos_client.post(BASE, json=payload, headers=_h_recep())
     assert r.status_code == 201
     body = r.json()
-    assert body["monto_total"] == 350.0
-    assert body["monto_pagado"] == 350.0
-    assert body["saldo_pendiente"] == 0.0
+    assert body["monto_total"] == pytest.approx(350.0)
+    assert body["monto_pagado"] == pytest.approx(350.0)
+    assert body["saldo_pendiente"] == pytest.approx(0.0)
     assert len(body.get("metodos_pago") or []) == 1
     assert body["metodos_pago"][0]["nombre"] == "EFECTIVO"
 
@@ -143,8 +145,8 @@ def test_sv47_nuevo_cobro_varios_metodos_pago(recibos_client: TestClient):
     r = recibos_client.post(BASE, json=payload, headers=_h_adm())
     assert r.status_code == 201
     body = r.json()
-    assert body["monto_pagado"] == 400.0
-    assert body["saldo_pendiente"] == 0.0
+    assert body["monto_pagado"] == pytest.approx(400.0)
+    assert body["saldo_pendiente"] == pytest.approx(0.0)
     nombres = {m["nombre"] for m in body["metodos_pago"]}
     assert nombres == {"EFECTIVO", "TARJETA"}
 
@@ -160,8 +162,8 @@ def test_sv48_caso_exento_pago(recibos_client: TestClient):
     assert r.status_code == 201
     body = r.json()
     assert body["exento_pago"] == "S"
-    assert body["saldo_pendiente"] == 0.0
-    assert body["monto_pagado"] == 120.0
+    assert body["saldo_pendiente"] == pytest.approx(0.0)
+    assert body["monto_pagado"] == pytest.approx(120.0)
     assert body["metodos_pago"][0]["nombre"] == "EXENTO"
 
 
