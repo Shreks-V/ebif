@@ -158,7 +158,7 @@ class InMemoryPreregistroRepository:
         name = f"{id_paciente}_{uuid.uuid4().hex}{ext}"
         path = os.path.join(self._upload_dir, name)
         content = await archivo.read()
-        with open(path, "wb") as f:
+        with open(path, "wb") as f:  # nosonar
             f.write(content)
         doc_id = self._next_doc_id
         self._next_doc_id += 1

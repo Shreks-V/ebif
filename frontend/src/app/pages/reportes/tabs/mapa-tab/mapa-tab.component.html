@@ -43,7 +43,7 @@
       <option value="CUOTA B">Cuota B</option>
     </select>
     <select [(ngModel)]="mapaFiltroEstado" (ngModelChange)="mapaAplicarFiltro()"
-      class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium focus:border-[#00328b] focus:outline-none bg-white text-slate-700" aria-label="Estado">
+      class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium focus:border-[#00328b] focus:outline-none bg-white text-slate-700" aria-label="Todos los estados">
       <option value="">Todos los estados</option>
       @for (e of mapaEstados; track e) {
         <option [value]="e">{{ e }}</option>

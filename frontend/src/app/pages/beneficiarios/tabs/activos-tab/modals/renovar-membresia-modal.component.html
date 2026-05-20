@@ -25,7 +25,7 @@
         <div class="space-y-2">
           @for (mp of renovarMetodosPago; track mp; let i = $index) {
             <div class="flex items-center gap-2">
-              <select [(ngModel)]="mp.id_metodo_pago" class="flex-1 px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:border-emerald-500 focus:outline-none transition-all" aria-label="Mp.id metodo pago">
+              <select [(ngModel)]="mp.id_metodo_pago" class="flex-1 px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:border-emerald-500 focus:outline-none transition-all" aria-label="Métodos de Pago">
                 <option [ngValue]="0" disabled>Método...</option>
                 @for (m of renovarMetodosCatalogo; track m) { <option [ngValue]="m.id">{{ m.nombre }}</option> }
               </select>

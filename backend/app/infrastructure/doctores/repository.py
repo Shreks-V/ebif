@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 _MSG_DOCTOR_NO_ENCONTRADO = 'Doctor no encontrado'
 _MSG_ERROR_INTERNO = 'Error interno del servidor'
 _SELECT_DOCTOR_BY_ID = 'SELECT ID_DOCTOR FROM DOCTOR WHERE ID_DOCTOR = :id_doctor'
+_SELECT_DOCTOR_FULL_BY_ID = (
+    'SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD,'
+    ' TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR WHERE ID_DOCTOR = :id_doctor'
+)
 
 _SP_ASIGNAR_SERVICIOS_DOCTOR_ERRORS = {
     20601: (404, None),  # Doctor no existe o inactivo
@@ -190,7 +194,7 @@ def _obtener_doctor(id_doctor: int, _current_user: CurrentUser | None = None):
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_FULL_BY_ID, {'id_doctor': id_doctor})
             row = row_to_dict(cursor)
             if row is None:
                 raise NotFoundError(_MSG_DOCTOR_NO_ENCONTRADO)
@@ -230,7 +234,7 @@ def _crear_doctor(data, current_user: CurrentUser | None = None):
             if data.servicios:
                 _sync_doctor_servicios(conn, new_id, data.servicios)
             conn.commit()
-            cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': new_id})
+            cursor.execute(_SELECT_DOCTOR_FULL_BY_ID, {'id_doctor': new_id})
             row = row_to_dict(cursor)
             return _doctor_with_servicios(conn, row)
     except oracledb.DatabaseError:
@@ -249,7 +253,7 @@ def _actualizar_doctor(id_doctor: int, data, _current_user: CurrentUser | None =
             if data.servicios is not None:
                 _sync_doctor_servicios(conn, id_doctor, data.servicios)
             conn.commit()
-            cursor.execute('SELECT ID_DOCTOR, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO, ESPECIALIDAD, TELEFONO, CORREO, ACTIVO, FECHA_REGISTRO FROM DOCTOR WHERE ID_DOCTOR = :id_doctor', {'id_doctor': id_doctor})
+            cursor.execute(_SELECT_DOCTOR_FULL_BY_ID, {'id_doctor': id_doctor})
             row = row_to_dict(cursor)
             return _doctor_with_servicios(conn, row)
     except (NotFoundError, ValidationError, ConflictError, InternalError):

@@ -48,7 +48,7 @@
             <div class="flex items-center gap-3 mb-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
               <div class="flex-1">
                 <select [(ngModel)]="srv.idServicio" [name]="'editServicio_' + i"
-                  class="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Servicio">
+                  class="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Servicios">
                   <option [ngValue]="null" disabled>Seleccionar servicio...</option>
                   @for (s of serviciosList; track s) {
                     <option [ngValue]="s.id_servicio">{{ s.nombre }}</option>

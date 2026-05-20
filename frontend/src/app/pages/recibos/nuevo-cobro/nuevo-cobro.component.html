@@ -227,7 +227,7 @@
             @for (mp of nuevoCobro.metodos_pago; track mp; let i = $index) {
               <div class="flex items-center gap-3">
                 <select [(ngModel)]="mp.id_metodo_pago"
-                  class="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm" aria-label="Método de pago">
+                  class="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm" aria-label="Métodos de Pago">
                   <option [ngValue]="0" disabled>Seleccionar...</option>
                   @for (m of metodosPagoCatalogo; track m) {
                     <option [ngValue]="m.id">{{ m.nombre }}</option>

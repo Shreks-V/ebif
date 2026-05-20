@@ -51,7 +51,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">D&iacute;a de la Semana</label>
-            <select [(ngModel)]="nuevoSlot.dia_semana" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Nuevo slot.dia semana">
+            <select [(ngModel)]="nuevoSlot.dia_semana" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Día de la Semana">
               <option [ngValue]="0" disabled>Seleccionar...</option>
               @for (dia of diasSemana; track dia) {
                 <option [ngValue]="dia.num">{{ dia.nombre }}</option>
@@ -60,7 +60,7 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
-            <select [(ngModel)]="nuevoSlot.hora_inicio" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Nuevo slot.hora inicio">
+            <select [(ngModel)]="nuevoSlot.hora_inicio" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Hora Inicio">
               <option value="" disabled>Seleccionar...</option>
               @for (h of horasDisponibles; track h) {
                 <option [value]="h">{{ h }}</option>
@@ -69,7 +69,7 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
-            <select [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Nuevo slot.hora fin">
+            <select [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Hora Fin">
               <option value="" disabled>Seleccionar...</option>
               @for (h of horasDisponibles; track h) {
                 <option [value]="h" [disabled]="nuevoSlot.hora_inicio && h <= nuevoSlot.hora_inicio">{{ h }}</option>
@@ -118,13 +118,13 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">Fecha</label>
-            <input type="date" [(ngModel)]="nuevoDispEspecial.fecha_inicio" aria-label="Nuevo disp especial.fecha inicio"
+            <input type="date" [(ngModel)]="nuevoDispEspecial.fecha_inicio" aria-label="Fecha"
               class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
             <select [(ngModel)]="nuevoDispEspecial.hora_inicio"
-              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" aria-label="Hora inicio">
+              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" aria-label="Hora Inicio">
               <option value="" disabled>Seleccionar...</option>
               @for (h of horasDisponibles; track h) {
                 <option [value]="h">{{ h }}</option>
@@ -134,7 +134,7 @@
           <div>
             <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
             <select [(ngModel)]="nuevoDispEspecial.hora_fin"
-              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" aria-label="Hora fin">
+              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" aria-label="Hora Fin">
               <option value="" disabled>Seleccionar...</option>
               @for (h of horasDisponibles; track h) {
                 <option [value]="h" [disabled]="nuevoDispEspecial.hora_inicio !== '' && h <= nuevoDispEspecial.hora_inicio">{{ h }}</option>

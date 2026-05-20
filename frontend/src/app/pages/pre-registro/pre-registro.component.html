@@ -179,7 +179,7 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="md:col-span-2">
                   <label class="block text-sm font-bold text-slate-700 mb-1">Pa&iacute;s <span class="text-red-500">*</span></label>
-                  <select [(ngModel)]="formData.pais" [class]="getFieldClass('pais') + ' bg-white'" aria-label="Form data.pais">
+                  <select [(ngModel)]="formData.pais" [class]="getFieldClass('pais') + ' bg-white'" aria-label="País">
                     <option value="">Seleccionar...</option>
                     @for (p of paises; track p.nombre) {
                       <option [value]="p.nombre">{{ p.bandera }} {{ p.nombre }}</option>
@@ -189,7 +189,7 @@
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Estado <span class="text-red-500">*</span></label>
                   @if (formData.pais === 'México' || !formData.pais) {
-                    <select [(ngModel)]="formData.estado" [class]="getFieldClass('estado') + ' bg-white'" aria-label="Form data.estado">
+                    <select [(ngModel)]="formData.estado" [class]="getFieldClass('estado') + ' bg-white'" aria-label="Estado">
                       <option value="">Seleccionar...</option>
                       @for (e of estados; track e) {
                         <option [value]="e">{{ e }}</option>
@@ -251,7 +251,7 @@
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Casa</label>
                   <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Form data.telefono casa codigo">
+                    <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono Casa">
                       @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
@@ -265,7 +265,7 @@
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Celular <span class="text-red-500">*</span></label>
                   <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Form data.telefono celular codigo">
+                    <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono Celular">
                       @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
@@ -293,7 +293,7 @@
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono de Emergencia <span class="text-red-500">*</span></label>
                   <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Form data.telefono emergencia codigo">
+                    <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono de Emergencia">
                       @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
@@ -327,7 +327,7 @@
                   <div>
                     <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono del Tutor <span class="text-red-500">*</span></label>
                     <div class="flex gap-2">
-                      <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Form data.telefono tutor codigo">
+                      <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono del Tutor">
                         @for (p of paisesTelefono; track p.nombre) {
                           <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                         }
@@ -356,7 +356,7 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Tipo de Sangre <span class="text-red-500">*</span></label>
-                  <select [(ngModel)]="formData.tipoSangre" [class]="getFieldClass('tipoSangre') + ' bg-white'" aria-label="Form data.tipo sangre">
+                  <select [(ngModel)]="formData.tipoSangre" [class]="getFieldClass('tipoSangre') + ' bg-white'" aria-label="Tipo de Sangre">
                     <option value="">Seleccionar...</option>
                     @for (t of tiposSangre; track t) {
                       <option [value]="t">{{ t }}</option>
@@ -459,7 +459,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end rounded-xl border border-slate-200 bg-white p-4">
                       <div>
                         <label class="block text-xs font-semibold text-slate-500 mb-1">Tipo de Documento</label>
-                        <select [(ngModel)]="doc.tipoId" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm bg-white" aria-label="Doc.tipo id">
+                        <select [(ngModel)]="doc.tipoId" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm bg-white" aria-label="Tipo de Documento">
                           <option [ngValue]="0">Seleccionar tipo...</option>
                           @for (td of tiposDocumento; track td) {
                             <option [ngValue]="td.id_tipo_documento">{{ td.nombre }}</option>
