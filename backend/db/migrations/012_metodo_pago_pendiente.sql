@@ -1,13 +1,13 @@
 -- Add 'PENDIENTE' payment method for deferred/loan payments.
--- Idempotent: only inserts if not already present.
+-- Idempotent: MERGE only inserts if not already present.
 
 BEGIN
-  INSERT INTO METODO_PAGO (ID_METODO_PAGO, NOMBRE, DESCRIPCION, ACTIVO)
-  SELECT 5, 'PENDIENTE', 'Pago pendiente / prestamo', 'S'
-    FROM DUAL
-   WHERE NOT EXISTS (
-     SELECT 1 FROM METODO_PAGO WHERE UPPER(NOMBRE) = 'PENDIENTE'
-   );
+  MERGE INTO METODO_PAGO t
+  USING DUAL
+    ON (UPPER(t.NOMBRE) = 'PENDIENTE')
+  WHEN NOT MATCHED THEN
+    INSERT (ID_METODO_PAGO, NOMBRE, DESCRIPCION, ACTIVO)
+    VALUES (5, 'PENDIENTE', 'Pago pendiente / prestamo', 'S');
   COMMIT;
 END;
 /
