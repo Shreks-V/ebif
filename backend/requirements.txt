@@ -1,7 +1,7 @@
 typing_extensions>=4.15.0
 fastapi==0.135.2
 uvicorn==0.47.0
-pydantic==2.12.5
+pydantic==2.13.4
 python-multipart==0.0.29
 python-jose[cryptography]==3.5.0
 argon2-cffi==25.1.0
