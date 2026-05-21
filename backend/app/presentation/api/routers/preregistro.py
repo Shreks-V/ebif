@@ -19,14 +19,14 @@ def listar_preregistros(
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     current_user: Annotated[dict, Depends(get_current_user)] = None,
-):
+) -> dict:
     return service.listar_preregistros(estatus, current_user, limit, offset)
 
 @router.post('', status_code=201)
 def crear_preregistro(
     data: PreRegistroCreate,
     token_issuer: Annotated[AccessTokenIssuer, Depends(get_token_decoder)] = None,
-):
+) -> dict:
     preregistro = service.crear_preregistro(data)
     id_paciente = preregistro.get('id_paciente')
     if id_paciente is not None:
@@ -34,27 +34,27 @@ def crear_preregistro(
     return preregistro
 
 @router.get('/tipos-espina')
-def listar_tipos_espina_publico():
+def listar_tipos_espina_publico() -> dict:
     return service.listar_tipos_espina_publico()
 
 @router.get('/tipos-documento')
-def listar_tipos_documento_publico():
+def listar_tipos_documento_publico() -> dict:
     return service.listar_tipos_documento_publico()
 
 @router.get('/check-curp')
-def check_curp_disponible(curp: str = Query(..., max_length=18, min_length=1)):
+def check_curp_disponible(curp: str = Query(..., max_length=18, min_length=1)) -> dict:
     return service.check_curp_disponible(curp)
 
 @router.get('/{id_paciente}')
-def obtener_preregistro(id_paciente: Annotated[int, _access, Depends(ensure_preregistro_access)] = None):
+def obtener_preregistro(id_paciente: Annotated[int, _access, Depends(ensure_preregistro_access)] = None) -> dict:
     return service.obtener_preregistro(id_paciente)
 
 @router.put('/{id_paciente}')
-def actualizar_preregistro(id_paciente: int, data: Annotated[PreRegistroCreate, _access, Depends(ensure_preregistro_access)] = None):
+def actualizar_preregistro(id_paciente: int, data: Annotated[PreRegistroCreate, _access, Depends(ensure_preregistro_access)] = None) -> dict:
     return service.actualizar_preregistro(id_paciente, data)
 
 @router.post('/{id_paciente}/aprobar')
-def aprobar_preregistro(id_paciente: int, body: AprobarPreRegistroData = None, current_user: Annotated[dict, Depends(get_current_user)] = None):
+def aprobar_preregistro(id_paciente: int, body: AprobarPreRegistroData = None, current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
     tipo_cuota = body.tipo_cuota if body else None
     return service.aprobar_preregistro(id_paciente, tipo_cuota, current_user)
 
@@ -65,7 +65,7 @@ async def subir_documento(
     archivo: UploadFile = File(...),
     _access=Depends(ensure_preregistro_access),
     current_user: Annotated[dict | None, Depends(get_optional_current_user)] = None,
-):
+) -> dict:
     content = await archivo.read()
     return service.subir_documento(
         id_paciente,
@@ -82,11 +82,11 @@ def listar_documentos(
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     _access=Depends(ensure_preregistro_access),
-):
+) -> dict:
     return service.listar_documentos(id_paciente, limit, offset)
 
 @router.get('/{id_paciente}/documentos/{id_documento}/archivo')
-def obtener_documento_archivo(id_paciente: int, id_documento: Annotated[int, _access, Depends(ensure_preregistro_access)] = None):
+def obtener_documento_archivo(id_paciente: int, id_documento: Annotated[int, _access, Depends(ensure_preregistro_access)] = None) -> StreamingResponse:
     archivo = service.obtener_documento_archivo(id_paciente, id_documento)
     return StreamingResponse(
         iter([archivo.content]),
@@ -95,9 +95,9 @@ def obtener_documento_archivo(id_paciente: int, id_documento: Annotated[int, _ac
     )
 
 @router.delete('/{id_paciente}/documentos/{id_documento}')
-def eliminar_documento(id_paciente: int, id_documento: Annotated[int, _access, Depends(ensure_preregistro_access)] = None):
+def eliminar_documento(id_paciente: int, id_documento: Annotated[int, _access, Depends(ensure_preregistro_access)] = None) -> dict:
     return service.eliminar_documento(id_paciente, id_documento)
 
 @router.post('/{id_paciente}/rechazar')
-def rechazar_preregistro(id_paciente: int, current_user: Annotated[dict, Depends(get_current_user)] = None):
+def rechazar_preregistro(id_paciente: int, current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
     return service.rechazar_preregistro(id_paciente, current_user)

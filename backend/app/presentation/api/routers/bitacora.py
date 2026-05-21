@@ -21,5 +21,5 @@ def listar_bitacora(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     current_user: Annotated[dict, Depends(require_role("ADMINISTRADOR"))] = None,
-):
+) -> dict:
     return service.listar(tabla, tipo_operacion, fecha_inicio, fecha_fin, busqueda, limit, offset)
