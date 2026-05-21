@@ -128,6 +128,18 @@
             <div><p class="text-xl font-black text-slate-900">{{ sec1Adultos }}</p><p class="text-xs text-slate-500">Adultos (18+)</p></div>
           </div>
         </div>
+
+        <!-- Charts: Género y Etapa de vida -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <p class="text-xs font-bold text-slate-500 mb-2 text-center">Distribución por Género</p>
+            <div echarts [options]="generoOpt" class="h-48 w-full"></div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <p class="text-xs font-bold text-slate-500 mb-2 text-center">Etapa de Vida</p>
+            <div echarts [options]="etapaOpt" class="h-48 w-full"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Servicios del periodo -->
@@ -154,6 +166,10 @@
                 }
               </tbody>
             </table>
+          </div>
+          <div class="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <p class="text-xs font-bold text-slate-500 mb-2">Servicios en el periodo</p>
+            <div echarts [options]="serviciosOpt" class="h-64 w-full"></div>
           </div>
         </div>
       }
@@ -257,6 +273,16 @@
                   </tr>
                 </tfoot>
               </table>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p class="text-xs font-bold text-slate-500 mb-2 text-center">Pagos por método</p>
+                <div echarts [options]="metodoPagoOpt" class="h-44 w-full"></div>
+              </div>
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <p class="text-xs font-bold text-slate-500 mb-2 text-center">Monto recaudado por método</p>
+                <div echarts [options]="ingresosPorMetodoOpt" class="h-44 w-full"></div>
+              </div>
             </div>
           } @else {
             <p class="text-sm text-slate-400 italic py-4">Sin pagos registrados en el periodo.</p>
@@ -368,6 +394,12 @@
         </div>
       </div>
 
+      <!-- Chart: resumen KPI -->
+      <div class="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-3">
+        <p class="text-xs font-bold text-slate-500 mb-2">Resumen de beneficiarios</p>
+        <div echarts [options]="indicKpiOpt" class="h-48 w-full"></div>
+      </div>
+
       @if (indicMunicipios.length > 0) {
         <div class="mb-6">
           <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
@@ -394,6 +426,10 @@
                 }
               </tbody>
             </table>
+          </div>
+          <div class="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <p class="text-xs font-bold text-slate-500 mb-2">Municipios — distribución</p>
+            <div echarts [options]="indicMunicipiosOpt" class="h-64 w-full"></div>
           </div>
         </div>
       }
@@ -525,6 +561,9 @@
               </tr>
             </tbody>
           </table>
+          <div class="p-3 bg-slate-50 border-t border-slate-200">
+            <div echarts [options]="seg3GeneroOpt" class="h-44 w-full"></div>
+          </div>
         </div>
 
         <!-- Por Tipo de Espina -->
@@ -561,6 +600,9 @@
               }
             </tbody>
           </table>
+          <div class="p-3 bg-slate-50 border-t border-slate-200">
+            <div echarts [options]="seg3EspinaOpt" class="h-44 w-full"></div>
+          </div>
         </div>
 
         <!-- Por Etapa de Vida -->
@@ -592,6 +634,9 @@
               </tr>
             </tbody>
           </table>
+          <div class="p-3 bg-slate-50 border-t border-slate-200">
+            <div echarts [options]="seg3EtapaOpt" class="h-52 w-full"></div>
+          </div>
         </div>
 
         <!-- Por Estado / Procedencia -->
@@ -625,6 +670,9 @@
               }
             </tbody>
           </table>
+          <div class="p-3 bg-slate-50 border-t border-slate-200">
+            <div echarts [options]="seg3EstadoOpt" class="h-52 w-full"></div>
+          </div>
         </div>
 
       </div>

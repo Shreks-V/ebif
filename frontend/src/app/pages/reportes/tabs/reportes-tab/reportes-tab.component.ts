@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { NgxEchartsDirective } from 'ngx-echarts';
+import type { EChartsOption } from 'echarts';
 import { ApiService } from '../../../../services/api.service';
 import { getApiError } from '../../../../shared/utils/error.utils';
 
@@ -17,10 +19,53 @@ interface CrossTab {
   rows: CrossTabRow[];
 }
 
+const CHART_COLORS = ['#3b82f6','#ec4899','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f87171','#34d399'];
+const NAVY = '#00328b';
+
+function donutOpt(labels: string[], values: number[], colors?: string[]): EChartsOption {
+  return {
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { bottom: 0, type: 'scroll', textStyle: { fontSize: 11 } },
+    series: [{
+      type: 'pie',
+      radius: ['45%', '68%'],
+      center: ['50%', '44%'],
+      avoidLabelOverlap: true,
+      label: { show: false },
+      emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } },
+      data: labels.map((name, i) => ({ name, value: values[i] ?? 0, itemStyle: { color: (colors ?? CHART_COLORS)[i % CHART_COLORS.length] } })),
+    }],
+  };
+}
+
+function hbarOpt(labels: string[], values: number[], color = NAVY): EChartsOption {
+  return {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '3%', right: '6%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'value', axisLabel: { fontSize: 10 } },
+    yAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10, width: 140, overflow: 'truncate' } },
+    series: [{ type: 'bar', data: values, itemStyle: { color, borderRadius: [0, 4, 4, 0] }, barMaxWidth: 28 }],
+  };
+}
+
+function vbarOpt(labels: string[], values: number[], colors?: string[]): EChartsOption {
+  return {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10 } },
+    yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
+    series: [{
+      type: 'bar',
+      data: values.map((v, i) => ({ value: v, itemStyle: { color: (colors ?? CHART_COLORS)[i % CHART_COLORS.length], borderRadius: [4, 4, 0, 0] } })),
+      barMaxWidth: 48,
+    }],
+  };
+}
+
 @Component({
   selector: 'app-reportes-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective],
   templateUrl: './reportes-tab.component.html',
 })
 export class ReportesTabComponent implements OnInit {
@@ -48,6 +93,13 @@ export class ReportesTabComponent implements OnInit {
   sec1PagosPorMetodo: { metodo: string; num_pagos: number; monto: number; porcentaje: number }[] = [];
   sec1TotalPagado = 0;
 
+  // ECharts — Section 1
+  generoOpt: EChartsOption = {};
+  etapaOpt: EChartsOption = {};
+  metodoPagoOpt: EChartsOption = {};
+  serviciosOpt: EChartsOption = {};
+  ingresosPorMetodoOpt: EChartsOption = {};
+
   // ─── Section 2: Indicadores de Desempeño ───
   indicPeriodo = '3m';
   indicFechaInicio = '';
@@ -61,6 +113,10 @@ export class ReportesTabComponent implements OnInit {
   indicMujeres = 0;
   indicMunicipios: { label: string; value: number }[] = [];
   indicTables: CrossTab[] = [];
+
+  // ECharts — Section 2
+  indicKpiOpt: EChartsOption = {};
+  indicMunicipiosOpt: EChartsOption = {};
 
   readonly indicPeriodos = [
     { id: '3m', label: '3 meses' },
@@ -78,6 +134,12 @@ export class ReportesTabComponent implements OnInit {
   seg3EtapaVida: { label: string; value: number }[] = [];
   seg3TipoEspina: { label: string; value: number }[] = [];
   seg3Estado: { label: string; value: number }[] = [];
+
+  // ECharts — Section 3
+  seg3GeneroOpt: EChartsOption = {};
+  seg3EtapaOpt: EChartsOption = {};
+  seg3EspinaOpt: EChartsOption = {};
+  seg3EstadoOpt: EChartsOption = {};
 
   constructor(private readonly api: ApiService) {}
 
@@ -151,6 +213,37 @@ export class ReportesTabComponent implements OnInit {
         this.sec1PagosPorMetodo = (pagosPorMetodo.detalle ?? []) as typeof this.sec1PagosPorMetodo;
         this.sec1TotalPagado = pagosPorMetodo.total ?? 0;
 
+        // ── Build ECharts options ──
+        this.generoOpt = donutOpt(
+          ['Hombres', 'Mujeres'],
+          [this.sec1Hombres, this.sec1Mujeres],
+          ['#3b82f6', '#ec4899'],
+        );
+
+        this.etapaOpt = vbarOpt(
+          ['0-5', '6-11', '12-17', '18+'],
+          [this.sec1Lactantes, this.sec1Ninos, this.sec1Adolescentes, this.sec1Adultos],
+          ['#fbbf24', '#06b6d4', '#818cf8', '#f87171'],
+        );
+
+        this.metodoPagoOpt = donutOpt(
+          this.sec1PagosPorMetodo.map(m => m.metodo),
+          this.sec1PagosPorMetodo.map(m => m.num_pagos),
+          CHART_COLORS,
+        );
+
+        this.ingresosPorMetodoOpt = donutOpt(
+          this.sec1PagosPorMetodo.map(m => m.metodo),
+          this.sec1PagosPorMetodo.map(m => m.monto),
+          CHART_COLORS,
+        );
+
+        this.serviciosOpt = hbarOpt(
+          [...this.sec1ServiciosList].reverse().map(s => s.nombre),
+          [...this.sec1ServiciosList].reverse().map(s => s.cantidad),
+          NAVY,
+        );
+
         this.sec1Loaded = true;
         this.sec1Loading = false;
       },
@@ -164,7 +257,7 @@ export class ReportesTabComponent implements OnInit {
   exportarPDFResumen(): void {
     this.api.exportarReportePdf('resumen', { fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin })
       .subscribe({
-        next: (blob) => this.descargar(blob, `reporte_resumen_${this.sec1FechaInicio}.pdf`),
+        next: (blob) => this._descargar(blob, `reporte_resumen_${this.sec1FechaInicio}.pdf`),
         error: () => alert('Error al generar PDF'),
       });
   }
@@ -172,7 +265,7 @@ export class ReportesTabComponent implements OnInit {
   exportarExcelResumen(): void {
     this.api.exportarReporteExcel('all', { fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin })
       .subscribe({
-        next: (blob) => this.descargar(blob, `reportes_${this.sec1FechaInicio}_${this.sec1FechaFin}.xlsx`),
+        next: (blob) => this._descargar(blob, `reportes_${this.sec1FechaInicio}_${this.sec1FechaFin}.xlsx`),
         error: () => alert('Error al generar Excel'),
       });
   }
@@ -199,6 +292,32 @@ export class ReportesTabComponent implements OnInit {
           { titulo: 'Sujetos de derecho por etapa de vida', cols: ['Hombre', 'Mujer'], rows: (tablas.etapa_vida_genero ?? []) as CrossTabRow[] },
         ];
 
+        // ── ECharts indicadores ──
+        this.indicKpiOpt = {
+          tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+          grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+          xAxis: { type: 'category', data: ['Activos', 'Nuevos', 'Hombres', 'Mujeres'], axisLabel: { fontSize: 11 } },
+          yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
+          series: [{
+            type: 'bar', barMaxWidth: 56,
+            data: [
+              { value: this.indicActivos,  itemStyle: { color: NAVY,      borderRadius: [4,4,0,0] } },
+              { value: this.indicNuevos,   itemStyle: { color: '#10b981', borderRadius: [4,4,0,0] } },
+              { value: this.indicHombres,  itemStyle: { color: '#3b82f6', borderRadius: [4,4,0,0] } },
+              { value: this.indicMujeres,  itemStyle: { color: '#ec4899', borderRadius: [4,4,0,0] } },
+            ],
+          }],
+        };
+
+        if (this.indicMunicipios.length > 0) {
+          const topMunis = [...this.indicMunicipios].slice(0, 12);
+          this.indicMunicipiosOpt = hbarOpt(
+            topMunis.map(m => m.label),
+            topMunis.map(m => m.value),
+            '#0ea5e9',
+          );
+        }
+
         this.indicLoaded = true;
         this.indicLoading = false;
       },
@@ -211,7 +330,7 @@ export class ReportesTabComponent implements OnInit {
 
   exportarPDFIndicadores(): void {
     this.api.exportarReportePdf('indicadores', { fecha_inicio: this.indicFechaInicio, fecha_fin: this.indicFechaFin }).subscribe({
-      next: (blob) => this.descargar(blob, `indicadores_${this.indicFechaInicio}_${this.indicFechaFin}.pdf`),
+      next: (blob) => this._descargar(blob, `indicadores_${this.indicFechaInicio}_${this.indicFechaFin}.pdf`),
       error: () => alert('Error al generar PDF de indicadores'),
     });
   }
@@ -228,10 +347,33 @@ export class ReportesTabComponent implements OnInit {
       estado: this.api.getReportePorEstado(filters),
     }).subscribe({
       next: ({ genero, etapa, espina, estado }) => {
-        this.seg3Genero = (genero.labels as string[]).map((l: string, i: number) => ({ label: l, value: (genero.values as number[])[i] ?? 0 }));
-        this.seg3EtapaVida = (etapa.labels as string[]).map((l: string, i: number) => ({ label: l, value: (etapa.values as number[])[i] ?? 0 }));
-        this.seg3TipoEspina = (espina.labels as string[]).map((l: string, i: number) => ({ label: l, value: (espina.values as number[])[i] ?? 0 }));
-        this.seg3Estado = (estado.labels as string[]).map((l: string, i: number) => ({ label: l, value: (estado.values as number[])[i] ?? 0 }));
+        this.seg3Genero    = (genero.labels as string[]).map((l, i) => ({ label: l, value: (genero.values as number[])[i] ?? 0 }));
+        this.seg3EtapaVida = (etapa.labels as string[]).map((l, i) => ({ label: l, value: (etapa.values as number[])[i] ?? 0 }));
+        this.seg3TipoEspina = (espina.labels as string[]).map((l, i) => ({ label: l, value: (espina.values as number[])[i] ?? 0 }));
+        this.seg3Estado    = (estado.labels as string[]).map((l, i) => ({ label: l, value: (estado.values as number[])[i] ?? 0 }));
+
+        // ── ECharts segmentación ──
+        this.seg3GeneroOpt = donutOpt(
+          this.seg3Genero.map(r => r.label),
+          this.seg3Genero.map(r => r.value),
+          ['#3b82f6', '#ec4899', '#10b981', '#f59e0b'],
+        );
+        this.seg3EspinaOpt = donutOpt(
+          this.seg3TipoEspina.map(r => r.label),
+          this.seg3TipoEspina.map(r => r.value),
+          ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'],
+        );
+        this.seg3EtapaOpt = hbarOpt(
+          this.seg3EtapaVida.map(r => r.label),
+          this.seg3EtapaVida.map(r => r.value),
+          '#f59e0b',
+        );
+        this.seg3EstadoOpt = hbarOpt(
+          this.seg3Estado.map(r => r.label),
+          this.seg3Estado.map(r => r.value),
+          '#0ea5e9',
+        );
+
         this.seg3Loaded = true;
         this.seg3Loading = false;
       },
@@ -246,7 +388,7 @@ export class ReportesTabComponent implements OnInit {
     return rows.reduce((acc, r) => acc + r.value, 0);
   }
 
-  private descargar(blob: Blob, filename: string): void {
+  private _descargar(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

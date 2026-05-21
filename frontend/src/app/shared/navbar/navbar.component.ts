@@ -5,6 +5,7 @@ import { RouterLink, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
+import { NotificacionesWsService } from '../../services/notificaciones-ws.service';
 import { CambiarContrasenaModalComponent } from './modals/cambiar-contrasena-modal.component';
 import { Beneficiario } from '../../shared/models/beneficiario.models';
 import { NOTIFICATION_INTERVAL_MS, SEARCH_DEBOUNCE_MS, MEMBRESIA_ACTIVO } from '../../shared/constants/app.constants';
@@ -59,16 +60,31 @@ export class NavbarComponent implements OnInit, OnDestroy {
   showCambiarPass = false;
 
   lastRefresh = '';
+  private readonly ws = inject(NotificacionesWsService);
+  private _wsConnected = false;
   private refreshInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     this.loadNotifications();
-    this.refreshInterval = setInterval(() => this.loadNotifications(), NOTIFICATION_INTERVAL_MS);
+    this.ws.connect();
+    this._wsConnected = true;
+    this.ws.notifications$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(data => {
+        this.notifications = data;
+        const now = new Date();
+        this.lastRefresh = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+      });
+    // Fallback HTTP poll in case WebSocket fails after max retries
+    this.refreshInterval = setInterval(() => {
+      if (!this._wsConnected) this.loadNotifications();
+    }, NOTIFICATION_INTERVAL_MS);
   }
 
   ngOnDestroy(): void {
     if (this.refreshInterval) clearInterval(this.refreshInterval);
     if (this._searchDebounce) clearTimeout(this._searchDebounce);
+    this.ws.disconnect();
   }
 
   @HostListener('document:click', ['$event'])

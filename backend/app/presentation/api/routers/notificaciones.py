@@ -1,7 +1,11 @@
+import asyncio
 import logging
 from typing import Annotated
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from app.presentation.api.security import get_current_user
+from app.presentation.api.dependencies import get_token_decoder
+from app.domain.auth.roles import normalize_role
+from app.domain.auth.exceptions import TokenDecodeError
 from app.application.citas import use_cases as citas_svc
 from app.application.almacen import use_cases as almacen_svc
 from app.application.beneficiarios import use_cases as beneficiarios_svc
@@ -9,6 +13,8 @@ from app.application.beneficiarios import use_cases as beneficiarios_svc
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+_WS_PUSH_INTERVAL = 60
 
 
 def _s(n: int) -> str:
@@ -76,11 +82,8 @@ def _noti_almacen(current_user) -> list[dict]:
     return result
 
 
-@router.get('')
-def get_notificaciones(current_user: Annotated[dict, Depends(get_current_user)] = None):
-    """Agrega alertas de todos los módulos en una respuesta unificada."""
-    notificaciones = []
-
+def _recopilar(current_user) -> list[dict]:
+    result = []
     for fn, label in [
         (_noti_citas_hoy, 'citas de hoy'),
         (_noti_citas_proximas, 'citas próximas'),
@@ -89,13 +92,48 @@ def get_notificaciones(current_user: Annotated[dict, Depends(get_current_user)] 
         try:
             item = fn(current_user)
             if item:
-                notificaciones.append(item)
+                result.append(item)
         except Exception as exc:
             logger.warning('notificaciones: error al obtener %s: %s', label, exc)
-
     try:
-        notificaciones.extend(_noti_almacen(current_user))
+        result.extend(_noti_almacen(current_user))
     except Exception as exc:
         logger.warning('notificaciones: error al obtener stats de almacén: %s', exc)
+    return result
 
-    return notificaciones
+
+@router.get('')
+def get_notificaciones(current_user: Annotated[dict, Depends(get_current_user)] = None):
+    """Agrega alertas de todos los módulos en una respuesta unificada."""
+    return _recopilar(current_user)
+
+
+@router.websocket('/ws')
+async def notificaciones_ws(websocket: WebSocket, token: str = Query(...)):
+    """WebSocket que empuja notificaciones cada 60 s sin polling del cliente."""
+    decoder = get_token_decoder()
+    try:
+        payload = decoder.decode(token)
+        correo = payload.get('sub')
+        if not correo:
+            raise TokenDecodeError('sin sub')
+        current_user = {
+            'correo': str(correo).strip(),
+            'rol': normalize_role(payload.get('rol', 'OPERATIVO')),
+            'id_usuario': payload.get('id_usuario'),
+            'nombre': str(payload.get('nombre') or '').strip(),
+        }
+    except Exception:
+        await websocket.close(code=1008)
+        return
+
+    await websocket.accept()
+    try:
+        while True:
+            data = await asyncio.to_thread(_recopilar, current_user)
+            await websocket.send_json(data)
+            await asyncio.sleep(_WS_PUSH_INTERVAL)
+    except WebSocketDisconnect:
+        pass
+    except Exception as exc:
+        logger.warning('notificaciones_ws: conexión cerrada con error: %s', exc)
