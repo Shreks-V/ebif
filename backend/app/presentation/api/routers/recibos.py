@@ -10,7 +10,7 @@ def stats_ventas(current_user: Annotated[dict, Depends(get_current_user)] = None
     return service.stats_ventas(current_user)
 
 @router.get('/metodos-pago')
-def listar_metodos_pago(current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
+def listar_metodos_pago(current_user: Annotated[dict, Depends(get_current_user)] = None) -> list:
     return service.listar_metodos_pago(current_user)
 
 @router.get('')
@@ -23,7 +23,7 @@ def listar_ventas(
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     current_user: Annotated[dict, Depends(get_current_user)] = None,
-) -> dict:
+) -> list:
     return service.listar_ventas(fecha_inicio, fecha_fin, id_paciente, search, current_user, limit, offset, solo_adeudos)
 
 @router.post('', status_code=201)
@@ -47,5 +47,5 @@ def exentar_venta(id_venta: int, body: ExentarVentaBody, current_user: Annotated
     return service.exentar_venta(id_venta, body.nota, current_user)
 
 @router.get('/{id_venta}/items')
-def listar_items_venta(id_venta: int, current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
+def listar_items_venta(id_venta: int, current_user: Annotated[dict, Depends(get_current_user)] = None) -> list:
     return service.listar_items_venta(id_venta, current_user)

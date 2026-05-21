@@ -7,7 +7,7 @@ from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()
 
 @router.get('/tipos-espina')
-def listar_tipos_espina(current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
+def listar_tipos_espina(current_user: Annotated[dict, Depends(get_current_user)] = None) -> list:
     return service.listar_tipos_espina(current_user)
 
 @router.get('/stats')
@@ -33,7 +33,7 @@ def listar_beneficiarios(
     return service.listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
 
 @router.get('/mapa')
-def mapa_beneficiarios(current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
+def mapa_beneficiarios(current_user: Annotated[dict, Depends(get_current_user)] = None) -> list:
     return service.mapa_beneficiarios(current_user)
 
 @router.get('/{folio}')
@@ -80,7 +80,7 @@ def membresias_proximas_a_vencer(
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     current_user: Annotated[dict, Depends(get_current_user)] = None,
-) -> dict:
+) -> list:
     return service.listar_membresias_proximas_a_vencer(dias, current_user, limit, offset)
 
 @router.post('/{folio}/renovar-membresia', status_code=200)

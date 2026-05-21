@@ -9,13 +9,11 @@ import { AuthService } from '../services/auth.service';
  *  - GET    /api/preregistro/tipos-espina
  *  - GET    /api/preregistro/tipos-documento
  *
- * Scoped preregistro resources are protected with X-Preregistro-Token when
- * there is no authenticated user session:
- *  - POST   /api/preregistro/:id/documentos
- *  - GET    /api/preregistro/:id/documentos
- *  - DELETE /api/preregistro/:id/documentos/:id
- *  - PUT    /api/preregistro/:id
- *  - GET    /api/preregistro/:id
+ * Scoped preregistro resources carry X-Preregistro-Token when there is no
+ * authenticated user session (anonymous pre-registrant). Admins use the
+ * regular Authorization header instead:
+ *  - POST/GET/DELETE /api/preregistro/:id/documentos
+ *  - PUT/GET         /api/preregistro/:id
  *
  * Admin endpoints like /aprobar, /rechazar and GET list MUST carry the token.
  */
@@ -28,9 +26,6 @@ function isPublicPreregistroUrl(url: string, method: string): boolean {
 
   // Public catalog endpoints
   if (url.includes('/tipos-espina') || url.includes('/tipos-documento')) return true;
-
-  // Document upload/listing: /preregistro/<id>/documentos
-  if (/\/preregistro\/\d+\/documentos/.test(url)) return true;
 
   // POST to base /preregistro (create new) — no trailing path after /preregistro
   if (method === 'POST' && /\/preregistro\/?$/.test(url)) return true;

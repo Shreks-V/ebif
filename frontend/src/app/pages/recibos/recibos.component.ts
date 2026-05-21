@@ -12,7 +12,7 @@ import { DetalleReciboModalComponent } from './modals/detalle-recibo-modal.compo
 import { CancelarReciboModalComponent } from './modals/cancelar-recibo-modal.component';
 import { PagoReciboModalComponent } from './modals/pago-recibo-modal.component';
 import { Recibo as ReciboAPI, MetodoPagoReciboItem } from '../../shared/models/recibo.models';
-import { PDF_REVOKE_DELAY_MS, ACTION_NUEVO } from '../../shared/constants/app.constants';
+import { PDF_REVOKE_DELAY_MS, ACTION_NUEVO, DEFAULT_PAGE_SIZE } from '../../shared/constants/app.constants';
 
 interface MetodoPagoItem {
   idMetodoPago: number;
@@ -31,6 +31,7 @@ interface Recibo {
   montoPagado: number;
   saldoPendiente: number;
   exentoPago: string;
+  perdonado: string;
   cancelada: string;
   motivoCancelacion: string | null;
   metodosPago: MetodoPagoItem[];
@@ -60,10 +61,32 @@ export class RecibosComponent implements OnInit {
   recibosFiltrados: Recibo[] = [];
   recibosSort: TableSortState = { key: 'fechaVenta', direction: 'desc' };
 
+  currentPage = 0;
+  readonly pageSize = DEFAULT_PAGE_SIZE;
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.recibosFiltrados.length / this.pageSize));
+  }
+
+  get recibosPage(): Recibo[] {
+    const start = this.currentPage * this.pageSize;
+    return this.recibosFiltrados.slice(start, start + this.pageSize);
+  }
+
+  get pageEnd(): number {
+    return Math.min((this.currentPage + 1) * this.pageSize, this.recibosFiltrados.length);
+  }
+
+  goToPage(page: number): void {
+    this.currentPage = Math.max(0, Math.min(page, this.totalPages - 1));
+  }
+
   montoTotal = 0;
   montoEfectivo = 0;
   montoTarjeta = 0;
   montoTransferencia = 0;
+  montoPerdonado = 0;
+  montoExento = 0;
 
   reciboParaDetalle: Recibo | null = null;
   reciboParaCancelar: Recibo | null = null;
@@ -119,6 +142,8 @@ export class RecibosComponent implements OnInit {
         this.montoEfectivo = stats.monto_efectivo ?? 0;
         this.montoTarjeta = stats.monto_tarjeta ?? 0;
         this.montoTransferencia = stats.monto_transferencia ?? 0;
+        this.montoPerdonado = stats.monto_perdonado ?? 0;
+        this.montoExento = stats.monto_exento ?? 0;
       },
       error: (err) => console.error('Error al cargar estadísticas de recibos:', err)
     });
@@ -136,6 +161,7 @@ export class RecibosComponent implements OnInit {
       return matchFolio && matchBeneficiario && matchFechaInicio && matchFechaFin && matchAdeudo;
     });
     this.recibosFiltrados = this._sortRows(filtrados, this.recibosSort, (recibo, key) => this._getReciboSortValue(recibo, key));
+    this.currentPage = 0;
   }
 
   limpiarFiltros(): void {
@@ -167,6 +193,12 @@ export class RecibosComponent implements OnInit {
     this.montoEfectivo = activos.reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'EFECTIVO').reduce((s, mp) => s + mp.monto, 0), 0);
     this.montoTarjeta = activos.reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'TARJETA').reduce((s, mp) => s + mp.monto, 0), 0);
     this.montoTransferencia = activos.reduce((sum, r) => sum + r.metodosPago.filter(mp => mp.nombre === 'TRANSFERENCIA').reduce((s, mp) => s + mp.monto, 0), 0);
+    this.montoPerdonado = activos
+      .filter(r => r.perdonado === 'S')
+      .reduce((sum, r) => sum + r.montoTotal - r.metodosPago.reduce((s, mp) => s + mp.monto, 0), 0);
+    this.montoExento = activos
+      .filter(r => r.exentoPago === 'S' && r.perdonado !== 'S')
+      .reduce((sum, r) => sum + r.montoTotal, 0);
   }
 
   // ── Nuevo cobro ──
@@ -241,6 +273,7 @@ export class RecibosComponent implements OnInit {
       montoPagado: r.monto_pagado,
       saldoPendiente: r.saldo_pendiente,
       exentoPago: r.exento_pago ?? '',
+      perdonado: r.perdonado ?? '',
       cancelada: r.cancelada ?? '',
       motivoCancelacion: r.motivo_cancelacion ?? null,
       metodosPago: (r.metodos_pago || []).map((mp: MetodoPagoReciboItem) => ({ idMetodoPago: mp.id_metodo_pago, nombre: mp.nombre, monto: mp.monto }))
@@ -268,6 +301,8 @@ export class RecibosComponent implements OnInit {
       case 'pago': return this.getPagoLabel(recibo);
       case 'estado': {
         if (recibo.cancelada === 'S') return 'cancelada';
+        if (recibo.perdonado === 'S') return 'perdonado';
+        if (recibo.exentoPago === 'S') return 'exento';
         return recibo.saldoPendiente === 0 ? 'pagada' : 'pendiente';
       }
       default: return recibo.fechaVenta;

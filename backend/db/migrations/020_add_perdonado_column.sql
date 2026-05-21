@@ -1,0 +1,5 @@
+-- Migration 020: Add PERDONADO column to VENTA table
+-- Distinguishes debt-forgiven records (PERDONADO='S') from
+-- originally-exempt records (EXENTO_PAGO='S' AND PERDONADO='N').
+ALTER TABLE VENTA ADD (PERDONADO VARCHAR2(1) DEFAULT 'N' NOT NULL);
+ALTER TABLE VENTA ADD CONSTRAINT CHK_VENTA_PERDONADO CHECK (PERDONADO IN ('S', 'N'));

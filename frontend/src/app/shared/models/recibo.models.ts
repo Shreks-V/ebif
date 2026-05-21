@@ -18,6 +18,7 @@ export interface Recibo {
   monto_pagado: number;
   saldo_pendiente: number;
   exento_pago?: string;
+  perdonado?: string;
   cancelada?: string;
   motivo_cancelacion?: string;
   notas?: string;
@@ -53,4 +54,8 @@ export interface RecibosStats {
   monto_efectivo?: number;
   monto_tarjeta?: number;
   monto_transferencia?: number;
+  monto_perdonado?: number;
+  count_perdonados?: number;
+  monto_exento?: number;
+  count_exentos?: number;
 }

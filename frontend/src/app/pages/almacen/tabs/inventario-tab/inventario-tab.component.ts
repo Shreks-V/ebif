@@ -102,10 +102,18 @@ export class InventarioTabComponent {
 
     if (showEq) {
       this.productos.filter(p => p.tipoProducto === 'EQUIPO').forEach(p => {
+        let estadoEq: string;
+        if (p.cantidadDisponible === 0) {
+          estadoEq = 'Agotado';
+        } else if (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo) {
+          estadoEq = 'Existencias bajas';
+        } else {
+          estadoEq = p.estatusEquipo ?? 'N/A';
+        }
         items.push({
           id: p.idProducto, categoria: 'EQUIPO', nombre: p.nombre, unidadMedida: p.unidadMedida,
           cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
-          precioA: p.precioA, precioB: p.precioB, estado: p.estatusEquipo ?? 'N/A', fechaCaducidad: p.fechaCaducidad,
+          precioA: p.precioA, precioB: p.precioB, estado: estadoEq, fechaCaducidad: p.fechaCaducidad,
         });
       });
     }

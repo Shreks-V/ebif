@@ -628,8 +628,8 @@ def _exportar_credencial_pdf(folio: str, _current_user: CurrentUser | None = Non
         nombre_completo = f"{_sv('nombre')} {_sv('apellido_paterno')} {_sv('apellido_materno')}".strip()
         direccion = f"{_sv('direccion')}, {_sv('colonia')}"
         ciudad_est = f"{_sv('ciudad')}{', ' + _sv('estado') if _sv('estado') else ''}"
-        fecha_nac = (_sv('fecha_nacimiento') or '')[:10]
-        fecha_exp = (_sv('fecha_alta') or '')[:10]
+        fecha_nac = str(_sv('fecha_nacimiento') or '')[:10]
+        fecha_exp = str(_sv('fecha_alta') or '')[:10]
         valvula = 'Si' if (_sv('usa_valvula') or 'N').upper() == 'S' else 'No'
         padecimiento = ', '.join(tipos) if tipos else 'No especificado'
         # Card size: A6 landscape (148 x 105 mm)
@@ -744,7 +744,7 @@ def _exportar_credencial_pdf(folio: str, _current_user: CurrentUser | None = Non
         cv.setFillColor(LGRAY); cv.rect(0, 0, W, 0.55 * cm, fill=1, stroke=0)
         cv.setFillColor(GRAY); cv.setFont('Helvetica', 6)
         cuota = _sv('tipo_cuota') or 'No asignada'
-        vencimiento = (_sv('fecha_vencimiento_membresia') or '')[:10] or 'Indefinida'
+        vencimiento = str(_sv('fecha_vencimiento_membresia') or '')[:10] or 'Indefinida'
         cv.drawString(0.4 * cm, 0.2 * cm, f'Cuota: {cuota}')
         cv.drawCentredString(W / 2, 0.2 * cm, f'Vigencia: {vencimiento}')
         cv.drawRightString(W - 0.4 * cm, 0.2 * cm, f'CURP: {_sv("curp") or "N/A"}')

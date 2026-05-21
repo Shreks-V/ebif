@@ -26,6 +26,7 @@ _SELECT_VENTA_BY_ID = """
                    v.MONTO_PAGADO,
                    v.SALDO_PENDIENTE,
                    v.EXENTO_PAGO,
+                   v.PERDONADO,
                    v.CANCELADA,
                    v.MOTIVO_CANCELACION,
                    p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')
@@ -249,7 +250,39 @@ def _stats_ventas(_current_user: CurrentUser | None = None):
         ayer_str = (date.today() - timedelta(days=1)).isoformat()
         cur.execute("\n            SELECT COUNT(*) AS total_ayer\n              FROM VENTA v\n             WHERE v.CANCELADA = 'N'\n               AND v.FECHA_VENTA >= TO_DATE(:fecha, 'YYYY-MM-DD')\n               AND v.FECHA_VENTA < TO_DATE(:fecha, 'YYYY-MM-DD') + 1\n            ", {'fecha': ayer_str})
         ayer = row_to_dict(cur)
-    return {'monto_total_sum': float(totals['monto_total_sum']), 'monto_efectivo': float(by_method['monto_efectivo']), 'monto_tarjeta': float(by_method['monto_tarjeta']), 'monto_transferencia': float(by_method['monto_transferencia']), 'count': int(totals['count']), 'total_hoy': int(hoy['total_hoy']), 'total_ayer': int(ayer['total_ayer']) if ayer else 0, 'pendientes': int(pend['pendientes'])}
+        cur.execute("""
+            SELECT NVL(SUM(v.MONTO_TOTAL - NVL(vmp_sum.total_pagado, 0)), 0) AS monto_perdonado,
+                   COUNT(*) AS count_perdonados
+              FROM VENTA v
+              LEFT JOIN (
+                  SELECT ID_VENTA, SUM(MONTO) AS total_pagado
+                    FROM VENTA_METODO_PAGO
+                   GROUP BY ID_VENTA
+              ) vmp_sum ON vmp_sum.ID_VENTA = v.ID_VENTA
+             WHERE v.PERDONADO = 'S' AND v.CANCELADA = 'N'
+        """)
+        perdon = row_to_dict(cur)
+        cur.execute("""
+            SELECT NVL(SUM(v.MONTO_TOTAL), 0) AS monto_exento,
+                   COUNT(*) AS count_exentos
+              FROM VENTA v
+             WHERE v.EXENTO_PAGO = 'S' AND v.PERDONADO = 'N' AND v.CANCELADA = 'N'
+        """)
+        exento = row_to_dict(cur)
+    return {
+        'monto_total_sum': float(totals['monto_total_sum']),
+        'monto_efectivo': float(by_method['monto_efectivo']),
+        'monto_tarjeta': float(by_method['monto_tarjeta']),
+        'monto_transferencia': float(by_method['monto_transferencia']),
+        'monto_perdonado': float(perdon['monto_perdonado']) if perdon else 0.0,
+        'count_perdonados': int(perdon['count_perdonados']) if perdon else 0,
+        'monto_exento': float(exento['monto_exento']) if exento else 0.0,
+        'count_exentos': int(exento['count_exentos']) if exento else 0,
+        'count': int(totals['count']),
+        'total_hoy': int(hoy['total_hoy']),
+        'total_ayer': int(ayer['total_ayer']) if ayer else 0,
+        'pendientes': int(pend['pendientes']),
+    }
 
 def _listar_metodos_pago(_current_user: CurrentUser | None = None):
     """Listar metodos de pago activos."""
@@ -262,7 +295,7 @@ def _listar_ventas(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=No
     """Listar ventas con filtros opcionales."""
     safe_limit, safe_offset = _normalize_pagination(limit, offset)
     with get_db() as conn:
-        sql = "\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE 1 = 1\n        "
+        sql = "\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.PERDONADO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE 1 = 1\n        "
         params: dict = {}
         if fecha_inicio:
             sql += " AND v.FECHA_VENTA >= TO_TIMESTAMP(:fecha_inicio, 'YYYY-MM-DD')"
@@ -426,7 +459,7 @@ def _exentar_venta(id_venta: int, nota: Optional[str]=None, current_user: Curren
         if (row['saldo_pendiente'] or 0) <= 0:
             raise ValidationError('Esta venta no tiene saldo pendiente')
         cur.execute(
-            "UPDATE VENTA SET EXENTO_PAGO='S', SALDO_PENDIENTE=0, MONTO_PAGADO=MONTO_TOTAL WHERE ID_VENTA=:id",
+            "UPDATE VENTA SET EXENTO_PAGO='S', PERDONADO='S', SALDO_PENDIENTE=0, MONTO_PAGADO=MONTO_TOTAL WHERE ID_VENTA=:id",
             {'id': id_venta},
         )
         id_usuario = current_user.get('id_usuario', 1) if current_user else 1
@@ -449,7 +482,7 @@ def _cancelar_venta(id_venta: int, motivo: Optional[str]=None, current_user: Cur
         cur.execute("\n            UPDATE VENTA\n               SET CANCELADA = 'S',\n                   MOTIVO_CANCELACION = :motivo\n             WHERE ID_VENTA = :id_venta\n            ", {'motivo': motivo_final, 'id_venta': id_venta})
         log_cancelacion(conn, 'VENTA', id_venta, current_user.get('id_usuario', 1), motivo_final)
         conn.commit()
-        cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': id_venta})
+        cur.execute("\n            SELECT v.ID_VENTA,\n                   v.FOLIO_VENTA,\n                   v.ID_PACIENTE,\n                   v.ID_USUARIO_REGISTRO,\n                   v.FECHA_VENTA,\n                   v.MONTO_TOTAL,\n                   v.MONTO_PAGADO,\n                   v.SALDO_PENDIENTE,\n                   v.EXENTO_PAGO,\n                   v.PERDONADO,\n                   v.CANCELADA,\n                   v.MOTIVO_CANCELACION,\n                   p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '')\n                       AS NOMBRE_PACIENTE,\n                   p.FOLIO AS FOLIO_PACIENTE\n              FROM VENTA v\n              JOIN PACIENTE p ON p.ID_PACIENTE = v.ID_PACIENTE\n             WHERE v.ID_VENTA = :id_venta\n            ", {'id_venta': id_venta})
         venta = row_to_dict(cur)
         return _enrich_venta(conn, venta)
 

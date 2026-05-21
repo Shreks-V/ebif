@@ -238,7 +238,10 @@
       "Bash(awk NR==50 '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/citas-tab/modals/editar-cita-modal.component.html')",
       "Bash(awk NR==51 '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/bitacora/bitacora.component.html')",
       "Bash(awk 'NR==54||NR==63||NR==72||NR==126||NR==136' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/medicos-tab/modals/disponibilidad-modal.component.html')",
-      "Bash(sort -k2)"
+      "Bash(sort -k2)",
+      "Bash(gh pr *)",
+      "Bash(python db/apply_migration.py db/migrations/020_add_perdonado_column.sql)",
+      "Bash(venv/bin/python db/apply_migration.py db/migrations/020_add_perdonado_column.sql)"
     ]
   },
   "enableAllProjectMcpServers": true,

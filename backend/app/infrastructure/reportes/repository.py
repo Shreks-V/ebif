@@ -697,3 +697,39 @@ class OracleReportesRepository(ReportesRepository):
 
     def reporte_pagos_por_metodo(self, fecha_inicio=None, fecha_fin=None, current_user=None):
         return _reporte_pagos_por_metodo(fecha_inicio, fecha_fin, current_user)
+
+
+# Public wrappers used by exportaciones/repository.py.
+# The private functions use _current_user; callers use current_user.
+def reporte_resumen(genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _reporte_resumen(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
+
+def reporte_por_genero(genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _reporte_por_genero(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
+
+def reporte_por_etapa_vida(genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _reporte_por_etapa_vida(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
+
+def reporte_por_estado(genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _reporte_por_estado(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
+
+def reporte_por_tipo_espina(genero=None, estado=None, tipo_espina=None, fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _reporte_por_tipo_espina(genero, estado, tipo_espina, fecha_inicio, fecha_fin, current_user)
+
+def reporte_servicios_por_tipo(fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _reporte_servicios_por_tipo(fecha_inicio, fecha_fin, current_user)
+
+def reporte_estudios_por_tipo(fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _reporte_estudios_por_tipo(fecha_inicio, fecha_fin, current_user)
+
+def reporte_pagos_exentos(fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _reporte_pagos_exentos(fecha_inicio, fecha_fin, current_user)
+
+def reporte_por_ciudad(current_user=None):
+    return _reporte_por_ciudad(current_user)
+
+def reporte_consolidado_mensual(mes=None, anio=None, current_user=None):
+    return _reporte_consolidado_mensual(mes, anio, current_user)
+
+def indicadores_desempeno(fecha_inicio=None, fecha_fin=None, current_user=None):
+    return _indicadores_desempeno(fecha_inicio, fecha_fin, current_user)

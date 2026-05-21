@@ -22,7 +22,7 @@ def listar_citas(
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     current_user: Annotated[dict, Depends(get_current_user)] = None,
-) -> dict:
+) -> list:
     return service.listar_citas(fecha, estatus, id_paciente, busqueda, current_user, limit, offset)
 
 @router.get('/{id_cita}')

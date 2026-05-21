@@ -143,7 +143,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (recibo of recibosFiltrados; track recibo; let i = $index) {
+              @for (recibo of recibosPage; track recibo.idVenta) {
                 <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                   <td class="px-5 py-4">
                     <span class="font-mono text-sm font-bold text-emerald-600">{{ recibo.folioVenta }}</span>
@@ -159,11 +159,13 @@
                   <td class="px-5 py-4">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
                       [ngClass]="{
-                        'bg-red-100 text-red-700': recibo.cancelada === 'S',
-                        'bg-emerald-100 text-emerald-700': recibo.cancelada !== 'S' && recibo.saldoPendiente === 0,
-                        'bg-amber-100 text-amber-700': recibo.cancelada !== 'S' && recibo.saldoPendiente > 0
+                        'bg-red-100 text-red-700':       recibo.cancelada === 'S',
+                        'bg-purple-100 text-purple-700': recibo.cancelada !== 'S' && recibo.perdonado === 'S',
+                        'bg-slate-100 text-slate-600':   recibo.cancelada !== 'S' && recibo.perdonado !== 'S' && recibo.exentoPago === 'S' && recibo.saldoPendiente === 0,
+                        'bg-emerald-100 text-emerald-700': recibo.cancelada !== 'S' && recibo.perdonado !== 'S' && recibo.exentoPago !== 'S' && recibo.saldoPendiente === 0,
+                        'bg-amber-100 text-amber-700':   recibo.cancelada !== 'S' && recibo.saldoPendiente > 0
                       }">
-                      {{ recibo.cancelada === 'S' ? 'Cancelada' : (recibo.saldoPendiente === 0 ? 'Pagada' : 'Pendiente') }}
+                      {{ recibo.cancelada === 'S' ? 'Cancelada' : (recibo.perdonado === 'S' ? 'Perdonado' : (recibo.exentoPago === 'S' ? 'Exento' : (recibo.saldoPendiente === 0 ? 'Pagada' : 'Pendiente'))) }}
                     </span>
                   </td>
                   <td class="px-5 py-4">
@@ -201,9 +203,45 @@
         </div>
       }
 
+      <!-- Pagination -->
+      @if (!loading && totalPages > 1) {
+        <div class="flex items-center justify-between px-1">
+          <span class="text-xs text-slate-500">
+            Mostrando {{ currentPage * pageSize + 1 }}–{{ pageEnd }} de {{ recibosFiltrados.length }} recibos
+          </span>
+          <div class="flex items-center gap-1">
+            <button (click)="goToPage(0)" [disabled]="currentPage === 0"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer">
+              «
+            </button>
+            <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 0"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer">
+              ‹
+            </button>
+            @for (p of [].constructor(totalPages); track $index) {
+              @if ($index >= currentPage - 2 && $index <= currentPage + 2) {
+                <button (click)="goToPage($index)"
+                  class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  [class]="$index === currentPage ? 'bg-emerald-500 text-white shadow' : 'text-slate-600 hover:bg-slate-100'">
+                  {{ $index + 1 }}
+                </button>
+              }
+            }
+            <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages - 1"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer">
+              ›
+            </button>
+            <button (click)="goToPage(totalPages - 1)" [disabled]="currentPage >= totalPages - 1"
+              class="w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer">
+              »
+            </button>
+          </div>
+        </div>
+      }
+
       <!-- Stats -->
       @if (!loading) {
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
           <div class="bg-white rounded-xl border-2 border-slate-100 shadow-lg p-5">
             <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1">Total Facturado</p>
             <p class="text-2xl font-black text-slate-900">${{ montoTotal | number:'1.2-2' }}</p>
@@ -218,7 +256,15 @@
           </div>
           <div class="bg-white rounded-xl border-2 border-slate-100 shadow-lg p-5">
             <p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1">Transferencia</p>
-            <p class="text-2xl font-black text-purple-600">${{ montoTransferencia | number:'1.2-2' }}</p>
+            <p class="text-2xl font-black text-indigo-600">${{ montoTransferencia | number:'1.2-2' }}</p>
+          </div>
+          <div class="bg-white rounded-xl border-2 border-purple-100 shadow-lg p-5">
+            <p class="text-xs font-bold uppercase tracking-wide text-purple-500 mb-1">Perdonado</p>
+            <p class="text-2xl font-black text-purple-600">${{ montoPerdonado | number:'1.2-2' }}</p>
+          </div>
+          <div class="bg-white rounded-xl border-2 border-slate-200 shadow-lg p-5">
+            <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1">Exento</p>
+            <p class="text-2xl font-black text-slate-500">${{ montoExento | number:'1.2-2' }}</p>
           </div>
         </div>
       }
