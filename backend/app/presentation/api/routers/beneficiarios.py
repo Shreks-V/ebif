@@ -18,7 +18,7 @@ def stats_beneficiarios(current_user: Annotated[dict, Depends(get_current_user)]
 def dashboard_stats(current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
     return service.dashboard_stats(current_user)
 
-@router.get('', response_model=list[BeneficiarioResponse])
+@router.get('')
 def listar_beneficiarios(
     nombre: Optional[str]=Query(None, max_length=120),
     estado: Optional[str]=Query(None, max_length=40),
@@ -36,15 +36,15 @@ def listar_beneficiarios(
 def mapa_beneficiarios(current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
     return service.mapa_beneficiarios(current_user)
 
-@router.get('/{folio}', response_model=BeneficiarioResponse)
+@router.get('/{folio}')
 def obtener_beneficiario(folio: str, current_user: Annotated[dict, Depends(get_current_user)] = None) -> BeneficiarioResponse:
     return service.obtener_beneficiario(folio, current_user)
 
-@router.post('', status_code=201, response_model=BeneficiarioResponse)
+@router.post('', status_code=201)
 def crear_beneficiario(data: BeneficiarioCreate, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))] = None) -> BeneficiarioResponse:
     return service.crear_beneficiario(data, current_user)
 
-@router.put('/{folio}', response_model=BeneficiarioResponse)
+@router.put('/{folio}')
 def actualizar_beneficiario(folio: str, data: BeneficiarioCreate, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))] = None) -> BeneficiarioResponse:
     return service.actualizar_beneficiario(folio, data, current_user)
 

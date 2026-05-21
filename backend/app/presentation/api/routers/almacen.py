@@ -6,7 +6,7 @@ from app.application.almacen import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
 router = APIRouter()
 
-@router.get('/productos', response_model=List[ProductoResponse])
+@router.get('/productos')
 def listar_productos(
     tipo_producto: Optional[Literal['MEDICAMENTO', 'EQUIPO', 'EQUIPO_MEDICO']]=Query(None, description='MEDICAMENTO o EQUIPO'),
     busqueda: Optional[str]=Query(None, max_length=120),
@@ -17,15 +17,15 @@ def listar_productos(
 ) -> List[ProductoResponse]:
     return service.listar_productos(tipo_producto, busqueda, activo, current_user, limit, offset)
 
-@router.get('/productos/{id_producto}', response_model=ProductoResponse)
+@router.get('/productos/{id_producto}')
 def obtener_producto(id_producto: int, current_user: Annotated[dict, Depends(get_current_user)] = None) -> ProductoResponse:
     return service.obtener_producto(id_producto, current_user)
 
-@router.post('/productos', status_code=201, response_model=ProductoResponse)
+@router.post('/productos', status_code=201)
 def crear_producto(data: ProductoCreate, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'ENCARGADO_ALMACEN'))] = None) -> ProductoResponse:
     return service.crear_producto(data, current_user)
 
-@router.put('/productos/{id_producto}', response_model=ProductoResponse)
+@router.put('/productos/{id_producto}')
 def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'ENCARGADO_ALMACEN'))] = None) -> ProductoResponse:
     return service.actualizar_producto(id_producto, data, current_user)
 
@@ -33,11 +33,11 @@ def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: An
 def desactivar_producto(id_producto: int, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR'))] = None) -> dict:
     return service.desactivar_producto(id_producto, current_user)
 
-@router.patch('/productos/{id_producto}/existencia', response_model=ProductoResponse)
+@router.patch('/productos/{id_producto}/existencia')
 def ajustar_existencia(id_producto: int, data: AjusteExistenciaRequest, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'ENCARGADO_ALMACEN'))] = None) -> ProductoResponse:
     return service.ajustar_existencia(id_producto, data.stock_nuevo, data.motivo, current_user)
 
-@router.get('/servicios', response_model=List[ServicioResponse])
+@router.get('/servicios')
 def listar_servicios(
     busqueda: Optional[str]=Query(None, max_length=120),
     activo: Optional[Literal['S', 'N']]=Query(None),
@@ -48,15 +48,15 @@ def listar_servicios(
 ) -> List[ServicioResponse]:
     return service.listar_servicios(busqueda, activo, categoria, current_user, limit, offset)
 
-@router.get('/servicios/{id_servicio}', response_model=ServicioResponse)
+@router.get('/servicios/{id_servicio}')
 def obtener_servicio(id_servicio: int, current_user: Annotated[dict, Depends(get_current_user)] = None) -> ServicioResponse:
     return service.obtener_servicio(id_servicio, current_user)
 
-@router.post('/servicios', status_code=201, response_model=ServicioResponse)
+@router.post('/servicios', status_code=201)
 def crear_servicio(data: ServicioCreate, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR'))] = None) -> ServicioResponse:
     return service.crear_servicio(data, current_user)
 
-@router.put('/servicios/{id_servicio}', response_model=ServicioResponse)
+@router.put('/servicios/{id_servicio}')
 def actualizar_servicio(id_servicio: int, data: ServicioCreate, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR'))] = None) -> ServicioResponse:
     return service.actualizar_servicio(id_servicio, data, current_user)
 
@@ -64,7 +64,7 @@ def actualizar_servicio(id_servicio: int, data: ServicioCreate, current_user: An
 def desactivar_servicio(id_servicio: int, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR'))] = None) -> dict:
     return service.desactivar_servicio(id_servicio, current_user)
 
-@router.get('/comodatos', response_model=List[ComodatoResponse])
+@router.get('/comodatos')
 def listar_comodatos(
     estatus: Optional[Literal['PRESTADO', 'DEVUELTO', 'CANCELADO']]=Query(None, description='PRESTADO, DEVUELTO, CANCELADO'),
     busqueda: Optional[str]=Query(None, max_length=120),
@@ -74,19 +74,19 @@ def listar_comodatos(
 ) -> List[ComodatoResponse]:
     return service.listar_comodatos(estatus, busqueda, current_user, limit, offset)
 
-@router.get('/comodatos/{id_comodato}', response_model=ComodatoResponse)
+@router.get('/comodatos/{id_comodato}')
 def obtener_comodato(id_comodato: int, current_user: Annotated[dict, Depends(get_current_user)] = None) -> ComodatoResponse:
     return service.obtener_comodato(id_comodato, current_user)
 
-@router.post('/comodatos', status_code=201, response_model=ComodatoResponse)
+@router.post('/comodatos', status_code=201)
 def crear_comodato(data: ComodatoCreate, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'ENCARGADO_ALMACEN'))] = None) -> ComodatoResponse:
     return service.crear_comodato(data, current_user)
 
-@router.put('/comodatos/{id_comodato}', response_model=ComodatoResponse)
+@router.put('/comodatos/{id_comodato}')
 def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'ENCARGADO_ALMACEN'))] = None) -> ComodatoResponse:
     return service.actualizar_comodato(id_comodato, data, current_user)
 
-@router.get('/movimientos', response_model=List[MovimientoInventario])
+@router.get('/movimientos')
 def listar_movimientos(
     id_producto: Optional[int]=Query(None, ge=1),
     tipo_movimiento: Optional[str]=Query(None),
