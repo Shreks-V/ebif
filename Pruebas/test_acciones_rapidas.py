@@ -12,7 +12,9 @@ from pathlib import Path
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_DASHBOARD_TS = _REPO_ROOT / "frontend" / "src" / "app" / "pages" / "dashboard" / "dashboard.component.ts"
+_DASHBOARD_DIR = _REPO_ROOT / "frontend" / "src" / "app" / "pages" / "dashboard"
+_DASHBOARD_TS = _DASHBOARD_DIR / "dashboard.component.ts"
+_DASHBOARD_HTML = _DASHBOARD_DIR / "dashboard.component.html"
 _APP_ROUTES_TS = _REPO_ROOT / "frontend" / "src" / "app" / "app.routes.ts"
 
 
@@ -20,7 +22,10 @@ _APP_ROUTES_TS = _REPO_ROOT / "frontend" / "src" / "app" / "app.routes.ts"
 def dashboard_source() -> str:
     if not _DASHBOARD_TS.is_file():
         pytest.skip(f"No se encontró {_DASHBOARD_TS}")
-    return _DASHBOARD_TS.read_text(encoding="utf-8")
+    parts = [_DASHBOARD_TS.read_text(encoding="utf-8")]
+    if _DASHBOARD_HTML.is_file():
+        parts.append(_DASHBOARD_HTML.read_text(encoding="utf-8"))
+    return "\n".join(parts)
 
 
 @pytest.fixture(scope="module")

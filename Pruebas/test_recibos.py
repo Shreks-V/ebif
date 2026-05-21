@@ -12,15 +12,16 @@ from fastapi.testclient import TestClient
 from app.infrastructure.security.adapters import JwtAccessTokenIssuer
 
 BASE = "/api/recibos"
-_RECIBOS_COMPONENT = (
+_RECIBOS_DIR = (
     Path(__file__).resolve().parents[1]
     / "frontend"
     / "src"
     / "app"
     / "pages"
     / "recibos"
-    / "recibos.component.ts"
 )
+_RECIBOS_COMPONENT = _RECIBOS_DIR / "recibos.component.ts"
+_NUEVO_COBRO_COMPONENT = _RECIBOS_DIR / "nuevo-cobro" / "nuevo-cobro.component.ts"
 
 
 def _jwt_recepcionista() -> str:
@@ -240,7 +241,10 @@ def test_sv50_validacion_api_sin_beneficiario_sin_monto_sin_metodos(recibos_clie
 
 def test_sv50_ui_guardar_cobro_validaciones_en_fuente():
     """La UI no confirma cobro sin paciente, sin monto válido o sin métodos (exento N)."""
-    src = _RECIBOS_COMPONENT.read_text(encoding="utf-8")
+    parts = [_RECIBOS_COMPONENT.read_text(encoding="utf-8")]
+    if _NUEVO_COBRO_COMPONENT.is_file():
+        parts.append(_NUEVO_COBRO_COMPONENT.read_text(encoding="utf-8"))
+    src = "\n".join(parts)
     assert "if (!this.nuevoCobro.id_paciente)" in src
     assert "Selecciona un paciente." in src
     assert "this.nuevoCobro.monto_total <= 0" in src

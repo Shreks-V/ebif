@@ -46,11 +46,18 @@ def check_curp_disponible(curp: str = Query(..., max_length=18, min_length=1)) -
     return service.check_curp_disponible(curp)
 
 @router.get('/{id_paciente}')
-def obtener_preregistro(id_paciente: Annotated[int, _access, Depends(ensure_preregistro_access)] = None) -> dict:
+def obtener_preregistro(
+    id_paciente: int,
+    _access: Annotated[dict, Depends(ensure_preregistro_access)] = None,
+) -> dict:
     return service.obtener_preregistro(id_paciente)
 
 @router.put('/{id_paciente}')
-def actualizar_preregistro(id_paciente: int, data: Annotated[PreRegistroCreate, _access, Depends(ensure_preregistro_access)] = None) -> dict:
+def actualizar_preregistro(
+    id_paciente: int,
+    data: PreRegistroCreate,
+    _access: Annotated[dict, Depends(ensure_preregistro_access)] = None,
+) -> dict:
     return service.actualizar_preregistro(id_paciente, data)
 
 @router.post('/{id_paciente}/aprobar')

@@ -241,7 +241,14 @@
       "Bash(sort -k2)",
       "Bash(gh pr *)",
       "Bash(python db/apply_migration.py db/migrations/020_add_perdonado_column.sql)",
-      "Bash(venv/bin/python db/apply_migration.py db/migrations/020_add_perdonado_column.sql)"
+      "Bash(venv/bin/python db/apply_migration.py db/migrations/020_add_perdonado_column.sql)",
+      "Bash(gh run *)",
+      "Bash(python -c \"from backend.app.presentation.api.routers import preregistro; print\\('OK'\\)\")",
+      "Bash(python -m pytest ../Pruebas/conftest.py --collect-only)",
+      "Bash(venv/bin/python -m pytest Pruebas/ --tb=short -q)",
+      "Bash(backend/venv/bin/python -m pytest Pruebas/ --tb=short -q)",
+      "Bash(backend/venv/bin/python -m pytest Pruebas/test_acceso_sesion.py::test_sv1_login_correcto --tb=long -q)",
+      "Bash(backend/venv/bin/python -m pytest Pruebas/test_acceso_sesion.py Pruebas/test_acciones_rapidas.py Pruebas/test_recibos.py::test_sv50_ui_guardar_cobro_validaciones_en_fuente --tb=short -q)"
     ]
   },
   "enableAllProjectMcpServers": true,
