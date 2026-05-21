@@ -13,8 +13,8 @@ BEGIN
     BEGIN
       EXECUTE IMMEDIATE 'ALTER TABLE COMODATO DROP CONSTRAINT ' || c.constraint_name; -- NOSONAR: constraint_name proviene de user_constraints (vista del sistema), no de input externo
     EXCEPTION
-      WHEN OTHERS THEN
-        NULL; -- NOSONAR: idempotent — ignore if constraint was already dropped
+      WHEN OTHERS THEN -- NOSONAR: idempotent — ignore if constraint was already dropped
+        NULL;
     END;
   END LOOP;
 END;

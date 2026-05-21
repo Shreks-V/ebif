@@ -14,7 +14,7 @@ import oracledb
 from app.domain.exceptions import ConflictError, DomainError, InternalError, NotFoundError, ValidationError
 
 
-_ORA_CODE_RE = re.compile(r"ORA-(\d{5}):\s*(.+?)(?:\nORA-|\Z)")
+_ORA_CODE_RE = re.compile(r"ORA-(\d{5}):\s*([^\n]+)(?:\nORA-|\Z)")
 
 
 def make_number_list(conn, values):

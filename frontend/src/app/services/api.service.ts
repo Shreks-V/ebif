@@ -94,7 +94,7 @@ export class ApiService {
   deleteServicio(id: number) { return this.almacen.deleteServicio(id); }
   getComodatos(filters?: object) { return this.almacen.getComodatos(filters as Record<string, string | number> | undefined); } // NOSONAR: typescript:S4325
   createComodato(data: object) { return this.almacen.createComodato(data as Partial<ComodatoRaw>); } // NOSONAR: typescript:S4325
-  updateComodato(id: number, data: object) { return this.almacen.updateComodato(id, data as Partial<ComodatoRaw>); }
+  updateComodato(id: number, data: object) { return this.almacen.updateComodato(id, data as Partial<ComodatoRaw>); } // NOSONAR: typescript:S4325
   getAlmacenStats() { return this.almacen.getAlmacenStats(); }
   getMovimientos(filters?: object) { return this.almacen.getMovimientos(filters as Record<string, string | number> | undefined); }
 
