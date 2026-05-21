@@ -1,7 +1,8 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../../services/api.service';
 import { getMunicipiosParaEstado } from '../../../../../shared/data/mexico-municipios';
 import { PAISES } from '../../../../../shared/data/paises';
@@ -45,17 +46,23 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
     return getMunicipiosParaEstado(estado);
   }
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
-    this.api.getTiposEspina().subscribe({
-      next: (data) => { this.tiposEspinaCatalogo = data || []; },
-      error: () => {},
-    });
-    this.api.getTiposDocumentoPublic().subscribe({
-      next: (data) => { this.tiposDocumentoCatalogo = data || []; },
-      error: () => {},
-    });
+    this.api.getTiposEspina()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.tiposEspinaCatalogo = data || []; },
+        error: () => {},
+      });
+    this.api.getTiposDocumentoPublic()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.tiposDocumentoCatalogo = data || []; },
+        error: () => {},
+      });
   }
 
   agregarDocumentoNuevoBeneficiario(): void {
@@ -107,31 +114,33 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
       tipos_espina: this.formDataTiposEspina,
     };
     const documentosValidos = this.nuevoBeneficiarioDocumentos.filter(d => d.id_tipo_documento > 0 && !!d.archivo);
-    this.api.createBeneficiario(payload).subscribe({
-      next: (created: { id_paciente?: number }) => {
-        const idPacienteCreado = created?.id_paciente;
-        if (documentosValidos.length > 0 && idPacienteCreado) {
-          const uploads = documentosValidos.map(doc =>
-            this.api.uploadDocumento(idPacienteCreado, doc.id_tipo_documento, doc.archivo as File)
-          );
-          forkJoin(uploads).subscribe({
-            next: () => this.finalizar(),
-            error: (err) => {
-              console.error('Beneficiario creado, pero hubo error al subir documentos:', err);
-              this.finalizar();
-              alert('El beneficiario se creo correctamente, pero algunos documentos no se pudieron subir.');
-            },
-          });
-          return;
-        }
-        this.finalizar();
-      },
-      error: (err: unknown) => {
-        this.submittingNuevo = false;
-        this.nuevoError = getApiError(err, 'Error al crear el beneficiario. Intenta de nuevo.');
-        console.error('Error creating beneficiario:', err);
-      },
-    });
+    this.api.createBeneficiario(payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (created: { id_paciente?: number }) => {
+          const idPacienteCreado = created?.id_paciente;
+          if (documentosValidos.length > 0 && idPacienteCreado) {
+            const uploads = documentosValidos.map(doc =>
+              this.api.uploadDocumento(idPacienteCreado, doc.id_tipo_documento, doc.archivo as File)
+            );
+            forkJoin(uploads).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+              next: () => this.finalizar(),
+              error: (err) => {
+                console.error('Beneficiario creado, pero hubo error al subir documentos:', err);
+                this.finalizar();
+                alert('El beneficiario se creo correctamente, pero algunos documentos no se pudieron subir.');
+              },
+            });
+            return;
+          }
+          this.finalizar();
+        },
+        error: (err: unknown) => {
+          this.submittingNuevo = false;
+          this.nuevoError = getApiError(err, 'Error al crear el beneficiario. Intenta de nuevo.');
+          console.error('Error creating beneficiario:', err);
+        },
+      });
   }
 
   private finalizar(): void {

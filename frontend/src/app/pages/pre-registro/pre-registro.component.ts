@@ -1,8 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../services/api.service';
 import { Documento } from '../../shared/models/preregistro.models';
 import { getMunicipiosParaEstado } from '../../shared/data/mexico-municipios';
@@ -44,6 +45,7 @@ interface PreRegistroCreatedResponse { id_paciente?: number; preregistro_token?:
 export class PreRegistroComponent implements OnInit {
   router = inject(Router);
   private readonly api = inject(ApiService);
+  private readonly destroyRef = inject(DestroyRef);
   currentStep = 1;
   submitted = false;
   submitting = false;
@@ -126,14 +128,18 @@ export class PreRegistroComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.api.getTiposEspinaPublic().subscribe({
-      next: (data) => { this.tiposEspinaList = data; },
-      error: (err) => console.error('Error cargando tipos de espina:', err),
-    });
-    this.api.getTiposDocumentoPublic().subscribe({
-      next: (data) => { this.tiposDocumento = data; },
-      error: (err) => console.error('Error cargando tipos de documento:', err),
-    });
+    this.api.getTiposEspinaPublic()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.tiposEspinaList = data; },
+        error: (err) => console.error('Error cargando tipos de espina:', err),
+      });
+    this.api.getTiposDocumentoPublic()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.tiposDocumento = data; },
+        error: (err) => console.error('Error cargando tipos de documento:', err),
+      });
   }
 
   // ── Computed ───────────────────────────────────────────────
@@ -168,7 +174,9 @@ export class PreRegistroComponent implements OnInit {
     if (!curpRegex.test(curp)) return;
     this.checkingCurp = true;
     this.curpDisponible = null;
-    this.api.checkCurpDisponible(curp).subscribe({
+    this.api.checkCurpDisponible(curp)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (res) => {
         this.checkingCurp = false;
         this.curpDisponible = res.disponible;
@@ -360,7 +368,9 @@ export class PreRegistroComponent implements OnInit {
       tipos_espina: this.formData.tiposEspinaIds,
     };
 
-    this.api.createPreRegistro(payload).subscribe({
+    this.api.createPreRegistro(payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (res: PreRegistroCreatedResponse) => {
         this.submitting = false;
         this.createdPacienteId = res.id_paciente ?? null;
@@ -449,7 +459,7 @@ export class PreRegistroComponent implements OnInit {
     if (docsListos.length === 0) return;
     this.subiendoDoc = true;
     const uploads = docsListos.map((doc) => this.api.uploadDocumento(this.createdPacienteId!, doc.tipoId, doc.file!));
-    forkJoin(uploads).subscribe({
+    forkJoin(uploads).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.subiendoDoc = false;
         this.documentosPendientes = [{ id: this.siguienteDocumentoPendienteId++, tipoId: 0, file: null }];
@@ -464,18 +474,22 @@ export class PreRegistroComponent implements OnInit {
 
   eliminarDocumento(doc: Documento): void {
     if (!this.createdPacienteId) return;
-    this.api.deleteDocumento(this.createdPacienteId, doc.id_documento).subscribe({
-      next: () => this.cargarDocumentos(),
-      error: (err) => console.error('Error al eliminar documento:', err),
-    });
+    this.api.deleteDocumento(this.createdPacienteId, doc.id_documento)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.cargarDocumentos(),
+        error: (err) => console.error('Error al eliminar documento:', err),
+      });
   }
 
   private cargarDocumentos(): void {
     if (!this.createdPacienteId) return;
-    this.api.getDocumentos(this.createdPacienteId).subscribe({
-      next: (data) => { this.documentosSubidos = data; },
-      error: (err) => console.error('Error al cargar documentos:', err),
-    });
+    this.api.getDocumentos(this.createdPacienteId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.documentosSubidos = data; },
+        error: (err) => console.error('Error al cargar documentos:', err),
+      });
   }
 
   submitForm(): void {

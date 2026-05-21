@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, DestroyRef, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -15,6 +16,7 @@ import { NuevoProductoModalComponent } from './modals/nuevo-producto-modal.compo
 import { ConfirmDeleteModalComponent } from './modals/confirm-delete-modal.component';
 import { ProductoItem, ServicioItem, ComodatoItem } from './almacen.models';
 import { ProductoRaw, ServicioRaw, ComodatoRaw, AlmacenStats, AlmacenAlertaRaw } from '../../shared/models/almacen.models';
+import { REFRESH_INTERVAL_MS, PRINT_DELAY_MS, MEMBRESIA_ALERT_DAYS, SI, ACTION_NUEVO } from '../../shared/constants/app.constants';
 
 @Component({
   selector: 'app-almacen',
@@ -61,6 +63,8 @@ export class AlmacenComponent implements OnInit, OnDestroy {
 
   private _refreshTimer: ReturnType<typeof setInterval> | null = null;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(
     private readonly api: ApiService,
     private readonly route: ActivatedRoute,
@@ -78,22 +82,24 @@ export class AlmacenComponent implements OnInit, OnDestroy {
       this.loadProductos(true);
       this.loadServicios();
       this.loadAlmacenStats();
-    }, 60_000);
+    }, REFRESH_INTERVAL_MS);
 
-    this.route.queryParams.subscribe(params => {
-      const tab = params['tab'];
-      if (tab === 'inventario' || tab === 'servicios' || tab === 'comodatos') {
-        this.activeTab = tab;
-      }
-      const filter = String(params['filter'] || '').toLowerCase();
-      if (filter === 'alertas') { this.quickInventoryFilter = 'existencias-bajas'; this.activeTab = 'inventario'; }
-      if (filter === 'caducidad') { this.quickInventoryFilter = 'proximos-vencer'; this.activeTab = 'inventario'; }
-      if (params['action'] === 'nuevo') {
-        setTimeout(() => {
-          if (this.activeTab !== 'comodatos') this.openNuevoProductoModal();
-        }, 0);
-      }
-    });
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        const tab = params['tab'];
+        if (tab === 'inventario' || tab === 'servicios' || tab === 'comodatos') {
+          this.activeTab = tab;
+        }
+        const filter = String(params['filter'] || '').toLowerCase();
+        if (filter === 'alertas') { this.quickInventoryFilter = 'existencias-bajas'; this.activeTab = 'inventario'; }
+        if (filter === 'caducidad') { this.quickInventoryFilter = 'proximos-vencer'; this.activeTab = 'inventario'; }
+        if (params['action'] === ACTION_NUEVO) {
+          setTimeout(() => {
+            if (this.activeTab !== 'comodatos') this.openNuevoProductoModal();
+          }, 0);
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -104,7 +110,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
 
   loadProductos(silent = false): void {
     if (!silent) this.loading = true;
-    this.api.getProductos({ activo: 'S' }).subscribe({
+    this.api.getProductos({ activo: SI }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.productos = data.map((p: ProductoRaw) => ({
           idProducto: Number(p.id_producto ?? 0),
@@ -135,7 +141,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   }
 
   loadServicios(): void {
-    this.api.getServicios({ activo: 'S' }).subscribe({
+    this.api.getServicios({ activo: SI }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.servicios = data.map((s: ServicioRaw) => ({
           idServicio: Number(s.id_servicio ?? 0),
@@ -153,7 +159,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   }
 
   loadComodatos(): void {
-    this.api.getComodatos().subscribe({
+    this.api.getComodatos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.comodatos = data.map((c: ComodatoRaw) => ({
           idComodato: c.id_comodato,
@@ -178,7 +184,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   }
 
   loadAlmacenStats(): void {
-    this.api.getAlmacenStats().subscribe({
+    this.api.getAlmacenStats().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (stats: AlmacenStats) => {
         this.alertasCaducidad = stats.alertas_caducidad ?? 0;
         const stockBajo: AlmacenAlertaRaw[] = Array.isArray(stats?.stock_bajo) ? stats.stock_bajo : [];
@@ -279,7 +285,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       globalThis.print();
       this.printingComodato = null;
-    }, 300);
+    }, PRINT_DELAY_MS);
   }
 
   // ── Helpers ──
@@ -304,7 +310,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
     const hoy = new Date();
     const base = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
     const limite = new Date(base);
-    limite.setDate(base.getDate() + 30);
+    limite.setDate(base.getDate() + MEMBRESIA_ALERT_DAYS);
     return fecha <= limite;
   }
 

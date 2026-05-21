@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
@@ -11,6 +12,7 @@ import { DetalleReciboModalComponent } from './modals/detalle-recibo-modal.compo
 import { CancelarReciboModalComponent } from './modals/cancelar-recibo-modal.component';
 import { PagoReciboModalComponent } from './modals/pago-recibo-modal.component';
 import { Recibo as ReciboAPI, MetodoPagoReciboItem } from '../../shared/models/recibo.models';
+import { PDF_REVOKE_DELAY_MS, ACTION_NUEVO } from '../../shared/constants/app.constants';
 
 interface MetodoPagoItem {
   idMetodoPago: number;
@@ -71,28 +73,32 @@ export class RecibosComponent implements OnInit {
 
   get isAdmin(): boolean { return this.auth.isAdmin(); }
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly api: ApiService, private readonly route: ActivatedRoute, private readonly auth: AuthService) {}
 
   ngOnInit(): void {
     this.cargarRecibos();
     this.cargarStats();
 
-    this.route.queryParams.subscribe(params => {
-      if (params['action'] === 'nuevo') {
-        setTimeout(() => this.openNuevoCobro(), 0);
-      }
-      if (params['filter'] === 'pendientes') {
-        this.filtroSoloAdeudos = true;
-        this.filtrarRecibos();
-      }
-    });
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        if (params['action'] === ACTION_NUEVO) {
+          setTimeout(() => this.openNuevoCobro(), 0);
+        }
+        if (params['filter'] === 'pendientes') {
+          this.filtroSoloAdeudos = true;
+          this.filtrarRecibos();
+        }
+      });
   }
 
   // ── Data loading ──
 
   private cargarRecibos(): void {
     this.loading = true;
-    this.api.getRecibos().subscribe({
+    this.api.getRecibos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.recibos = data.map((r) => this._mapearRecibo(r));
         this.filtrarRecibos();
@@ -107,7 +113,7 @@ export class RecibosComponent implements OnInit {
   }
 
   private cargarStats(): void {
-    this.api.getRecibosStats().subscribe({
+    this.api.getRecibosStats().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (stats) => {
         this.montoTotal = stats.monto_total_sum ?? 0;
         this.montoEfectivo = stats.monto_efectivo ?? 0;

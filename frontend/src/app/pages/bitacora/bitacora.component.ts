@@ -1,12 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, DestroyRef, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BitacoraApiService } from '../../services/bitacora-api.service';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { DetalleBitacoraModalComponent } from './modals/detalle-bitacora-modal.component';
 import { BitacoraItem, BitacoraFilter } from '../../shared/models/bitacora.models';
+import { REFRESH_INTERVAL_MS } from '../../shared/constants/app.constants';
 
 const TIPO_LABELS: Record<string, string> = {
   INSERT: 'Inserción',
@@ -55,6 +57,8 @@ export class BitacoraComponent implements OnInit, OnDestroy {
 
   selectedItem: BitacoraItem | null = null;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly bitacoraApi: BitacoraApiService) {}
 
   openDetail(item: BitacoraItem): void {
@@ -63,7 +67,7 @@ export class BitacoraComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargar();
-    this._timer = setInterval(() => this._silentRefresh(), 60_000);
+    this._timer = setInterval(() => this._silentRefresh(), REFRESH_INTERVAL_MS);
   }
 
   ngOnDestroy(): void {
@@ -132,14 +136,16 @@ export class BitacoraComponent implements OnInit, OnDestroy {
 
   cargar(): void {
     this.loading = true;
-    this.bitacoraApi.getBitacora(this._buildParams()).subscribe({
-      next: (data) => {
-        this.items = data.items;
-        this.total = data.total;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; },
-    });
+    this.bitacoraApi.getBitacora(this._buildParams())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.items = data.items;
+          this.total = data.total;
+          this.loading = false;
+        },
+        error: () => { this.loading = false; },
+      });
   }
 
   fetchPage(): void {
@@ -177,10 +183,12 @@ export class BitacoraComponent implements OnInit, OnDestroy {
   }
 
   private _silentRefresh(): void {
-    this.bitacoraApi.getBitacora(this._buildParams()).subscribe({
-      next: (data) => { this.items = data.items; this.total = data.total; },
-      error: () => {},
-    });
+    this.bitacoraApi.getBitacora(this._buildParams())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.items = data.items; this.total = data.total; },
+        error: () => {},
+      });
   }
 
   private _buildParams(): BitacoraFilter {

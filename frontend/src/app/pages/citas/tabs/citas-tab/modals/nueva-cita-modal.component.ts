@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../../services/api.service';
 import { ServicioRaw } from '../../../../../shared/models/almacen.models';
 
@@ -35,20 +36,24 @@ export class NuevaCitaModalComponent implements OnInit {
   nuevaCitaLoadingServicios = false;
   guardandoCita = false;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.nuevaCitaServiciosFiltrados = this.serviciosList;
-    this.api.getBeneficiarios().subscribe({
-      next: (data) => {
-        this.beneficiariosList = data.map((b) => ({
-          id_paciente: b.id_paciente,
-          folio: b.folio,
-          nombre_completo: `${b.nombre || ''} ${b.apellido_paterno || ''} ${b.apellido_materno || ''}`.trim(),
-        }));
-      },
-      error: (err) => console.error('Error al cargar beneficiarios:', err),
-    });
+    this.api.getBeneficiarios()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.beneficiariosList = data.map((b) => ({
+            id_paciente: b.id_paciente,
+            folio: b.folio,
+            nombre_completo: `${b.nombre || ''} ${b.apellido_paterno || ''} ${b.apellido_materno || ''}`.trim(),
+          }));
+        },
+        error: (err) => console.error('Error al cargar beneficiarios:', err),
+      });
   }
 
   filtrarBeneficiarios(): void {
@@ -81,7 +86,9 @@ export class NuevaCitaModalComponent implements OnInit {
     this.nuevaCita.servicios.forEach((s) => { s.id_servicio = null; s.monto_pagado = 0; });
     if (!this.nuevaCitaIdDoctor) { this.nuevaCitaServiciosFiltrados = this.serviciosList; return; }
     this.nuevaCitaLoadingServicios = true;
-    this.api.getDoctorServicios(this.nuevaCitaIdDoctor).subscribe({
+    this.api.getDoctorServicios(this.nuevaCitaIdDoctor)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (doctorServs: DoctorServicioRaw[]) => {
         const ids = new Set(doctorServs.map((ds) => ds.id_servicio));
         this.nuevaCitaServiciosFiltrados = this.serviciosList.filter(s => ids.has(s.id_servicio));
@@ -109,9 +116,11 @@ export class NuevaCitaModalComponent implements OnInit {
         .filter((s) => s.id_servicio !== null)
         .map((s) => ({ id_servicio: s.id_servicio, id_doctor: this.nuevaCitaIdDoctor ?? null, cantidad: s.cantidad, monto_pagado: s.monto_pagado })),
     };
-    this.api.createCita(payload).subscribe({
-      next: () => { this.guardandoCita = false; this.guardada.emit(); },
-      error: (err) => { console.error('Error al crear cita:', err); this.guardandoCita = false; },
-    });
+    this.api.createCita(payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => { this.guardandoCita = false; this.guardada.emit(); },
+        error: (err) => { console.error('Error al crear cita:', err); this.guardandoCita = false; },
+      });
   }
 }

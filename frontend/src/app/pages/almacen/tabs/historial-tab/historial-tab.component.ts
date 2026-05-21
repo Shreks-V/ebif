@@ -1,8 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, DestroyRef, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../services/api.service';
 import { Movimiento } from '../../../../shared/models/almacen.models';
+import { REFRESH_INTERVAL_MS, HISTORIAL_DEBOUNCE_MS } from '../../../../shared/constants/app.constants';
 
 interface MovimientoParams {
   limit: number;
@@ -33,11 +35,13 @@ export class HistorialTabComponent implements OnInit, OnDestroy {
   private _debounce: ReturnType<typeof setTimeout> | null = null;
   private _timer: ReturnType<typeof setInterval> | null = null;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
     this.cargar();
-    this._timer = setInterval(() => this._silentRefresh(), 60_000);
+    this._timer = setInterval(() => this._silentRefresh(), REFRESH_INTERVAL_MS);
   }
 
   ngOnDestroy(): void {
@@ -81,7 +85,7 @@ export class HistorialTabComponent implements OnInit, OnDestroy {
   onBusquedaChange(): void {
     this.page = 1;
     if (this._debounce) clearTimeout(this._debounce);
-    this._debounce = setTimeout(() => this.cargar(), 400);
+    this._debounce = setTimeout(() => this.cargar(), HISTORIAL_DEBOUNCE_MS);
   }
 
   onFiltroChange(): void {
@@ -100,10 +104,12 @@ export class HistorialTabComponent implements OnInit, OnDestroy {
 
   cargar(): void {
     this.loading = true;
-    this.api.getMovimientos(this._buildParams()).subscribe({
-      next: (data) => { this.items = data; this.loading = false; this.page = 1; },
-      error: () => { this.loading = false; },
-    });
+    this.api.getMovimientos(this._buildParams())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.items = data; this.loading = false; this.page = 1; },
+        error: () => { this.loading = false; },
+      });
   }
 
   tipoLabel(tipo: string): string {
@@ -140,10 +146,12 @@ export class HistorialTabComponent implements OnInit, OnDestroy {
   }
 
   private _silentRefresh(): void {
-    this.api.getMovimientos(this._buildParams()).subscribe({
-      next: (data) => { this.items = data; },
-      error: () => {},
-    });
+    this.api.getMovimientos(this._buildParams())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.items = data; },
+        error: () => {},
+      });
   }
 
   private _buildParams(): MovimientoParams {

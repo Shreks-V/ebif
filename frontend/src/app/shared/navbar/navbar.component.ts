@@ -1,11 +1,13 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 import { CambiarContrasenaModalComponent } from './modals/cambiar-contrasena-modal.component';
 import { Beneficiario } from '../../shared/models/beneficiario.models';
+import { NOTIFICATION_INTERVAL_MS, SEARCH_DEBOUNCE_MS, MEMBRESIA_ACTIVO } from '../../shared/constants/app.constants';
 
 interface NavbarNotification {
   id: string;
@@ -37,6 +39,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
   private readonly host = inject(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
   auth = inject(AuthService);
   mobileMenuOpen = false;
   userMenuOpen = false;
@@ -60,7 +63,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadNotifications();
-    this.refreshInterval = setInterval(() => this.loadNotifications(), 5 * 60 * 1000);
+    this.refreshInterval = setInterval(() => this.loadNotifications(), NOTIFICATION_INTERVAL_MS);
   }
 
   ngOnDestroy(): void {
@@ -151,11 +154,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (this.searchQuery.length < 2) { this.searchResults = []; return; }
     this._searchDebounce = setTimeout(() => {
       this.searchLoading = true;
-      this.api.getBeneficiarios({ busqueda: this.searchQuery, membresia_estatus: 'ACTIVO', limit: 8 }).subscribe({
-        next: (data: Beneficiario[]) => { this.searchResults = data || []; this.searchLoading = false; },
-        error: () => { this.searchResults = []; this.searchLoading = false; },
-      });
-    }, 300);
+      this.api.getBeneficiarios({ busqueda: this.searchQuery, membresia_estatus: MEMBRESIA_ACTIVO, limit: 8 })
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (data: Beneficiario[]) => { this.searchResults = data || []; this.searchLoading = false; },
+          error: () => { this.searchResults = []; this.searchLoading = false; },
+        });
+    }, SEARCH_DEBOUNCE_MS);
   }
 
   submitSearch(): void { this.irABeneficiario(); }
@@ -174,14 +179,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   private loadNotifications(): void {
     this.notifLoading = true;
-    this.api.getNotificaciones().subscribe({
-      next: (data: NavbarNotification[]) => {
-        this.notifications = data || [];
-        this.notifLoading = false;
-        const now = new Date();
-        this.lastRefresh = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
-      },
-      error: () => { this.notifLoading = false; },
-    });
+    this.api.getNotificaciones()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data: NavbarNotification[]) => {
+          this.notifications = data || [];
+          this.notifLoading = false;
+          const now = new Date();
+          this.lastRefresh = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+        },
+        error: () => { this.notifLoading = false; },
+      });
   }
 }

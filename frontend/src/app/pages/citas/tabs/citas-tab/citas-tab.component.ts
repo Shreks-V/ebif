@@ -1,9 +1,11 @@
-import { Component, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, DestroyRef, HostListener, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../services/api.service';
 import { ServicioRaw } from '../../../../shared/models/almacen.models';
+import { TIMEZONE_MX, ACTION_NUEVO, PDF_REVOKE_DELAY_MS } from '../../../../shared/constants/app.constants';
 import { NuevaCitaModalComponent } from './modals/nueva-cita-modal.component';
 import { DetalleCitaModalComponent } from './modals/detalle-cita-modal.component';
 import { EditarCitaModalComponent } from './modals/editar-cita-modal.component';
@@ -38,7 +40,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   searchCitas = '';
   filtroEstado = 'Todas';
   filtroTipo = 'Todas';
-  readonly todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Monterrey' });
+  readonly todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE_MX });
   filtroFecha = this.todayStr;
   readonly estadoFilters = ['Todas', 'PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
   readonly tipoFilters = ['Todas', 'Consulta Neurocirugía', 'Consulta Ortopédica', 'Consulta Urológica', 'Fisioterapia', 'Terapia Ocupacional'];
@@ -76,15 +78,17 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   private readonly actionMenuViewportPadding = 8;
   private readonly _onViewportChange = (): void => { this._repositionCitaMenu(); };
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly api: ApiService, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this._cargarCitas();
-    this.api.getServicios().subscribe({
+    this.api.getServicios().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => { this.serviciosList = data; },
       error: (err) => console.error('Error al cargar servicios:', err),
     });
-    this.api.getDoctores().subscribe({
+    this.api.getDoctores().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.medicos = data.map((d) => ({
           idDoctor: d.id_doctor, nombre: d.nombre,
@@ -93,11 +97,13 @@ export class CitasTabComponent implements OnInit, OnDestroy {
       },
       error: (err) => console.error('Error al cargar médicos:', err),
     });
-    this.route.queryParams.subscribe(params => {
-      if (params['action'] === 'nueva') {
-        setTimeout(() => { this.showNuevaCitaModal = true; }, 0);
-      }
-    });
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        if (params['action'] === ACTION_NUEVO) {
+          setTimeout(() => { this.showNuevaCitaModal = true; }, 0);
+        }
+      });
     window.visualViewport?.addEventListener('resize', this._onViewportChange, { passive: true });
     window.visualViewport?.addEventListener('scroll', this._onViewportChange, { passive: true });
   }
@@ -189,7 +195,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
     if (this.filtroFecha) {
       resultado = resultado.filter(c => {
         if (!c.fechaHora) return false;
-        return this._toMXDate(c.fechaHora).toLocaleDateString('en-CA', { timeZone: 'America/Monterrey' }) === this.filtroFecha;
+        return this._toMXDate(c.fechaHora).toLocaleDateString('en-CA', { timeZone: TIMEZONE_MX }) === this.filtroFecha;
       });
     }
     if (this.filtroEstado !== 'Todas') resultado = resultado.filter(c => c.estatus === this.filtroEstado);
@@ -229,13 +235,13 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   getHora(fechaHora: string): string {
     if (!fechaHora) return '';
     return this._toMXDate(fechaHora)
-      .toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Monterrey' });
+      .toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TIMEZONE_MX });
   }
 
   getFecha(fechaHora: string): string {
     if (!fechaHora) return '';
     return this._toMXDate(fechaHora)
-      .toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'America/Monterrey' });
+      .toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric', timeZone: TIMEZONE_MX });
   }
 
   getEstadoBadgeClass(estatus: string): string {
@@ -261,18 +267,24 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   // ── Inline actions ──
 
   completarCitaInline(cita: CitaLocal): void {
-    this.api.completarCita(cita.idCita).subscribe({ next: () => this._cargarCitas(), error: (err) => console.error(err) });
+    this.api.completarCita(cita.idCita)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: () => this._cargarCitas(), error: (err) => console.error(err) });
   }
 
   cancelarCitaInline(cita: CitaLocal): void {
-    this.api.cancelarCita(cita.idCita).subscribe({ next: () => this._cargarCitas(), error: (err) => console.error(err) });
+    this.api.cancelarCita(cita.idCita)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: () => this._cargarCitas(), error: (err) => console.error(err) });
   }
 
   descargarComprobante(cita: CitaLocal): void {
-    this.api.exportarComprobanteCitaPdf(cita.idCita).subscribe({
-      next: (blob) => this._abrirPdfEnNuevaTab(blob),
-      error: () => alert('Error al generar comprobante'),
-    });
+    this.api.exportarComprobanteCitaPdf(cita.idCita)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => this._abrirPdfEnNuevaTab(blob),
+        error: () => alert('Error al generar comprobante'),
+      });
   }
 
   exportarCitasCSV(): void {
@@ -314,7 +326,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
 
   private _cargarCitas(): void {
     this.loading = true;
-    this.api.getCitas().subscribe({
+    this.api.getCitas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.citas = data.map((c) => ({
           idCita: c.id_cita, idPaciente: c.id_paciente ?? 0, nombrePaciente: c.nombre_paciente ?? '',
@@ -335,7 +347,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    setTimeout(() => URL.revokeObjectURL(url), PDF_REVOKE_DELAY_MS);
   }
 
   private _getMenuPosition(rect: DOMRect, estimatedHeight: number): { top: number; left: number } {

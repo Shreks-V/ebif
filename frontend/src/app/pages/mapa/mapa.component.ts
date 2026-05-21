@@ -1,11 +1,13 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import * as L from 'leaflet';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
+import { GEOCODING_DELAY_MS, SI, NO } from '../../shared/constants/app.constants';
 
 // Fix default Leaflet marker icons (broken with bundlers)
 const iconDefault = L.icon({
@@ -52,6 +54,8 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
   private geocodeCache: Record<string, { lat: number; lng: number }> = {};
   private _geocodingTimer: ReturnType<typeof setTimeout> | null = null;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly api: ApiService, private readonly router: Router) {}
 
   ngOnInit(): void {
@@ -83,22 +87,24 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadBeneficiarios(): void {
-    this.api.getBeneficiarios({ activo: 'S', limit: 500 }).subscribe({
-      next: (data) => {
-        this.beneficiarios = data.map((b) => ({
-          id: b.id_paciente ?? b.idPaciente,
-          folio: b.folio_paciente ?? b.folio ?? '',
-          nombre: `${b.nombre ?? ''} ${b.apellido_paterno ?? b.apellidoPaterno ?? ''} ${b.apellido_materno ?? b.apellidoMaterno ?? ''}`.trim(),
-          ciudad: b.ciudad ?? '',
-          estado: b.estado ?? '',
-          tipoCuota: b.tipo_cuota ?? b.tipoCuota ?? '',
-        }));
-        this.estados = [...new Set(this.beneficiarios.map(b => b.estado).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-        this.loading = false;
-        this.geocodeAll();
-      },
-      error: () => { this.loading = false; }
-    });
+    this.api.getBeneficiarios({ activo: SI, limit: 500 })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.beneficiarios = data.map((b) => ({
+            id: b.id_paciente ?? b.idPaciente,
+            folio: b.folio_paciente ?? b.folio ?? '',
+            nombre: `${b.nombre ?? ''} ${b.apellido_paterno ?? b.apellidoPaterno ?? ''} ${b.apellido_materno ?? b.apellidoMaterno ?? ''}`.trim(),
+            ciudad: b.ciudad ?? '',
+            estado: b.estado ?? '',
+            tipoCuota: b.tipo_cuota ?? b.tipoCuota ?? '',
+          }));
+          this.estados = [...new Set(this.beneficiarios.map(b => b.estado).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+          this.loading = false;
+          this.geocodeAll();
+        },
+        error: (err) => { console.error(err); this.loading = false; }
+      });
   }
 
   private async geocodeAll(): Promise<void> {
@@ -115,7 +121,7 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.addMarker(b);
         continue;
       }
-      await this.delay(1100);
+      await this.delay(GEOCODING_DELAY_MS);
       try {
         const query = encodeURIComponent(`${b.ciudad}, ${b.estado}, Mexico`);
         const resp = await fetch(

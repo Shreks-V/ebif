@@ -1,8 +1,9 @@
-import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, forkJoin, map, of } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../services/api.service';
 import { CuotaBadgeComponent } from '../../../../shared/components/cuota-badge/cuota-badge.component';
 import { AvatarInicialesComponent } from '../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
@@ -19,6 +20,7 @@ import {
   TableSortState,
 } from './activos-tab.types';
 import { getMembresiaBadgeClass, getMembresiaVencimientoClass } from './activos-tab.utils';
+import { REFRESH_INTERVAL_MS, BLOB_REVOKE_DELAY_MS, ACTION_NUEVO, MEMBRESIA_ACTIVO, SI } from '../../../../shared/constants/app.constants';
 
 
 @Component({
@@ -84,16 +86,20 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   readonly getMembresiaBadgeClass = getMembresiaBadgeClass;
   readonly getMembresiaVencimientoClass = getMembresiaVencimientoClass;
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly api: ApiService, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.loadBeneficiarios();
     this.loadAlertasMembresia();
-    this._refreshTimer = setInterval(() => this.loadBeneficiarios(), 60_000);
+    this._refreshTimer = setInterval(() => this.loadBeneficiarios(), REFRESH_INTERVAL_MS);
 
-    this.route.queryParams.subscribe(params => {
-      if (params['action'] === 'nuevo') this.showNuevoModal = true;
-    });
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        if (params['action'] === ACTION_NUEVO) this.showNuevoModal = true;
+      });
 
     window.visualViewport?.addEventListener('resize', this.onViewportGeometryChange, { passive: true });
     window.visualViewport?.addEventListener('scroll', this.onViewportGeometryChange, { passive: true });
@@ -109,7 +115,9 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
 
   loadBeneficiarios(): void {
     this.loading = true;
-    this.api.getBeneficiarios({ membresia_estatus: 'ACTIVO' }).subscribe({
+    this.api.getBeneficiarios({ membresia_estatus: MEMBRESIA_ACTIVO })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (data) => {
         this.beneficiarios = data.map((item, index) => ({
           idPaciente: item.id_paciente,
@@ -163,10 +171,12 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   }
 
   private loadAlertasMembresia(): void {
-    this.api.getMembresiasProximasAVencer(30).subscribe({
-      next: (data) => { this.membresiasProximasCount = data.length; },
-      error: () => { this.membresiasProximasCount = 0; }
-    });
+    this.api.getMembresiasProximasAVencer(30)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.membresiasProximasCount = data.length; },
+        error: () => { this.membresiasProximasCount = 0; }
+      });
   }
 
   // ──────────── Fotos ────────────
@@ -222,10 +232,12 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
         catchError(() => of({ idPaciente: b.idPaciente, fotoUrl: null }))
       )
     );
-    forkJoin(requests).subscribe({
-      next: (results) => results.forEach((item) => this.actualizarFotoEnVistas(item.idPaciente, item.fotoUrl)),
-      error: (err) => console.error('Error al cargar fotos de beneficiarios:', err)
-    });
+    forkJoin(requests)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (results) => results.forEach((item) => this.actualizarFotoEnVistas(item.idPaciente, item.fotoUrl)),
+        error: (err) => console.error('Error al cargar fotos de beneficiarios:', err)
+      });
   }
 
   // ──────────── Filtering / Sorting / Pagination ────────────
@@ -304,10 +316,12 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   exportarCSV(): void {
     const filters: Record<string, string> = {};
     if (this.searchTerm) filters['busqueda'] = this.searchTerm;
-    this.api.exportarBeneficiariosExcel(filters).subscribe({
-      next: (blob) => this.descargarArchivo(blob, `beneficiarios_${new Date().toISOString().slice(0, 10)}.xlsx`),
-      error: () => alert('Error al exportar')
-    });
+    this.api.exportarBeneficiariosExcel(filters)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => this.descargarArchivo(blob, `beneficiarios_${new Date().toISOString().slice(0, 10)}.xlsx`),
+        error: () => alert('Error al exportar')
+      });
   }
 
   private descargarArchivo(blob: Blob, filename: string): void {
@@ -315,7 +329,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
     const link = document.createElement('a');
     link.href = url; link.download = filename;
     document.body.appendChild(link); link.click(); link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 150);
+    setTimeout(() => URL.revokeObjectURL(url), BLOB_REVOKE_DELAY_MS);
   }
 
   // ──────────── Modal event handlers ────────────

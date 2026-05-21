@@ -1,13 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { UsuarioSistema } from '../../shared/models/usuario-sistema.models';
 import { getApiError } from '../../shared/utils/error.utils';
+import { TOAST_DURATION_MS } from '../../shared/constants/app.constants';
 
 interface UsuarioFormData {
   nombre: string;
@@ -67,6 +69,8 @@ export class UsuariosSistemaComponent implements OnInit {
     return this.auth.getUser()?.id_usuario ?? -1;
   }
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(private readonly api: ApiService, private readonly auth: AuthService, private readonly router: Router) {}
 
   ngOnInit(): void {
@@ -79,10 +83,12 @@ export class UsuariosSistemaComponent implements OnInit {
 
   cargarUsuarios(): void {
     this.loading = true;
-    this.api.listarUsuariosSistema().subscribe({
-      next: (data) => { this.usuarios = data || []; this.loading = false; },
-      error: () => { this.loading = false; },
-    });
+    this.api.listarUsuariosSistema()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => { this.usuarios = data || []; this.loading = false; },
+        error: () => { this.loading = false; },
+      });
   }
 
   initials(u: UsuarioSistema): string {
@@ -141,7 +147,7 @@ export class UsuariosSistemaComponent implements OnInit {
           contrasena: this.formData.contrasena,
         });
 
-    obs.subscribe({
+    obs.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.formLoading = false;
         this.showFormModal = false;
@@ -163,7 +169,7 @@ export class UsuariosSistemaComponent implements OnInit {
       apellido_materno: u.apellido_materno || null,
       rol: u.rol,
       estatus: nuevoEstatus,
-    }).subscribe({
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         u.estatus = nuevoEstatus;
         this.showGlobalMsg(`Usuario ${nuevoEstatus === 'ACTIVO' ? 'activado' : 'desactivado'} correctamente.`, 'success');
@@ -193,15 +199,17 @@ export class UsuariosSistemaComponent implements OnInit {
       return;
     }
     this.resetLoading = true;
-    this.api.adminResetContrasena(this.resetTarget!.id_usuario, { contrasena_nueva: this.resetNueva }).subscribe({
-      next: () => { this.resetLoading = false; this.resetSuccess = true; },
-      error: (err: unknown) => { this.resetLoading = false; this.resetError = getApiError(err, 'Error al restablecer la contraseña.'); },
-    });
+    this.api.adminResetContrasena(this.resetTarget!.id_usuario, { contrasena_nueva: this.resetNueva })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => { this.resetLoading = false; this.resetSuccess = true; },
+        error: (err: unknown) => { this.resetLoading = false; this.resetError = getApiError(err, 'Error al restablecer la contraseña.'); },
+      });
   }
 
   private showGlobalMsg(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    setTimeout(() => { this.globalMsg = ''; }, 4000);
+    setTimeout(() => { this.globalMsg = ''; }, TOAST_DURATION_MS);
   }
 }
