@@ -229,7 +229,16 @@
       "Bash(\"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/venv/bin/python\" -m pytest \"../Pruebas/test_recibos.py::test_sv50_ui_guardarCobro_validaciones_en_fuente\" -q)",
       "mcp__sonarcloud__get_sonar_issue_context",
       "Bash(grep -n \"^AS$\\\\|^  v_\\\\|^AS\\\\s\" \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/db/migrations/005_sp_pacientes_citas.sql\")",
-      "Bash(grep -A3 '\"rule\": \"__TRACKED_VAR__\"' /Users/maantora/.claude/projects/-Users-maantora-Desktop-Tec-Semestre-6-Parte2-ebif/4c10ea67-bcd7-4988-a6af-8fb8aefd0f83/tool-results/mcp-sonarcloud-search_sonar_issues-1779249915896.txt)"
+      "Bash(grep -A3 '\"rule\": \"__TRACKED_VAR__\"' /Users/maantora/.claude/projects/-Users-maantora-Desktop-Tec-Semestre-6-Parte2-ebif/4c10ea67-bcd7-4988-a6af-8fb8aefd0f83/tool-results/mcp-sonarcloud-search_sonar_issues-1779249915896.txt)",
+      "mcp__sonarcloud__get_component_measures",
+      "Bash(cd *)",
+      "Bash(sort -t' ' -k1,1 -k2,2n)",
+      "Bash(awk 'NR==26||NR==29||NR==53||NR==94' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/beneficiarios/tabs/activos-tab/modals/nuevo-beneficiario-modal.component.html')",
+      "Bash(awk 'NR==49||NR==52||NR==78' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/beneficiarios/tabs/activos-tab/modals/editar-beneficiario-modal.component.html')",
+      "Bash(awk NR==50 '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/citas-tab/modals/editar-cita-modal.component.html')",
+      "Bash(awk NR==51 '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/bitacora/bitacora.component.html')",
+      "Bash(awk 'NR==54||NR==63||NR==72||NR==126||NR==136' '/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/frontend/src/app/pages/citas/tabs/medicos-tab/modals/disponibilidad-modal.component.html')",
+      "Bash(sort -k2)"
     ]
   },
   "enableAllProjectMcpServers": true,
