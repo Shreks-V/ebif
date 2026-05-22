@@ -91,14 +91,15 @@
               } @else {
                 <div class="py-1">
                   @for (r of searchResults; track r.id_paciente) {
-                    <button (click)="irABeneficiario()" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-left cursor-pointer">
+                    <button (click)="irABeneficiario(r.folio)" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-left cursor-pointer">
                       <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" [style.background]="'#00328b'">
                         {{ (r.nombre.charAt(0) || '') + (r.apellido_paterno.charAt(0) || '') }}
                       </div>
-                      <div class="min-w-0">
+                      <div class="min-w-0 flex-1">
                         <p class="text-sm font-bold text-slate-800 truncate">{{ r.nombre }} {{ r.apellido_paterno }} {{ r.apellido_materno }}</p>
-                        <p class="text-xs text-slate-500">{{ r.folio }} &middot; {{ r.membresia_estatus }}</p>
+                        <p class="text-xs text-slate-500">{{ r.folio }} &middot; {{ r.membresia_estatus || '—' }}</p>
                       </div>
+                      <span class="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">{{ r._score }}</span>
                     </button>
                   }
                   <div class="px-4 py-2 border-t border-slate-100">

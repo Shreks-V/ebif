@@ -5,10 +5,12 @@ from app.presentation.api.routers import (
     auth,
     beneficiarios,
     bitacora,
+    busqueda,
     citas,
     config,
     doctores,
     exportaciones,
+    metricas,
     notificaciones,
     preregistro,
     recibos,
@@ -30,4 +32,6 @@ def build_api_router() -> APIRouter:
     router.include_router(exportaciones.router, prefix="/api/exportaciones", tags=["Exportaciones"])
     router.include_router(notificaciones.router, prefix="/api/notificaciones", tags=["Notificaciones"])
     router.include_router(bitacora.router, prefix="/api/bitacora", tags=["Bitácora"])
+    router.include_router(busqueda.router, prefix="/api/buscar", tags=["Búsqueda"])
+    router.include_router(metricas.router, prefix="/api/dashboard/metricas", tags=["Dashboard"])
     return router

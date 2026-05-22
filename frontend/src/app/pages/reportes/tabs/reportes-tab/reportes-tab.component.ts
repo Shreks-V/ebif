@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import type { EChartsOption } from 'echarts';
 import { ApiService } from '../../../../services/api.service';
+import { ExportacionesWsService } from '../../../../services/exportaciones-ws.service';
 import { getApiError } from '../../../../shared/utils/error.utils';
 
 interface CrossTabRow {
@@ -141,7 +142,16 @@ export class ReportesTabComponent implements OnInit {
   seg3EspinaOpt: EChartsOption = {};
   seg3EstadoOpt: EChartsOption = {};
 
-  constructor(private readonly api: ApiService) {}
+  // ── WS export progress ──────────────────────────────────────
+  wsExportando = false;
+  wsStep = 0;
+  wsTotal = 5;
+  wsMessage = '';
+
+  constructor(
+    private readonly api: ApiService,
+    private readonly exportWs: ExportacionesWsService,
+  ) {}
 
   ngOnInit(): void {
     const today = new Date();
@@ -255,11 +265,44 @@ export class ReportesTabComponent implements OnInit {
   }
 
   exportarPDFResumen(): void {
-    this.api.exportarReportePdf('resumen', { fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin })
-      .subscribe({
-        next: (blob) => this._descargar(blob, `reporte_resumen_${this.sec1FechaInicio}.pdf`),
-        error: () => alert('Error al generar PDF'),
-      });
+    this.wsExportando = true;
+    this.wsStep = 0;
+    this.wsMessage = 'Iniciando…';
+
+    this.exportWs.exportarReportePdf({
+      tipo: 'resumen',
+      fecha_inicio: this.sec1FechaInicio || undefined,
+      fecha_fin: this.sec1FechaFin || undefined,
+    }).subscribe({
+      next: (frame) => {
+        this.wsStep = frame.step;
+        this.wsTotal = frame.total;
+        this.wsMessage = frame.message;
+
+        if (frame.error) {
+          this.wsExportando = false;
+          alert('Error al generar PDF: ' + frame.error);
+          return;
+        }
+        if (frame.data && frame.filename) {
+          this.wsExportando = false;
+          this._descargarBase64(frame.data, frame.filename, frame.media_type ?? 'application/pdf');
+        }
+      },
+      error: () => {
+        this.wsExportando = false;
+        alert('Error de conexión al generar PDF');
+      },
+    });
+  }
+
+  private _descargarBase64(b64: string, filename: string, mediaType: string): void {
+    const byteString = atob(b64);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    const blob = new Blob([ab], { type: mediaType });
+    this._descargar(blob, filename);
   }
 
   exportarExcelResumen(): void {

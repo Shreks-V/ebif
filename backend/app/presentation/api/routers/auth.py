@@ -1,18 +1,26 @@
 import logging
+import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.application.auth.exceptions import ForbiddenError, LoginError, PasswordTooShortError
-from app.domain.auth.exceptions import AuthError, UserAlreadyExistsError, UserNotFoundError
-
-logger = logging.getLogger(__name__)
-from app.application.auth.use_cases import AuthService
 from app.application.auth.dtos import (
     AdminResetContrasenaRequest, CambiarContrasenaRequest,
     UserLogin, UsuarioCreate, UsuarioUpdate,
 )
+from app.application.auth.exceptions import ForbiddenError, LoginError, PasswordTooShortError
+from app.domain.auth.exceptions import AuthError, UserAlreadyExistsError, UserNotFoundError
+from app.application.auth.use_cases import AuthService
+from app.infrastructure.security.auth import create_access_token, decode_access_token
+from app.infrastructure.security.refresh_store import (
+    REFRESH_TOKEN_EXPIRE_DAYS, get_refresh_store,
+)
+
+logger = logging.getLogger(__name__)
 from app.presentation.api.dependencies import get_auth_service, get_token_decoder
 from app.presentation.api.security import get_current_user
 from app.domain.auth.ports import AccessTokenIssuer
@@ -52,6 +60,16 @@ def seed_users(
         )
 
 
+def _issue_refresh_token(user_claims: dict) -> str:
+    jti = secrets.token_urlsafe(32)
+    exp = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    get_refresh_store().add(jti, exp)
+    return create_access_token(
+        {**user_claims, "type": "refresh", "jti": jti},
+        timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+
+
 @router.post("/login", response_model=Token)
 @limiter.limit("10/minute")
 def login(
@@ -61,12 +79,47 @@ def login(
 ):
     try:
         token = auth_service.login(correo=form_data.correo, password=form_data.password)
+        payload = decode_access_token(token.access_token)
+        user_claims = {
+            "sub": payload["sub"],
+            "rol": payload.get("rol"),
+            "id_usuario": payload.get("id_usuario"),
+            "nombre": payload.get("nombre"),
+        }
         return {
             "access_token": token.access_token,
             "token_type": token.token_type,
+            "refresh_token": _issue_refresh_token(user_claims),
         }
     except LoginError:
         raise _auth_error()
+
+
+class _RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+@router.post("/token/refresh", response_model=Token)
+def token_refresh(body: _RefreshRequest):
+    """Rotación de refresh token: invalida el anterior y emite un nuevo par."""
+    try:
+        payload = decode_access_token(body.refresh_token)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token inválido")
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token no es de tipo refresh")
+
+    jti = payload.get("jti")
+    if not jti or not get_refresh_store().consume(jti):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token ya usado o expirado")
+
+    user_claims = {k: payload.get(k) for k in ("sub", "rol", "id_usuario", "nombre")}
+    return {
+        "access_token": create_access_token(user_claims),
+        "token_type": "bearer",
+        "refresh_token": _issue_refresh_token(user_claims),
+    }
 
 
 @router.post("/refresh", response_model=Token)

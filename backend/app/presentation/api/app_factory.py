@@ -1,4 +1,8 @@
+import json
+import logging
+import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +35,34 @@ async def lifespan(app: FastAPI):
     start_geocoding_scheduler()
     yield
     close_pool()
+
+
+_access_log = logging.getLogger("ebif.access")
+
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        t0 = time.perf_counter()
+        user_id: int | None = None
+        try:
+            auth = request.headers.get("Authorization", "")
+            if auth.startswith("Bearer "):
+                from app.presentation.api.dependencies import get_token_decoder
+                payload = get_token_decoder().decode(auth[7:])
+                user_id = payload.get("id_usuario")
+        except Exception:
+            pass
+        response = await call_next(request)
+        _access_log.info(json.dumps({
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "method": request.method,
+            "path": request.url.path,
+            "status": response.status_code,
+            "duration_ms": round((time.perf_counter() - t0) * 1000, 2),
+            "ip": request.client.host if request.client else None,
+            "user_id": user_id,
+        }))
+        return response
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -124,6 +156,7 @@ def create_app() -> FastAPI:
     @app.exception_handler(InternalError)
     async def _internal(request: Request, exc: InternalError):
         return JSONResponse(status_code=500, content={"detail": exc.detail})
+    app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
     app.add_middleware(RequestSizeLimitMiddleware)

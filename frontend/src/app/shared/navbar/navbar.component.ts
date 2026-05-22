@@ -5,10 +5,10 @@ import { RouterLink, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
+import { BusquedaApiService, BusquedaResult } from '../../services/busqueda-api.service';
 import { NotificacionesWsService } from '../../services/notificaciones-ws.service';
 import { CambiarContrasenaModalComponent } from './modals/cambiar-contrasena-modal.component';
-import { Beneficiario } from '../../shared/models/beneficiario.models';
-import { NOTIFICATION_INTERVAL_MS, SEARCH_DEBOUNCE_MS, MEMBRESIA_ACTIVO } from '../../shared/constants/app.constants';
+import { NOTIFICATION_INTERVAL_MS, SEARCH_DEBOUNCE_MS } from '../../shared/constants/app.constants';
 
 interface NavbarNotification {
   id: string;
@@ -52,7 +52,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   // Global search
   searchOpen = false;
   searchQuery = '';
-  searchResults: Beneficiario[] = [];
+  searchResults: BusquedaResult[] = [];
   searchLoading = false;
   private _searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
@@ -60,6 +60,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   showCambiarPass = false;
 
   lastRefresh = '';
+  private readonly busqueda = inject(BusquedaApiService);
   private readonly ws = inject(NotificacionesWsService);
   private _wsConnected = false;
   private refreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -170,10 +171,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (this.searchQuery.length < 2) { this.searchResults = []; return; }
     this._searchDebounce = setTimeout(() => {
       this.searchLoading = true;
-      this.api.getBeneficiarios({ busqueda: this.searchQuery, membresia_estatus: MEMBRESIA_ACTIVO, limit: 8 })
+      this.busqueda.buscar(this.searchQuery, 10)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (data: Beneficiario[]) => { this.searchResults = data || []; this.searchLoading = false; },
+          next: (data) => { this.searchResults = data || []; this.searchLoading = false; },
           error: () => { this.searchResults = []; this.searchLoading = false; },
         });
     }, SEARCH_DEBOUNCE_MS);
@@ -181,9 +182,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   submitSearch(): void { this.irABeneficiario(); }
 
-  irABeneficiario(): void {
+  irABeneficiario(folio?: string): void {
     this.closeSearch();
-    this.router.navigate(['/registro-usuarios']);
+    this.router.navigate(['/registro-usuarios'], folio ? { queryParams: { busqueda: folio } } : {});
   }
 
   openCambiarPass(): void { this.showCambiarPass = true; }
