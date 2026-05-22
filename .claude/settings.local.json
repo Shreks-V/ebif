@@ -248,7 +248,16 @@
       "Bash(venv/bin/python -m pytest Pruebas/ --tb=short -q)",
       "Bash(backend/venv/bin/python -m pytest Pruebas/ --tb=short -q)",
       "Bash(backend/venv/bin/python -m pytest Pruebas/test_acceso_sesion.py::test_sv1_login_correcto --tb=long -q)",
-      "Bash(backend/venv/bin/python -m pytest Pruebas/test_acceso_sesion.py Pruebas/test_acciones_rapidas.py Pruebas/test_recibos.py::test_sv50_ui_guardar_cobro_validaciones_en_fuente --tb=short -q)"
+      "Bash(backend/venv/bin/python -m pytest Pruebas/test_acceso_sesion.py Pruebas/test_acciones_rapidas.py Pruebas/test_recibos.py::test_sv50_ui_guardar_cobro_validaciones_en_fuente --tb=short -q)",
+      "Bash(pandoc /Users/maantora/Downloads/reporte-resumen-pruebas-ebif.md -o /Users/maantora/Downloads/reporte-resumen-pruebas-ebif.docx --from markdown --to docx --highlight-style tango --toc --toc-depth=2 -M 'title=Informe Resumen de Pruebas — EBIF' -M 'author=Equipo EBIF-GPO107-2026' -M 'date=21 de mayo de 2026')",
+      "Bash(grep -rn *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ --tb=short -q --ignore=pruebas-s2)",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest pruebas-s2/ --tb=short -q)",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest pruebas-s2/test_hu10_almacen.py pruebas-s2/test_hu11_reportes.py --tb=long -q)",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest pruebas-s2/test_hu10_almacen.py::test_hu10_listar_servicios --tb=short -q)",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --tb=short -q)",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --cov=backend/app --cov-report=xml:coverage.xml --tb=short -q)"
     ]
   },
   "enableAllProjectMcpServers": true,

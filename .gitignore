@@ -47,6 +47,7 @@ frontend/.venv/
 # Testing y dependencias
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 pip-log.txt
 pip-delete-this-directory.txt
