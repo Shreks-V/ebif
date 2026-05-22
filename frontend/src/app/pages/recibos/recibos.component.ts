@@ -12,7 +12,7 @@ import { DetalleReciboModalComponent } from './modals/detalle-recibo-modal.compo
 import { CancelarReciboModalComponent } from './modals/cancelar-recibo-modal.component';
 import { PagoReciboModalComponent } from './modals/pago-recibo-modal.component';
 import { Recibo as ReciboAPI, MetodoPagoReciboItem } from '../../shared/models/recibo.models';
-import { PDF_REVOKE_DELAY_MS, ACTION_NUEVO, DEFAULT_PAGE_SIZE } from '../../shared/constants/app.constants';
+import { ACTION_NUEVO, DEFAULT_PAGE_SIZE } from '../../shared/constants/app.constants';
 
 interface MetodoPagoItem {
   idMetodoPago: number;

@@ -7,7 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
-import { GEOCODING_DELAY_MS, SI, NO } from '../../shared/constants/app.constants';
+import { GEOCODING_DELAY_MS, SI } from '../../shared/constants/app.constants';
 
 // Fix default Leaflet marker icons (broken with bundlers)
 const iconDefault = L.icon({

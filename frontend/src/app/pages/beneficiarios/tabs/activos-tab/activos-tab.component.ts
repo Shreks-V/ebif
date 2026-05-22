@@ -20,7 +20,7 @@ import {
   TableSortState,
 } from './activos-tab.types';
 import { getMembresiaBadgeClass, getMembresiaVencimientoClass } from './activos-tab.utils';
-import { REFRESH_INTERVAL_MS, BLOB_REVOKE_DELAY_MS, ACTION_NUEVO, MEMBRESIA_ACTIVO, SI } from '../../../../shared/constants/app.constants';
+import { REFRESH_INTERVAL_MS, BLOB_REVOKE_DELAY_MS, ACTION_NUEVO, MEMBRESIA_ACTIVO } from '../../../../shared/constants/app.constants';
 
 
 @Component({
