@@ -9,7 +9,7 @@ from app.domain.shared.current_user import CurrentUser
 import uuid
 from pathlib import Path
 from app.domain.preregistro.entities import UploadedFile
-from app.domain.exceptions import ConflictError, NotFoundError, ValidationError
+from app.domain.exceptions import ConflictError, InternalError, NotFoundError, ValidationError
 from typing import Optional
 
 import oracledb
@@ -17,7 +17,7 @@ import oracledb
 from app.core.config import settings
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
-from app.infrastructure.privacy.crypto import encrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS, encrypt_bytes, decrypt_bytes
+from app.infrastructure.privacy.crypto import encrypt, decrypt, decrypt_row, PACIENTE_ENCRYPTED_FIELDS, encrypt_bytes, decrypt_bytes
 
 _SP_PACIENTE_ERRORS = {
     20201: (400, None),
@@ -28,6 +28,37 @@ _SP_PACIENTE_ERRORS = {
 logger = logging.getLogger(__name__)
 
 _MSG_PREREGISTRO_NO_ENCONTRADO = 'Pre-registro no encontrado'
+
+
+def _generar_folio_preregistro(cursor) -> str:
+    """Genera el siguiente folio PRE-XXXXXX garantizando unicidad."""
+    cursor.execute(
+        "SELECT NVL(MAX(TO_NUMBER(REGEXP_SUBSTR(FOLIO, '[0-9]+$'))), 0) + 1 "
+        "FROM PACIENTE WHERE REGEXP_LIKE(FOLIO, '^PRE-[0-9]+')"
+    )
+    folio = f"PRE-{int(cursor.fetchone()[0]):06d}"
+    cursor.execute('SELECT COUNT(*) FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
+    if cursor.fetchone()[0] > 0:
+        cursor.execute('SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE')
+        folio = f"PRE-{int(cursor.fetchone()[0]):06d}"
+    return folio
+
+
+def _curp_ya_existe(normalized_curp: str, cursor) -> bool:
+    """Descifra cada CURP en PACIENTE y devuelve True si hay coincidencia.
+
+    AES-GCM es no-determinístico, por lo que no es posible añadir un índice
+    único en Oracle; la única forma de comparar es descifrar fila por fila.
+    """
+    cursor.execute('SELECT CURP FROM PACIENTE WHERE CURP IS NOT NULL')
+    for (raw,) in cursor:
+        try:
+            if decrypt(raw).strip().upper() == normalized_curp:
+                return True
+        except Exception:
+            logger.debug('No se pudo descifrar un registro CURP, se omite')
+    return False
+
 
 UPLOAD_DIR = Path(__file__).resolve().parents[3] / 'uploads' / 'documentos'
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -85,7 +116,6 @@ def _resolve_usuario_registro_id(conn, current_user: CurrentUser | None) -> int:
     if fallback_id is not None:
         return fallback_id
 
-    from app.domain.exceptions import InternalError
     raise InternalError('No existe un usuario válido para registrar la carga del documento')
 
 _BASE_SQL = '\n    SELECT ID_PACIENTE, FOLIO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n           FECHA_NACIMIENTO, GENERO, CURP,\n           ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO, NOMBRE_PADRE_MADRE,\n           DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n           TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n           TIPO_CUOTA, NOTAS_ADICIONALES, PASO_ACTUAL, ESTATUS_REGISTRO,\n           FECHA_REGISTRO, EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n           TIPO_SANGRE, USA_VALVULA\n    FROM PACIENTE\n'
@@ -113,32 +143,9 @@ def _crear_preregistro(data):
         raise ValidationError('Debe especificar al menos un tipo de espina bífida')
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT NVL(MAX(TO_NUMBER(REGEXP_SUBSTR(FOLIO, '[0-9]+$'))), 0) + 1 "
-            "FROM PACIENTE WHERE REGEXP_LIKE(FOLIO, '^PRE-[0-9]+')"
-        )
-        next_num = int(cursor.fetchone()[0])
-        folio = f'PRE-{next_num:06d}'
-        # Ensure uniqueness in case of gap/collision
-        cursor.execute('SELECT COUNT(*) FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
-        if cursor.fetchone()[0] > 0:
-            cursor.execute('SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE')
-            folio = f'PRE-{int(cursor.fetchone()[0]):06d}'
-
-        # CURP duplicate check — column is AES-GCM encrypted (non-deterministic), so no
-        # DB unique constraint is possible; we must decrypt each row to compare.
-        if data.curp:
-            from app.infrastructure.privacy.crypto import decrypt
-            normalized_curp = data.curp.strip().upper()
-            cursor.execute('SELECT CURP FROM PACIENTE WHERE CURP IS NOT NULL')
-            for (raw,) in cursor:
-                try:
-                    if decrypt(raw).strip().upper() == normalized_curp:
-                        raise ConflictError('Ya existe un registro con ese CURP.')
-                except ConflictError:
-                    raise
-                except Exception:
-                    continue
+        folio = _generar_folio_preregistro(cursor)
+        if data.curp and _curp_ya_existe(data.curp.strip().upper(), cursor):
+            raise ConflictError('Ya existe un registro con ese CURP.')
 
         fecha_nac = datetime.strptime(str(data.fecha_nacimiento)[:10], '%Y-%m-%d') if data.fecha_nacimiento else None
         tipos_arr = make_number_list(conn, [int(t) for t in data.tipos_espina])
@@ -207,26 +214,15 @@ def _fetch_preregistro(id_paciente: int) -> dict:
 
 def _check_curp_disponible(curp: str) -> dict:
     """Verificar si un CURP ya está registrado. Endpoint público sin auth."""
-    from app.infrastructure.privacy.crypto import decrypt
     normalized = (curp or '').strip().upper()
     if not normalized:
         return {'disponible': True}
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            # CURP is stored with AES-GCM (non-deterministic) → must decrypt each row to compare
-            cursor.execute('SELECT CURP FROM PACIENTE WHERE CURP IS NOT NULL')
-            for (raw,) in cursor:
-                try:
-                    decrypted = decrypt(raw)
-                    if decrypted and decrypted.strip().upper() == normalized:
-                        return {'disponible': False}
-                except Exception:
-                    continue
-        return {'disponible': True}
+            return {'disponible': not _curp_ya_existe(normalized, cursor)}
     except oracledb.DatabaseError:
         logger.exception('Error al verificar disponibilidad de CURP')
-        # On error, allow the form to proceed; server-side insert will still enforce uniqueness
         return {'disponible': True}
 
 
@@ -257,7 +253,38 @@ def _actualizar_preregistro(id_paciente: int, data):
         cursor.execute("SELECT ID_PACIENTE FROM PACIENTE WHERE ID_PACIENTE = :id AND ESTATUS_REGISTRO = 'PENDIENTE'", {'id': id_paciente})
         if cursor.fetchone() is None:
             raise NotFoundError(_MSG_PREREGISTRO_NO_ENCONTRADO)
-        cursor.execute("UPDATE PACIENTE SET\n                NOMBRE = :nombre, APELLIDO_PATERNO = :ap, APELLIDO_MATERNO = :am,\n                FECHA_NACIMIENTO = TO_DATE(:fecha_nac, 'YYYY-MM-DD'),\n                GENERO = :genero, CURP = :curp,\n                ESTADO_NACIMIENTO = :estado_nac, HOSPITAL_NACIMIENTO = :hospital,\n                NOMBRE_PADRE_MADRE = :padre_madre,\n                DIRECCION = :direccion, COLONIA = :colonia, CIUDAD = :ciudad,\n                ESTADO = :estado, CODIGO_POSTAL = :cp,\n                TELEFONO_CASA = :tel_casa, TELEFONO_CELULAR = :tel_cel,\n                CORREO_ELECTRONICO = :correo,\n                EN_EMERGENCIA_AVISAR_A = :emergencia_avisar,\n                TELEFONO_EMERGENCIA = :tel_emergencia,\n                TIPO_SANGRE = :tipo_sangre, USA_VALVULA = :usa_valvula,\n                TIPO_CUOTA = :tipo_cuota, NOTAS_ADICIONALES = :notas,\n                PASO_ACTUAL = :paso\n               WHERE ID_PACIENTE = :id", {'nombre': data.nombre, 'ap': data.apellido_paterno, 'am': data.apellido_materno, 'fecha_nac': data.fecha_nacimiento, 'genero': data.genero, 'curp': encrypt(data.curp), 'estado_nac': data.estado_nacimiento, 'hospital': encrypt(data.hospital_nacimiento), 'padre_madre': encrypt(data.nombre_padre_madre), 'direccion': encrypt(data.direccion), 'colonia': data.colonia, 'ciudad': data.ciudad, 'estado': data.estado, 'cp': data.codigo_postal, 'tel_casa': encrypt(data.telefono_casa), 'tel_cel': encrypt(data.telefono_celular), 'correo': encrypt(data.correo_electronico), 'emergencia_avisar': encrypt(data.en_emergencia_avisar_a), 'tel_emergencia': encrypt(data.telefono_emergencia), 'tipo_sangre': encrypt(data.tipo_sangre), 'usa_valvula': data.usa_valvula or 'N', 'tipo_cuota': data.tipo_cuota, 'notas': encrypt(data.notas_adicionales), 'paso': data.paso_actual or 1, 'id': id_paciente})
+        cursor.execute(
+            "UPDATE PACIENTE SET"
+            " NOMBRE = :nombre, APELLIDO_PATERNO = :ap, APELLIDO_MATERNO = :am,"
+            " FECHA_NACIMIENTO = TO_DATE(:fecha_nac, 'YYYY-MM-DD'),"
+            " GENERO = :genero, CURP = :curp,"
+            " ESTADO_NACIMIENTO = :estado_nac, HOSPITAL_NACIMIENTO = :hospital,"
+            " NOMBRE_PADRE_MADRE = :padre_madre,"
+            " DIRECCION = :direccion, COLONIA = :colonia, CIUDAD = :ciudad,"
+            " ESTADO = :estado, CODIGO_POSTAL = :cp,"
+            " TELEFONO_CASA = :tel_casa, TELEFONO_CELULAR = :tel_cel,"
+            " CORREO_ELECTRONICO = :correo,"
+            " EN_EMERGENCIA_AVISAR_A = :emergencia_avisar,"
+            " TELEFONO_EMERGENCIA = :tel_emergencia,"
+            " TIPO_SANGRE = :tipo_sangre, USA_VALVULA = :usa_valvula,"
+            " TIPO_CUOTA = :tipo_cuota, NOTAS_ADICIONALES = :notas,"
+            " PASO_ACTUAL = :paso"
+            " WHERE ID_PACIENTE = :id",
+            {
+                'nombre': data.nombre, 'ap': data.apellido_paterno, 'am': data.apellido_materno,
+                'fecha_nac': data.fecha_nacimiento, 'genero': data.genero, 'curp': encrypt(data.curp),
+                'estado_nac': data.estado_nacimiento, 'hospital': encrypt(data.hospital_nacimiento),
+                'padre_madre': encrypt(data.nombre_padre_madre), 'direccion': encrypt(data.direccion),
+                'colonia': data.colonia, 'ciudad': data.ciudad, 'estado': data.estado,
+                'cp': data.codigo_postal, 'tel_casa': encrypt(data.telefono_casa),
+                'tel_cel': encrypt(data.telefono_celular), 'correo': encrypt(data.correo_electronico),
+                'emergencia_avisar': encrypt(data.en_emergencia_avisar_a),
+                'tel_emergencia': encrypt(data.telefono_emergencia),
+                'tipo_sangre': encrypt(data.tipo_sangre), 'usa_valvula': data.usa_valvula or 'N',
+                'tipo_cuota': data.tipo_cuota, 'notas': encrypt(data.notas_adicionales),
+                'paso': data.paso_actual or 1, 'id': id_paciente,
+            },
+        )
         if data.tipos_espina is not None:
             cursor.execute('DELETE FROM PACIENTE_TIPO_ESPINA WHERE ID_PACIENTE = :id', {'id': id_paciente})
             for tid in data.tipos_espina:

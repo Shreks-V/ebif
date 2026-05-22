@@ -1,9 +1,10 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../../../services/api.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PreregistroApiService } from '../../../../services/preregistro-api.service';
-import { Documento } from '../../../../shared/models/preregistro.models';
+import { DownloadService } from '../../../../services/download.service';
+import { Documento, PreRegistro } from '../../../../shared/models/preregistro.models';
 import { CuotaBadgeComponent } from '../../../../shared/components/cuota-badge/cuota-badge.component';
 import { AvatarInicialesComponent } from '../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
 import { getMunicipiosParaEstado } from '../../../../shared/data/mexico-municipios';
@@ -125,51 +126,59 @@ export class PreregistrosTabComponent implements OnInit {
     'bg-cyan-400', 'bg-amber-400'
   ];
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(
-    private readonly api: ApiService,
     private readonly preregistroApi: PreregistroApiService,
+    private readonly downloadService: DownloadService,
   ) {}
 
   ngOnInit(): void {
     this.load();
   }
 
+  private _mapToViewModel(item: PreRegistro, index: number): Preregistro {
+    return {
+      id: item.id_paciente,
+      folio: item.folio || '',
+      nombre: item.nombre,
+      apellidoPaterno: item.apellido_paterno,
+      apellidoMaterno: item.apellido_materno || '',
+      fechaNacimiento: item.fecha_nacimiento || '',
+      genero: item.genero || '',
+      curp: item.curp || '',
+      nombrePadreMadre: item.nombre_padre_madre || '',
+      direccion: item.direccion || '',
+      colonia: item.colonia || '',
+      ciudad: item.ciudad || '',
+      estado: item.estado || '',
+      codigoPostal: item.codigo_postal || '',
+      telefonoCasa: item.telefono_casa || '',
+      telefonoCelular: item.telefono_celular || '',
+      correoElectronico: item.correo_electronico || '',
+      enEmergenciaAvisarA: item.en_emergencia_avisar_a || '',
+      telefonoEmergencia: item.telefono_emergencia || '',
+      tipoSangre: item.tipo_sangre || '',
+      usaValvula: item.usa_valvula || 'N',
+      notasAdicionales: item.notas_adicionales || '',
+      tipoCuota: item.tipo_cuota || '',
+      fechaSolicitud: item.fecha_registro || '',
+      estatus: item.estatus_registro || '',
+      iniciales: (item.nombre?.charAt(0) || '') + (item.apellido_paterno?.charAt(0) || ''),
+      color: this.avatarColors[index % this.avatarColors.length],
+    };
+  }
+
   private load(): void {
-    this.api.getPreRegistros().subscribe({
-      next: (data) => {
-        this.preregistros = data.map((item, index: number) => ({ // NOSONAR: typescript:S4325
-          id: item.id_paciente,
-          folio: item.folio,
-          nombre: item.nombre,
-          apellidoPaterno: item.apellido_paterno,
-          apellidoMaterno: item.apellido_materno || '',
-          fechaNacimiento: item.fecha_nacimiento,
-          genero: item.genero || '',
-          curp: item.curp || '',
-          nombrePadreMadre: item.nombre_padre_madre || '',
-          direccion: item.direccion || '',
-          colonia: item.colonia || '',
-          ciudad: item.ciudad || '',
-          estado: item.estado || '',
-          codigoPostal: item.codigo_postal || '',
-          telefonoCasa: item.telefono_casa || '',
-          telefonoCelular: item.telefono_celular || '',
-          correoElectronico: item.correo_electronico || '',
-          enEmergenciaAvisarA: item.en_emergencia_avisar_a || '',
-          telefonoEmergencia: item.telefono_emergencia || '',
-          tipoSangre: item.tipo_sangre || '',
-          usaValvula: item.usa_valvula || 'N',
-          notasAdicionales: item.notas_adicionales || '',
-          tipoCuota: item.tipo_cuota || '',
-          fechaSolicitud: item.fecha_registro,
-          estatus: item.estatus_registro,
-          iniciales: (item.nombre?.charAt(0) || '') + (item.apellido_paterno?.charAt(0) || ''),
-          color: this.avatarColors[index % this.avatarColors.length]
-        } as Preregistro));
-        this.filter();
-      },
-      error: (err) => console.error('Error loading preregistros:', err)
-    });
+    this.preregistroApi.getPreRegistros()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.preregistros = data.map((item, i) => this._mapToViewModel(item, i));
+          this.filter();
+        },
+        error: (err) => console.error('Error loading preregistros:', err),
+      });
   }
 
   filter(): void {
@@ -231,10 +240,12 @@ export class PreregistrosTabComponent implements OnInit {
     this.documentosPreregistro = [];
     this.loadingDocumentos = true;
     this.showDetalleModal = true;
-    this.preregistroApi.getDocumentos(p.id).subscribe({
-      next: (docs) => { this.documentosPreregistro = docs; this.loadingDocumentos = false; },
-      error: () => { this.loadingDocumentos = false; },
-    });
+    this.preregistroApi.getDocumentos(p.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (docs) => { this.documentosPreregistro = docs; this.loadingDocumentos = false; },
+        error: () => { this.loadingDocumentos = false; },
+      });
   }
 
   closeDetalle(): void {
@@ -247,18 +258,15 @@ export class PreregistrosTabComponent implements OnInit {
   descargarDoc(doc: Documento): void {
     if (!this.preregistroSeleccionado || this.descargandoDocId === doc.id_documento) return;
     this.descargandoDocId = doc.id_documento;
-    this.preregistroApi.getDocumentoBlob(this.preregistroSeleccionado.id, doc.id_documento).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = doc.nombre_archivo || `documento-${doc.id_documento}`;
-        a.click();
-        URL.revokeObjectURL(url);
-        this.descargandoDocId = null;
-      },
-      error: () => { this.descargandoDocId = null; },
-    });
+    this.preregistroApi.getDocumentoBlob(this.preregistroSeleccionado.id, doc.id_documento)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (blob) => {
+          this.downloadService.downloadBlob(blob, doc.nombre_archivo || `documento-${doc.id_documento}`);
+          this.descargandoDocId = null;
+        },
+        error: () => { this.descargandoDocId = null; },
+      });
   }
 
   abrirModalAprobacion(p: Preregistro): void {
@@ -271,29 +279,33 @@ export class PreregistrosTabComponent implements OnInit {
   confirmarAprobacion(): void {
     if (!this.preregistroAProbar || !this.aprobarCuotaSeleccionada) return;
     this.submittingAprobacion = true;
-    this.api.aprobarPreRegistro(this.preregistroAProbar.id, this.aprobarCuotaSeleccionada).subscribe({
-      next: () => {
-        this.showAprobarModal = false;
-        this.preregistros = this.preregistros.filter(item => item.id !== this.preregistroAProbar!.id);
-        this.preregistroAProbar = null;
-        this.filter();
-        this.aprobado.emit();
-      },
-      error: (err) => {
-        console.error('Error al aprobar:', err);
-        this.submittingAprobacion = false;
-      }
-    });
+    this.preregistroApi.aprobarPreRegistro(this.preregistroAProbar.id, this.aprobarCuotaSeleccionada)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.showAprobarModal = false;
+          this.preregistros = this.preregistros.filter(item => item.id !== this.preregistroAProbar!.id);
+          this.preregistroAProbar = null;
+          this.filter();
+          this.aprobado.emit();
+        },
+        error: (err) => {
+          console.error('Error al aprobar:', err);
+          this.submittingAprobacion = false;
+        },
+      });
   }
 
   rechazar(p: Preregistro): void {
-    this.api.rechazarPreRegistro(p.id).subscribe({
-      next: () => {
-        this.preregistros = this.preregistros.filter(item => item.id !== p.id);
-        this.filter();
-      },
-      error: (err) => console.error('Error al rechazar:', err)
-    });
+    this.preregistroApi.rechazarPreRegistro(p.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.preregistros = this.preregistros.filter(item => item.id !== p.id);
+          this.filter();
+        },
+        error: (err) => console.error('Error al rechazar:', err),
+      });
   }
 
   editar(p: Preregistro): void {
@@ -301,38 +313,40 @@ export class PreregistrosTabComponent implements OnInit {
     this.editError = '';
     this.submittingEdit = false;
 
-    this.api.getPreRegistro(p.id).subscribe({
-      next: (data) => {
-        this.editData = {
-          nombre: data?.nombre || p.nombre,
-          apellido_paterno: data?.apellido_paterno || p.apellidoPaterno,
-          apellido_materno: data?.apellido_materno || p.apellidoMaterno || '',
-          fecha_nacimiento: this.toInputDate(data?.fecha_nacimiento || p.fechaNacimiento),
-          genero: data?.genero || '',
-          curp: data?.curp || p.curp,
-          estado_nacimiento: data?.estado_nacimiento || data?.estado || '',
-          hospital_nacimiento: data?.hospital_nacimiento || '',
-          nombre_padre_madre: data?.nombre_padre_madre || p.nombrePadreMadre || '',
-          direccion: data?.direccion || '',
-          colonia: data?.colonia || '',
-          ciudad: data?.ciudad || '',
-          estado: data?.estado || '',
-          codigo_postal: data?.codigo_postal || '',
-          telefono_casa: data?.telefono_casa || '',
-          telefono_celular: data?.telefono_celular || '',
-          correo_electronico: data?.correo_electronico || '',
-          en_emergencia_avisar_a: data?.en_emergencia_avisar_a || '',
-          telefono_emergencia: data?.telefono_emergencia || '',
-          tipo_sangre: data?.tipo_sangre || '',
-          tipo_cuota: data?.tipo_cuota || p.tipoCuota || 'CUOTA A',
-          notas_adicionales: data?.notas_adicionales || '',
-          paso_actual: data?.paso_actual ?? 5,
-        } satisfies PreregistroEditForm;
-        this.editUsaValvula = data?.usa_valvula === 'S';
-        this.showEditModal = true;
-      },
-      error: (err) => console.error('Error al cargar detalle de preregistro:', err)
-    });
+    this.preregistroApi.getPreRegistro(p.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.editData = {
+            nombre: data?.nombre || p.nombre,
+            apellido_paterno: data?.apellido_paterno || p.apellidoPaterno,
+            apellido_materno: data?.apellido_materno || p.apellidoMaterno || '',
+            fecha_nacimiento: this.toInputDate(data?.fecha_nacimiento || p.fechaNacimiento),
+            genero: data?.genero || '',
+            curp: data?.curp || p.curp,
+            estado_nacimiento: data?.estado_nacimiento || data?.estado || '',
+            hospital_nacimiento: data?.hospital_nacimiento || '',
+            nombre_padre_madre: data?.nombre_padre_madre || p.nombrePadreMadre || '',
+            direccion: data?.direccion || '',
+            colonia: data?.colonia || '',
+            ciudad: data?.ciudad || '',
+            estado: data?.estado || '',
+            codigo_postal: data?.codigo_postal || '',
+            telefono_casa: data?.telefono_casa || '',
+            telefono_celular: data?.telefono_celular || '',
+            correo_electronico: data?.correo_electronico || '',
+            en_emergencia_avisar_a: data?.en_emergencia_avisar_a || '',
+            telefono_emergencia: data?.telefono_emergencia || '',
+            tipo_sangre: data?.tipo_sangre || '',
+            tipo_cuota: data?.tipo_cuota || p.tipoCuota || 'CUOTA A',
+            notas_adicionales: data?.notas_adicionales || '',
+            paso_actual: data?.paso_actual ?? 5,
+          } satisfies PreregistroEditForm;
+          this.editUsaValvula = data?.usa_valvula === 'S';
+          this.showEditModal = true;
+        },
+        error: (err) => console.error('Error al cargar detalle de preregistro:', err),
+      });
   }
 
   guardarEdicion(): void {
@@ -373,20 +387,22 @@ export class PreregistrosTabComponent implements OnInit {
       tipos_espina: null,
     };
 
-    this.api.updatePreRegistro(this.editingId, payload).subscribe({
-      next: () => {
-        this.submittingEdit = false;
-        this.showEditModal = false;
-        this.editData = null;
-        this.editingId = null;
-        this.load();
-      },
-      error: (err) => {
-        this.submittingEdit = false;
-        this.editError = err?.error?.detail || 'Error al actualizar pre-registro.';
-        console.error('Error al actualizar pre-registro:', err);
-      }
-    });
+    this.preregistroApi.updatePreRegistro(this.editingId, payload as Partial<PreRegistro>)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.submittingEdit = false;
+          this.showEditModal = false;
+          this.editData = null;
+          this.editingId = null;
+          this.load();
+        },
+        error: (err) => {
+          this.submittingEdit = false;
+          this.editError = err?.error?.detail || 'Error al actualizar pre-registro.';
+          console.error('Error al actualizar pre-registro:', err);
+        },
+      });
   }
 
   private toInputDate(value: string | null | undefined): string {

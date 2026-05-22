@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ApiService } from '../../services/api.service';
+import { PreregistroApiService } from '../../services/preregistro-api.service';
+import { PreRegistro } from '../../shared/models/preregistro.models';
 import { OcrApiService, OcrResult } from '../../services/ocr-api.service';
 import { getMunicipiosParaEstado } from '../../shared/data/mexico-municipios';
 import { PAISES } from '../../shared/data/paises';
@@ -47,7 +48,7 @@ interface PreRegistroCreatedResponse { id_paciente?: number; preregistro_token?:
 })
 export class PreRegistroComponent implements OnInit {
   router = inject(Router);
-  private readonly api = inject(ApiService);
+  private readonly preregistroApi = inject(PreregistroApiService);
   private readonly ocrApi = inject(OcrApiService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -133,10 +134,10 @@ export class PreRegistroComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.api.getTiposEspinaPublic()
+    this.preregistroApi.getTiposEspinaPublic()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({ next: (d) => { this.tiposEspinaList = d; }, error: () => {} });
-    this.api.getTiposDocumentoPublic()
+    this.preregistroApi.getTiposDocumentoPublic()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({ next: (d) => { this.tiposDocumento = d; }, error: () => {} });
   }
@@ -354,7 +355,7 @@ export class PreRegistroComponent implements OnInit {
     if (curp.length !== 18 || !CURP_REGEX.test(curp)) return;
     this.checkingCurp = true;
     this.curpDisponible = null;
-    this.api.checkCurpDisponible(curp)
+    this.preregistroApi.checkCurpDisponible(curp)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
@@ -420,8 +421,8 @@ export class PreRegistroComponent implements OnInit {
       if (!val || (typeof val === 'string' && val.trim() === '')) this.invalidFields.push(field);
     }
 
-    if (step === 2) this._validateDatosPersonales(rec);
-    if (step === 4) this._validateContacto(rec);
+    if (step === 2) this._validateDatosPersonales();
+    if (step === 4) this._validateContacto();
     if (step === 5 && this.formData.tiposEspinaIds.length === 0) this.invalidFields.push('tiposEspinaIds');
 
     if (this.invalidFields.length > 0) {
@@ -436,20 +437,19 @@ export class PreRegistroComponent implements OnInit {
     this.fieldErrors[field] = msg;
   }
 
-  private _validateDatosPersonales(rec: Record<string, unknown>): void {
-    for (const f of ['nombre', 'apellidoPaterno', 'apellidoMaterno']) {
-      const v = ((rec[f] as string) || '').trim();
-      if (v && !this._soloLetras(v)) this._addFieldError(f, 'Solo se permiten letras en este campo.');
+  private _validateDatosPersonales(): void {
+    const { nombre, apellidoPaterno, apellidoMaterno, nombrePadreMadre, curp } = this.formData;
+    for (const [field, value] of [['nombre', nombre], ['apellidoPaterno', apellidoPaterno], ['apellidoMaterno', apellidoMaterno]] as [string, string][]) {
+      if (value && !this._soloLetras(value)) this._addFieldError(field, 'Solo se permiten letras en este campo.');
     }
-    const vPadre = ((rec['nombrePadreMadre'] as string) || '').trim();
-    if (vPadre && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s'/.-]+$/.test(vPadre))
+    if (nombrePadreMadre && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s'/.-]+$/.test(nombrePadreMadre.trim()))
       this._addFieldError('nombrePadreMadre', 'Solo se permiten letras en este campo.');
-    if (this.formData.curp && !CURP_REGEX.test(this.formData.curp.trim().toUpperCase()))
+    if (curp && !CURP_REGEX.test(curp.trim().toUpperCase()))
       this._addFieldError('curp', 'El CURP no tiene el formato correcto (18 caracteres).');
     if (this.checkingCurp) {
       if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
       this.stepError = 'Espera a que se verifique la disponibilidad del CURP.';
-    } else if (this.formData.curp && CURP_REGEX.test(this.formData.curp.trim().toUpperCase()) && this.curpDisponible === null) {
+    } else if (curp && CURP_REGEX.test(curp.trim().toUpperCase()) && this.curpDisponible === null) {
       if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
       this.stepError = 'Verifica la disponibilidad del CURP antes de continuar.';
       this.onCurpBlur();
@@ -458,22 +458,25 @@ export class PreRegistroComponent implements OnInit {
       this._addFieldError('curp', 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.');
   }
 
-  private _validateContacto(rec: Record<string, unknown>): void {
-    const phoneMsg = (c: unknown) => c === '+52' ? 'El teléfono debe tener exactamente 10 dígitos.' : 'Número inválido.';
-    for (const [f, cf] of [['telefonoCelular', 'telefonoCelularCodigo'], ['telefonoEmergencia', 'telefonoEmergenciaCodigo']] as [string, string][]) {
-      if (rec[f] && !this._esTelefono(rec[f] as string, rec[cf] as string))
-        this._addFieldError(f, phoneMsg(rec[cf]));
-    }
-    if (this.formData.telefonoCasa && !this._esTelefono(this.formData.telefonoCasa, this.formData.telefonoCasaCodigo))
-      this._addFieldError('telefonoCasa', phoneMsg(this.formData.telefonoCasaCodigo));
-    if (!this.formData.requiereTutor) return;
-    for (const f of ['nombreTutor', 'telefonoTutor', 'relacionTutor']) {
-      if (!(rec[f] as string)?.trim()) this.invalidFields.push(f);
-    }
-    if (this.formData.nombreTutor?.trim() && !this._soloLetras(this.formData.nombreTutor))
+  private _validateContacto(): void {
+    const { telefonoCelular, telefonoCelularCodigo, telefonoEmergencia, telefonoEmergenciaCodigo,
+            telefonoCasa, telefonoCasaCodigo, requiereTutor, nombreTutor, telefonoTutor,
+            telefonoTutorCodigo, relacionTutor } = this.formData;
+    const phoneMsg = (c: string) => c === '+52' ? 'El teléfono debe tener exactamente 10 dígitos.' : 'Número inválido.';
+    if (telefonoCelular && !this._esTelefono(telefonoCelular, telefonoCelularCodigo))
+      this._addFieldError('telefonoCelular', phoneMsg(telefonoCelularCodigo));
+    if (telefonoEmergencia && !this._esTelefono(telefonoEmergencia, telefonoEmergenciaCodigo))
+      this._addFieldError('telefonoEmergencia', phoneMsg(telefonoEmergenciaCodigo));
+    if (telefonoCasa && !this._esTelefono(telefonoCasa, telefonoCasaCodigo))
+      this._addFieldError('telefonoCasa', phoneMsg(telefonoCasaCodigo));
+    if (!requiereTutor) return;
+    if (!nombreTutor?.trim()) this.invalidFields.push('nombreTutor');
+    if (!telefonoTutor?.trim()) this.invalidFields.push('telefonoTutor');
+    if (!relacionTutor?.trim()) this.invalidFields.push('relacionTutor');
+    if (nombreTutor?.trim() && !this._soloLetras(nombreTutor))
       this._addFieldError('nombreTutor', 'Solo se permiten letras en este campo.');
-    if (this.formData.telefonoTutor && !this._esTelefono(this.formData.telefonoTutor, this.formData.telefonoTutorCodigo))
-      this._addFieldError('telefonoTutor', phoneMsg(this.formData.telefonoTutorCodigo));
+    if (telefonoTutor && !this._esTelefono(telefonoTutor, telefonoTutorCodigo))
+      this._addFieldError('telefonoTutor', phoneMsg(telefonoTutorCodigo));
   }
 
   // ── Navigation ─────────────────────────────────────────────────
@@ -498,12 +501,28 @@ export class PreRegistroComponent implements OnInit {
   submitForm(): void {
     if (!this.validateStep(5)) return;
     this.submitting = true;
+    this.preregistroApi.createPreRegistro(this._buildPayload())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: PreRegistroCreatedResponse) => {
+          if (res.preregistro_token) sessionStorage.setItem('preregistro_token', res.preregistro_token);
+          const uploads = this._buildUploads(res.id_paciente);
+          if (uploads.length === 0) { this.submitting = false; this.submitted = true; return; }
+          forkJoin(uploads).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: () => { this.submitting = false; this.submitted = true; },
+            error: () => { this.submitting = false; this.submitted = true; },
+          });
+        },
+        error: (err: unknown) => this._handleSubmitError(err),
+      });
+  }
+
+  private _buildPayload(): Partial<PreRegistro> & { tipos_espina: number[] } {
     const notasParts: string[] = [];
     if (this.formData.alergias) notasParts.push(`Alergias: ${this.formData.alergias}`);
     if (this.formData.medicamentosActuales) notasParts.push(`Medicamentos: ${this.formData.medicamentosActuales}`);
     if (this.formData.notasAdicionales) notasParts.push(this.formData.notasAdicionales);
-
-    const payload = {
+    return {
       nombre: this.formData.nombre,
       apellido_paterno: this.formData.apellidoPaterno,
       apellido_materno: this.formData.apellidoMaterno,
@@ -530,38 +549,25 @@ export class PreRegistroComponent implements OnInit {
       paso_actual: 5,
       tipos_espina: this.formData.tiposEspinaIds,
     };
+  }
 
-    this.api.createPreRegistro(payload)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res: PreRegistroCreatedResponse) => {
-          if (res.preregistro_token) sessionStorage.setItem('preregistro_token', res.preregistro_token);
-          const uploads = this._buildUploads(res.id_paciente);
-          if (uploads.length === 0) { this.submitting = false; this.submitted = true; return; }
-          forkJoin(uploads).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: () => { this.submitting = false; this.submitted = true; },
-            error: () => { this.submitting = false; this.submitted = true; },
-          });
-        },
-        error: (err: unknown) => {
-          this.submitting = false;
-          const detail = (err as { error?: { detail?: string } })?.error?.detail;
-          this.stepError = (detail?.includes('folio o CURP') || detail?.includes('CURP'))
-            ? 'Ya existe un registro con ese CURP. Si ya enviaste un pre-registro, contáctanos.'
-            : (detail || 'Ocurrió un error al guardar. Intenta de nuevo.');
-        },
-      });
+  private _handleSubmitError(err: unknown): void {
+    this.submitting = false;
+    const detail = (err as { error?: { detail?: string } })?.error?.detail;
+    this.stepError = (detail?.includes('folio o CURP') || detail?.includes('CURP'))
+      ? 'Ya existe un registro con ese CURP. Si ya enviaste un pre-registro, contáctanos.'
+      : (detail || 'Ocurrió un error al guardar. Intenta de nuevo.');
   }
 
   private _buildUploads(pacienteId: number | undefined): Observable<unknown>[] {
     if (!pacienteId) return [];
     const uploads: Observable<unknown>[] = [];
     for (const item of this.ocrFiles) {
-      if (item.tipoId !== 0) uploads.push(this.api.uploadDocumento(pacienteId, item.tipoId, item.file));
+      if (item.tipoId !== 0) uploads.push(this.preregistroApi.uploadDocumento(pacienteId, item.tipoId, item.file));
     }
     if (this.fotografiaFile) {
       const tipoFoto = this.tiposDocumento.find(t => t.nombre?.toLowerCase().includes('fotograf'));
-      if (tipoFoto) uploads.push(this.api.uploadDocumento(pacienteId, tipoFoto.id_tipo_documento, this.fotografiaFile));
+      if (tipoFoto) uploads.push(this.preregistroApi.uploadDocumento(pacienteId, tipoFoto.id_tipo_documento, this.fotografiaFile));
     }
     return uploads;
   }
