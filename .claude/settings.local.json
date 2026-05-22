@@ -257,7 +257,10 @@
       "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest pruebas-s2/test_hu10_almacen.py pruebas-s2/test_hu11_reportes.py --tb=long -q)",
       "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest pruebas-s2/test_hu10_almacen.py::test_hu10_listar_servicios --tb=short -q)",
       "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --tb=short -q)",
-      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --cov=backend/app --cov-report=xml:coverage.xml --tb=short -q)"
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --cov=backend/app --cov-report=xml:coverage.xml --tb=short -q)",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --cov=backend/app --cov-report=term-missing --cov-config=.coveragerc -q)",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --cov=backend/app --cov-report=term-missing -q)",
+      "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/test_doctores_bitacora.py --tb=short -q)"
     ]
   },
   "enableAllProjectMcpServers": true,
