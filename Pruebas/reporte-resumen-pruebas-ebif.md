@@ -211,7 +211,8 @@ La iteración cumple el objetivo de **regresión automatizada** sobre flujos cr�
 
 ## 6. Enlaces
 
-- **Qase — test runs (FJ26SV):** https://app.qase.io/run/FJ26SV
+- **Repositorio (código y pruebas):** https://github.com/Shreks-V/EspinaBifidaS1/tree/Pruebas-S2 — ver `README.md` en la raíz para ejecutar pytest.
+- **Ver resultados en Qase:** https://app.qase.io/run/FJ26SV
 - **pytest:** https://docs.pytest.org/
 
 ---
