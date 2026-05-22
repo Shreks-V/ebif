@@ -98,10 +98,91 @@ def metricas_avanzadas(
         "tasa_retencion_pct": round(activos / total * 100, 1) if total else 0,
     }
 
+    # ── Distribución por género ───────────────────────────────────
+    genero_cnt: dict[str, int] = {"Masculino": 0, "Femenino": 0, "No especificado": 0}
+    for b in beneficiarios:
+        g = (b.get("genero") or "").strip()
+        if g in ("Masculino", "Hombre", "M"):
+            genero_cnt["Masculino"] += 1
+        elif g in ("Femenino", "Mujer", "F"):
+            genero_cnt["Femenino"] += 1
+        else:
+            genero_cnt["No especificado"] += 1
+    dist_genero = [
+        {"label": k, "total": v, "pct": round(v / total * 100, 1) if total else 0}
+        for k, v in genero_cnt.items()
+    ]
+
+    # ── Uso de válvula ────────────────────────────────────────────
+    con_valvula = sum(1 for b in beneficiarios if str(b.get("usa_valvula", "")).upper() == "S")
+    uso_valvula = {
+        "con_valvula": con_valvula,
+        "sin_valvula": total - con_valvula,
+        "pct_con_valvula": round(con_valvula / total * 100, 1) if total else 0,
+    }
+
+    # ── Distribución por tipo de cuota ────────────────────────────
+    cuotas: dict[str, int] = {}
+    for b in beneficiarios:
+        c = (b.get("tipo_cuota") or "Sin cuota").strip()
+        cuotas[c] = cuotas.get(c, 0) + 1
+    dist_cuotas = [
+        {"tipo_cuota": k, "total": v, "pct": round(v / total * 100, 1) if total else 0}
+        for k, v in sorted(cuotas.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+    # ── Prevalencia de tipos de espina bífida ─────────────────────
+    espinas: dict[str, int] = {}
+    for b in beneficiarios:
+        for te in (b.get("tipos_espina") or []):
+            nombre_espina = (te.get("nombre") or "Otro").strip()
+            espinas[nombre_espina] = espinas.get(nombre_espina, 0) + 1
+    total_espinas = sum(espinas.values()) or 1
+    dist_espinas = [
+        {"nombre": k, "total": v, "pct": round(v / total_espinas * 100, 1)}
+        for k, v in sorted(espinas.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+    # ── Tendencia mensual (últimos 6 meses) ───────────────────────
+    meses = []
+    for i in range(5, -1, -1):
+        primer_dia = (hoy.replace(day=1) - timedelta(days=i * 30)).replace(day=1)
+        if primer_dia.month == 12:
+            ultimo_dia = primer_dia.replace(year=primer_dia.year + 1, month=1, day=1)
+        else:
+            ultimo_dia = primer_dia.replace(month=primer_dia.month + 1, day=1)
+        count = sum(
+            1 for b in beneficiarios
+            if b.get("fecha_alta")
+            and primer_dia.isoformat() <= str(b["fecha_alta"])[:10] < ultimo_dia.isoformat()
+        )
+        meses.append({
+            "mes": primer_dia.strftime("%b %Y"),
+            "inicio": primer_dia.isoformat(),
+            "fin": ultimo_dia.isoformat(),
+            "nuevos": count,
+        })
+
+    # ── Top estados de residencia ─────────────────────────────────
+    estados_cnt: dict[str, int] = {}
+    for b in beneficiarios:
+        e = (b.get("estado") or "Sin estado").strip()
+        estados_cnt[e] = estados_cnt.get(e, 0) + 1
+    top_estados = [
+        {"estado": k, "total": v, "pct": round(v / total * 100, 1) if total else 0}
+        for k, v in sorted(estados_cnt.items(), key=lambda x: x[1], reverse=True)[:8]
+    ]
+
     return {
         "total_beneficiarios": total,
         "distribucion_edades": dist_edad,
         "concentracion_geografica": geo_top5,
+        "top_estados": top_estados,
         "tendencia_semanal": semanas,
+        "tendencia_mensual": meses,
         "membresias": membresias,
+        "distribucion_genero": dist_genero,
+        "uso_valvula": uso_valvula,
+        "distribucion_cuotas": dist_cuotas,
+        "tipos_espina_prevalencia": dist_espinas,
     }

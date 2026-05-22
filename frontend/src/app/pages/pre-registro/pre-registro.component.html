@@ -60,6 +60,7 @@
             }
           }
         </div>
+
         <!-- Validation Error -->
         @if (stepError) {
           <div class="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-2xl flex items-center gap-3">
@@ -67,15 +68,199 @@
             <span class="text-sm font-semibold text-red-700">{{ stepError }}</span>
           </div>
         }
+
         <!-- Step Content Card -->
         <div class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 p-8">
-          <!-- Step 1: Datos Personales -->
+
+          <!-- ── Step 1: Documentos + OCR ──────────────────────────────── -->
           @if (currentStep === 1) {
+            <div>
+              <h2 class="text-xl font-black text-slate-900 mb-2 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Documentos
+              </h2>
+              <p class="text-sm text-slate-500 mb-6">Sube tus documentos (CURP, INE, acta de nacimiento, comprobante de domicilio). La IA extraer&aacute; tus datos autom&aacute;ticamente para pre-llenar el formulario.</p>
+
+              <!-- Drag-drop zone -->
+              <div class="mb-4 rounded-2xl border-2 border-dashed transition-all duration-200 p-6 text-center cursor-pointer"
+                [class]="ocrDragOver ? 'border-[#0052cc] bg-blue-50' : 'border-slate-200 bg-slate-50 hover:border-[#0052cc] hover:bg-blue-50'"
+                (dragover)="onDocDragOver($event)" (dragleave)="onDocDragLeave()" (drop)="onDocDrop($event)"
+                (click)="docFileInput.click()">
+                <input #docFileInput type="file" multiple accept="image/*,.pdf" class="hidden" (change)="onDocFilesSelected($event)">
+                <div class="flex flex-col items-center gap-3 pointer-events-none">
+                  <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-bold text-slate-700">Arrastra tus documentos aqu&iacute; o <span class="text-[#0052cc] underline">selecciona archivos</span></p>
+                    <p class="text-xs text-slate-400 mt-1">CURP, INE, acta de nacimiento, comprobante de domicilio &middot; JPG, PNG, PDF &middot; m&aacute;x. 10 MB c/u</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- File list -->
+              @if (ocrFiles.length > 0) {
+                <div class="mb-4 space-y-2">
+                  @for (item of ocrFiles; track item.id) {
+                    <div class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all"
+                      [ngClass]="{
+                        'border-slate-200 bg-white': item.status === 'pending',
+                        'border-blue-300 bg-blue-50': item.status === 'processing',
+                        'border-emerald-200 bg-emerald-50': item.status === 'done',
+                        'border-red-200 bg-red-50': item.status === 'error'
+                      }">
+                      <!-- Status icon -->
+                      <div class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                        [ngClass]="{
+                          'bg-slate-100': item.status === 'pending',
+                          'bg-blue-100': item.status === 'processing',
+                          'bg-emerald-100': item.status === 'done',
+                          'bg-red-100': item.status === 'error'
+                        }">
+                        @if (item.status === 'pending') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        }
+                        @if (item.status === 'processing') {
+                          <svg class="animate-spin w-4 h-4 text-[#0052cc]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                        }
+                        @if (item.status === 'done') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        }
+                        @if (item.status === 'error') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        }
+                      </div>
+                      <!-- File info -->
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-slate-700 truncate">{{ item.file.name }}</p>
+                        @if (item.status === 'pending') {
+                          <p class="text-xs text-slate-400">Pendiente de analizar</p>
+                        }
+                        @if (item.status === 'processing') {
+                          <p class="text-xs text-blue-600 font-semibold">Analizando con IA...</p>
+                        }
+                        @if (item.status === 'done' && item.result) {
+                          <p class="text-xs text-emerald-700">{{ item.result.tipo_documento || 'Documento' }} &middot; Confianza {{ item.result.confianza }}</p>
+                        }
+                        @if (item.status === 'error' && item.errorMsg) {
+                          <p class="text-xs text-red-600">{{ item.errorMsg }}</p>
+                        }
+                      </div>
+                      <!-- Type selector: hidden before OCR, shown after with auto-filled value -->
+                      @if (item.status === 'done' || item.status === 'error') {
+                        <select [(ngModel)]="item.tipoId"
+                          class="px-2 py-1.5 border-2 rounded-lg text-xs bg-white focus:border-[#00328b] focus:outline-none transition-all min-w-[150px]"
+                          [ngClass]="item.tipoId === 0 ? 'border-amber-300' : 'border-emerald-300'"
+                          aria-label="Tipo de documento">
+                          <option [ngValue]="0">Sin clasificar...</option>
+                          @for (td of tiposDocumento; track td) {
+                            <option [ngValue]="td.id_tipo_documento">{{ td.nombre }}</option>
+                          }
+                        </select>
+                      }
+                      <!-- Remove button -->
+                      <button type="button" (click)="removeOcrFile(item.id)" [disabled]="item.status === 'processing'"
+                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border-2 border-slate-200 text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-40"
+                        title="Quitar archivo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Analyze button -->
+              @if (ocrFiles.length > 0 && !ocrDone) {
+                <button type="button" (click)="analizarDocumentos()" [disabled]="ocrProcessing"
+                  class="mb-6 w-full px-6 py-3 bg-[#0052cc] hover:bg-[#003d99] text-white rounded-xl font-bold shadow transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                  @if (ocrProcessing) {
+                    <svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    Analizando documentos... ({{ ocrCompletados }}/{{ ocrFiles.length }})
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"/><path d="M16.5 7.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"/><path d="M21 15.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"/><path d="m9.5 10.5 2.5-2.5"/><path d="m11.5 10.5 5 5"/></svg>
+                    Analizar documentos con IA
+                  }
+                </button>
+              }
+
+              <!-- OCR result summary -->
+              @if (ocrDone && ocrMergedCampos.length > 0) {
+                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+                  <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div>
+                      <p class="text-sm font-black text-emerald-800">Datos extra&iacute;dos exitosamente</p>
+                      <p class="text-xs text-emerald-700 mt-0.5">Campos pre-llenados: <strong>{{ ocrMergedCampos.join(', ') }}</strong></p>
+                      <p class="text-xs text-slate-500 mt-1">Verifica y corrige los datos en los pasos siguientes si es necesario.</p>
+                    </div>
+                  </div>
+                  @if (ocrConError > 0) {
+                    <p class="text-xs text-amber-700 mt-3 font-semibold flex items-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      {{ ocrConError }} documento(s) no pudieron procesarse.
+                    </p>
+                  }
+                </div>
+              }
+              @if (ocrDone && ocrMergedCampos.length === 0) {
+                <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                  <p class="text-sm font-bold text-amber-800">No se pudieron extraer datos de los documentos.</p>
+                  <p class="text-xs text-amber-700 mt-1">Completa el formulario manualmente en los siguientes pasos.</p>
+                </div>
+              }
+
+              <!-- Fotografía -->
+              <div class="border-t-2 border-slate-100 pt-5 mt-2">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Fotograf&iacute;a <span class="text-slate-400 font-normal">(opcional)</span></label>
+                @if (!fotografiaPreview) {
+                  <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-[#00328b] transition-colors cursor-pointer" (click)="fotoInput.click()"><!-- NOSONAR -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <p class="text-sm text-slate-500 font-semibold">Haz clic para subir una fotograf&iacute;a</p>
+                    <p class="text-xs text-slate-400 mt-1">JPG, PNG o WEBP &middot; Se usar&aacute; para la credencial</p>
+                  </div>
+                }
+                @if (fotografiaPreview) {
+                  <div class="flex items-center gap-4 p-4 border-2 border-emerald-200 bg-emerald-50 rounded-xl">
+                    <img [src]="fotografiaPreview" alt="Preview fotografía" class="w-20 h-20 object-cover rounded-lg border-2 border-emerald-300 shadow-sm" />
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-bold text-emerald-700 truncate">{{ fotografiaName }}</p>
+                      <p class="text-xs text-slate-500 mt-0.5">Foto seleccionada &middot; se subir&aacute; al enviar el registro</p>
+                      <div class="flex gap-2 mt-2">
+                        <button type="button" (click)="fotoInput.click()" class="text-xs font-semibold text-[#00328b] hover:underline cursor-pointer">Cambiar</button>
+                        <span class="text-slate-300">|</span>
+                        <button type="button" (click)="quitarFotografia()" class="text-xs font-semibold text-red-500 hover:underline cursor-pointer">Quitar</button>
+                      </div>
+                    </div>
+                  </div>
+                }
+                <input #fotoInput type="file" accept="image/*" class="hidden" (change)="onFotoSelected($event)">
+              </div>
+
+              @if (ocrFiles.length === 0) {
+                <p class="text-xs text-slate-400 mt-4 italic">Los documentos son opcionales. Puedes continuar sin subirlos y llenar el formulario manualmente.</p>
+              }
+            </div>
+          }
+
+          <!-- ── Step 2: Datos Generales ───────────────────────────────── -->
+          @if (currentStep === 2) {
             <div>
               <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Datos Personales
+                Datos Generales
               </h2>
+
+              @if (ocrMergedCampos.length > 0) {
+                <div class="mb-5 flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 font-semibold">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                  Algunos campos fueron pre-llenados por la IA &mdash; verifica que la informaci&oacute;n sea correcta.
+                </div>
+              }
+
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">Nombre <span class="text-red-500" aria-hidden="true">*</span></label>
@@ -113,7 +298,7 @@
                 <div>
                   <label class="block text-sm font-bold text-slate-700 mb-1">CURP <span class="text-red-500" aria-hidden="true">*</span></label>
                   <div class="relative">
-                    <input type="text" [ngModel]="formData.curp" (ngModelChange)="onCurpChange($event)" (blur)="onCurpBlur()" [class]="getFieldClass('curp') + ' uppercase pr-10'" maxlength="18" placeholder="18 caracteres" aria-label="18 caracteres">
+                    <input type="text" [ngModel]="formData.curp" (ngModelChange)="onCurpChange($event)" (blur)="onCurpBlur()" [class]="getFieldClass('curp') + ' uppercase pr-10'" maxlength="18" placeholder="18 caracteres" aria-label="CURP">
                     @if (checkingCurp) {
                       <span class="absolute right-3 top-1/2 -translate-y-1/2">
                         <svg class="animate-spin w-5 h-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
@@ -141,36 +326,12 @@
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombrePadreMadre') }}</p>
                   }
                 </div>
-                <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Fotograf&iacute;a <span class="text-slate-400 font-normal">(opcional)</span></label>
-                  @if (!fotografiaPreview) {
-                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-[#00328b] transition-colors cursor-pointer" (click)="fileInput.click()"><!-- NOSONAR -->
-                      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                      <p class="text-sm text-slate-500 font-semibold">Haz clic para subir una fotograf&iacute;a</p>
-                      <p class="text-xs text-slate-400 mt-1">JPG, PNG o WEBP &middot; Se usar&aacute; para la credencial</p>
-                    </div>
-                  }
-                  @if (fotografiaPreview) {
-                    <div class="flex items-center gap-4 p-4 border-2 border-emerald-200 bg-emerald-50 rounded-xl">
-                      <img [src]="fotografiaPreview" alt="Preview fotografía" class="w-20 h-20 object-cover rounded-lg border-2 border-emerald-300 shadow-sm" />
-                      <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-emerald-700 truncate">{{ fotografiaName }}</p>
-                        <p class="text-xs text-slate-500 mt-0.5">Foto seleccionada &middot; se subir&aacute; al continuar</p>
-                        <div class="flex gap-2 mt-2">
-                          <button type="button" (click)="fileInput.click()" class="text-xs font-semibold text-[#00328b] hover:underline cursor-pointer">Cambiar</button>
-                          <span class="text-slate-300">|</span>
-                          <button type="button" (click)="quitarFotografia()" class="text-xs font-semibold text-red-500 hover:underline cursor-pointer">Quitar</button>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                  <input #fileInput type="file" accept="image/*" class="hidden" (change)="onFileSelected($event)">
-                </div>
               </div>
             </div>
           }
-          <!-- Step 2: Direcci&oacute;n -->
-          @if (currentStep === 2) {
+
+          <!-- ── Step 3: Dirección ─────────────────────────────────────── -->
+          @if (currentStep === 3) {
             <div>
               <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -178,7 +339,7 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-bold text-slate-700 mb-1">País <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Pa&iacute;s <span class="text-red-500" aria-hidden="true">*</span></label>
                   <select [(ngModel)]="formData.pais" [class]="getFieldClass('pais') + ' bg-white'" aria-label="País">
                     <option value="">Seleccionar...</option>
                     @for (p of paises; track p.nombre) {
@@ -240,8 +401,9 @@
               </div>
             </div>
           }
-          <!-- Step 3: Contacto y Emergencia -->
-          @if (currentStep === 3) {
+
+          <!-- ── Step 4: Contacto y Emergencia ────────────────────────── -->
+          @if (currentStep === 4) {
             <div>
               <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -249,28 +411,28 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono Casa</label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Casa</label>
                   <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono Casa">
+                    <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Código de país, teléfono casa">
                       @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
                     </select>
-                    <input type="tel" [(ngModel)]="formData.telefonoCasa" [class]="getFieldClass('telefonoCasa') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCasaCodigo)" placeholder="{{ formData.telefonoCasaCodigo === '+52' ? '10 dígitos' : 'Número' }}" aria-label="{{ formData.telefonoCasaCodigo === ">
+                    <input type="tel" [(ngModel)]="formData.telefonoCasa" [class]="getFieldClass('telefonoCasa') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCasaCodigo)" [placeholder]="formData.telefonoCasaCodigo === '+52' ? '10 dígitos' : 'Número'" aria-label="Teléfono Casa">
                   </div>
                   @if (getFieldError('telefonoCasa')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoCasa') }}</p>
                   }
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono Celular <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono Celular <span class="text-red-500" aria-hidden="true">*</span></label>
                   <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono Celular">
+                    <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Código de país, teléfono celular">
                       @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
                     </select>
-                    <input type="tel" [(ngModel)]="formData.telefonoCelular" [class]="getFieldClass('telefonoCelular') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCelularCodigo)" placeholder="{{ formData.telefonoCelularCodigo === '+52' ? '10 dígitos' : 'Número' }}" aria-label="{{ formData.telefonoCelularCodigo === ">
+                    <input type="tel" [(ngModel)]="formData.telefonoCelular" [class]="getFieldClass('telefonoCelular') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCelularCodigo)" [placeholder]="formData.telefonoCelularCodigo === '+52' ? '10 dígitos' : 'Número'" aria-label="Teléfono Celular">
                   </div>
                   @if (getFieldError('telefonoCelular')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoCelular') }}</p>
@@ -291,20 +453,20 @@
                   <input type="text" [(ngModel)]="formData.enEmergenciaAvisarA" [class]="getFieldClass('enEmergenciaAvisarA')" aria-label="En Emergencia Avisar a">
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono de Emergencia <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono de Emergencia <span class="text-red-500" aria-hidden="true">*</span></label>
                   <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono de Emergencia">
+                    <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Código de país, teléfono emergencia">
                       @for (p of paisesTelefono; track p.nombre) {
                         <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                       }
                     </select>
-                    <input type="tel" [(ngModel)]="formData.telefonoEmergencia" [class]="getFieldClass('telefonoEmergencia') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoEmergenciaCodigo)" placeholder="{{ formData.telefonoEmergenciaCodigo === '+52' ? '10 dígitos' : 'Número' }}" aria-label="{{ formData.telefonoEmergenciaCodigo === ">
+                    <input type="tel" [(ngModel)]="formData.telefonoEmergencia" [class]="getFieldClass('telefonoEmergencia') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoEmergenciaCodigo)" [placeholder]="formData.telefonoEmergenciaCodigo === '+52' ? '10 dígitos' : 'Número'" aria-label="Teléfono de Emergencia">
                   </div>
                   @if (getFieldError('telefonoEmergencia')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoEmergencia') }}</p>
                   }
                 </div>
-                <div class="md:col-span-2 mt-4">
+                <div class="md:col-span-2 mt-2">
                   <label class="flex items-center gap-3" [class.cursor-pointer]="!esMenorDeEdad" [class.cursor-not-allowed]="esMenorDeEdad">
                     <input type="checkbox" [(ngModel)]="formData.requiereTutor" [disabled]="esMenorDeEdad" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" aria-label="¿Requiere tutor?">
                     <span class="text-sm font-bold text-slate-700">&iquest;Requiere tutor?</span>
@@ -325,29 +487,30 @@
                     }
                   </div>
                   <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono del Tutor <span class="text-red-500" aria-hidden="true">*</span></label>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Tel&eacute;fono del Tutor <span class="text-red-500" aria-hidden="true">*</span></label>
                     <div class="flex gap-2">
-                      <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono del Tutor">
+                      <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Código de país, teléfono tutor">
                         @for (p of paisesTelefono; track p.nombre) {
                           <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
                         }
                       </select>
-                      <input type="tel" [(ngModel)]="formData.telefonoTutor" [class]="getFieldClass('telefonoTutor') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoTutorCodigo)" placeholder="{{ formData.telefonoTutorCodigo === '+52' ? '10 dígitos' : 'Número' }}" aria-label="{{ formData.telefonoTutorCodigo === ">
+                      <input type="tel" [(ngModel)]="formData.telefonoTutor" [class]="getFieldClass('telefonoTutor') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoTutorCodigo)" [placeholder]="formData.telefonoTutorCodigo === '+52' ? '10 dígitos' : 'Número'" aria-label="Teléfono del Tutor">
                     </div>
                     @if (getFieldError('telefonoTutor')) {
                       <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoTutor') }}</p>
                     }
                   </div>
                   <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Relación con el beneficiario <span class="text-red-500" aria-hidden="true">*</span></label>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Relaci&oacute;n con el beneficiario <span class="text-red-500" aria-hidden="true">*</span></label>
                     <input type="text" [(ngModel)]="formData.relacionTutor" [class]="getFieldClass('relacionTutor')" placeholder="Ej: Padre, Madre, T&iacute;o..." aria-label="Relación con el beneficiario">
                   </div>
                 }
               </div>
             </div>
           }
-          <!-- Step 4: Informaci&oacute;n M&eacute;dica -->
-          @if (currentStep === 4) {
+
+          <!-- ── Step 5: Información Médica ────────────────────────────── -->
+          @if (currentStep === 5) {
             <div>
               <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
@@ -414,82 +577,7 @@
               </div>
             </div>
           }
-          <!-- Step 5: Documentos -->
-          @if (currentStep === 5) {
-            <div>
-              <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Documentos
-              </h2>
-              <p class="text-sm text-slate-600 mb-6">Sube los documentos requeridos para completar tu pre-registro. Puedes subir m&uacute;ltiples archivos.</p>
-              <!-- Uploaded Documents List -->
-              @if (documentosSubidos.length > 0) {
-                <div class="mb-6 space-y-3">
-                  <h3 class="text-sm font-bold text-slate-700 mb-2">Documentos subidos</h3>
-                  @for (doc of documentosSubidos; track doc) {
-                    <div class="flex items-center justify-between p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
-                      <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        </div>
-                        <div>
-                          <p class="text-sm font-bold text-slate-800">{{ doc.nombre_archivo }}</p>
-                          <p class="text-xs text-slate-500">{{ doc.tipo_nombre || 'Documento' }} &middot; {{ doc.formato_archivo }}</p>
-                        </div>
-                      </div>
-                      <button (click)="eliminarDocumento(doc)" class="p-2 rounded-lg hover:bg-red-100 text-slate-400 hover:text-red-600 transition-colors" title="Eliminar">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                      </button>
-                    </div>
-                  }
-                </div>
-              }
-              <!-- Upload New Documents -->
-              <div class="bg-slate-50 rounded-2xl p-6 border-2 border-slate-200">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h3 class="text-sm font-bold text-slate-700">Subir documentos</h3>
-                  <button type="button" (click)="agregarDocumentoPendiente()"
-                    class="w-full sm:w-auto px-4 py-2 border-2 border-[#00328b] text-[#00328b] rounded-xl text-sm font-bold hover:bg-[#00328b]/5 transition-all flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                    Agregar otro documento
-                  </button>
-                </div>
-                <div class="space-y-4 mb-4">
-                  @for (doc of documentosPendientes; track doc.id; let i = $index) {
-                    <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-end rounded-xl border border-slate-200 bg-white p-4">
-                      <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Tipo de Documento</label>
-                        <select [(ngModel)]="doc.tipoId" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-all text-sm bg-white" aria-label="Tipo de Documento">
-                          <option [ngValue]="0">Seleccionar tipo...</option>
-                          @for (td of tiposDocumento; track td) {
-                            <option [ngValue]="td.id_tipo_documento">{{ td.nombre }}</option>
-                          }
-                        </select>
-                      </div>
-                      <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">Archivo</label>
-                        <button type="button" (click)="docFileInput.click()" class="w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-[#00328b] hover:text-[#00328b] transition-all text-left truncate">
-                          {{ doc.file ? doc.file.name : 'Seleccionar archivo...' }}
-                        </button>
-                        <input #docFileInput type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" (change)="onDocFileSelected($event, doc)">
-                      </div>
-                      <button type="button" (click)="quitarDocumentoPendiente(doc.id)" [disabled]="documentosPendientes.length === 1"
-                        class="h-12 w-12 rounded-xl border-2 border-slate-200 text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-slate-400 disabled:hover:border-slate-200 flex items-center justify-center"
-                        title="Quitar documento">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                      </button>
-                    </div>
-                  }
-                </div>
-                <button (click)="subirDocumentosPendientes()" [disabled]="subiendoDoc || !hayDocumentosListos"
-                  class="px-6 py-2.5 text-sm font-semibold text-white bg-[#00328b] rounded-xl hover:bg-[#002a75] transition-colors disabled:opacity-50 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  {{ subiendoDoc ? 'Subiendo...' : 'Subir documentos seleccionados' }}
-                </button>
-              </div>
-              <p class="text-xs text-slate-400 mt-4 italic">Formatos aceptados: PDF, JPG, PNG, DOC, DOCX. Este paso es opcional, puedes enviar el pre-registro sin documentos.</p>
-            </div>
-          }
+
           <!-- Navigation Buttons -->
           <div class="flex justify-between mt-8 pt-6 border-t-2 border-slate-100">
             @if (currentStep > 1) {
@@ -503,8 +591,8 @@
               <div></div>
             }
             @if (currentStep < 5) {
-              <button (click)="nextStep()"
-                class="px-8 py-3 bg-[#00328b] hover:bg-[#00246d] text-white rounded-xl font-bold shadow-lg transition-all flex items-center gap-2">
+              <button (click)="nextStep()" [disabled]="ocrProcessing && currentStep === 1"
+                class="px-8 py-3 bg-[#00328b] hover:bg-[#00246d] text-white rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 Siguiente
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </button>

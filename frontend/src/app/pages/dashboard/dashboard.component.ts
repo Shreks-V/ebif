@@ -2,13 +2,10 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NgxEchartsDirective } from 'ngx-echarts';
-import type { EChartsOption } from 'echarts';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { DashboardService } from '../../services/dashboard.service';
-import { MetricasApiService, MetricasDashboard } from '../../services/metricas-api.service';
 import { ToastService } from '../../core/toast.service';
 import { WalkInModalComponent } from './modals/walk-in-modal.component';
 import { ReciboPostCitaModalComponent, ReciboModalPaciente } from './modals/recibo-post-cita-modal.component';
@@ -19,7 +16,7 @@ import { getApiError } from '../../shared/utils/error.utils';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, FooterComponent, WalkInModalComponent, ReciboPostCitaModalComponent, NgxEchartsDirective],
+  imports: [CommonModule, NavbarComponent, FooterComponent, WalkInModalComponent, ReciboPostCitaModalComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
@@ -56,15 +53,8 @@ export class DashboardComponent implements OnInit {
   showWalkInModal = false;
   pacienteParaRecibo: ReciboModalPaciente | null = null;
 
-  // ── Métricas avanzadas ───────────────────────────────────────
-  metricas: MetricasDashboard | null = null;
-  metricasLoading = true;
-  geoChartOpt: EChartsOption = {};
-  tendenciaChartOpt: EChartsOption = {};
-
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
-  private readonly metricasApi = inject(MetricasApiService);
 
   constructor(
     private readonly router: Router,
@@ -80,41 +70,6 @@ export class DashboardComponent implements OnInit {
 
     this.resumenSemanaLabel = today.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
       .replace(/^\w/, c => c.toUpperCase());
-
-    this.metricasApi.getMetricas()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (m) => {
-          this.metricas = m;
-          this.metricasLoading = false;
-
-          const geo = m.concentracion_geografica ?? [];
-          this.geoChartOpt = {
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-            grid: { left: '2%', right: '8%', bottom: '3%', containLabel: true },
-            xAxis: { type: 'value', axisLabel: { fontSize: 10 } },
-            yAxis: { type: 'category', data: geo.map(g => g.municipio).reverse(), axisLabel: { fontSize: 10, width: 110, overflow: 'truncate' } },
-            series: [{ type: 'bar', data: geo.map(g => g.total).reverse(), itemStyle: { color: '#0052cc', borderRadius: [0, 4, 4, 0] }, barMaxWidth: 20 }],
-          };
-
-          const sem = m.tendencia_semanal ?? [];
-          this.tendenciaChartOpt = {
-            tooltip: { trigger: 'axis' },
-            grid: { left: '3%', right: '3%', bottom: '3%', containLabel: true },
-            xAxis: { type: 'category', data: sem.map(s => s.etiqueta), axisLabel: { fontSize: 10 } },
-            yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
-            series: [{
-              type: 'bar',
-              data: sem.map((s, i) => ({
-                value: s.nuevos,
-                itemStyle: { color: i === sem.length - 1 ? '#f3ad1c' : '#00328b', borderRadius: [4, 4, 0, 0] },
-              })),
-              barMaxWidth: 36,
-            }],
-          };
-        },
-        error: () => { this.metricasLoading = false; },
-      });
 
     this.dashboardService.load(today)
       .pipe(takeUntilDestroyed(this.destroyRef))

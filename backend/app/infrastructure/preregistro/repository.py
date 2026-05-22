@@ -9,7 +9,7 @@ from app.domain.shared.current_user import CurrentUser
 import uuid
 from pathlib import Path
 from app.domain.preregistro.entities import UploadedFile
-from app.domain.exceptions import NotFoundError, ValidationError
+from app.domain.exceptions import ConflictError, NotFoundError, ValidationError
 from typing import Optional
 
 import oracledb
@@ -124,6 +124,22 @@ def _crear_preregistro(data):
         if cursor.fetchone()[0] > 0:
             cursor.execute('SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE')
             folio = f'PRE-{int(cursor.fetchone()[0]):06d}'
+
+        # CURP duplicate check — column is AES-GCM encrypted (non-deterministic), so no
+        # DB unique constraint is possible; we must decrypt each row to compare.
+        if data.curp:
+            from app.infrastructure.privacy.crypto import decrypt
+            normalized_curp = data.curp.strip().upper()
+            cursor.execute('SELECT CURP FROM PACIENTE WHERE CURP IS NOT NULL')
+            for (raw,) in cursor:
+                try:
+                    if decrypt(raw).strip().upper() == normalized_curp:
+                        raise ConflictError('Ya existe un registro con ese CURP.')
+                except ConflictError:
+                    raise
+                except Exception:
+                    continue
+
         fecha_nac = datetime.strptime(str(data.fecha_nacimiento)[:10], '%Y-%m-%d') if data.fecha_nacimiento else None
         tipos_arr = make_number_list(conn, [int(t) for t in data.tipos_espina])
         id_out = cursor.var(int)
@@ -448,3 +464,6 @@ class OraclePreregistroRepository(PreregistroRepository):
 
     def rechazar_preregistro(self, id_paciente, current_user=None):
         return _rechazar_preregistro(id_paciente, current_user)
+
+    def check_curp_disponible(self, curp):
+        return _check_curp_disponible(curp)

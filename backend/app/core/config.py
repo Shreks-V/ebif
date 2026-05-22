@@ -46,6 +46,10 @@ class Settings(BaseModel):
     # Cifrado de datos personales (AES-256-GCM) - LFPDPPP
     DATA_ENCRYPTION_KEY: str = os.getenv("DATA_ENCRYPTION_KEY", "")
 
+    # Gemini AI — OCR de documentos
+    GEMINI_KEY_1: str = os.getenv("GEMINI_KEY_1", "")
+    GEMINI_KEY_2: str = os.getenv("GEMINI_KEY_2", "")
+
     # SMTP — recuperación de contraseña por correo (Opción C)
     # Configurar estas variables en .env para activar el flujo de "olvidé mi contraseña"
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")

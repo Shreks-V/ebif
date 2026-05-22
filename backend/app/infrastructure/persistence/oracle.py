@@ -35,6 +35,7 @@ def init_pool():
         min=2,
         max=10,
         increment=1,
+        ping_interval=0,
     )
 
 

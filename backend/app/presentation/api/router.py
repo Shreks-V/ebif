@@ -12,6 +12,7 @@ from app.presentation.api.routers import (
     exportaciones,
     metricas,
     notificaciones,
+    ocr,
     preregistro,
     recibos,
     reportes,
@@ -34,4 +35,5 @@ def build_api_router() -> APIRouter:
     router.include_router(bitacora.router, prefix="/api/bitacora", tags=["Bitácora"])
     router.include_router(busqueda.router, prefix="/api/buscar", tags=["Búsqueda"])
     router.include_router(metricas.router, prefix="/api/dashboard/metricas", tags=["Dashboard"])
+    router.include_router(ocr.router, prefix="/api/ocr", tags=["OCR"])
     return router

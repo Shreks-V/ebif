@@ -2,6 +2,8 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
+import { PreregistroApiService } from '../../../../services/preregistro-api.service';
+import { Documento } from '../../../../shared/models/preregistro.models';
 import { CuotaBadgeComponent } from '../../../../shared/components/cuota-badge/cuota-badge.component';
 import { AvatarInicialesComponent } from '../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
 import { getMunicipiosParaEstado } from '../../../../shared/data/mexico-municipios';
@@ -86,6 +88,9 @@ export class PreregistrosTabComponent implements OnInit {
 
   showDetalleModal = false;
   preregistroSeleccionado: Preregistro | null = null;
+  documentosPreregistro: Documento[] = [];
+  loadingDocumentos = false;
+  descargandoDocId: number | null = null;
 
   showAprobarModal = false;
   preregistroAProbar: Preregistro | null = null;
@@ -120,7 +125,10 @@ export class PreregistrosTabComponent implements OnInit {
     'bg-cyan-400', 'bg-amber-400'
   ];
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly preregistroApi: PreregistroApiService,
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -220,12 +228,37 @@ export class PreregistrosTabComponent implements OnInit {
 
   verDetalle(p: Preregistro): void {
     this.preregistroSeleccionado = p;
+    this.documentosPreregistro = [];
+    this.loadingDocumentos = true;
     this.showDetalleModal = true;
+    this.preregistroApi.getDocumentos(p.id).subscribe({
+      next: (docs) => { this.documentosPreregistro = docs; this.loadingDocumentos = false; },
+      error: () => { this.loadingDocumentos = false; },
+    });
   }
 
   closeDetalle(): void {
     this.showDetalleModal = false;
     this.preregistroSeleccionado = null;
+    this.documentosPreregistro = [];
+    this.descargandoDocId = null;
+  }
+
+  descargarDoc(doc: Documento): void {
+    if (!this.preregistroSeleccionado || this.descargandoDocId === doc.id_documento) return;
+    this.descargandoDocId = doc.id_documento;
+    this.preregistroApi.getDocumentoBlob(this.preregistroSeleccionado.id, doc.id_documento).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.nombre_archivo || `documento-${doc.id_documento}`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.descargandoDocId = null;
+      },
+      error: () => { this.descargandoDocId = null; },
+    });
   }
 
   abrirModalAprobacion(p: Preregistro): void {

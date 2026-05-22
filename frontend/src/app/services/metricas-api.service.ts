@@ -16,13 +16,19 @@ export interface MetricasDashboard {
     desviacion_std: number | null;
   };
   concentracion_geografica: { municipio: string; total: number; pct: number }[];
+  top_estados: { estado: string; total: number; pct: number }[];
   tendencia_semanal: { etiqueta: string; inicio: string; fin: string; nuevos: number }[];
+  tendencia_mensual: { mes: string; inicio: string; fin: string; nuevos: number }[];
   membresias: {
     activas: number;
     vencidas: number;
     sin_membresia: number;
     tasa_retencion_pct: number;
   };
+  distribucion_genero: { label: string; total: number; pct: number }[];
+  uso_valvula: { con_valvula: number; sin_valvula: number; pct_con_valvula: number };
+  distribucion_cuotas: { tipo_cuota: string; total: number; pct: number }[];
+  tipos_espina_prevalencia: { nombre: string; total: number; pct: number }[];
 }
 
 @Injectable({ providedIn: 'root' })

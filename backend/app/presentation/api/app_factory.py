@@ -40,9 +40,15 @@ async def lifespan(app: FastAPI):
 _access_log = logging.getLogger("ebif.access")
 
 
+_NO_LOG_PATHS = {"/api/ocr/extraer-documento"}
+
+
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         t0 = time.perf_counter()
+        # Excluir rutas con datos sensibles del log de acceso
+        if request.url.path in _NO_LOG_PATHS:
+            return await call_next(request)
         user_id: int | None = None
         try:
             auth = request.headers.get("Authorization", "")
