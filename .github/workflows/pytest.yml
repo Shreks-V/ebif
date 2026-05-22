@@ -21,4 +21,9 @@ jobs:
         run: pip install -r backend/requirements-dev.txt
 
       - name: Run pytest
-        run: pytest -q
+        run: python -m pytest Pruebas/ pruebas-s2/ --tb=short -q
+        env:
+          SECRET_KEY: ci-dummy-secret-key-not-used-in-prod
+          ORACLE_USER: ""
+          ORACLE_PASSWORD: ""
+          ORACLE_DSN: ""

@@ -7,7 +7,6 @@ on:
 jobs:
   tests-with-qase:
     runs-on: ubuntu-latest
-    if: secrets.QASE_TESTOPS_API_TOKEN != ''
     env:
       QASE_MODE: testops
       QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
@@ -29,4 +28,9 @@ jobs:
           QASE_TESTOPS_PROJECT: FJ26SV
 
       - name: Run pytest (report to Qase)
-        run: pytest -q
+        run: python -m pytest Pruebas/ pruebas-s2/ --tb=short -q
+        env:
+          SECRET_KEY: ci-dummy-secret-key-not-used-in-prod
+          ORACLE_USER: ""
+          ORACLE_PASSWORD: ""
+          ORACLE_DSN: ""
