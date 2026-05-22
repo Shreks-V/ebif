@@ -93,7 +93,11 @@ def listar_documentos(
     return service.listar_documentos(id_paciente, limit, offset)
 
 @router.get('/{id_paciente}/documentos/{id_documento}/archivo')
-def obtener_documento_archivo(id_paciente: int, id_documento: Annotated[int, _access, Depends(ensure_preregistro_access)] = None) -> StreamingResponse:
+def obtener_documento_archivo(
+    id_paciente: int,
+    id_documento: int,
+    _access=Depends(ensure_preregistro_access),
+) -> StreamingResponse:
     archivo = service.obtener_documento_archivo(id_paciente, id_documento)
     return StreamingResponse(
         iter([archivo.content]),
@@ -102,7 +106,11 @@ def obtener_documento_archivo(id_paciente: int, id_documento: Annotated[int, _ac
     )
 
 @router.delete('/{id_paciente}/documentos/{id_documento}')
-def eliminar_documento(id_paciente: int, id_documento: Annotated[int, _access, Depends(ensure_preregistro_access)] = None) -> dict:
+def eliminar_documento(
+    id_paciente: int,
+    id_documento: int,
+    _access=Depends(ensure_preregistro_access),
+) -> dict:
     return service.eliminar_documento(id_paciente, id_documento)
 
 @router.post('/{id_paciente}/rechazar')
