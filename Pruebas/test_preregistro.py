@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 
 from app.infrastructure.security.adapters import JwtAccessTokenIssuer
 
+from Pruebas.qase_decorators import qase_case
+
 BASE = "/api/preregistro"
 
 
@@ -40,6 +42,7 @@ def pre_client(preregistro_client_factory) -> TestClient:
     return preregistro_client_factory()
 
 
+@qase_case("Pre-Registro", "FJ26SV-24", "Completar preregistro público sin estar logueado (flujo feliz)")
 def test_sv24_preregistro_publico_flujo_feliz_sin_login(pre_client: TestClient):
     r = pre_client.post(BASE, json=_payload_paso1())
     assert r.status_code == 201, r.text
@@ -49,6 +52,7 @@ def test_sv24_preregistro_publico_flujo_feliz_sin_login(pre_client: TestClient):
     assert isinstance(body.get("id_paciente"), int)
 
 
+@qase_case("Pre-Registro", "FJ26SV-25", "Avanzar pasos: indicador paso_actual coherente")
 def test_sv25_avance_pasos_indicador_paso_actual_coherente(pre_client: TestClient):
     c = pre_client.post(BASE, json=_payload_paso1())
     assert c.status_code == 201
@@ -72,6 +76,7 @@ def test_sv25_avance_pasos_indicador_paso_actual_coherente(pre_client: TestClien
     assert g.json().get("paso_actual") == 2
 
 
+@qase_case("Pre-Registro", "FJ26SV-26", "No avanzar de paso con datos incompletos")
 def test_sv26_no_avanzar_paso_con_datos_incompletos(pre_client: TestClient):
     c = pre_client.post(BASE, json=_payload_paso1())
     pid = c.json()["id_paciente"]
@@ -96,6 +101,7 @@ def test_sv26_no_avanzar_paso_con_datos_incompletos(pre_client: TestClient):
     assert "espina" in (r2.json().get("detail") or "").lower()
 
 
+@qase_case("Pre-Registro", "FJ26SV-27", "Respuesta de confirmación tras envío exitoso (API)")
 def test_sv27_respuesta_confirmacion_tras_envio_exitoso(pre_client: TestClient):
     r = pre_client.post(BASE, json=_payload_paso1())
     assert r.status_code == 201
@@ -105,6 +111,11 @@ def test_sv27_respuesta_confirmacion_tras_envio_exitoso(pre_client: TestClient):
     assert data.get("id_paciente") is not None
 
 
+@qase_case(
+    "Pre-Registro",
+    "FJ26SV-28",
+    "Catálogos públicos accesibles (complemento a navegación inicio en UI)",
+)
 def test_sv28_catalogos_publicos_accesibles_tras_flujo(pre_client: TestClient):
     t0 = pre_client.get(f"{BASE}/tipos-espina")
     assert t0.status_code == 200
@@ -117,6 +128,7 @@ def test_sv28_catalogos_publicos_accesibles_tras_flujo(pre_client: TestClient):
     assert t1.status_code == 200 and d1.status_code == 200
 
 
+@qase_case("Pre-Registro", "FJ26SV-29", "Listar solicitudes de preregistro en panel interno")
 def test_sv29_listar_solicitudes_panel_interno(pre_client: TestClient):
     pre_client.post(BASE, json=_payload_paso1())
     r = pre_client.get(BASE, headers=_h_admin())
@@ -133,6 +145,7 @@ def test_sv29_listar_solicitudes_panel_interno(pre_client: TestClient):
     assert all(x.get("estatus_registro") == "PENDIENTE" for x in filtro.json())
 
 
+@qase_case("Pre-Registro", "FJ26SV-30", "Aprobar / rechazar solicitud y reflejo en estado")
 def test_sv30_aprobar_rechazar_reflejo_estado(pre_client: TestClient):
     a = pre_client.post(BASE, json=_payload_paso1())
     b = pre_client.post(

@@ -1,8 +1,24 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-load_dotenv()
+# backend/app/core/config.py → repo root is three levels above this file
+_BACKEND_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = _BACKEND_ROOT.parent
+
+# Support .env at repo root (docker-compose) and/or under backend/ (local uvicorn)
+load_dotenv(_REPO_ROOT / ".env")
+load_dotenv(_BACKEND_ROOT / ".env", override=True)
+
+_wallet_at_root = _REPO_ROOT / "wallet"
+_cfg = (os.environ.get("ORACLE_CONFIG_DIR") or "").strip()
+_wlt = (os.environ.get("ORACLE_WALLET_DIR") or "").strip()
+if not _cfg and not _wlt and _wallet_at_root.is_dir():
+    _path = str(_wallet_at_root.resolve())
+    os.environ.setdefault("ORACLE_CONFIG_DIR", _path)
+    os.environ.setdefault("ORACLE_WALLET_DIR", _path)
 
 
 class Settings(BaseModel):

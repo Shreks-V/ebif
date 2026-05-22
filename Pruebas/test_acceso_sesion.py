@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.infrastructure.security.adapters import JwtAccessTokenIssuer
 
+from Pruebas.qase_decorators import qase_case
 from Pruebas.support_auth import InMemoryUserRepository, build_user
 
 LOGIN_PATH = "/api/auth/login"
@@ -38,6 +39,7 @@ def active_user(password_hasher):
     )
 
 
+@qase_case("Acceso y sesión", "FJ26SV-1", "Login correcto")
 def test_sv1_login_correcto(auth_client_factory, active_user, password_hasher):
     repo = InMemoryUserRepository(
         {active_user.correo.lower(): active_user},
@@ -51,6 +53,7 @@ def test_sv1_login_correcto(auth_client_factory, active_user, password_hasher):
     assert isinstance(body.get("access_token"), str) and len(body["access_token"]) > 20
 
 
+@qase_case("Acceso y sesión", "FJ26SV-2", "Login: contraseña incorrecta")
 def test_sv2_login_password_incorrecta(auth_client_factory, active_user):
     repo = InMemoryUserRepository(
         {active_user.correo.lower(): active_user},
@@ -62,6 +65,7 @@ def test_sv2_login_password_incorrecta(auth_client_factory, active_user):
     assert r.json().get("detail") == EXPECTED_LOGIN_FAILURE_DETAIL
 
 
+@qase_case("Acceso y sesión", "FJ26SV-2", "Login: correo inexistente")
 def test_sv2_login_correo_inexistente(auth_client_factory, active_user):
     repo = InMemoryUserRepository(
         {active_user.correo.lower(): active_user},
@@ -73,6 +77,7 @@ def test_sv2_login_correo_inexistente(auth_client_factory, active_user):
     assert r.json().get("detail") == EXPECTED_LOGIN_FAILURE_DETAIL
 
 
+@qase_case("Acceso y sesión", "FJ26SV-3", "Usuario inactivo")
 def test_sv3_usuario_inactivo(auth_client_factory, password_hasher):
     user = build_user(
         correo="inactivo@test.local",
@@ -88,6 +93,7 @@ def test_sv3_usuario_inactivo(auth_client_factory, password_hasher):
     assert r.json().get("detail") == EXPECTED_LOGIN_FAILURE_DETAIL
 
 
+@qase_case("Acceso y sesión", "FJ26SV-4", "JWT expirado: sin acceso a rutas protegidas")
 def test_sv4_jwt_expirado_no_accede_me(auth_client_factory, active_user):
     repo = InMemoryUserRepository(
         {active_user.correo.lower(): active_user},
@@ -109,6 +115,7 @@ def test_sv4_jwt_expirado_no_accede_me(auth_client_factory, active_user):
     assert r.json().get("detail") == EXPECTED_INVALID_CREDENTIALS_DETAIL
 
 
+@qase_case("Acceso y sesión", "FJ26SV-4", "JWT manipulado: sin acceso a rutas protegidas")
 def test_sv4_jwt_manipulado_no_accede_me(auth_client_factory, active_user):
     repo = InMemoryUserRepository(
         {active_user.correo.lower(): active_user},
@@ -132,6 +139,7 @@ def test_sv4_jwt_manipulado_no_accede_me(auth_client_factory, active_user):
     assert r.json().get("detail") == EXPECTED_INVALID_CREDENTIALS_DETAIL
 
 
+@qase_case("Acceso y sesión", "FJ26SV-5", "Sin token tras flujo: /me protegido")
 def test_sv5_sin_token_no_accede_ruta_protegida(auth_client_factory, active_user):
     repo = InMemoryUserRepository(
         {active_user.correo.lower(): active_user},
@@ -153,6 +161,11 @@ def test_sv5_sin_token_no_accede_ruta_protegida(auth_client_factory, active_user
     assert after_logout.status_code == 401
 
 
+@qase_case(
+    "Acceso y sesión",
+    "FJ26SV-6",
+    "Intentos de login y mensajes seguros (sin revelar si el correo existe)",
+)
 def test_sv6_mensajes_iguales_sin_enumeracion(
     auth_client_factory, active_user, password_hasher
 ):

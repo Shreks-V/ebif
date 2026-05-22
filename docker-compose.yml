@@ -7,6 +7,10 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      # Montaje ./wallet:/wallet — no depende de ORACLE_* en .env (evita /wallet en el host local)
+      ORACLE_CONFIG_DIR: /wallet
+      ORACLE_WALLET_DIR: /wallet
     volumes:
       - ./backend:/app
       - ./wallet:/wallet:ro
