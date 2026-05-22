@@ -250,7 +250,7 @@ def test_sv50_validacion_api_sin_beneficiario_sin_monto_sin_metodos(recibos_clie
     "Recibos y cobros",
     "FJ26SV-50",
     "Validación UI (guardarCobro): paciente, monto y métodos",
-    layer="Contrato frontend",
+    layer="api",
 )
 def test_sv50_ui_guardarCobro_validaciones_en_fuente():
     """La UI no confirma cobro sin paciente, sin monto válido o sin métodos (exento N)."""

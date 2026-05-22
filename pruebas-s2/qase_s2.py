@@ -40,7 +40,7 @@ def qase_s2_case(suite_title: str, automation_id: str, title_es: str) -> Callabl
     def _wrap(fn: F) -> F:
         decorated: Any = qase.suite(suite_title)(fn)
         decorated = qase.title(f"[S2:{automation_id}] {title_es}")(decorated)
-        decorated = qase.fields(("layer", "API"), ("description", f"automation_id={automation_id}"))(decorated)
+        decorated = qase.fields(("layer", "api"), ("description", f"automation_id={automation_id}"))(decorated)
         nid = _load_qase_ids().get(automation_id)
         if nid is not None:
             decorated = qase.id(nid)(decorated)

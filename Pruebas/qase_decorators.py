@@ -16,9 +16,24 @@ from qase.pytest import qase
 
 F = TypeVar("F", bound=Callable[..., object])
 
+# Qase TestOps solo acepta: unknown | e2e | api | unit (minúsculas).
+_LAYER_ALIASES: dict[str, str] = {
+    "api": "api",
+    "API": "api",
+    "e2e": "e2e",
+    "E2E": "e2e",
+    "unit": "unit",
+    "unknown": "unknown",
+    "Contrato frontend": "api",
+}
+
+
+def _qase_layer(layer: str) -> str:
+    return _LAYER_ALIASES.get(layer, "api")
+
 
 def qase_case(
-    suite: str, fj_code: str, title_es: str, *, layer: str = "API"
+    suite: str, fj_code: str, title_es: str, *, layer: str = "api"
 ) -> Callable[[F], F]:
     """Suite + título con ``FJ26SV-*``; ID numérico opcional vía entorno."""
 
@@ -27,7 +42,7 @@ def qase_case(
     def _wrap(fn: F) -> F:
         decorated: Callable[..., object] = qase.suite(suite)(fn)
         decorated = qase.title(f"{fj_code} — {title_es}")(decorated)
-        decorated = qase.fields(("layer", layer))(decorated)
+        decorated = qase.fields(("layer", _qase_layer(layer)))(decorated)
         raw = os.environ.get(env_key, "").strip()
         if raw.isdigit():
             decorated = qase.id(int(raw))(decorated)

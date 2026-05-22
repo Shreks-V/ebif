@@ -43,7 +43,7 @@ def routes_source() -> str:
     "Acciones rápidas",
     "FJ26SV-38",
     "Cada acción rápida navega a la pantalla correcta",
-    layer="Contrato frontend",
+    layer="api",
 )
 def test_sv38_cada_accion_rapida_navega_a_la_pantalla_correcta(dashboard_source: str):
     """Cada botón del bloque Acciones Rápidas llama navigateTo con la ruta esperada."""
@@ -63,7 +63,7 @@ def test_sv38_cada_accion_rapida_navega_a_la_pantalla_correcta(dashboard_source:
     "Acciones rápidas",
     "FJ26SV-39",
     "Flujo directo (nuevo recibo): queryParams / contexto esperado",
-    layer="Contrato frontend",
+    layer="api",
 )
 def test_sv39_flujo_directo_nuevo_recibo_query_params(dashboard_source: str):
     """Nuevo recibo abre /recibos con action=nuevo (contexto para la pantalla)."""
@@ -76,7 +76,7 @@ def test_sv39_flujo_directo_nuevo_recibo_query_params(dashboard_source: str):
     "Acciones rápidas",
     "FJ26SV-40",
     "Navegación por teclado: foco visible (pendiente E2E)",
-    layer="E2E",
+    layer="e2e",
 )
 def test_sv40_teclado_foco_visible():
     pytest.skip(
@@ -88,7 +88,7 @@ def test_sv40_teclado_foco_visible():
     "Acciones rápidas",
     "FJ26SV-41",
     "Activación con Enter en acción principal (pendiente E2E)",
-    layer="E2E",
+    layer="e2e",
 )
 def test_sv41_activacion_enter():
     pytest.skip(
@@ -100,7 +100,7 @@ def test_sv41_activacion_enter():
     "Acciones rápidas",
     "FJ26SV-42",
     "Contraste / legibilidad (pendiente auditoría visual)",
-    layer="E2E",
+    layer="e2e",
 )
 def test_sv42_contraste_legibilidad():
     pytest.skip(
@@ -112,7 +112,7 @@ def test_sv42_contraste_legibilidad():
     "Acciones rápidas",
     "FJ26SV-43",
     "Rutas destino protegidas por authGuard (usuario sin sesión)",
-    layer="Contrato frontend",
+    layer="api",
 )
 def test_sv43_rutas_destino_protegidas_por_auth_guard(routes_source: str):
     """
