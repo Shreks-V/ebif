@@ -8,7 +8,7 @@ Tecnológico de Monterrey — Campus Monterrey
 | ID del proyecto | EBIF-GPO107-2026 |
 | Referencia | TSR-EBIF-20260515-02 |
 | AUT | EBIF — Sistema de gestión (FastAPI + Angular) |
-| Fecha del documento | 15 de mayo de 2026 |
+| Fecha del documento | 21 de mayo de 2026 |
 | Versión | Sprint 1 + Sprint 2 (actualización) |
 
 **Equipo:** Emilio Antonio Peralta Montiel (A01712354), Ricardo Bastida Rodríguez (A00839429), Marco Antonio Torres Ramírez (A00839451), Andrés Huerta Robinson (A00838626), Diego Guadiana Manjarrez (A01285889).
@@ -123,16 +123,48 @@ Ver también la sección **5.1.1** del informe HTML (`Pruebas/reporte-resumen-pr
 |--------|--------------|--------|---------|--------|----------------|
 | `Pruebas/` | 47 | 44 | 3 | 0 | ~3 s |
 | `pruebas-s2/` (sin Oracle) | 22 | 20 | 2 | 0 | ~6 s |
-| **Total** (`pytest Pruebas/ pruebas-s2/ -q`) | **69** | **64** | **5** | **0** | **~9,7 s** |
+| **Total** (`pytest Pruebas/ pruebas-s2/ -q`) | **69** | **64** | **5** | **0** | **~9,5–10,5 s** |
 | Con `EBIF_S2_USE_ORACLE=1` | 69 | **65** | **4** | 0 | ~10 s |
 
-### Ajustes técnicos Sprint 2 (mantenimiento)
+### Publicación en Qase TestOps (test runs y resultados)
+
+Sprint 1 y Sprint 2 comparten el proyecto Qase **[FJ26SV](https://app.qase.io/run/FJ26SV)** (`qase.config.json`).
+
+**Requisitos:** token en Qase → Apps → Pytest; dependencias `backend/requirements-dev.txt` (incluye `qase-pytest`).
+
+```bash
+cd /home/x3no/Documents/GitHub/ebif
+source backend/.venv/bin/activate
+
+export QASE_MODE=testops
+export QASE_TESTOPS_API_TOKEN='tu_token'
+export QASE_TESTOPS_PROJECT=FJ26SV
+
+# Opcional: crear/actualizar casos Sprint 2 y mapa de IDs
+python scripts/qase_sync_sprint2.py
+
+# Ejecutar pruebas → Qase crea un Test Run y sube resultados
+python -m pytest Pruebas/ pruebas-s2/ -v
+```
+
+Al finalizar, la consola muestra un enlace del tipo `https://app.qase.io/run/FJ26SV/dashboard/N`.
+
+| Elemento | Sprint 1 | Sprint 2 |
+|----------|----------|----------|
+| Decoradores | `Pruebas/qase_decorators.py` (`FJ26SV-N`) | `pruebas-s2/qase_s2.py` |
+| Enlace a caso en Qase | Opcional: `export QASE_ID_FJ26SV_7=123` (ID numérico de la URL del caso) | Automático vía `pruebas-s2/pruebas_s2_qase_ids.json` (generado por sync) |
+| Campo `layer` en resultados | `api`, `e2e`, `unit` o `unknown` (minúsculas; Qase rechaza `API` / `Contrato frontend`) | Siempre `api` |
+
+**Nota:** si apareció error HTTP 422 `fields.layer must be one of unknown, e2e, api, unit`, se corrigió en mayo 2026 normalizando capas en `qase_decorators.py`, `qase_s2.py` y tests de acciones rápidas/recibos. Vuelve a ejecutar pytest con `QASE_MODE=testops` para un run completo.
+
+### Ajustes técnicos (mantenimiento)
 
 - Fixture `dashboard_source`: incluye **HTML + TS** para SV-38/SV-39 (acciones rápidas en plantilla).
 - Reinicio de rate limit de login entre tests (`auth_router.limiter.reset()`).
 - `s2_oracle_client`: `TestClient(..., base_url="http://localhost")` por `TrustedHostMiddleware`.
 - Stub `listar_membresias_proximas_a_vencer` alineado con firma de aplicación.
 - HU-12: login en el mismo cliente que el fixture enriquecido (evita pisar singleton de almacén).
+- Qase: `fields.layer` en minúsculas (`api` / `e2e`) para cumplir API TestOps v2.
 
 ---
 
@@ -179,12 +211,9 @@ La iteración cumple el objetivo de **regresión automatizada** sobre flujos cr�
 
 ## 6. Enlaces
 
-- Repositorio: [github.com/Nugzy/ebif](https://github.com/Nugzy/ebif)
-- Guía local: `Pruebas/README.md`
-- **Qase (Sprint 1 + Sprint 2, mismo proyecto):** [FJ26SV](https://app.qase.io/project/FJ26SV) — `qase.config.json`. S1: códigos `FJ26SV-*` en `Pruebas/`. S2: `pruebas-s2/qase_manifest.yaml` + `python scripts/qase_sync_sprint2.py`
-- Informe HTML (impresión PDF): `Pruebas/reporte-resumen-pruebas-ebif.html`
-- pytest: [docs.pytest.org](https://docs.pytest.org/)
+- **Qase — test runs (FJ26SV):** https://app.qase.io/run/FJ26SV
+- **pytest:** https://docs.pytest.org/
 
 ---
 
-*Documento generado a partir del informe PDF de abril 2026 y ampliado con Sprint 2 (mayo 2026).*
+*Documento generado a partir del informe PDF de abril 2026; actualizado con Sprint 2, evidencias pytest, integración Qase FJ26SV y corrección de capas (mayo 2026).*

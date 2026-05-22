@@ -291,7 +291,7 @@
       </ul>
     </div>
     <p class="meta" style="margin-top: 1.75rem;">El cuerpo docente del curso figura en la siguiente hoja.</p>
-    <p class="footer-cover">Mayo, 2026 — actualización Sprint 2</p>
+    <p class="footer-cover">Mayo, 2026 — Sprint 2 · Qase FJ26SV · evidencias pytest</p>
   </section>
 
   <!-- Cuerpo docente -->
@@ -362,7 +362,7 @@
         </tr>
         <tr>
           <th scope="row">Fecha del documento</th>
-          <td>15 de mayo de 2026 (actualización Sprint 2; base abril 2026)</td>
+          <td>21 de mayo de 2026 (Sprint 2, Qase TestOps, evidencias pytest)</td>
         </tr>
       </tbody>
     </table>
@@ -386,7 +386,7 @@
         </tr>
         <tr>
           <td>3.</td>
-          <td>Repositorio del curso / evidencia de entrega (GitHub — proyecto ebif; ver sección 8)</td>
+          <td>Repositorio del curso / evidencia de entrega (proyecto ebif)</td>
         </tr>
       </tbody>
     </table>
@@ -404,7 +404,7 @@
         <tr><td>2</td><td>Panorama general</td></tr>
         <tr><td>3</td><td>Desviaciones</td></tr>
         <tr><td>4</td><td>Valoración</td></tr>
-        <tr><td>5</td><td>Resultados</td></tr>
+        <tr><td>5</td><td>Resultados (pytest, Qase TestOps, evidencias)</td></tr>
         <tr><td>6</td><td>Evaluación</td></tr>
         <tr><td>7</td><td>Resumen de actividades</td></tr>
         <tr><td>8</td><td>Enlaces y referencias externas</td></tr>
@@ -443,18 +443,17 @@
       <li>La <strong>sección 5, Resultados</strong>, resume los resultados de la iteración de pruebas de EBIF e incluye la ejecución documentada de pytest.</li>
       <li>La <strong>sección 6, Evaluación</strong>, ofrece una evaluación global del proceso de pruebas, problemas y limitaciones.</li>
       <li>La <strong>sección 7</strong> resume las actividades principales y recursos empleados en la iteración.</li>
-      <li>La <strong>sección 8</strong> reúne enlaces externos (repositorio GitHub, gestión de casos en Qase, etc.).</li>
+      <li>La <strong>sección 8</strong> reúne enlaces a Qase y pytest.</li>
     </ul>
     <h3>1.4 Referencias</h3>
     <p>Documentos citados en este informe resumen de pruebas:</p>
     <ul>
-      <li>Repositorio del proyecto EBIF (GitHub), incluyendo <code>pytest.ini</code>, <code>Pruebas/</code>, <code>pruebas-s2/</code> y <code>Pruebas/README.md</code>.</li>
-      <li>Versión Markdown de este informe: <code>Pruebas/reporte-resumen-pruebas-ebif.md</code>.</li>
-      <li>Evidencia pytest (capturas): <code>Pruebas/evidencias/ejecucion-sprint1-pytest.png</code>,
+      <li>Este informe HTML, <code>pytest.ini</code>, carpetas <code>Pruebas/</code> y <code>pruebas-s2/</code>.</li>
+      <li>Evidencia pytest: <code>Pruebas/evidencias/ejecucion-sprint1-pytest.png</code>,
         <code>Pruebas/evidencias/ejecucion-sprint1-sprint2-pytest.png</code>.</li>
       <li>Brief de la actividad de curso: formato de resumen de pruebas estilo NIST (Gpo. 107, abril 2026).</li>
       <li>Identificadores internos: criterios de historias de usuario referidos como SV-* en nombres de prueba y documentación.</li>
-      <li>Enlaces externos consolidados en la <strong>sección 8</strong> de este informe (GitHub, Qase, pytest).</li>
+      <li>Enlaces externos en la <strong>sección 8</strong> (Qase, pytest).</li>
     </ul>
   </section>
 
@@ -563,17 +562,19 @@
       <tbody>
         <tr>
           <th scope="row">Fecha de la ejecución</th>
-          <td>15 de mayo de 2026 — corrida local documentada en este informe</td>
+          <td>21 de mayo de 2026 — corrida local documentada en este informe</td>
         </tr>
         <tr>
           <th scope="row">Comando (suite completa)</th>
           <td>
-            <pre class="cmd">python -m pytest Pruebas/ pruebas-s2/ -q</pre>
+            <pre class="cmd">cd /home/x3no/Documents/GitHub/ebif
+source backend/.venv/bin/activate
+python -m pytest Pruebas/ pruebas-s2/ -q</pre>
           </td>
         </tr>
         <tr>
           <th scope="row">Resultado documentado</th>
-          <td><strong>64</strong> passed, <strong>5</strong> skipped, <strong>0</strong> failed — <strong>69</strong> recolectadas en <strong>9,73 s</strong></td>
+          <td><strong>64</strong> passed, <strong>5</strong> skipped, <strong>0</strong> failed — <strong>69</strong> recolectadas (~9,5–10,5 s)</td>
         </tr>
         <tr>
           <th scope="row">Oracle opcional</th>
@@ -590,11 +591,54 @@
           <th scope="row">Corrección SV-38</th>
           <td>Fixture <code>dashboard_source</code> lee <code>.ts</code> + <code>.html</code> (navegación en plantilla Angular).</td>
         </tr>
+        <tr>
+          <th scope="row">Qase TestOps</th>
+          <td>Proyecto único <strong>FJ26SV</strong>; publicación con <code>QASE_MODE=testops</code> + token (ver §5.1.2).</td>
+        </tr>
       </tbody>
     </table>
     <p class="note" style="margin-top: 0.75rem;">
-      Para actualizar cifras: <code>python -m pytest Pruebas/ pruebas-s2/ -v</code> desde la raíz con el venv activado.
+      Ejecutar siempre desde la raíz del repo con <code>backend/.venv</code> activado (<code>python -m pytest</code>, no <code>python3</code> del sistema).
     </p>
+
+    <h3 style="margin-top:1.25rem;">5.1.2 Qase TestOps — test runs y resultados</h3>
+    <p>
+      Sprint 1 y Sprint 2 publican en el mismo proyecto Qase
+      <a href="https://app.qase.io/run/FJ26SV">FJ26SV</a>. El plugin <code>qase-pytest</code> crea un
+      <strong>Test Run</strong> al ejecutar pytest con <code>QASE_MODE=testops</code>.
+    </p>
+    <table class="resultados-pytest">
+      <tbody>
+        <tr>
+          <th scope="row">Variables de entorno</th>
+          <td>
+            <pre class="cmd">export QASE_MODE=testops
+export QASE_TESTOPS_API_TOKEN='tu_token'
+export QASE_TESTOPS_PROJECT=FJ26SV</pre>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Sync casos Sprint 2</th>
+          <td><pre class="cmd">python scripts/qase_sync_sprint2.py</pre>
+            Genera/actualiza casos en Qase y <code>pruebas-s2/pruebas_s2_qase_ids.json</code>.</td>
+        </tr>
+        <tr>
+          <th scope="row">Publicar resultados</th>
+          <td><pre class="cmd">python -m pytest Pruebas/ pruebas-s2/ -v</pre>
+            Al terminar: enlace <code>https://app.qase.io/run/FJ26SV/dashboard/…</code> en consola.</td>
+        </tr>
+        <tr>
+          <th scope="row">Sprint 1 → casos Qase</th>
+          <td>Códigos <code>FJ26SV-1</code> … <code>FJ26SV-50</code>. Enlace opcional:
+            <code>export QASE_ID_FJ26SV_N=id_numérico</code> (N del código visible; id de la URL del caso).</td>
+        </tr>
+        <tr>
+          <th scope="row">Campo <code>layer</code></th>
+          <td>Qase solo acepta <code>api</code>, <code>e2e</code>, <code>unit</code>, <code>unknown</code> (minúsculas).
+            Corregido mayo 2026: antes <code>API</code> / <code>Contrato frontend</code> provocaban error HTTP 422 al subir resultados.</td>
+        </tr>
+      </tbody>
+    </table>
 
     <h3 style="margin-top:1.5rem;">5.1.1 Evidencia de ejecución (capturas)</h3>
     <p>
@@ -791,30 +835,12 @@
   <!-- Sección 8: Enlaces -->
   <section class="sheet sec-body" aria-label="Enlaces externos">
     <h2>8 Enlaces y referencias externas</h2>
-    <p>
-      Recursos en línea relacionados con el código, la gestión de pruebas y la documentación del proyecto. Sustituye las URLs marcadas como pendientes si tu organización usa otras rutas.
-    </p>
+    <p>Gestión de pruebas en Qase (proyecto <strong>FJ26SV</strong>, Sprint 1 y Sprint 2) y referencia de pytest.</p>
     <ul class="links-list">
       <li>
-        <strong>Repositorio GitHub (código EBIF):</strong>
-        <a href="https://github.com/Nugzy/ebif">https://github.com/Nugzy/ebif</a>
-        <span class="note" style="display:inline;font-style:normal"> — ajusta usuario u organización si el remoto difiere.</span>
-      </li>
-      <li>
-        <strong>Guía para ejecutar pruebas en local:</strong>
-        <a href="https://github.com/Nugzy/ebif/blob/main/Pruebas/README.md">Pruebas/README.md</a>
-      </li>
-      <li>
-        <strong>Informe Markdown (esta versión + Sprint 2):</strong>
-        <code>Pruebas/reporte-resumen-pruebas-ebif.md</code>
-      </li>
-      <li>
-        <strong>Qase (Sprint 1 y Sprint 2 — mismo proyecto):</strong>
-        <a href="https://app.qase.io/project/FJ26SV">https://app.qase.io/project/FJ26SV</a>
-        — código de proyecto <strong>FJ26SV</strong> en <code>qase.config.json</code>.
-        Sprint 1: casos <code>FJ26SV-1</code> … <code>FJ26SV-50</code> vía <code>Pruebas/qase_decorators.py</code>.
-        Sprint 2: suites HU en <code>pruebas-s2/qase_manifest.yaml</code>; sync:
-        <code>python scripts/qase_sync_sprint2.py</code>.
+        <strong>Qase — test runs (FJ26SV):</strong>
+        <a href="https://app.qase.io/run/FJ26SV">https://app.qase.io/run/FJ26SV</a>
+        (cada <code>python -m pytest</code> con <code>QASE_MODE=testops</code> publica un run nuevo)
       </li>
       <li>
         <strong>Documentación pytest:</strong>
