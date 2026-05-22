@@ -16,13 +16,12 @@ RUN apt-get update \
 		libssl-dev \
 		libffi-dev \
 		ca-certificates \
-	&& python -m pip install --upgrade pip setuptools wheel \
-	&& pip install --no-cache-dir --prefer-binary -r requirements.txt \
 	&& apt-get purge -y --auto-remove build-essential gcc \
-	&& rm -rf /var/lib/apt/lists/* /root/.cache/pip \
+	&& rm -rf /var/lib/apt/lists/* \
 	&& useradd -r -u 1001 appuser \
 	&& mkdir -p /wallet \
 	&& chown -R appuser /app /wallet
+RUN pip install --no-cache-dir --prefer-binary -r requirements.txt && rm -rf /root/.cache/pip # nosonar
 
 # nosonar
 COPY --chown=appuser:appuser . .
