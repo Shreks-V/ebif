@@ -261,7 +261,10 @@
       "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --cov=backend/app --cov-report=term-missing --cov-config=.coveragerc -q)",
       "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/ pruebas-s2/ --cov=backend/app --cov-report=term-missing -q)",
       "Bash(SECRET_KEY=test-key ORACLE_USER=\"\" ORACLE_PASSWORD=\"\" ORACLE_DSN=\"\" python -m pytest Pruebas/test_doctores_bitacora.py --tb=short -q)",
-      "Bash(python -m pytest ../Pruebas/test_ocr.py -v)"
+      "Bash(python -m pytest ../Pruebas/test_ocr.py -v)",
+      "Bash(awk 'length>120 {print NR\": \"length\" chars: \"$0}' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/infrastructure/preregistro/repository.py\")",
+      "Bash(awk length>120 {print NR\": \"length\" chars\"} *)",
+      "Bash(node -e ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,

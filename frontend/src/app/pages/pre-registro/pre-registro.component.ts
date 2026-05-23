@@ -2,15 +2,29 @@ import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin, Observable } from 'rxjs';
+import { catchError, concatMap, forkJoin, from, Observable, of, tap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PreregistroApiService } from '../../services/preregistro-api.service';
 import { PreRegistro } from '../../shared/models/preregistro.models';
 import { OcrApiService, OcrResult } from '../../services/ocr-api.service';
 import { getMunicipiosParaEstado } from '../../shared/data/mexico-municipios';
+import { ESTADOS_MEXICANOS } from '../../shared/data/mexico-estados';
 import { PAISES } from '../../shared/data/paises';
 
 const CURP_REGEX = /^[A-Z][AEIOU][A-Z]{2}\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[0-9A-Z]\d$/;
+
+const OCR_ALIASES: Record<string, string[]> = {
+  'curp':                     ['curp'],
+  'ine':                      ['ine', 'ife', 'credencial', 'elector'],
+  'ife':                      ['ine', 'ife', 'credencial', 'elector'],
+  'credencial':               ['ine', 'ife', 'credencial', 'elector'],
+  'acta de nacimiento':       ['acta', 'nacimiento'],
+  'acta':                     ['acta', 'nacimiento'],
+  'comprobante de domicilio': ['comprobante', 'domicilio'],
+  'comprobante':              ['comprobante', 'domicilio'],
+  'pasaporte':                ['pasaporte'],
+  'cartilla militar':         ['cartilla', 'militar'],
+};
 
 interface OcrFile {
   id: number;
@@ -95,13 +109,7 @@ export class PreRegistroComponent implements OnInit {
   tiposEspinaList: { id_tipo_espina: number; nombre: string; descripcion?: string }[] = [];
   tiposDocumento: { id_tipo_documento: number; nombre: string }[] = [];
 
-  estados = [
-    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua',
-    'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México', 'Guanajuato',
-    'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León',
-    'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa', 'Sonora',
-    'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
-  ];
+  readonly estados = ESTADOS_MEXICANOS;
 
   getMunicipiosParaEstado(estado: string): readonly string[] {
     return getMunicipiosParaEstado(estado);
@@ -191,24 +199,24 @@ export class PreRegistroComponent implements OnInit {
     const pending = this.ocrFiles.filter(f => f.status === 'pending' || f.status === 'error');
     if (pending.length === 0 || this.ocrProcessing) return;
     this.ocrProcessing = true;
-    this._runOcrNext(pending, 0);
+    from(pending).pipe(
+      concatMap(item => this._procesarDocumento(item)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      complete: () => { this.ocrProcessing = false; this.ocrDone = true; this._finalizarOcr(); },
+    });
   }
 
-  private _runOcrNext(queue: OcrFile[], index: number): void {
-    if (index >= queue.length) {
-      this.ocrProcessing = false;
-      this.ocrDone = true;
-      this._finalizarOcr();
-      return;
-    }
-    const item = queue[index];
+  private _procesarDocumento(item: OcrFile): Observable<unknown> {
     item.status = 'processing';
-    this.ocrApi.extraerDocumento(item.file)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (r) => { item.result = r; item.status = 'done'; this._autoSelectTipo(item); this._runOcrNext(queue, index + 1); },
-        error: () => { item.status = 'error'; item.errorMsg = 'No se pudo leer este archivo'; this._runOcrNext(queue, index + 1); },
-      });
+    return this.ocrApi.extraerDocumento(item.file).pipe(
+      tap(r => { item.result = r; item.status = 'done'; this._autoSelectTipo(item); }),
+      catchError(() => {
+        item.status = 'error';
+        item.errorMsg = 'No se pudo leer este archivo';
+        return of(null);
+      }),
+    );
   }
 
   private _normalize(s: string): string {
@@ -218,23 +226,7 @@ export class PreRegistroComponent implements OnInit {
   private _autoSelectTipo(item: OcrFile): void {
     if (!item.result?.tipo_documento || item.tipoId !== 0) return;
     const ocr = this._normalize(item.result.tipo_documento);
-    const keywords: [string[], number][] = this.tiposDocumento.map(td => [
-      [this._normalize(td.nombre)], td.id_tipo_documento,
-    ]);
-    // Also map common OCR labels to keywords we search in DB names
-    const ocrAliases: Record<string, string[]> = {
-      'curp':                    ['curp'],
-      'ine':                     ['ine', 'ife', 'credencial', 'elector'],
-      'ife':                     ['ine', 'ife', 'credencial', 'elector'],
-      'credencial':              ['ine', 'ife', 'credencial', 'elector'],
-      'acta de nacimiento':      ['acta', 'nacimiento'],
-      'acta':                    ['acta', 'nacimiento'],
-      'comprobante de domicilio':['comprobante', 'domicilio'],
-      'comprobante':             ['comprobante', 'domicilio'],
-      'pasaporte':               ['pasaporte'],
-      'cartilla militar':        ['cartilla', 'militar'],
-    };
-    const searchTerms = ocrAliases[ocr] ?? [ocr];
+    const searchTerms = OCR_ALIASES[ocr] ?? [ocr];
     for (const td of this.tiposDocumento) {
       const dbName = this._normalize(td.nombre);
       if (searchTerms.some(t => dbName.includes(t) || t.includes(dbName))) {

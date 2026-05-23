@@ -8,6 +8,7 @@ import { Documento, PreRegistro } from '../../../../shared/models/preregistro.mo
 import { CuotaBadgeComponent } from '../../../../shared/components/cuota-badge/cuota-badge.component';
 import { AvatarInicialesComponent } from '../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
 import { getMunicipiosParaEstado } from '../../../../shared/data/mexico-municipios';
+import { ESTADOS_MEXICANOS } from '../../../../shared/data/mexico-estados';
 
 interface Preregistro {
   id: number;
@@ -105,15 +106,7 @@ export class PreregistrosTabComponent implements OnInit {
   submittingEdit = false;
   editError = '';
 
-  readonly estadosMexicanos = [
-    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
-    'Chihuahua', 'Ciudad de Mexico', 'Coahuila', 'Colima', 'Durango',
-    'Estado de Mexico', 'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco',
-    'Michoacan', 'Morelos', 'Nayarit', 'Nuevo Leon', 'Oaxaca',
-    'Puebla', 'Queretaro', 'Quintana Roo', 'San Luis Potosi', 'Sinaloa',
-    'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz',
-    'Yucatan', 'Zacatecas'
-  ];
+  readonly estadosMexicanos = ESTADOS_MEXICANOS;
   readonly tiposSangre = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
 
   getMunicipiosParaEstado(estado: string): readonly string[] {

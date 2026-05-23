@@ -1,6 +1,36 @@
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Protocol
 from typing_extensions import TypedDict
+
+
+class PreRegistroInput(Protocol):
+    """Contrato de dominio para datos de entrada de un pre-registro.
+    Satisfecho estructuralmente por PreRegistroCreate (capa application)."""
+    nombre: str
+    apellido_paterno: str
+    apellido_materno: Optional[str]
+    curp: str
+    genero: Optional[str]
+    fecha_nacimiento: Optional[str]
+    estado_nacimiento: Optional[str]
+    hospital_nacimiento: Optional[str]
+    nombre_padre_madre: Optional[str]
+    direccion: Optional[str]
+    colonia: Optional[str]
+    ciudad: Optional[str]
+    estado: Optional[str]
+    codigo_postal: Optional[str]
+    telefono_casa: Optional[str]
+    telefono_celular: Optional[str]
+    correo_electronico: Optional[str]
+    en_emergencia_avisar_a: Optional[str]
+    telefono_emergencia: Optional[str]
+    tipo_sangre: Optional[str]
+    usa_valvula: Optional[str]
+    tipo_cuota: Optional[str]
+    notas_adicionales: Optional[str]
+    paso_actual: int
+    tipos_espina: Optional[List[int]]
 
 
 @dataclass(frozen=True)

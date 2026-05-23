@@ -19,7 +19,7 @@ def listar_preregistros(
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     current_user: Annotated[dict, Depends(get_current_user)] = None,
-) -> list:
+) -> list[dict]:
     return service.listar_preregistros(estatus, current_user, limit, offset)
 
 @router.post('', status_code=201)
@@ -34,11 +34,11 @@ def crear_preregistro(
     return preregistro
 
 @router.get('/tipos-espina')
-def listar_tipos_espina_publico() -> list:
+def listar_tipos_espina_publico() -> list[dict]:
     return service.listar_tipos_espina_publico()
 
 @router.get('/tipos-documento')
-def listar_tipos_documento_publico() -> list:
+def listar_tipos_documento_publico() -> list[dict]:
     return service.listar_tipos_documento_publico()
 
 @router.get('/check-curp')
@@ -61,7 +61,11 @@ def actualizar_preregistro(
     return service.actualizar_preregistro(id_paciente, data)
 
 @router.post('/{id_paciente}/aprobar')
-def aprobar_preregistro(id_paciente: int, body: AprobarPreRegistroData = None, current_user: Annotated[dict, Depends(get_current_user)] = None) -> dict:
+def aprobar_preregistro(
+    id_paciente: int,
+    body: AprobarPreRegistroData = None,
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+) -> dict:
     tipo_cuota = body.tipo_cuota if body else None
     return service.aprobar_preregistro(id_paciente, tipo_cuota, current_user)
 
@@ -89,7 +93,7 @@ def listar_documentos(
     limit: int=Query(100, ge=1, le=500),
     offset: int=Query(0, ge=0),
     _access=Depends(ensure_preregistro_access),
-) -> list:
+) -> list[dict]:
     return service.listar_documentos(id_paciente, limit, offset)
 
 @router.get('/{id_paciente}/documentos/{id_documento}/archivo')
