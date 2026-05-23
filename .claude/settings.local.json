@@ -264,7 +264,10 @@
       "Bash(python -m pytest ../Pruebas/test_ocr.py -v)",
       "Bash(awk 'length>120 {print NR\": \"length\" chars: \"$0}' \"/Users/maantora/Desktop/Tec/Semestre 6/Parte2/ebif/backend/app/infrastructure/preregistro/repository.py\")",
       "Bash(awk length>120 {print NR\": \"length\" chars\"} *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(python -m pytest tests/ --co -q)",
+      "Bash(python -m pytest tests/ --cov=app/application --cov=app/domain --cov-report=term-missing --cov-report=xml:coverage.xml -q)",
+      "Bash(python -m pytest tests/ -q)"
     ]
   },
   "enableAllProjectMcpServers": true,

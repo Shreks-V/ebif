@@ -300,7 +300,7 @@ export class ReportesTabComponent implements OnInit {
     const byteString = atob(b64);
     const ab = new ArrayBuffer(byteString.length);
     const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.codePointAt(i) ?? 0;
     const blob = new Blob([ab], { type: mediaType });
     this._descargar(blob, filename);
   }
