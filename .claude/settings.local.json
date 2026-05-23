@@ -267,7 +267,13 @@
       "Bash(node -e ' *)",
       "Bash(python -m pytest tests/ --co -q)",
       "Bash(python -m pytest tests/ --cov=app/application --cov=app/domain --cov-report=term-missing --cov-report=xml:coverage.xml -q)",
-      "Bash(python -m pytest tests/ -q)"
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(python -m pytest backend/tests/ --tb=short -q)",
+      "Bash(python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app --cov-report=term-missing --tb=short -q)",
+      "Bash(python -m pytest Pruebas/ pruebas-s2/ backend/tests/test_auth.py --tb=short -q)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app --cov-report=term --tb=short -q)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app/application --cov=backend/app/domain --cov=backend/app/core --cov=backend/app/presentation --cov-report=term-missing --tb=short -q)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --tb=short -q)"
     ]
   },
   "enableAllProjectMcpServers": true,
