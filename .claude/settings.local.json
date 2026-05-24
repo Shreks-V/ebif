@@ -286,7 +286,8 @@
       "Bash(ALLOWED_HOSTS=\"*\" python -m pytest backend/tests/test_router_http.py::TestReportesRouter::test_por_genero -v --tb=long)",
       "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app/application --cov=backend/app/domain --cov=backend/app/core --cov=backend/app/presentation --cov-report=term --tb=short -q)",
       "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app/application --cov=backend/app/domain --cov=backend/app/core --cov=backend/app/presentation --cov-report=xml:coverage.xml --tb=short -q)",
-      "Bash(python -m pytest backend/tests/ Pruebas/ pruebas-s2/ --tb=short -q)"
+      "Bash(python -m pytest backend/tests/ Pruebas/ pruebas-s2/ --tb=short -q)",
+      "mcp__sonarcloud__get_rule_details"
     ]
   },
   "enableAllProjectMcpServers": true,
