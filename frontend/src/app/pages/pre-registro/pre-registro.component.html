@@ -413,29 +413,33 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono Casa</label>
-                  <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono Casa">
-                      @for (p of paisesTelefono; track p.nombre) {
-                        <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
-                      }
-                    </select>
-                    <input type="tel" [(ngModel)]="formData.telefonoCasa" [class]="getFieldClass('telefonoCasa') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCasaCodigo)" [placeholder]="formData.telefonoCasaCodigo === '+52' ? '10 dígitos' : 'Número'" aria-label="Teléfono Casa">
-                  </div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">
+                    Teléfono Casa
+                    <span class="flex gap-2 mt-1">
+                      <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                        @for (p of paisesTelefono; track p.nombre) {
+                          <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                        }
+                      </select>
+                      <input type="tel" [(ngModel)]="formData.telefonoCasa" [class]="getFieldClass('telefonoCasa') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCasaCodigo)" [placeholder]="formData.telefonoCasaCodigo === '+52' ? '10 dígitos' : 'Número'">
+                    </span>
+                  </label>
                   @if (getFieldError('telefonoCasa')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoCasa') }}</p>
                   }
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono Celular <span class="text-red-500" aria-hidden="true">*</span></label>
-                  <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono Celular">
-                      @for (p of paisesTelefono; track p.nombre) {
-                        <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
-                      }
-                    </select>
-                    <input type="tel" [(ngModel)]="formData.telefonoCelular" [class]="getFieldClass('telefonoCelular') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCelularCodigo)" [placeholder]="formData.telefonoCelularCodigo === '+52' ? '10 dígitos' : 'Número'" aria-label="Teléfono Celular">
-                  </div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">
+                    Teléfono Celular <span class="text-red-500" aria-hidden="true">*</span>
+                    <span class="flex gap-2 mt-1">
+                      <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                        @for (p of paisesTelefono; track p.nombre) {
+                          <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                        }
+                      </select>
+                      <input type="tel" [(ngModel)]="formData.telefonoCelular" [class]="getFieldClass('telefonoCelular') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCelularCodigo)" [placeholder]="formData.telefonoCelularCodigo === '+52' ? '10 dígitos' : 'Número'">
+                    </span>
+                  </label>
                   @if (getFieldError('telefonoCelular')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoCelular') }}</p>
                   }
@@ -455,15 +459,17 @@
                   <input type="text" [(ngModel)]="formData.enEmergenciaAvisarA" [class]="getFieldClass('enEmergenciaAvisarA')" aria-label="En Emergencia Avisar a">
                 </div>
                 <div>
-                  <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono de Emergencia <span class="text-red-500" aria-hidden="true">*</span></label>
-                  <div class="flex gap-2">
-                    <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono de Emergencia">
-                      @for (p of paisesTelefono; track p.nombre) {
-                        <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
-                      }
-                    </select>
-                    <input type="tel" [(ngModel)]="formData.telefonoEmergencia" [class]="getFieldClass('telefonoEmergencia') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoEmergenciaCodigo)" [placeholder]="formData.telefonoEmergenciaCodigo === '+52' ? '10 dígitos' : 'Número'" aria-label="Teléfono de Emergencia">
-                  </div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">
+                    Teléfono de Emergencia <span class="text-red-500" aria-hidden="true">*</span>
+                    <span class="flex gap-2 mt-1">
+                      <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                        @for (p of paisesTelefono; track p.nombre) {
+                          <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                        }
+                      </select>
+                      <input type="tel" [(ngModel)]="formData.telefonoEmergencia" [class]="getFieldClass('telefonoEmergencia') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoEmergenciaCodigo)" [placeholder]="formData.telefonoEmergenciaCodigo === '+52' ? '10 dígitos' : 'Número'">
+                    </span>
+                  </label>
                   @if (getFieldError('telefonoEmergencia')) {
                     <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoEmergencia') }}</p>
                   }
@@ -489,15 +495,17 @@
                     }
                   </div>
                   <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">Teléfono del Tutor <span class="text-red-500" aria-hidden="true">*</span></label>
-                    <div class="flex gap-2">
-                      <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]" aria-label="Teléfono del Tutor">
-                        @for (p of paisesTelefono; track p.nombre) {
-                          <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
-                        }
-                      </select>
-                      <input type="tel" [(ngModel)]="formData.telefonoTutor" [class]="getFieldClass('telefonoTutor') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoTutorCodigo)" [placeholder]="formData.telefonoTutorCodigo === '+52' ? '10 dígitos' : 'Número'" aria-label="Teléfono del Tutor">
-                    </div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">
+                      Teléfono del Tutor <span class="text-red-500" aria-hidden="true">*</span>
+                      <span class="flex gap-2 mt-1">
+                        <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                          @for (p of paisesTelefono; track p.nombre) {
+                            <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                          }
+                        </select>
+                        <input type="tel" [(ngModel)]="formData.telefonoTutor" [class]="getFieldClass('telefonoTutor') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoTutorCodigo)" [placeholder]="formData.telefonoTutorCodigo === '+52' ? '10 dígitos' : 'Número'">
+                      </span>
+                    </label>
                     @if (getFieldError('telefonoTutor')) {
                       <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoTutor') }}</p>
                     }
