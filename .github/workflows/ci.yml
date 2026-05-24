@@ -54,7 +54,7 @@ jobs:
         run: pip install -r backend/requirements-dev.txt
 
       - name: Run tests with coverage
-        run: python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app --cov-report=xml:coverage.xml --tb=short -q
+        run: python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app/application --cov=backend/app/domain --cov=backend/app/core --cov=backend/app/presentation --cov-report=xml:coverage.xml --tb=short -q
         env:
           SECRET_KEY: ci-dummy-secret-key-not-used-in-prod
           ORACLE_USER: ""

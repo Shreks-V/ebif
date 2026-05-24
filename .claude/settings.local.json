@@ -273,7 +273,19 @@
       "Bash(python -m pytest Pruebas/ pruebas-s2/ backend/tests/test_auth.py --tb=short -q)",
       "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app --cov-report=term --tb=short -q)",
       "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app/application --cov=backend/app/domain --cov=backend/app/core --cov=backend/app/presentation --cov-report=term-missing --tb=short -q)",
-      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --tb=short -q)"
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --tb=short -q)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app --cov-report=xml:coverage.xml -q --tb=no)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app --cov-report=term-missing --tb=no -q)",
+      "Bash(awk '$4 < 80 {print}')",
+      "Bash(sort -t'%' -k1 -n)",
+      "Bash(awk '{if \\($4+0 < 95\\) print $0}')",
+      "Bash(sort -k3 -rn)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app/domain --cov=backend/app/application --cov-report=term-missing --tb=no -q)",
+      "Bash(grep -v \"^$\\\\|infrastructure\\\\|test\")",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest backend/tests/test_router_http.py -v --tb=short)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest backend/tests/test_router_http.py::TestReportesRouter::test_por_genero -v --tb=long)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app/application --cov=backend/app/domain --cov=backend/app/core --cov=backend/app/presentation --cov-report=term --tb=short -q)",
+      "Bash(ALLOWED_HOSTS=\"*\" python -m pytest Pruebas/ pruebas-s2/ backend/tests/ --cov=backend/app/application --cov=backend/app/domain --cov=backend/app/core --cov=backend/app/presentation --cov-report=xml:coverage.xml --tb=short -q)"
     ]
   },
   "enableAllProjectMcpServers": true,
