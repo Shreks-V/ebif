@@ -75,9 +75,9 @@
 
         <form (ngSubmit)="cambiarContrasena()" #pwForm="ngForm" class="space-y-4">
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Contraseña actual *</label>
+            <label for="pfil-contrasena-actual" class="block text-sm font-semibold text-slate-700 mb-1">Contraseña actual *</label>
             <div class="relative">
-              <input aria-label="Ingresa tu contraseña actual"
+              <input id="pfil-contrasena-actual" aria-label="Ingresa tu contraseña actual"
                 [type]="showActual ? 'text' : 'password'"
                 [(ngModel)]="form.contrasena_actual"
                 name="contrasena_actual"
@@ -101,9 +101,9 @@
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Nueva contraseña *</label>
+            <label for="pfil-contrasena-nueva" class="block text-sm font-semibold text-slate-700 mb-1">Nueva contraseña *</label>
             <div class="relative">
-              <input aria-label="Mínimo 8 caracteres"
+              <input id="pfil-contrasena-nueva" aria-label="Mínimo 8 caracteres"
                 [type]="showNueva ? 'text' : 'password'"
                 [(ngModel)]="form.contrasena_nueva"
                 name="contrasena_nueva"
@@ -131,9 +131,9 @@
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Confirmar nueva contraseña *</label>
+            <label for="pfil-contrasena-confirmar" class="block text-sm font-semibold text-slate-700 mb-1">Confirmar nueva contraseña *</label>
             <div class="relative">
-              <input aria-label="Repite la nueva contraseña"
+              <input id="pfil-contrasena-confirmar" aria-label="Repite la nueva contraseña"
                 [type]="showConfirm ? 'text' : 'password'"
                 [(ngModel)]="form.confirmar"
                 name="confirmar"

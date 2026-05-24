@@ -10,8 +10,8 @@
     </div>
     <form (ngSubmit)="guardarCita()" class="space-y-5">
       <div>
-        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Paciente</label>
-        <input aria-label="Buscar paciente por folio o nombre..."
+        <label for="ncit-paciente" class="block text-sm font-semibold text-slate-700 mb-1.5">Paciente</label>
+        <input id="ncit-paciente" aria-label="Buscar paciente por folio o nombre..."
           type="text"
           placeholder="Buscar paciente por folio o nombre..."
           [(ngModel)]="busquedaPaciente"
@@ -39,8 +39,8 @@
         }
       </div>
       <div>
-        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Fecha y Hora</label>
-        <input aria-label="Nueva cita fecha hora"
+        <label for="ncit-fecha-hora" class="block text-sm font-semibold text-slate-700 mb-1.5">Fecha y Hora</label>
+        <input id="ncit-fecha-hora" aria-label="Nueva cita fecha hora"
           type="datetime-local"
           [(ngModel)]="nuevaCitaFechaHora"
           name="fechaHora"
@@ -49,8 +49,9 @@
           />
       </div>
       <div>
-        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Estatus</label>
+        <label for="ncit-estatus" class="block text-sm font-semibold text-slate-700 mb-1.5">Estatus</label>
         <select
+          id="ncit-estatus"
           [(ngModel)]="nuevaCita.estatus"
           name="estatus"
           class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"
@@ -62,8 +63,9 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-semibold text-slate-700 mb-1.5">Notas</label>
+        <label for="ncit-notas" class="block text-sm font-semibold text-slate-700 mb-1.5">Notas</label>
         <textarea
+          id="ncit-notas"
           [(ngModel)]="nuevaCita.notas"
           name="notas"
           rows="3"
@@ -72,11 +74,12 @@
          aria-label="Notas adicionales..."></textarea>
       </div>
       <div>
-        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+        <label for="ncit-doctor" class="block text-sm font-semibold text-slate-700 mb-1.5">
           Doctor
           <span class="text-slate-400 font-normal text-xs ml-1" aria-hidden="true">(filtra los servicios disponibles)</span>
         </label>
         <select
+          id="ncit-doctor"
           [(ngModel)]="nuevaCitaIdDoctor"
           name="doctor"
           (ngModelChange)="onDoctorNuevaCitaChange()"
@@ -96,7 +99,7 @@
       </div>
       <div>
         <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm font-semibold text-slate-700">Servicios</label>
+          <label for="ncit-srv-select-0" class="block text-sm font-semibold text-slate-700">Servicios</label>
           <button type="button" (click)="agregarServicioCita()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
@@ -107,7 +110,7 @@
         @for (srv of nuevaCita.servicios; track srv; let i = $index) {
           <div class="flex items-center gap-3 mb-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
             <div class="flex-1">
-              <select [(ngModel)]="srv.id_servicio" [name]="'servicio_' + i" (ngModelChange)="onServicioNuevaCitaChange(srv)" class="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Servicios">
+              <select [(ngModel)]="srv.id_servicio" [name]="'servicio_' + i" [id]="'ncit-srv-select-' + i" (ngModelChange)="onServicioNuevaCitaChange(srv)" class="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Servicios">
                 <option [ngValue]="null" disabled>Seleccionar servicio...</option>
                 @for (s of nuevaCitaServiciosFiltrados; track s) {
                   <option [ngValue]="s.id_servicio">{{ s.nombre }}</option>

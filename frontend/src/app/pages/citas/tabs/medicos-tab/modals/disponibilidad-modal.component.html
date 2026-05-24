@@ -50,8 +50,8 @@
         <h3 class="text-sm font-bold text-slate-700 mb-3">Agregar Horario</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Día de la Semana</label>
-            <select [(ngModel)]="nuevoSlot.dia_semana" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Día de la Semana">
+            <label for="disp-dia-semana" class="block text-xs font-semibold text-slate-500 mb-1">Día de la Semana</label>
+            <select id="disp-dia-semana" [(ngModel)]="nuevoSlot.dia_semana" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Día de la Semana">
               <option [ngValue]="0" disabled>Seleccionar...</option>
               @for (dia of diasSemana; track dia) {
                 <option [ngValue]="dia.num">{{ dia.nombre }}</option>
@@ -59,8 +59,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
-            <select [(ngModel)]="nuevoSlot.hora_inicio" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Hora Inicio">
+            <label for="disp-hora-inicio" class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
+            <select id="disp-hora-inicio" [(ngModel)]="nuevoSlot.hora_inicio" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Hora Inicio">
               <option value="" disabled>Seleccionar...</option>
               @for (h of horasDisponibles; track h) {
                 <option [value]="h">{{ h }}</option>
@@ -68,8 +68,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
-            <select [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Hora Fin">
+            <label for="disp-hora-fin" class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
+            <select id="disp-hora-fin" [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors" aria-label="Hora Fin">
               <option value="" disabled>Seleccionar...</option>
               @for (h of horasDisponibles; track h) {
                 <option [value]="h" [disabled]="nuevoSlot.hora_inicio && h <= nuevoSlot.hora_inicio">{{ h }}</option>
@@ -117,13 +117,13 @@
         <h4 class="text-sm font-semibold text-slate-600 mb-3">Agregar Caso Especial</h4>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Fecha</label>
-            <input type="date" [(ngModel)]="nuevoDispEspecial.fecha_inicio" aria-label="Fecha"
+            <label for="disp-fecha" class="block text-xs font-semibold text-slate-500 mb-1">Fecha</label>
+            <input id="disp-fecha" type="date" [(ngModel)]="nuevoDispEspecial.fecha_inicio" aria-label="Fecha"
               class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
-            <select [(ngModel)]="nuevoDispEspecial.hora_inicio"
+            <label for="disp-esp-hora-inicio" class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
+            <select id="disp-esp-hora-inicio" [(ngModel)]="nuevoDispEspecial.hora_inicio"
               class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" aria-label="Hora Inicio">
               <option value="" disabled>Seleccionar...</option>
               @for (h of horasDisponibles; track h) {
@@ -132,8 +132,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
-            <select [(ngModel)]="nuevoDispEspecial.hora_fin"
+            <label for="disp-esp-hora-fin" class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
+            <select id="disp-esp-hora-fin" [(ngModel)]="nuevoDispEspecial.hora_fin"
               class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" aria-label="Hora Fin">
               <option value="" disabled>Seleccionar...</option>
               @for (h of horasDisponibles; track h) {
@@ -142,8 +142,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Recurrencia</label>
-            <select [(ngModel)]="nuevoDispEspecial.tipo_recurrencia"
+            <label for="disp-esp-recurrencia" class="block text-xs font-semibold text-slate-500 mb-1">Recurrencia</label>
+            <select id="disp-esp-recurrencia" [(ngModel)]="nuevoDispEspecial.tipo_recurrencia"
               class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" aria-label="Tipo de recurrencia">
               <option value="UNICA">&Uacute;nica vez</option>
               <option value="QUINCENAL">Quincenal</option>
@@ -152,8 +152,8 @@
             </select>
           </div>
           <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Descripci&oacute;n (opcional)</label>
-            <input type="text" [(ngModel)]="nuevoDispEspecial.descripcion" maxlength="200" aria-label="Ej: Consulta extraordinaria enero"
+            <label for="disp-esp-descripcion" class="block text-xs font-semibold text-slate-500 mb-1">Descripci&oacute;n (opcional)</label>
+            <input id="disp-esp-descripcion" type="text" [(ngModel)]="nuevoDispEspecial.descripcion" maxlength="200" aria-label="Ej: Consulta extraordinaria enero"
               placeholder="Ej: Consulta extraordinaria enero"
               class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" />
           </div>

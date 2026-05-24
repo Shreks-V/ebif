@@ -12,46 +12,46 @@
       <form (ngSubmit)="guardar()" class="space-y-5">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nombre</label>
-            <input type="text" [(ngModel)]="editMedico.nombre" name="editNombre" required aria-label="Nombre"
+            <label for="emed-nombre" class="block text-sm font-semibold text-slate-700 mb-1.5">Nombre</label>
+            <input id="emed-nombre" type="text" [(ngModel)]="editMedico.nombre" name="editNombre" required aria-label="Nombre"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
           </div>
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Apellido Paterno</label>
-            <input type="text" [(ngModel)]="editMedico.apellido_paterno" name="editApPaterno" required aria-label="Apellido Paterno"
+            <label for="emed-apellido-paterno" class="block text-sm font-semibold text-slate-700 mb-1.5">Apellido Paterno</label>
+            <input id="emed-apellido-paterno" type="text" [(ngModel)]="editMedico.apellido_paterno" name="editApPaterno" required aria-label="Apellido Paterno"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
           </div>
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Apellido Materno</label>
-            <input type="text" [(ngModel)]="editMedico.apellido_materno" name="editApMaterno" aria-label="Apellido Materno"
+            <label for="emed-apellido-materno" class="block text-sm font-semibold text-slate-700 mb-1.5">Apellido Materno</label>
+            <input id="emed-apellido-materno" type="text" [(ngModel)]="editMedico.apellido_materno" name="editApMaterno" aria-label="Apellido Materno"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
           </div>
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Especialidad</label>
-            <input type="text" [(ngModel)]="editMedico.especialidad" name="editEspecialidad" required aria-label="Especialidad"
+            <label for="emed-especialidad" class="block text-sm font-semibold text-slate-700 mb-1.5">Especialidad</label>
+            <input id="emed-especialidad" type="text" [(ngModel)]="editMedico.especialidad" name="editEspecialidad" required aria-label="Especialidad"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
           </div>
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tel&eacute;fono</label>
-            <input type="text" [(ngModel)]="editMedico.telefono" name="editTelefono" aria-label="Teléfono"
+            <label for="emed-telefono" class="block text-sm font-semibold text-slate-700 mb-1.5">Tel&eacute;fono</label>
+            <input id="emed-telefono" type="text" [(ngModel)]="editMedico.telefono" name="editTelefono" aria-label="Teléfono"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
           </div>
           <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1.5">Correo</label>
-            <input type="email" [(ngModel)]="editMedico.correo" name="editCorreo" aria-label="Correo"
+            <label for="emed-correo" class="block text-sm font-semibold text-slate-700 mb-1.5">Correo</label>
+            <input id="emed-correo" type="email" [(ngModel)]="editMedico.correo" name="editCorreo" aria-label="Correo"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors"/>
           </div>
         </div>
         <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Estado</label>
-          <select [(ngModel)]="editMedico.activo" name="editActivo"
+          <label for="emed-estado" class="block text-sm font-semibold text-slate-700 mb-1.5">Estado</label>
+          <select id="emed-estado" [(ngModel)]="editMedico.activo" name="editActivo"
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors" aria-label="Estado del médico">
             <option value="S">Activo</option>
             <option value="N">Inactivo</option>
           </select>
         </div>
         <div>
-          <label class="block text-sm font-semibold text-slate-700 mb-2">Servicios</label>
+          <span class="block text-sm font-semibold text-slate-700 mb-2">Servicios</span>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-slate-50 rounded-xl border border-slate-200">
             @for (s of serviciosList; track s) {
               <label class="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-white transition-colors">

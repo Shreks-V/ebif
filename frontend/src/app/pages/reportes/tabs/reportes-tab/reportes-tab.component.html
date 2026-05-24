@@ -18,13 +18,13 @@
   <div class="p-6">
     <div class="flex flex-wrap items-end gap-4 mb-6">
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
-        <input type="date" [(ngModel)]="sec1FechaInicio" aria-label="Fecha inicio del período"
+        <label for="rep-sec1-fecha-inicio" class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
+        <input id="rep-sec1-fecha-inicio" type="date" [(ngModel)]="sec1FechaInicio" aria-label="Fecha inicio del período"
           class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all">
       </div>
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
-        <input type="date" [(ngModel)]="sec1FechaFin" aria-label="Fecha fin del período"
+        <label for="rep-sec1-fecha-fin" class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
+        <input id="rep-sec1-fecha-fin" type="date" [(ngModel)]="sec1FechaFin" aria-label="Fecha fin del período"
           class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-[#00328b] focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all">
       </div>
       <button (click)="cargarResumenPeriodo()" [disabled]="sec1Loading"
@@ -335,13 +335,13 @@
 
     <div class="flex flex-wrap items-end gap-4 mb-6">
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
-        <input type="date" [(ngModel)]="indicFechaInicio" (change)="indicPeriodo = 'personalizado'" aria-label="Fecha inicio indicadores"
+        <label for="rep-indic-fecha-inicio" class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
+        <input id="rep-indic-fecha-inicio" type="date" [(ngModel)]="indicFechaInicio" (change)="indicPeriodo = 'personalizado'" aria-label="Fecha inicio indicadores"
           class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all">
       </div>
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
-        <input type="date" [(ngModel)]="indicFechaFin" (change)="indicPeriodo = 'personalizado'" aria-label="Fecha fin indicadores"
+        <label for="rep-indic-fecha-fin" class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
+        <input id="rep-indic-fecha-fin" type="date" [(ngModel)]="indicFechaFin" (change)="indicPeriodo = 'personalizado'" aria-label="Fecha fin indicadores"
           class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all">
       </div>
       <button (click)="cargarIndicadores()" [disabled]="indicLoading"
@@ -500,13 +500,13 @@
   <div class="p-6">
     <div class="flex flex-wrap items-end gap-4 mb-6">
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
-        <input type="date" [(ngModel)]="seg3FechaInicio" aria-label="Seg3 fecha inicio"
+        <label for="rep-seg3-fecha-inicio" class="block text-xs font-semibold text-slate-600 mb-1">Fecha inicio</label>
+        <input id="rep-seg3-fecha-inicio" type="date" [(ngModel)]="seg3FechaInicio" aria-label="Seg3 fecha inicio"
           class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 transition-all">
       </div>
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
-        <input type="date" [(ngModel)]="seg3FechaFin" aria-label="Seg3 fecha fin"
+        <label for="rep-seg3-fecha-fin" class="block text-xs font-semibold text-slate-600 mb-1">Fecha fin</label>
+        <input id="rep-seg3-fecha-fin" type="date" [(ngModel)]="seg3FechaFin" aria-label="Seg3 fecha fin"
           class="px-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 transition-all">
       </div>
       <button (click)="cargarSegmentacion()" [disabled]="seg3Loading"
