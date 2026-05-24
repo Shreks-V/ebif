@@ -181,9 +181,9 @@ export class PreRegistroComponent implements OnInit {
   }
 
   private _addFiles(files: File[]): void {
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+    const allowed = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']);
     for (const f of files) {
-      if (!allowed.includes(f.type)) continue;
+      if (!allowed.has(f.type)) continue;
       if (f.size > 10 * 1024 * 1024) continue;
       this.ocrFiles.push({ id: this.nextOcrFileId++, file: f, tipoId: 0, status: 'pending', result: null, errorMsg: '' });
     }
@@ -355,12 +355,12 @@ export class PreRegistroComponent implements OnInit {
         next: (res) => {
           this.checkingCurp = false;
           this.curpDisponible = res.disponible;
-          if (!res.disponible) {
-            if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
-            this.fieldErrors['curp'] = 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.';
-          } else {
+          if (res.disponible) {
             this.invalidFields = this.invalidFields.filter(f => f !== 'curp');
             delete this.fieldErrors['curp'];
+          } else {
+            if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
+            this.fieldErrors['curp'] = 'Este CURP ya está registrado. Si ya enviaste un pre-registro, contáctanos.';
           }
         },
         error: () => { this.checkingCurp = false; },

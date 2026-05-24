@@ -15,12 +15,12 @@ def citas_hoy(current_user: Annotated[dict, Depends(get_current_user)] = None) -
 
 @router.get('')
 def listar_citas(
-    fecha: Optional[str]=Query(None),
-    estatus: Optional[str]=Query(None),
-    id_paciente: Optional[int]=Query(None, ge=1),
-    busqueda: Optional[str]=Query(None, max_length=120),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    fecha: Annotated[Optional[str], Query()] = None,
+    estatus: Annotated[Optional[str], Query()] = None,
+    id_paciente: Annotated[Optional[int], Query(ge=1)] = None,
+    busqueda: Annotated[Optional[str], Query(max_length=120)] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list:
     return service.listar_citas(fecha, estatus, id_paciente, busqueda, current_user, limit, offset)

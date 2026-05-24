@@ -15,9 +15,9 @@ router = APIRouter()
 
 @router.get('')
 def listar_preregistros(
-    estatus: Optional[str]=Query(None, max_length=40),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    estatus: Annotated[Optional[str], Query(max_length=40)] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list[dict]:
     return service.listar_preregistros(estatus, current_user, limit, offset)
@@ -42,7 +42,7 @@ def listar_tipos_documento_publico() -> list[dict]:
     return service.listar_tipos_documento_publico()
 
 @router.get('/check-curp')
-def check_curp_disponible(curp: str = Query(..., max_length=18, min_length=1)) -> dict:
+def check_curp_disponible(curp: Annotated[str, Query(max_length=18, min_length=1)]) -> dict:
     return service.check_curp_disponible(curp)
 
 @router.get('/{id_paciente}')
@@ -90,8 +90,8 @@ async def subir_documento(
 @router.get('/{id_paciente}/documentos')
 def listar_documentos(
     id_paciente: int,
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     _access=Depends(ensure_preregistro_access),
 ) -> list[dict]:
     return service.listar_documentos(id_paciente, limit, offset)

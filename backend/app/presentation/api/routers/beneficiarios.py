@@ -20,14 +20,14 @@ def dashboard_stats(current_user: Annotated[dict, Depends(get_current_user)] = N
 
 @router.get('')
 def listar_beneficiarios(
-    nombre: Optional[str]=Query(None, max_length=120),
-    estado: Optional[str]=Query(None, max_length=40),
-    genero: Optional[str]=Query(None, max_length=40),
-    busqueda: Optional[str]=Query(None, max_length=120),
-    membresia_estatus: Optional[str]=Query(None, max_length=40),
-    tipo_cuota: Optional[str]=Query(None, max_length=10),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    nombre: Annotated[Optional[str], Query(max_length=120)] = None,
+    estado: Annotated[Optional[str], Query(max_length=40)] = None,
+    genero: Annotated[Optional[str], Query(max_length=40)] = None,
+    busqueda: Annotated[Optional[str], Query(max_length=120)] = None,
+    membresia_estatus: Annotated[Optional[str], Query(max_length=40)] = None,
+    tipo_cuota: Annotated[Optional[str], Query(max_length=10)] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list[BeneficiarioResponse]:
     return service.listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
@@ -55,12 +55,12 @@ def eliminar_beneficiario(folio: str, current_user: Annotated[dict, Depends(requ
 @router.get('/{folio}/historial')
 def historial_beneficiario(
     folio: str,
-    limit_citas: int=Query(100, ge=1, le=500),
-    offset_citas: int=Query(0, ge=0),
-    limit_pagos: int=Query(100, ge=1, le=500),
-    offset_pagos: int=Query(0, ge=0),
-    limit_comodatos: int=Query(100, ge=1, le=500),
-    offset_comodatos: int=Query(0, ge=0),
+    limit_citas: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset_citas: Annotated[int, Query(ge=0)] = 0,
+    limit_pagos: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset_pagos: Annotated[int, Query(ge=0)] = 0,
+    limit_comodatos: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset_comodatos: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> dict:
     return service.historial_beneficiario(
@@ -76,9 +76,9 @@ def historial_beneficiario(
 
 @router.get('/membresias/proximas-a-vencer')
 def membresias_proximas_a_vencer(
-    dias: int=Query(30, ge=1, le=365),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    dias: Annotated[int, Query(ge=1, le=365)] = 30,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list:
     return service.listar_membresias_proximas_a_vencer(dias, current_user, limit, offset)

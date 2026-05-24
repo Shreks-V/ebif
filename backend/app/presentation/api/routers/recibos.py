@@ -15,13 +15,13 @@ def listar_metodos_pago(current_user: Annotated[dict, Depends(get_current_user)]
 
 @router.get('')
 def listar_ventas(
-    fecha_inicio: Optional[str]=Query(None),
-    fecha_fin: Optional[str]=Query(None),
-    id_paciente: Optional[int]=Query(None, ge=1),
-    search: Optional[str]=Query(None, max_length=120),
-    solo_adeudos: bool=Query(False),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    fecha_inicio: Annotated[Optional[str], Query()] = None,
+    fecha_fin: Annotated[Optional[str], Query()] = None,
+    id_paciente: Annotated[Optional[int], Query(ge=1)] = None,
+    search: Annotated[Optional[str], Query(max_length=120)] = None,
+    solo_adeudos: Annotated[bool, Query()] = False,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list:
     return service.listar_ventas(fecha_inicio, fecha_fin, id_paciente, search, current_user, limit, offset, solo_adeudos)
@@ -35,7 +35,7 @@ def obtener_venta(id_venta: int, current_user: Annotated[dict, Depends(get_curre
     return service.obtener_venta(id_venta, current_user)
 
 @router.put('/{id_venta}/cancelar')
-def cancelar_venta(id_venta: int, motivo: Optional[str]=Query(None), current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))] = None) -> dict:
+def cancelar_venta(id_venta: int, motivo: Annotated[Optional[str], Query()] = None, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))] = None) -> dict:
     return service.cancelar_venta(id_venta, motivo, current_user)
 
 @router.post('/{id_venta}/pagos', status_code=201)

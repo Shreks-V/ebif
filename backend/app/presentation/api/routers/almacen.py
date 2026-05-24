@@ -8,11 +8,11 @@ router = APIRouter()
 
 @router.get('/productos')
 def listar_productos(
-    tipo_producto: Optional[Literal['MEDICAMENTO', 'EQUIPO', 'EQUIPO_MEDICO']]=Query(None, description='MEDICAMENTO o EQUIPO'),
-    busqueda: Optional[str]=Query(None, max_length=120),
-    activo: Optional[Literal['S', 'N']]=Query(None),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    tipo_producto: Annotated[Optional[Literal['MEDICAMENTO', 'EQUIPO', 'EQUIPO_MEDICO']], Query(description='MEDICAMENTO o EQUIPO')] = None,
+    busqueda: Annotated[Optional[str], Query(max_length=120)] = None,
+    activo: Annotated[Optional[Literal['S', 'N']], Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> List[ProductoResponse]:
     return service.listar_productos(tipo_producto, busqueda, activo, current_user, limit, offset)
@@ -39,11 +39,11 @@ def ajustar_existencia(id_producto: int, data: AjusteExistenciaRequest, current_
 
 @router.get('/servicios')
 def listar_servicios(
-    busqueda: Optional[str]=Query(None, max_length=120),
-    activo: Optional[Literal['S', 'N']]=Query(None),
-    categoria: Optional[Literal['SERVICIO', 'LABORATORIO']]=Query(None),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    busqueda: Annotated[Optional[str], Query(max_length=120)] = None,
+    activo: Annotated[Optional[Literal['S', 'N']], Query()] = None,
+    categoria: Annotated[Optional[Literal['SERVICIO', 'LABORATORIO']], Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> List[ServicioResponse]:
     return service.listar_servicios(busqueda, activo, categoria, current_user, limit, offset)
@@ -66,10 +66,10 @@ def desactivar_servicio(id_servicio: int, current_user: Annotated[dict, Depends(
 
 @router.get('/comodatos')
 def listar_comodatos(
-    estatus: Optional[Literal['PRESTADO', 'DEVUELTO', 'CANCELADO']]=Query(None, description='PRESTADO, DEVUELTO, CANCELADO'),
-    busqueda: Optional[str]=Query(None, max_length=120),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    estatus: Annotated[Optional[Literal['PRESTADO', 'DEVUELTO', 'CANCELADO']], Query(description='PRESTADO, DEVUELTO, CANCELADO')] = None,
+    busqueda: Annotated[Optional[str], Query(max_length=120)] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> List[ComodatoResponse]:
     return service.listar_comodatos(estatus, busqueda, current_user, limit, offset)
@@ -88,13 +88,13 @@ def actualizar_comodato(id_comodato: int, data: ComodatoCreate, current_user: An
 
 @router.get('/movimientos')
 def listar_movimientos(
-    id_producto: Optional[int]=Query(None, ge=1),
-    tipo_movimiento: Optional[str]=Query(None),
-    busqueda: Optional[str]=Query(None, max_length=120),
-    fecha_inicio: Optional[str]=Query(None),
-    fecha_fin: Optional[str]=Query(None),
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    id_producto: Annotated[Optional[int], Query(ge=1)] = None,
+    tipo_movimiento: Annotated[Optional[str], Query()] = None,
+    busqueda: Annotated[Optional[str], Query(max_length=120)] = None,
+    fecha_inicio: Annotated[Optional[str], Query()] = None,
+    fecha_fin: Annotated[Optional[str], Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> List[MovimientoInventario]:
     return service.listar_movimientos(id_producto, tipo_movimiento, busqueda, fecha_inicio, fecha_fin, current_user, limit, offset)

@@ -13,13 +13,13 @@ router = APIRouter()
 
 @router.get("")
 def listar_bitacora(
-    tabla: Optional[str] = Query(None),
-    tipo_operacion: Optional[str] = Query(None),
-    fecha_inicio: Optional[str] = Query(None),
-    fecha_fin: Optional[str] = Query(None),
-    busqueda: Optional[str] = Query(None),
-    limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0),
+    tabla: Annotated[Optional[str], Query()] = None,
+    tipo_operacion: Annotated[Optional[str], Query()] = None,
+    fecha_inicio: Annotated[Optional[str], Query()] = None,
+    fecha_fin: Annotated[Optional[str], Query()] = None,
+    busqueda: Annotated[Optional[str], Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(require_role("ADMINISTRADOR"))] = None,
 ) -> dict:
     return service.listar(tabla, tipo_operacion, fecha_inicio, fecha_fin, busqueda, limit, offset)

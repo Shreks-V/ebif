@@ -51,8 +51,8 @@ def _score(q: str, row: dict) -> int:
 
 @router.get("")
 def buscar_global(
-    q: str = Query(..., min_length=2, max_length=100, description="Texto a buscar"),
-    limit: int = Query(20, ge=1, le=50),
+    q: Annotated[str, Query(min_length=2, max_length=100, description="Texto a buscar")],
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list[dict]:
     """

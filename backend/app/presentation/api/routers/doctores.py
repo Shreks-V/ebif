@@ -11,16 +11,16 @@ def doctor_del_dia(current_user: Annotated[dict, Depends(get_current_user)] = No
 
 @router.get('')
 def listar_doctores(
-    limit: int=Query(100, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list:
     return service.listar_doctores(current_user, limit, offset)
 
 @router.get('/disponibilidad/semana')
 def obtener_disponibilidad_semana(
-    limit: int=Query(500, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    limit: Annotated[int, Query(ge=1, le=500)] = 500,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list:
     return service.obtener_disponibilidad_semana(current_user, limit, offset)
@@ -44,8 +44,8 @@ def desactivar_doctor(id_doctor: int, current_user: Annotated[dict, Depends(requ
 @router.get('/{id_doctor}/disponibilidad')
 def obtener_disponibilidad(
     id_doctor: int,
-    limit: int=Query(500, ge=1, le=500),
-    offset: int=Query(0, ge=0),
+    limit: Annotated[int, Query(ge=1, le=500)] = 500,
+    offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list:
     return service.obtener_disponibilidad(id_doctor, current_user, limit, offset)

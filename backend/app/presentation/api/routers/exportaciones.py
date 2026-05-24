@@ -41,14 +41,14 @@ def _payload_response(payload: FilePayload) -> StreamingResponse:
 
 @router.get('/reportes/pdf')
 def exportar_reporte_pdf(
-    tipo: str = Query('resumen', description='resumen | por-genero | por-etapa-vida | por-estado | por-tipo-espina | consolidado-mensual | indicadores'),
-    genero: Optional[str] = Query(None),
-    estado: Optional[str] = Query(None),
-    tipo_espina: Optional[int] = Query(None),
-    fecha_inicio: Optional[str] = Query(None),
-    fecha_fin: Optional[str] = Query(None),
-    mes: Optional[int] = Query(None),
-    anio: Optional[int] = Query(None),
+    tipo: Annotated[str, Query(description='resumen | por-genero | por-etapa-vida | por-estado | por-tipo-espina | consolidado-mensual | indicadores')] = 'resumen',
+    genero: Annotated[Optional[str], Query()] = None,
+    estado: Annotated[Optional[str], Query()] = None,
+    tipo_espina: Annotated[Optional[int], Query()] = None,
+    fecha_inicio: Annotated[Optional[str], Query()] = None,
+    fecha_fin: Annotated[Optional[str], Query()] = None,
+    mes: Annotated[Optional[int], Query()] = None,
+    anio: Annotated[Optional[int], Query()] = None,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> StreamingResponse:
     return _payload_response(service.exportar_reporte_pdf(tipo, genero, estado, tipo_espina, fecha_inicio, fecha_fin, mes, anio, current_user))
@@ -70,11 +70,24 @@ def exportar_contrato_comodato(id_comodato: int, current_user: Annotated[dict, D
     return _payload_response(service.exportar_contrato_comodato(id_comodato, current_user))
 
 @router.get('/beneficiarios/excel')
-def exportar_beneficiarios_excel(genero: Optional[str]=Query(None), estado: Optional[str]=Query(None), membresia_estatus: Optional[str]=Query(None), busqueda: Optional[str]=Query(None), current_user: Annotated[dict, Depends(get_current_user)] = None) -> StreamingResponse:
+def exportar_beneficiarios_excel(
+    genero: Annotated[Optional[str], Query()] = None,
+    estado: Annotated[Optional[str], Query()] = None,
+    membresia_estatus: Annotated[Optional[str], Query()] = None,
+    busqueda: Annotated[Optional[str], Query()] = None,
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+) -> StreamingResponse:
     return _payload_response(service.exportar_beneficiarios_excel(genero, estado, membresia_estatus, busqueda, current_user))
 
 @router.get('/reportes/excel')
-def exportar_reporte_excel(tipo: str=Query('resumen', description='resumen | servicios-por-tipo | pagos-exentos | consolidado-mensual'), fecha_inicio: Optional[str]=Query(None), fecha_fin: Optional[str]=Query(None), mes: Optional[int]=Query(None), anio: Optional[int]=Query(None), current_user: Annotated[dict, Depends(get_current_user)] = None) -> StreamingResponse:
+def exportar_reporte_excel(
+    tipo: Annotated[str, Query(description='resumen | servicios-por-tipo | pagos-exentos | consolidado-mensual')] = 'resumen',
+    fecha_inicio: Annotated[Optional[str], Query()] = None,
+    fecha_fin: Annotated[Optional[str], Query()] = None,
+    mes: Annotated[Optional[int], Query()] = None,
+    anio: Annotated[Optional[int], Query()] = None,
+    current_user: Annotated[dict, Depends(get_current_user)] = None,
+) -> StreamingResponse:
     return _payload_response(service.exportar_reporte_excel(tipo, fecha_inicio, fecha_fin, mes, anio, current_user))
 
 
@@ -88,15 +101,15 @@ async def _ws_send(ws: WebSocket, step: int, total: int, msg: str, data: dict | 
 @router.websocket("/ws/exportar")
 async def ws_exportar_reporte(
     websocket: WebSocket,
-    tipo: str = Query("resumen"),
-    genero: Optional[str] = Query(None),
-    estado: Optional[str] = Query(None),
-    tipo_espina: Optional[int] = Query(None),
-    fecha_inicio: Optional[str] = Query(None),
-    fecha_fin: Optional[str] = Query(None),
-    mes: Optional[int] = Query(None),
-    anio: Optional[int] = Query(None),
-    token: Optional[str] = Query(None),
+    tipo: Annotated[str, Query()] = "resumen",
+    genero: Annotated[Optional[str], Query()] = None,
+    estado: Annotated[Optional[str], Query()] = None,
+    tipo_espina: Annotated[Optional[int], Query()] = None,
+    fecha_inicio: Annotated[Optional[str], Query()] = None,
+    fecha_fin: Annotated[Optional[str], Query()] = None,
+    mes: Annotated[Optional[int], Query()] = None,
+    anio: Annotated[Optional[int], Query()] = None,
+    token: Annotated[Optional[str], Query()] = None,
 ):
     """
     Exporta un reporte PDF con progreso en tiempo real via WebSocket.
