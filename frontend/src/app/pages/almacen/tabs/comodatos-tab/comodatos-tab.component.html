@@ -208,7 +208,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="cod-paciente" class="block text-sm font-semibold text-slate-700 mb-1">Paciente <span aria-hidden="true">*</span></label>
-            <select id="cod-paciente" [(ngModel)]="comodatoForm.id_paciente" name="id_paciente" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Paciente">
+            <select id="cod-paciente" [(ngModel)]="comodatoForm.id_paciente" name="id_paciente" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
               <option [ngValue]="null">Seleccionar paciente...</option>
               @for (b of beneficiariosList; track b.id) {
                 <option [ngValue]="b.id">{{ b.nombre }}</option>
@@ -217,7 +217,7 @@
           </div>
           <div>
             <label for="cod-equipo" class="block text-sm font-semibold text-slate-700 mb-1">Equipo <span aria-hidden="true">*</span></label>
-            <select id="cod-equipo" [(ngModel)]="comodatoForm.id_equipo" name="id_equipo" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Equipo">
+            <select id="cod-equipo" [(ngModel)]="comodatoForm.id_equipo" name="id_equipo" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
               <option [ngValue]="null">Seleccionar equipo...</option>
               @for (e of equiposList; track e.idProducto) {
                 <option [ngValue]="e.idProducto">{{ e.nombre }}</option>
@@ -228,12 +228,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="cod-fecha-prestamo" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
-            <input id="cod-fecha-prestamo" type="date" [(ngModel)]="comodatoForm.fecha_prestamo" name="fecha_prestamo" required aria-label="Fecha de Préstamo"
+            <input id="cod-fecha-prestamo" type="date" [(ngModel)]="comodatoForm.fecha_prestamo" name="fecha_prestamo" required
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
           <div>
             <label for="cod-fecha-devolucion" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
-            <input id="cod-fecha-devolucion" type="date" [(ngModel)]="comodatoForm.fecha_devolucion" name="fecha_devolucion" aria-label="Fecha de Devolución"
+            <input id="cod-fecha-devolucion" type="date" [(ngModel)]="comodatoForm.fecha_devolucion" name="fecha_devolucion"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
         </div>
@@ -241,7 +241,7 @@
           <div>
             <label for="cod-estatus" class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
             <select id="cod-estatus" [(ngModel)]="comodatoForm.estatus" name="estatus"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Estatus">
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
               <option value="PRESTADO">Prestado</option>
               <option value="DEVUELTO">Devuelto</option>
               <option value="CANCELADO">Cancelado</option>
@@ -251,7 +251,7 @@
           <div>
             <label for="cod-exento-pago" class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
             <select id="cod-exento-pago" [(ngModel)]="comodatoForm.exento_pago" name="exento_pago"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Exento Pago">
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
               <option value="N">No</option>
               <option value="S">S&iacute;</option>
             </select>
@@ -260,24 +260,24 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label for="cod-monto-total" class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
-            <input id="cod-monto-total" type="number" [(ngModel)]="comodatoForm.monto_total" name="monto_total" step="0.01" min="0" aria-label="0.00"
+            <input id="cod-monto-total" type="number" [(ngModel)]="comodatoForm.monto_total" name="monto_total" step="0.01" min="0"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
           </div>
           <div>
             <label for="cod-monto-pagado" class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
-            <input id="cod-monto-pagado" type="number" [(ngModel)]="comodatoForm.monto_pagado" name="monto_pagado" step="0.01" min="0" aria-label="0.00"
+            <input id="cod-monto-pagado" type="number" [(ngModel)]="comodatoForm.monto_pagado" name="monto_pagado" step="0.01" min="0"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
           </div>
           <div>
             <label for="cod-saldo-pendiente" class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
-            <input id="cod-saldo-pendiente" type="number" [(ngModel)]="comodatoForm.saldo_pendiente" name="saldo_pendiente" step="0.01" min="0" aria-label="0.00"
+            <input id="cod-saldo-pendiente" type="number" [(ngModel)]="comodatoForm.saldo_pendiente" name="saldo_pendiente" step="0.01" min="0"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
           </div>
         </div>
         <div>
           <label for="cod-notas" class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
           <textarea id="cod-notas" autoGrow [(ngModel)]="comodatoForm.notas" name="notas" rows="3"
-          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" placeholder="Notas adicionales..." aria-label="Notas adicionales..."></textarea>
+          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" placeholder="Notas adicionales..."></textarea>
         </div>
         <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
           <button type="button" (click)="closeNuevo()"
@@ -310,12 +310,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="cod-edit-fecha-prestamo" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
-            <input id="cod-edit-fecha-prestamo" type="date" [(ngModel)]="editForm.fecha_prestamo" name="ecFechaPrest" required aria-label="Fecha de Préstamo"
+            <input id="cod-edit-fecha-prestamo" type="date" [(ngModel)]="editForm.fecha_prestamo" name="ecFechaPrest" required
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
           <div>
             <label for="cod-edit-fecha-devolucion" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
-            <input id="cod-edit-fecha-devolucion" type="date" [(ngModel)]="editForm.fecha_devolucion" name="ecFechaDev" aria-label="Fecha de Devolución"
+            <input id="cod-edit-fecha-devolucion" type="date" [(ngModel)]="editForm.fecha_devolucion" name="ecFechaDev"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
         </div>
@@ -323,7 +323,7 @@
           <div>
             <label for="cod-edit-estatus" class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
             <select id="cod-edit-estatus" [(ngModel)]="editForm.estatus" name="ecEstatus"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Estatus">
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
               <option value="PRESTADO">Prestado</option>
               <option value="DEVUELTO">Devuelto</option>
               <option value="CANCELADO">Cancelado</option>
@@ -333,7 +333,7 @@
           <div>
             <label for="cod-edit-exento-pago" class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
             <select id="cod-edit-exento-pago" [(ngModel)]="editForm.exento_pago" name="ecExento"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Exento de Pago">
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
               <option value="N">No</option>
               <option value="S">S&iacute;</option>
             </select>
@@ -342,24 +342,24 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label for="cod-edit-monto-total" class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
-            <input id="cod-edit-monto-total" type="number" [(ngModel)]="editForm.monto_total" name="ecMontoTotal" step="0.01" min="0" aria-label="Monto Total"
+            <input id="cod-edit-monto-total" type="number" [(ngModel)]="editForm.monto_total" name="ecMontoTotal" step="0.01" min="0"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
           <div>
             <label for="cod-edit-monto-pagado" class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
-            <input id="cod-edit-monto-pagado" type="number" [(ngModel)]="editForm.monto_pagado" name="ecMontoPagado" step="0.01" min="0" aria-label="Monto Pagado"
+            <input id="cod-edit-monto-pagado" type="number" [(ngModel)]="editForm.monto_pagado" name="ecMontoPagado" step="0.01" min="0"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
           <div>
             <label for="cod-edit-saldo-pendiente" class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
-            <input id="cod-edit-saldo-pendiente" type="number" [(ngModel)]="editForm.saldo_pendiente" name="ecSaldo" step="0.01" min="0" aria-label="Saldo Pendiente"
+            <input id="cod-edit-saldo-pendiente" type="number" [(ngModel)]="editForm.saldo_pendiente" name="ecSaldo" step="0.01" min="0"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
           </div>
         </div>
         <div>
           <label for="cod-edit-notas" class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
           <textarea id="cod-edit-notas" autoGrow [(ngModel)]="editForm.notas" name="ecNotas" rows="3"
-          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" aria-label="Notas"></textarea>
+          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden"></textarea>
         </div>
         <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
           <button type="button" (click)="showEditModal = false"
