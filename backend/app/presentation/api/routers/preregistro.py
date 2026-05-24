@@ -72,9 +72,9 @@ def aprobar_preregistro(
 @router.post('/{id_paciente}/documentos')
 async def subir_documento(
     id_paciente: int,
-    id_tipo_documento: int = Form(...),
-    archivo: UploadFile = File(...),
-    _access=Depends(ensure_preregistro_access),
+    id_tipo_documento: Annotated[int, Form()],
+    archivo: Annotated[UploadFile, File()],
+    _access: Annotated[dict, Depends(ensure_preregistro_access)] = None,
     current_user: Annotated[dict | None, Depends(get_optional_current_user)] = None,
 ) -> dict:
     content = await archivo.read()
@@ -92,7 +92,7 @@ def listar_documentos(
     id_paciente: int,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
-    _access=Depends(ensure_preregistro_access),
+    _access: Annotated[dict, Depends(ensure_preregistro_access)] = None,
 ) -> list[dict]:
     return service.listar_documentos(id_paciente, limit, offset)
 
@@ -100,7 +100,7 @@ def listar_documentos(
 def obtener_documento_archivo(
     id_paciente: int,
     id_documento: int,
-    _access=Depends(ensure_preregistro_access),
+    _access: Annotated[dict, Depends(ensure_preregistro_access)] = None,
 ) -> StreamingResponse:
     archivo = service.obtener_documento_archivo(id_paciente, id_documento)
     return StreamingResponse(
@@ -113,7 +113,7 @@ def obtener_documento_archivo(
 def eliminar_documento(
     id_paciente: int,
     id_documento: int,
-    _access=Depends(ensure_preregistro_access),
+    _access: Annotated[dict, Depends(ensure_preregistro_access)] = None,
 ) -> dict:
     return service.eliminar_documento(id_paciente, id_documento)
 
