@@ -39,7 +39,7 @@
       <div class="space-y-2">
         <label for="wlk-servicio" class="block text-xs font-semibold text-slate-700">Servicio</label>
         <select id="wlk-servicio" [(ngModel)]="servicioSeleccionadoId"
-          class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" aria-label="Servicio">
+          class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
           <option [ngValue]="null" disabled>Selecciona un servicio...</option>
           @for (servicio of servicios; track servicio.id_servicio) {
             <option [ngValue]="servicio.id_servicio">{{ servicio.nombre }}</option>
@@ -48,7 +48,7 @@
       </div>
       <div class="space-y-2">
         <label for="wlk-cantidad" class="block text-xs font-semibold text-slate-700">Cantidad</label>
-        <input id="wlk-cantidad" type="number" [(ngModel)]="cantidad" min="1" aria-label="Cantidad"
+        <input id="wlk-cantidad" type="number" [(ngModel)]="cantidad" min="1"
           class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
       </div>
       @if (error) {

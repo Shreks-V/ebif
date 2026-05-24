@@ -77,7 +77,7 @@
           <div>
             <label for="pfil-contrasena-actual" class="block text-sm font-semibold text-slate-700 mb-1">Contraseña actual *</label>
             <div class="relative">
-              <input id="pfil-contrasena-actual" aria-label="Ingresa tu contraseña actual"
+              <input id="pfil-contrasena-actual"
                 [type]="showActual ? 'text' : 'password'"
                 [(ngModel)]="form.contrasena_actual"
                 name="contrasena_actual"
@@ -103,7 +103,7 @@
           <div>
             <label for="pfil-contrasena-nueva" class="block text-sm font-semibold text-slate-700 mb-1">Nueva contraseña *</label>
             <div class="relative">
-              <input id="pfil-contrasena-nueva" aria-label="Mínimo 8 caracteres"
+              <input id="pfil-contrasena-nueva"
                 [type]="showNueva ? 'text' : 'password'"
                 [(ngModel)]="form.contrasena_nueva"
                 name="contrasena_nueva"
@@ -133,7 +133,7 @@
           <div>
             <label for="pfil-contrasena-confirmar" class="block text-sm font-semibold text-slate-700 mb-1">Confirmar nueva contraseña *</label>
             <div class="relative">
-              <input id="pfil-contrasena-confirmar" aria-label="Repite la nueva contraseña"
+              <input id="pfil-contrasena-confirmar"
                 [type]="showConfirm ? 'text' : 'password'"
                 [(ngModel)]="form.confirmar"
                 name="confirmar"

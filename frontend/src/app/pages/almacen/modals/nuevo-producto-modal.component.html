@@ -18,26 +18,26 @@
           <label for="nprod-clave-interna" class="block text-sm font-semibold text-slate-700 mb-1">
             Clave Interna @if (form.tipo_producto !== 'SERVICIO') { <span>*</span> }
           </label>
-          <input id="nprod-clave-interna" type="text" [(ngModel)]="form.clave_interna" name="clave_interna" aria-label="Ej: MED-001"
+          <input id="nprod-clave-interna" type="text" [(ngModel)]="form.clave_interna" name="clave_interna"
             [required]="form.tipo_producto !== 'SERVICIO'"
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: MED-001"/>
         </div>
         <div>
           <label for="nprod-nombre" class="block text-sm font-semibold text-slate-700 mb-1">Nombre *</label>
-          <input id="nprod-nombre" type="text" [(ngModel)]="form.nombre" name="nombre" required aria-label="Nombre del producto"
+          <input id="nprod-nombre" type="text" [(ngModel)]="form.nombre" name="nombre" required
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Nombre del producto"/>
         </div>
       </div>
       <div>
         <label for="nprod-descripcion" class="block text-sm font-semibold text-slate-700 mb-1">Descripci&oacute;n</label>
         <textarea id="nprod-descripcion" autoGrow [(ngModel)]="form.descripcion" name="descripcion" rows="2"
-          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" aria-label="Descripción"></textarea>
+          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden"></textarea>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="nprod-tipo-producto" class="block text-sm font-semibold text-slate-700 mb-1">Tipo de Producto *</label>
           <select id="nprod-tipo-producto" [(ngModel)]="form.tipo_producto" name="tipo_producto" required
-            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Tipo de producto">
+            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
             <option value="">Seleccionar...</option>
             <option value="MEDICAMENTO">Medicamento</option>
             <option value="EQUIPO">Equipo</option>
@@ -47,7 +47,7 @@
         <div>
           <label for="nprod-activo" class="block text-sm font-semibold text-slate-700 mb-1">Activo</label>
           <select id="nprod-activo" [(ngModel)]="form.activo" name="activo"
-            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Activo">
+            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
             <option value="S">S&iacute;</option>
             <option value="N">No</option>
           </select>
@@ -56,12 +56,12 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="nprod-precio-cuota-a" class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota A</label>
-          <input id="nprod-precio-cuota-a" type="number" [(ngModel)]="form.precio_cuota_a" name="precio_cuota_a" step="0.01" min="0" aria-label="0.00"
+          <input id="nprod-precio-cuota-a" type="number" [(ngModel)]="form.precio_cuota_a" name="precio_cuota_a" step="0.01" min="0"
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00"/>
         </div>
         <div>
           <label for="nprod-precio-cuota-b" class="block text-sm font-semibold text-slate-700 mb-1">Precio Cuota B</label>
-          <input id="nprod-precio-cuota-b" type="number" [(ngModel)]="form.precio_cuota_b" name="precio_cuota_b" step="0.01" min="0" aria-label="0.00"
+          <input id="nprod-precio-cuota-b" type="number" [(ngModel)]="form.precio_cuota_b" name="precio_cuota_b" step="0.01" min="0"
             class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00"/>
         </div>
       </div>
@@ -71,18 +71,18 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label for="nprod-presentacion" class="block text-sm font-semibold text-slate-700 mb-1">Presentaci&oacute;n</label>
-              <input id="nprod-presentacion" type="text" [(ngModel)]="form.presentacion" name="presentacion" aria-label="Ej: Tableta"
+              <input id="nprod-presentacion" type="text" [(ngModel)]="form.presentacion" name="presentacion"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: Tableta"/>
             </div>
             <div>
               <label for="nprod-dosis" class="block text-sm font-semibold text-slate-700 mb-1">Dosis</label>
-              <input id="nprod-dosis" type="text" [(ngModel)]="form.dosis" name="dosis" aria-label="Ej: 500mg"
+              <input id="nprod-dosis" type="text" [(ngModel)]="form.dosis" name="dosis"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: 500mg"/>
             </div>
             <div>
               <label for="nprod-requiere-caducidad" class="block text-sm font-semibold text-slate-700 mb-1">Requiere Caducidad</label>
               <select id="nprod-requiere-caducidad" [(ngModel)]="form.requiere_caducidad" name="requiere_caducidad"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Requiere Caducidad">
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
                 <option value="S">S&iacute;</option>
                 <option value="N">No</option>
               </select>
@@ -91,7 +91,7 @@
           @if (form.requiere_caducidad === 'S') {
             <div class="mt-4">
               <label for="nprod-fecha-caducidad" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Caducidad</label>
-              <input id="nprod-fecha-caducidad" type="date" [(ngModel)]="form.fecha_caducidad" name="fecha_caducidad" aria-label="Form.fecha caducidad"
+              <input id="nprod-fecha-caducidad" type="date" [(ngModel)]="form.fecha_caducidad" name="fecha_caducidad"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
             </div>
           }
@@ -103,17 +103,17 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label for="nprod-numero-serie" class="block text-sm font-semibold text-slate-700 mb-1">N&uacute;mero de Serie</label>
-              <input id="nprod-numero-serie" type="text" [(ngModel)]="form.numero_serie" name="numero_serie" aria-label="Form.numero serie"
+              <input id="nprod-numero-serie" type="text" [(ngModel)]="form.numero_serie" name="numero_serie"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
             </div>
             <div>
               <label for="nprod-marca" class="block text-sm font-semibold text-slate-700 mb-1">Marca</label>
-              <input id="nprod-marca" type="text" [(ngModel)]="form.marca" name="marca" aria-label="Form.marca"
+              <input id="nprod-marca" type="text" [(ngModel)]="form.marca" name="marca"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
             </div>
             <div>
               <label for="nprod-modelo" class="block text-sm font-semibold text-slate-700 mb-1">Modelo</label>
-              <input id="nprod-modelo" type="text" [(ngModel)]="form.modelo" name="modelo" aria-label="Form.modelo"
+              <input id="nprod-modelo" type="text" [(ngModel)]="form.modelo" name="modelo"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm"/>
             </div>
           </div>
@@ -121,7 +121,7 @@
             <div>
               <label for="nprod-estatus-equipo" class="block text-sm font-semibold text-slate-700 mb-1">Estatus Equipo</label>
               <select id="nprod-estatus-equipo" [(ngModel)]="form.estatus_equipo" name="estatus_equipo"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white" aria-label="Estatus Equipo">
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
                 <option value="DISPONIBLE">Disponible</option>
                 <option value="EN_USO">En Uso</option>
                 <option value="DAÑADO">Da&ntilde;ado</option>
@@ -130,7 +130,7 @@
             <div>
               <label for="nprod-observaciones" class="block text-sm font-semibold text-slate-700 mb-1">Observaciones</label>
               <textarea id="nprod-observaciones" autoGrow [(ngModel)]="form.observaciones" name="observaciones" rows="2"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" aria-label="Observaciones"></textarea>
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden"></textarea>
             </div>
           </div>
         </div>
@@ -142,14 +142,14 @@
             <div>
               <label for="nprod-srv-categoria" class="block text-sm font-semibold text-slate-700 mb-1">Categor&iacute;a</label>
               <select id="nprod-srv-categoria" [(ngModel)]="form.categoria" name="srv_categoria"
-                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" aria-label="Srv Categoria">
+                class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm">
                 <option value="SERVICIO">Servicio general</option>
                 <option value="LABORATORIO">Laboratorio / Estudio</option>
               </select>
             </div>
             <div>
               <label for="nprod-cuota-recuperacion" class="block text-sm font-semibold text-slate-700 mb-1">Cuota de Recuperaci&oacute;n</label>
-              <input id="nprod-cuota-recuperacion" type="number" [(ngModel)]="form.cuota_recuperacion" name="cuota_recuperacion" step="0.01" min="0" aria-label="0.00"
+              <input id="nprod-cuota-recuperacion" type="number" [(ngModel)]="form.cuota_recuperacion" name="cuota_recuperacion" step="0.01" min="0"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00"/>
             </div>
           </div>
@@ -161,17 +161,17 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label for="nprod-cantidad-disponible" class="block text-sm font-semibold text-slate-700 mb-1">Cantidad Disponible</label>
-              <input id="nprod-cantidad-disponible" type="number" [(ngModel)]="form.cantidad_disponible" name="cantidad_disponible" min="0" aria-label="0"
+              <input id="nprod-cantidad-disponible" type="number" [(ngModel)]="form.cantidad_disponible" name="cantidad_disponible" min="0"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0"/>
             </div>
             <div>
               <label for="nprod-nivel-minimo" class="block text-sm font-semibold text-slate-700 mb-1">Nivel M&iacute;nimo</label>
-              <input id="nprod-nivel-minimo" type="number" [(ngModel)]="form.nivel_minimo" name="nivel_minimo" min="0" aria-label="5"
+              <input id="nprod-nivel-minimo" type="number" [(ngModel)]="form.nivel_minimo" name="nivel_minimo" min="0"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="5"/>
             </div>
             <div>
               <label for="nprod-unidad-medida" class="block text-sm font-semibold text-slate-700 mb-1">Unidad de Medida</label>
-              <input id="nprod-unidad-medida" type="text" [(ngModel)]="form.unidad_medida" name="unidad_medida" aria-label="Ej: Pieza, Caja"
+              <input id="nprod-unidad-medida" type="text" [(ngModel)]="form.unidad_medida" name="unidad_medida"
                 class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="Ej: Pieza, Caja"/>
             </div>
           </div>

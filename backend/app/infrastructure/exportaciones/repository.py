@@ -516,7 +516,33 @@ def _exportar_reporte_pdf(  # noqa: C901  # nosonar
         logger.exception('Error al generar PDF de reporte')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = None):  # nosonar
+def _beneficiario_pdf_fields(paciente: dict, nombre: str) -> list[tuple]:
+    """Return ordered (label, value) pairs for a beneficiary expediente PDF."""
+    usa_valvula = 'Sí' if _strip(paciente.get('usa_valvula')) == 'S' else 'No'
+    return [
+        ('Nombre', nombre),
+        ('CURP', paciente.get('curp') or ''),
+        (_COL_GENERO, _strip(paciente.get('genero')) or ''),
+        ('Fecha de Nacimiento', _date_str(paciente.get('fecha_nacimiento'))),
+        ('Tipo de Sangre', paciente.get('tipo_sangre') or ''),
+        ('Usa Válvula', usa_valvula),
+        ('Dirección', paciente.get('direccion') or ''),
+        ('Colonia', paciente.get('colonia') or ''),
+        ('Ciudad', paciente.get('ciudad') or ''),
+        ('Estado', paciente.get('estado') or ''),
+        ('C.P.', paciente.get('codigo_postal') or ''),
+        ('Teléfono Casa', paciente.get('telefono_casa') or ''),
+        ('Teléfono Celular', paciente.get('telefono_celular') or ''),
+        ('Correo', paciente.get('correo_electronico') or ''),
+        ('Contacto Emergencia', paciente.get('en_emergencia_avisar_a') or ''),
+        ('Tel. Emergencia', paciente.get('telefono_emergencia') or ''),
+        ('Membresía', _strip(paciente.get('membresia_estatus')) or ''),
+        ('Tipo Cuota', _strip(paciente.get('tipo_cuota')) or ''),
+        ('Fecha Alta', _date_str(paciente.get('fecha_alta'))),
+    ]
+
+
+def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = None):
     """Generar reporte PDF de un beneficiario con sus datos y documentos (RF-ER-06)."""
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
@@ -531,7 +557,7 @@ def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = N
             if not paciente:
                 raise NotFoundError('Beneficiario no encontrado')
             paciente = decrypt_row(paciente, PACIENTE_ENCRYPTED_FIELDS)
-            nombre = f'{paciente['nombre']} {paciente['apellido_paterno']} {paciente.get('apellido_materno') or ''}'.strip()
+            nombre = f'{paciente["nombre"]} {paciente["apellido_paterno"]} {paciente.get("apellido_materno") or ""}'.strip()
         buf = io.BytesIO()
         doc = SimpleDocTemplate(buf, pagesize=letter, topMargin=40, bottomMargin=40)
         styles = getSampleStyleSheet()
@@ -543,17 +569,25 @@ def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = N
             elements.append(Spacer(1, 6))
         elements.append(Paragraph(_ORG_NAME, styles['Title']))
         elements.append(Paragraph(f'Expediente del Beneficiario — {nombre}', styles['Heading2']))
-        elements.append(Paragraph(f'Folio: {folio} | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}', styles['Normal']))
+        elements.append(Paragraph(f'Folio: {folio} | Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}', styles['Normal']))
         elements.append(Spacer(1, 20))
-        fields = [('Nombre', nombre), ('CURP', paciente.get('curp') or ''), (_COL_GENERO, _strip(paciente.get('genero')) or ''), ('Fecha de Nacimiento', _date_str(paciente.get('fecha_nacimiento'))), ('Tipo de Sangre', paciente.get('tipo_sangre') or ''), ('Usa Válvula', 'Sí' if _strip(paciente.get('usa_valvula')) == 'S' else 'No'), ('Dirección', paciente.get('direccion') or ''), ('Colonia', paciente.get('colonia') or ''), ('Ciudad', paciente.get('ciudad') or ''), ('Estado', paciente.get('estado') or ''), ('C.P.', paciente.get('codigo_postal') or ''), ('Teléfono Casa', paciente.get('telefono_casa') or ''), ('Teléfono Celular', paciente.get('telefono_celular') or ''), ('Correo', paciente.get('correo_electronico') or ''), ('Contacto Emergencia', paciente.get('en_emergencia_avisar_a') or ''), ('Tel. Emergencia', paciente.get('telefono_emergencia') or ''), ('Membresía', _strip(paciente.get('membresia_estatus')) or ''), ('Tipo Cuota', _strip(paciente.get('tipo_cuota')) or ''), ('Fecha Alta', _date_str(paciente.get('fecha_alta')))]
         table_data = [['Campo', 'Valor']]
-        for label, val in fields:
+        for label, val in _beneficiario_pdf_fields(paciente, nombre):
             table_data.append([label, str(val)])
         t = Table(table_data, colWidths=[180, 300])
-        t.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a5f')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.white), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('FONTSIZE', (0, 0), (-1, -1), 9), ('GRID', (0, 0), (-1, -1), 0.5, colors.grey), ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f4f8')]), ('TOPPADDING', (0, 0), (-1, -1), 4), ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]))
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3a5f')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f4f8')]),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
         elements.append(t)
         doc.build(elements)
-        return _pdf_payload(buf, f'expediente_{folio}_{datetime.now().strftime('%Y%m%d')}.pdf')
+        return _pdf_payload(buf, f'expediente_{folio}_{datetime.now().strftime("%Y%m%d")}.pdf')
     except (NotFoundError, ValidationError, InternalError):
         raise
     except Exception:
@@ -943,129 +977,202 @@ def _exportar_beneficiarios_excel(genero: Optional[str]=None, estado: Optional[s
         logger.exception('Error al generar Excel de beneficiarios')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_reporte_excel(tipo: str='resumen', fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, mes: Optional[int]=None, anio: Optional[int]=None, current_user: CurrentUser | None = None):  # nosonar
+def _excel_write_headers(sheet, headers, header_fill, header_font) -> None:
+    """Write a styled header row to an openpyxl worksheet."""
+    from openpyxl.styles import Alignment
+    for ci, h in enumerate(headers, 1):
+        cell = sheet.cell(row=1, column=ci, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center')
+
+
+def _excel_autosize_columns(wb) -> None:
+    """Auto-fit all column widths (max 40) across every sheet in the workbook."""
+    for sheet in wb.worksheets:
+        for col in sheet.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            sheet.column_dimensions[col[0].column_letter].width = min(max_len + 3, 40)
+
+
+def _excel_fill_servicios_sheet(ws, fecha_inicio, fecha_fin, header_fill, header_font, current_user) -> None:
+    from app.infrastructure.reportes.repository import reporte_servicios_por_tipo
+    ws.title = 'Servicios por Tipo'
+    data = reporte_servicios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+    _excel_write_headers(ws, ['Servicio', 'Cantidad', 'Monto'], header_fill, header_font)
+    for i, (label, val) in enumerate(zip(data['labels'], data['values']), 2):
+        ws.cell(row=i, column=1, value=label)
+        ws.cell(row=i, column=2, value=val)
+        ws.cell(row=i, column=3, value=data['montos'][i - 2])
+
+
+def _excel_fill_pagos_sheet(ws, fecha_inicio, fecha_fin, header_fill, header_font, current_user) -> None:
+    from app.infrastructure.reportes.repository import reporte_pagos_exentos
+    ws.title = 'Pagos Exentos vs Cuotas'
+    data = reporte_pagos_exentos(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+    _excel_write_headers(ws, ['Concepto', 'Cantidad', 'Monto'], header_fill, header_font)
+    ws.cell(row=2, column=1, value='Exentos')
+    ws.cell(row=2, column=2, value=data['total_exentos'])
+    ws.cell(row=2, column=3, value=data['monto_exentos'])
+    ws.cell(row=3, column=1, value='Cuotas')
+    ws.cell(row=3, column=2, value=data['total_cuotas'])
+    ws.cell(row=3, column=3, value=data['monto_cuotas'])
+
+
+def _excel_fill_consolidado_sheet(ws, mes, anio, header_fill, header_font, current_user) -> None:
+    from app.infrastructure.reportes.repository import reporte_consolidado_mensual
+    ws.title = 'Consolidado Mensual'
+    data = reporte_consolidado_mensual(mes=mes, anio=anio, current_user=current_user)
+    _excel_write_headers(ws, [_COL_METRICA, 'Valor'], header_fill, header_font)
+    metrics: list = [
+        ('Mes/Año', f'{data["mes"]}/{data["anio"]}'),
+        (_COL_PAC_ATENDIDOS, data['pacientes_atendidos']),
+        ('Total Servicios', data['total_servicios']),
+        ('Monto Servicios', data['monto_servicios']),
+        ('Total Ventas', data['total_ventas']),
+        ('Monto Ventas', data['monto_ventas']),
+    ]
+    for k, v in data.get('citas_por_estatus', {}).items():
+        metrics.append((f'Citas {k}', v))
+    for k, v in data.get('por_genero', {}).items():
+        metrics.append((f'Género {k}', v))
+    for i, (label, val) in enumerate(metrics, 2):
+        ws.cell(row=i, column=1, value=label)
+        ws.cell(row=i, column=2, value=val)
+
+
+def _excel_fill_resumen_sheet(ws, fecha_inicio, fecha_fin, header_fill, header_font, current_user) -> None:
+    from app.infrastructure.reportes.repository import reporte_resumen
+    ws.title = 'Resumen'
+    data = reporte_resumen(genero=None, estado=None, tipo_espina=None,
+                           fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+    _excel_write_headers(ws, [_COL_METRICA, 'Valor'], header_fill, header_font)
+    metrics: list = [
+        (_COL_TOTAL_PACIENTES, data['total_pacientes']),
+        ('Activos', data['activos']),
+        ('Inactivos', data['inactivos']),
+        (_COL_EDAD_PROMEDIO, data['edad_promedio']),
+        ('Estados Representados', data['estados_representados']),
+    ]
+    for k, v in data.get('por_genero', {}).items():
+        metrics.append((f'Género: {k}', v))
+    for i, (label, val) in enumerate(metrics, 2):
+        ws.cell(row=i, column=1, value=label)
+        ws.cell(row=i, column=2, value=val)
+
+
+def _excel_write_all_report_sheets(wb, header_fill, header_font, fecha_inicio, fecha_fin, current_user) -> None:
+    """Build the multi-sheet 'all' workbook: one sheet per standard report type."""
+    from app.infrastructure.reportes.repository import (
+        reporte_resumen, reporte_por_genero, reporte_por_etapa_vida,
+        reporte_por_estado, reporte_por_tipo_espina,
+        reporte_servicios_por_tipo, reporte_pagos_exentos,
+    )
+    ckw = {'current_user': current_user}
+    bkw = {'genero': None, 'estado': None, 'tipo_espina': None,
+           'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, **ckw}
+
+    ws1 = wb.create_sheet('Resumen')
+    d = reporte_resumen(**bkw)
+    _excel_write_headers(ws1, [_COL_METRICA, 'Valor'], header_fill, header_font)
+    items: list = [
+        (_COL_TOTAL_PACIENTES, d['total_pacientes']), ('Activos', d['activos']),
+        ('Inactivos', d['inactivos']), (_COL_EDAD_PROMEDIO, d['edad_promedio']),
+        ('Estados Representados', d['estados_representados']),
+    ]
+    for k, v in d.get('por_genero', {}).items():
+        items.append((f'Género: {k}', v))
+    for k, v in d.get('por_tipo_espina', {}).items():
+        items.append((f'Tipo Espina: {k}', v))
+    for i, (lb, vl) in enumerate(items, 2):
+        ws1.cell(row=i, column=1, value=lb)
+        ws1.cell(row=i, column=2, value=vl)
+
+    ws2 = wb.create_sheet('Por Género')
+    d2 = reporte_por_genero(**bkw)
+    _excel_write_headers(ws2, [_COL_GENERO, 'Cantidad'], header_fill, header_font)
+    for i, (lb, vl) in enumerate(zip(d2['labels'], d2['values']), 2):
+        ws2.cell(row=i, column=1, value=lb)
+        ws2.cell(row=i, column=2, value=vl)
+
+    ws3 = wb.create_sheet('Por Etapa de Vida')
+    d3 = reporte_por_etapa_vida(**bkw)
+    _excel_write_headers(ws3, [_COL_ETAPA_VIDA, 'Cantidad'], header_fill, header_font)
+    for i, (lb, vl) in enumerate(zip(d3['labels'], d3['values']), 2):
+        ws3.cell(row=i, column=1, value=lb)
+        ws3.cell(row=i, column=2, value=vl)
+
+    ws4 = wb.create_sheet('Por Estado')
+    d4 = reporte_por_estado(**bkw)
+    _excel_write_headers(ws4, ['Estado', 'Cantidad'], header_fill, header_font)
+    for i, (lb, vl) in enumerate(zip(d4['labels'], d4['values']), 2):
+        ws4.cell(row=i, column=1, value=lb)
+        ws4.cell(row=i, column=2, value=vl)
+
+    ws5 = wb.create_sheet('Por Tipo de Espina')
+    d5 = reporte_por_tipo_espina(**bkw)
+    _excel_write_headers(ws5, ['Tipo de Espina', 'Cantidad'], header_fill, header_font)
+    for i, (lb, vl) in enumerate(zip(d5['labels'], d5['values']), 2):
+        ws5.cell(row=i, column=1, value=lb)
+        ws5.cell(row=i, column=2, value=vl)
+
+    ws6 = wb.create_sheet('Servicios por Tipo')
+    d6 = reporte_servicios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **ckw)
+    _excel_write_headers(ws6, ['Servicio', 'Cantidad', 'Monto'], header_fill, header_font)
+    for i, (lb, vl) in enumerate(zip(d6['labels'], d6['values']), 2):
+        ws6.cell(row=i, column=1, value=lb)
+        ws6.cell(row=i, column=2, value=vl)
+        ws6.cell(row=i, column=3, value=d6['montos'][i - 2])
+
+    ws7 = wb.create_sheet('Pagos Exentos')
+    d7 = reporte_pagos_exentos(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **ckw)
+    _excel_write_headers(ws7, ['Concepto', 'Cantidad', 'Monto'], header_fill, header_font)
+    ws7.cell(row=2, column=1, value='Exentos')
+    ws7.cell(row=2, column=2, value=d7['total_exentos'])
+    ws7.cell(row=2, column=3, value=d7['monto_exentos'])
+    ws7.cell(row=3, column=1, value='Cuotas')
+    ws7.cell(row=3, column=2, value=d7['total_cuotas'])
+    ws7.cell(row=3, column=3, value=d7['monto_cuotas'])
+
+
+def _exportar_reporte_excel(
+    tipo: str = 'resumen',
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    mes: Optional[int] = None,
+    anio: Optional[int] = None,
+    current_user: CurrentUser | None = None,
+):
     """Exportar datos de reportes a Excel (RF-ER-11)."""
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
-    from app.infrastructure.reportes.repository import (reporte_resumen, reporte_por_genero, reporte_por_etapa_vida,
-        reporte_por_estado, reporte_por_tipo_espina, reporte_servicios_por_tipo, reporte_pagos_exentos, reporte_consolidado_mensual)
+    from openpyxl.styles import Font, PatternFill
     try:
         wb = Workbook()
         ws = wb.active
         header_fill = PatternFill(start_color='1e3a5f', end_color='1e3a5f', fill_type='solid')
         header_font = Font(color='FFFFFF', bold=True, size=11)
 
-        def write_headers(sheet, headers):
-            for ci, h in enumerate(headers, 1):
-                cell = sheet.cell(row=1, column=ci, value=h)
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = Alignment(horizontal='center')
-        common_kwargs = {'current_user': current_user}
         if tipo == 'all':
-            # Multi-sheet workbook: one sheet per report type
             wb.remove(ws)
-            base_kw = {'genero': None, 'estado': None, 'tipo_espina': None,
-                       'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, **common_kwargs}
-            # Sheet 1: Resumen
-            ws1 = wb.create_sheet('Resumen')
-            d = reporte_resumen(**base_kw)
-            write_headers(ws1, [_COL_METRICA, 'Valor'])
-            items = [(_COL_TOTAL_PACIENTES, d['total_pacientes']), ('Activos', d['activos']),
-                     ('Inactivos', d['inactivos']), (_COL_EDAD_PROMEDIO, d['edad_promedio']),
-                     ('Estados Representados', d['estados_representados'])]
-            for k, v in d.get('por_genero', {}).items(): items.append((f'Género: {k}', v))
-            for k, v in d.get('por_tipo_espina', {}).items(): items.append((f'Tipo Espina: {k}', v))
-            for i, (lb, vl) in enumerate(items, 2):
-                ws1.cell(row=i, column=1, value=lb); ws1.cell(row=i, column=2, value=vl)
-            # Sheet 2: Por Género
-            ws2 = wb.create_sheet('Por Género')
-            d2 = reporte_por_genero(**base_kw)
-            write_headers(ws2, [_COL_GENERO, 'Cantidad'])
-            for i, (lb, vl) in enumerate(zip(d2['labels'], d2['values']), 2):
-                ws2.cell(row=i, column=1, value=lb); ws2.cell(row=i, column=2, value=vl)
-            # Sheet 3: Por Etapa de Vida
-            ws3 = wb.create_sheet('Por Etapa de Vida')
-            d3 = reporte_por_etapa_vida(**base_kw)
-            write_headers(ws3, [_COL_ETAPA_VIDA, 'Cantidad'])
-            for i, (lb, vl) in enumerate(zip(d3['labels'], d3['values']), 2):
-                ws3.cell(row=i, column=1, value=lb); ws3.cell(row=i, column=2, value=vl)
-            # Sheet 4: Por Estado
-            ws4 = wb.create_sheet('Por Estado')
-            d4 = reporte_por_estado(**base_kw)
-            write_headers(ws4, ['Estado', 'Cantidad'])
-            for i, (lb, vl) in enumerate(zip(d4['labels'], d4['values']), 2):
-                ws4.cell(row=i, column=1, value=lb); ws4.cell(row=i, column=2, value=vl)
-            # Sheet 5: Por Tipo de Espina
-            ws5 = wb.create_sheet('Por Tipo de Espina')
-            d5 = reporte_por_tipo_espina(**base_kw)
-            write_headers(ws5, ['Tipo de Espina', 'Cantidad'])
-            for i, (lb, vl) in enumerate(zip(d5['labels'], d5['values']), 2):
-                ws5.cell(row=i, column=1, value=lb); ws5.cell(row=i, column=2, value=vl)
-            # Sheet 6: Servicios por Tipo
-            ws6 = wb.create_sheet('Servicios por Tipo')
-            d6 = reporte_servicios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
-            write_headers(ws6, ['Servicio', 'Cantidad', 'Monto'])
-            for i, (lb, vl) in enumerate(zip(d6['labels'], d6['values']), 2):
-                ws6.cell(row=i, column=1, value=lb); ws6.cell(row=i, column=2, value=vl)
-                ws6.cell(row=i, column=3, value=d6['montos'][i - 2])
-            # Sheet 7: Pagos Exentos
-            ws7 = wb.create_sheet('Pagos Exentos')
-            d7 = reporte_pagos_exentos(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
-            write_headers(ws7, ['Concepto', 'Cantidad', 'Monto'])
-            ws7.cell(row=2, column=1, value='Exentos')
-            ws7.cell(row=2, column=2, value=d7['total_exentos'])
-            ws7.cell(row=2, column=3, value=d7['monto_exentos'])
-            ws7.cell(row=3, column=1, value='Cuotas')
-            ws7.cell(row=3, column=2, value=d7['total_cuotas'])
-            ws7.cell(row=3, column=3, value=d7['monto_cuotas'])
+            _excel_write_all_report_sheets(wb, header_fill, header_font, fecha_inicio, fecha_fin, current_user)
         elif tipo == 'servicios-por-tipo':
-            ws.title = 'Servicios por Tipo'
-            data = reporte_servicios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
-            write_headers(ws, ['Servicio', 'Cantidad', 'Monto'])
-            for i, (label, val) in enumerate(zip(data['labels'], data['values']), 2):
-                ws.cell(row=i, column=1, value=label)
-                ws.cell(row=i, column=2, value=val)
-                ws.cell(row=i, column=3, value=data['montos'][i - 2])
+            _excel_fill_servicios_sheet(ws, fecha_inicio, fecha_fin, header_fill, header_font, current_user)
         elif tipo == 'pagos-exentos':
-            ws.title = 'Pagos Exentos vs Cuotas'
-            data = reporte_pagos_exentos(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
-            write_headers(ws, ['Concepto', 'Cantidad', 'Monto'])
-            ws.cell(row=2, column=1, value='Exentos')
-            ws.cell(row=2, column=2, value=data['total_exentos'])
-            ws.cell(row=2, column=3, value=data['monto_exentos'])
-            ws.cell(row=3, column=1, value='Cuotas')
-            ws.cell(row=3, column=2, value=data['total_cuotas'])
-            ws.cell(row=3, column=3, value=data['monto_cuotas'])
+            _excel_fill_pagos_sheet(ws, fecha_inicio, fecha_fin, header_fill, header_font, current_user)
         elif tipo == 'consolidado-mensual':
-            ws.title = 'Consolidado Mensual'
-            data = reporte_consolidado_mensual(mes=mes, anio=anio, **common_kwargs)
-            write_headers(ws, [_COL_METRICA, 'Valor'])
-            metrics = [('Mes/Año', f'{data['mes']}/{data['anio']}'), (_COL_PAC_ATENDIDOS, data['pacientes_atendidos']), ('Total Servicios', data['total_servicios']), ('Monto Servicios', data['monto_servicios']), ('Total Ventas', data['total_ventas']), ('Monto Ventas', data['monto_ventas'])]
-            for k, v in data.get('citas_por_estatus', {}).items():
-                metrics.append((f'Citas {k}', v))
-            for k, v in data.get('por_genero', {}).items():
-                metrics.append((f'Género {k}', v))
-            for i, (label, val) in enumerate(metrics, 2):
-                ws.cell(row=i, column=1, value=label)
-                ws.cell(row=i, column=2, value=val)
+            _excel_fill_consolidado_sheet(ws, mes, anio, header_fill, header_font, current_user)
         else:
-            ws.title = 'Resumen'
-            data = reporte_resumen(genero=None, estado=None, tipo_espina=None, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, **common_kwargs)
-            write_headers(ws, [_COL_METRICA, 'Valor'])
-            metrics = [(_COL_TOTAL_PACIENTES, data['total_pacientes']), ('Activos', data['activos']), ('Inactivos', data['inactivos']), (_COL_EDAD_PROMEDIO, data['edad_promedio']), ('Estados Representados', data['estados_representados'])]
-            for k, v in data.get('por_genero', {}).items():
-                metrics.append((f'Género: {k}', v))
-            for i, (label, val) in enumerate(metrics, 2):
-                ws.cell(row=i, column=1, value=label)
-                ws.cell(row=i, column=2, value=val)
-        for sheet in wb.worksheets:
-            for col in sheet.columns:
-                max_len = max((len(str(cell.value or '')) for cell in col))
-                sheet.column_dimensions[col[0].column_letter].width = min(max_len + 3, 40)
+            _excel_fill_resumen_sheet(ws, fecha_inicio, fecha_fin, header_fill, header_font, current_user)
+
+        _excel_autosize_columns(wb)
+
         buf = io.BytesIO()
         wb.save(buf)
-        filename = f'reportes_completo_{datetime.now().strftime("%Y%m%d")}.xlsx' if tipo == 'all' else f'reporte_{tipo}_{datetime.now().strftime("%Y%m%d")}.xlsx'
+        filename = (
+            f'reportes_completo_{datetime.now().strftime("%Y%m%d")}.xlsx'
+            if tipo == 'all'
+            else f'reporte_{tipo}_{datetime.now().strftime("%Y%m%d")}.xlsx'
+        )
         return _excel_payload(buf, filename)
     except Exception:
         logger.exception('Error al generar Excel de reportes')

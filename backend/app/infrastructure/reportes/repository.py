@@ -49,7 +49,22 @@ def _group_by_normalized_key(rows: list[dict], key_fields: list[str], count_fiel
     return groups
 
 
-def _fuzzy_merge_groups(  # nosonar
+def _is_fuzzy_match(norm_i: tuple, norm_j: tuple, threshold: float) -> bool:
+    """Return True when all corresponding fields score at or above the similarity threshold."""
+    return all(
+        SequenceMatcher(None, a, b).ratio() >= threshold
+        for a, b in zip(norm_i, norm_j)
+    )
+
+
+def _apply_display_labels(combined: dict, key_fields: list[str]) -> None:
+    """Replace _norm tuple values with title-cased display strings in-place."""
+    for f, norm_val in zip(key_fields, combined['_norm']):
+        combined[f] = norm_val.title() if norm_val != _SIN_DATO else 'Sin dato'
+    del combined['_norm']
+
+
+def _fuzzy_merge_groups(
     items: list[dict], key_fields: list[str], count_field: str, fuzzy_threshold: float,
 ) -> list[dict]:
     absorbed: set[tuple] = set()
@@ -59,15 +74,10 @@ def _fuzzy_merge_groups(  # nosonar
             continue
         combined = dict(item_i)
         for item_j in items[i + 1:]:
-            if item_j['_norm'] in absorbed:
-                continue
-            ratios = [SequenceMatcher(None, a, b).ratio() for a, b in zip(item_i['_norm'], item_j['_norm'])]
-            if all(r >= fuzzy_threshold for r in ratios):
+            if item_j['_norm'] not in absorbed and _is_fuzzy_match(item_i['_norm'], item_j['_norm'], fuzzy_threshold):
                 combined[count_field] += item_j[count_field]
                 absorbed.add(item_j['_norm'])
-        for f, norm_val in zip(key_fields, combined['_norm']):
-            combined[f] = norm_val.title() if norm_val != _SIN_DATO else 'Sin dato'
-        del combined['_norm']
+        _apply_display_labels(combined, key_fields)
         merged.append(combined)
     return merged
 
@@ -473,7 +483,82 @@ def _reporte_por_ciudad(_current_user: CurrentUser | None = None):
         raise InternalError(_MSG_ERROR_INTERNO)
 
 
-def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):  # nosonar
+def _count_genero_activos(cursor) -> tuple[int, int]:
+    """Query PACIENTE and return (hombres, mujeres) counts for active records."""
+    cursor.execute("SELECT NVL(GENERO,'') AS genero, COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY GENERO")
+    hombres = mujeres = 0
+    for r in rows_to_dicts(cursor):
+        genero = _genero_label(r.get('genero'))
+        cnt = int(r.get('cnt') or 0)
+        if genero == 'Hombre':
+            hombres += cnt
+        elif genero == 'Mujer':
+            mujeres += cnt
+    return hombres, mujeres
+
+
+def _fetch_municipios_nl(cursor, reside_nl_expr: str) -> list[dict]:
+    """Query active patients in N.L. and return normalized municipio list."""
+    cursor.execute(
+        "SELECT UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) AS ciudad, COUNT(*) AS cnt FROM PACIENTE "
+        f"WHERE ACTIVO='S' AND {reside_nl_expr} "
+        "GROUP BY UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) ORDER BY cnt DESC"
+    )
+    mun_rows = rows_to_dicts(cursor)
+    merged = _aggregate_normalized(
+        [{'label': r.get('ciudad'), 'cnt': r.get('cnt')} for r in mun_rows],
+        ['label'],
+    )
+    return [{'label': r['label'], 'value': r['cnt']} for r in merged]
+
+
+def _process_curp_cross(cursor, etapa_expr: str) -> tuple[dict, dict, dict]:
+    """Build three cross tables (por CURP origin / gender) from a single patient scan."""
+    cursor.execute(
+        f"SELECT {etapa_expr} AS etapa, NVL(GENERO,'') AS genero, CURP AS curp "
+        "FROM PACIENTE WHERE ACTIVO='S'"
+    )
+    t1_cross: dict = {}
+    t2_cross: dict = {}
+    t3_cross: dict = {}
+    for r in rows_to_dicts(cursor):
+        etapa = (r.get('etapa') or '').strip()
+        genero = _genero_label(r.get('genero'))
+        curp_col = _CURP_NL if _curp_es_nl(r.get('curp')) else 'CURP Foráneo'
+        _sum_nested_count(t1_cross, etapa, curp_col)
+        if genero and curp_col == _CURP_NL:
+            _sum_nested_count(t2_cross, etapa, genero)
+        elif genero:
+            _sum_nested_count(t3_cross, etapa, genero)
+    return t1_cross, t2_cross, t3_cross
+
+
+def _build_t6_etapa_genero(cursor, etapa_expr: str, etapas: list[str]) -> list[dict]:
+    """Build gender-by-etapa table (t6) including a totals row."""
+    cursor.execute(
+        f"SELECT {etapa_expr} AS etapa, NVL(GENERO,'') AS genero, COUNT(*) AS cnt "
+        f"FROM PACIENTE WHERE ACTIVO='S' GROUP BY {etapa_expr}, GENERO"
+    )
+    genero_etapa: dict = {}
+    for r in rows_to_dicts(cursor):
+        et = (r.get('etapa') or '').strip()
+        genero = _genero_label(r.get('genero'))
+        if genero:
+            _sum_nested_count(genero_etapa, et, genero, int(r.get('cnt') or 0))
+    result = []
+    totals = {'total': 0, 'Mujer': 0, 'Hombre': 0}
+    for etapa in etapas:
+        hombres_e = genero_etapa.get(etapa, {}).get('Hombre', 0)
+        mujeres_e = genero_etapa.get(etapa, {}).get('Mujer', 0)
+        result.append({'etapa': etapa, 'Hombre': hombres_e, 'Mujer': mujeres_e, 'total': hombres_e + mujeres_e})
+        totals['total'] += hombres_e + mujeres_e
+        totals['Mujer'] += mujeres_e
+        totals['Hombre'] += hombres_e
+    result.append({'etapa': 'Total', 'Hombre': totals['Hombre'], 'Mujer': totals['Mujer'], 'total': totals['total']})
+    return result
+
+
+def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional[str]=None, _current_user: CurrentUser | None = None):
     """Indicadores de desempeño cruzados por etapa de vida (RF-ER)."""
     ETAPAS = [
         'Primera Infancia (0-5)', 'Infancia (6-11)', 'Adolescencia (12-17)',
@@ -503,49 +588,15 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
             cursor.execute(f"SELECT COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' AND {periodo_clause}", periodo_params)
             nuevos = int((row_to_dict(cursor) or {}).get('cnt') or 0)
 
-            cursor.execute("SELECT NVL(GENERO,'') AS genero, COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY GENERO")
-            hombres = 0
-            mujeres = 0
-            for r in rows_to_dicts(cursor):
-                genero = _genero_label(r.get('genero'))
-                cnt = int(r.get('cnt') or 0)
-                if genero == 'Hombre':
-                    hombres += cnt
-                elif genero == 'Mujer':
-                    mujeres += cnt
+            hombres, mujeres = _count_genero_activos(cursor)
 
-            cursor.execute(
-                "SELECT UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) AS ciudad, COUNT(*) AS cnt FROM PACIENTE "
-                f"WHERE ACTIVO='S' AND {RESIDE_NL_EXPR} "
-                "GROUP BY UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) ORDER BY cnt DESC"
-            )
-            mun_rows = rows_to_dicts(cursor)
-            mun_merged = _aggregate_normalized(
-                [{'label': r.get('ciudad'), 'cnt': r.get('cnt')} for r in mun_rows],
-                ['label'],
-            )
-            municipios = [{'label': r['label'], 'value': r['cnt']} for r in mun_merged]
+            municipios = _fetch_municipios_nl(cursor, RESIDE_NL_EXPR)
             nl_total = sum(m['value'] for m in municipios)
             foraneos_cnt = activos - nl_total
             if foraneos_cnt > 0:
                 municipios.append({'label': 'Viven en otro estado', 'value': foraneos_cnt})
 
-            cursor.execute(
-                f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS genero, CURP AS curp "
-                "FROM PACIENTE WHERE ACTIVO='S'"
-            )
-            t1_cross: dict = {}
-            t2_cross: dict = {}
-            t3_cross: dict = {}
-            for r in rows_to_dicts(cursor):
-                etapa = (r.get('etapa') or '').strip()
-                genero = _genero_label(r.get('genero'))
-                curp_col = _CURP_NL if _curp_es_nl(r.get('curp')) else 'CURP Foráneo'
-                _sum_nested_count(t1_cross, etapa, curp_col)
-                if genero and curp_col == _CURP_NL:
-                    _sum_nested_count(t2_cross, etapa, genero)
-                elif genero:
-                    _sum_nested_count(t3_cross, etapa, genero)
+            t1_cross, t2_cross, t3_cross = _process_curp_cross(cursor, ETAPA_EXPR)
 
             t1 = _build_indicadores_rows(t1_cross, [_CURP_NL, 'CURP Foráneo'], ETAPAS)
             t2 = _build_indicadores_rows(t2_cross, ['Hombre', 'Mujer'], ETAPAS)
@@ -567,31 +618,7 @@ def _indicadores_desempeno(fecha_inicio: Optional[str]=None, fecha_fin: Optional
             )
             t5 = _build_indicadores_rows(t5_cross, ['Mexicanos', 'Nac. extranjera'], ETAPAS)
 
-            cursor.execute(
-                f"SELECT {ETAPA_EXPR} AS etapa, NVL(GENERO,'') AS genero, COUNT(*) AS cnt "
-                f"FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, GENERO"
-            )
-            genero_etapa: dict = {}
-            for r in rows_to_dicts(cursor):
-                et = (r.get('etapa') or '').strip()
-                genero = _genero_label(r.get('genero'))
-                if genero:
-                    _sum_nested_count(genero_etapa, et, genero, int(r.get('cnt') or 0))
-            t6 = []
-            t6_totals = {'total': 0, 'Mujer': 0, 'Hombre': 0}
-            for etapa in ETAPAS:
-                hombres_etapa = genero_etapa.get(etapa, {}).get('Hombre', 0)
-                mujeres_etapa = genero_etapa.get(etapa, {}).get('Mujer', 0)
-                t6.append({
-                    'etapa': etapa,
-                    'Hombre': hombres_etapa,
-                    'Mujer': mujeres_etapa,
-                    'total': hombres_etapa + mujeres_etapa,
-                })
-                t6_totals['total'] += hombres_etapa + mujeres_etapa
-                t6_totals['Mujer'] += mujeres_etapa
-                t6_totals['Hombre'] += hombres_etapa
-            t6.append({'etapa': 'Total', 'Hombre': t6_totals['Hombre'], 'Mujer': t6_totals['Mujer'], 'total': t6_totals['total']})
+            t6 = _build_t6_etapa_genero(cursor, ETAPA_EXPR, ETAPAS)
 
             return {
                 'beneficiarios_activos': activos,
