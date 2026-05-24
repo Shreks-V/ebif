@@ -267,16 +267,7 @@ export class PreRegistroComponent implements OnInit {
     return s.toLowerCase().replace(/(?:^|\s|\/|-)[a-záéíóúüñ]/g, c => c.toUpperCase());
   }
 
-  private _aplicarOcr(r: OcrResult): void {
-    const tc = (s: string | null) => s ? this._toTitleCase(s) : s;
-    const campos: string[] = [];
-    if (r.nombre)           { this.formData.nombre = tc(r.nombre)!;                    campos.push('Nombre'); }
-    if (r.apellido_paterno) { this.formData.apellidoPaterno = tc(r.apellido_paterno)!; campos.push('Apellido paterno'); }
-    if (r.apellido_materno) { this.formData.apellidoMaterno = tc(r.apellido_materno)!; campos.push('Apellido materno'); }
-    if (r.fecha_nacimiento) { this.formData.fechaNacimiento = r.fecha_nacimiento;       campos.push('Fecha de nacimiento'); }
-    if (r.sexo)             { this.formData.sexo = r.sexo;                              campos.push('Sexo'); }
-    if (r.curp)             { this.formData.curp = r.curp.toUpperCase();                campos.push('CURP'); this.onCurpBlur(); }
-
+  private _aplicarNombrePadreMadre(r: OcrResult, tc: (s: string | null) => string | null, campos: string[]): void {
     if (r.nombre_padre && r.nombre_madre) {
       this.formData.nombrePadreMadre = `${tc(r.nombre_padre)} / ${tc(r.nombre_madre)}`;
       campos.push('Nombre padre/madre');
@@ -285,31 +276,42 @@ export class PreRegistroComponent implements OnInit {
     } else if (r.nombre_madre) {
       this.formData.nombrePadreMadre = tc(r.nombre_madre)!; campos.push('Nombre de la madre');
     }
+  }
 
-    if (r.calle)           { this.formData.calle = tc(r.calle)!;                     campos.push('Calle'); }
+  private _aplicarEstado(r: OcrResult, tc: (s: string | null) => string | null, campos: string[]): void {
+    const rawEstado = r.estado_residencia ?? r.estado_nacimiento;
+    if (!rawEstado) return;
+    const norm = this._normalize(rawEstado);
+    const match = this.estados.find(e => {
+      const en = this._normalize(e);
+      return en === norm || en.includes(norm) || norm.includes(en);
+    });
+    this.formData.estado = match ?? tc(rawEstado)!;
+    campos.push('Estado');
+  }
+
+  private _aplicarOcr(r: OcrResult): void {
+    const tc = (s: string | null) => this._toTitleCase(s ?? '');
+    const campos: string[] = [];
+    if (r.nombre)           { this.formData.nombre = tc(r.nombre);                    campos.push('Nombre'); }
+    if (r.apellido_paterno) { this.formData.apellidoPaterno = tc(r.apellido_paterno); campos.push('Apellido paterno'); }
+    if (r.apellido_materno) { this.formData.apellidoMaterno = tc(r.apellido_materno); campos.push('Apellido materno'); }
+    if (r.fecha_nacimiento) { this.formData.fechaNacimiento = r.fecha_nacimiento;      campos.push('Fecha de nacimiento'); }
+    if (r.sexo)             { this.formData.sexo = r.sexo;                             campos.push('Sexo'); }
+    if (r.curp)             { this.formData.curp = r.curp.toUpperCase();               campos.push('CURP'); this.onCurpBlur(); }
+    this._aplicarNombrePadreMadre(r, tc, campos);
+    if (r.calle)           { this.formData.calle = tc(r.calle);                      campos.push('Calle'); }
     if (r.numero_exterior) { this.formData.numeroExterior = r.numero_exterior;        campos.push('Núm. exterior'); }
     if (r.numero_interior) { this.formData.numeroInterior = r.numero_interior;        campos.push('Núm. interior'); }
-    if (r.colonia)         { this.formData.colonia = tc(r.colonia)!;                  campos.push('Colonia'); }
+    if (r.colonia)         { this.formData.colonia = tc(r.colonia);                   campos.push('Colonia'); }
     if (r.municipio) {
-      const mun = tc(r.municipio)!;
+      const mun = tc(r.municipio);
       this.formData.municipio = mun;
       if (!this.formData.ciudad) this.formData.ciudad = mun;
       campos.push('Municipio');
     }
     if (r.codigo_postal)   { this.formData.codigoPostal = r.codigo_postal;            campos.push('Código postal'); }
-
-    const rawEstado = r.estado_residencia || r.estado_nacimiento;
-    if (rawEstado) {
-      const norm = this._normalize(rawEstado);
-      const match = this.estados.find(e =>
-        this._normalize(e) === norm ||
-        this._normalize(e).includes(norm) ||
-        norm.includes(this._normalize(e))
-      );
-      this.formData.estado = match ?? tc(rawEstado)!;
-      campos.push('Estado');
-    }
-
+    this._aplicarEstado(r, tc, campos);
     this.ocrMergedCampos = campos;
   }
 
@@ -429,6 +431,10 @@ export class PreRegistroComponent implements OnInit {
     this.fieldErrors[field] = msg;
   }
 
+  private _curpPendienteVerificacion(curp: string): boolean {
+    return !!(curp && CURP_REGEX.test(curp.trim().toUpperCase()) && this.curpDisponible === null);
+  }
+
   private _validateDatosPersonales(): void {
     const { nombre, apellidoPaterno, apellidoMaterno, nombrePadreMadre, curp } = this.formData;
     for (const [field, value] of [['nombre', nombre], ['apellidoPaterno', apellidoPaterno], ['apellidoMaterno', apellidoMaterno]] as [string, string][]) {
@@ -441,7 +447,7 @@ export class PreRegistroComponent implements OnInit {
     if (this.checkingCurp) {
       if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
       this.stepError = 'Espera a que se verifique la disponibilidad del CURP.';
-    } else if (curp && CURP_REGEX.test(curp.trim().toUpperCase()) && this.curpDisponible === null) {
+    } else if (this._curpPendienteVerificacion(curp)) {
       if (!this.invalidFields.includes('curp')) this.invalidFields.push('curp');
       this.stepError = 'Verifica la disponibilidad del CURP antes de continuar.';
       this.onCurpBlur();

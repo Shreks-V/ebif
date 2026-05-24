@@ -53,7 +53,7 @@ async def extraer_documento(
         result = svc.extraer(image_bytes, archivo.content_type or "image/jpeg")
         return result
     except Exception as exc:
-        _log.error("Error en OCR: %s", exc)
+        _log.exception("Error en OCR: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="No se pudo procesar el documento. Intenta con una imagen más clara.",
