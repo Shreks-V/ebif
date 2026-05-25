@@ -142,7 +142,7 @@
               {{ cell.day }}
             </p>
             @for (cita of cell.citas.slice(0,3); track cita.idCita) {
-              <div appKeyboardClick tabindex="0" [attr.aria-label]="'Ver cita: ' + cita.nombrePaciente" (click)="verDetalleCita(cita)"
+              <div [attr.aria-label]="'Ver cita: ' + cita.nombrePaciente" (click)="verDetalleCita(cita)"
                 class="text-[10px] font-semibold px-1.5 py-0.5 rounded mb-0.5 truncate cursor-pointer"
                 [ngClass]="getEstadoBadgeClass(cita.estatus)"
                 [title]="cita.nombrePaciente">
@@ -281,7 +281,7 @@
 
 <!-- ==================== MENÚ ⋮ CITAS ==================== -->
 @if (openCitaMenu !== null) {
-  <div class="fixed inset-0 z-40" appKeyboardClick tabindex="0" (click)="closeCitaMenu()"></div>
+  <div class="fixed inset-0 z-40" (click)="closeCitaMenu()"></div>
 }
 @if (openCitaMenu !== null && menuCita) {
   <div class="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 w-48 overflow-hidden" [style.top.px]="menuCitaPosition.top" [style.left.px]="menuCitaPosition.left" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">

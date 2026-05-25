@@ -121,7 +121,7 @@
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-xs font-bold text-slate-500 uppercase tracking-wide border-b border-slate-100">
-                  <th class="px-4 py-3 text-left w-40 cursor-pointer select-none hover:text-slate-700" appKeyboardClick tabindex="0" (click)="toggleSort('fecha_cambio')">
+                  <th class="px-4 py-3 text-left w-40 cursor-pointer select-none hover:text-slate-700" (click)="toggleSort('fecha_cambio')">
                     <div class="flex items-center gap-1">
                       Fecha
                       @if (sortKey === 'fecha_cambio') {
@@ -132,7 +132,7 @@
                       }
                     </div>
                   </th>
-                  <th class="px-4 py-3 text-left cursor-pointer select-none hover:text-slate-700" appKeyboardClick tabindex="0" (click)="toggleSort('tabla_afectada')">
+                  <th class="px-4 py-3 text-left cursor-pointer select-none hover:text-slate-700" (click)="toggleSort('tabla_afectada')">
                     <div class="flex items-center gap-1">
                       M&oacute;dulo
                       @if (sortKey === 'tabla_afectada') {
@@ -147,7 +147,7 @@
                   <th class="px-4 py-3 text-left">Campo</th>
                   <th class="px-4 py-3 text-left">Valor anterior</th>
                   <th class="px-4 py-3 text-left">Valor nuevo</th>
-                  <th class="px-4 py-3 text-left cursor-pointer select-none hover:text-slate-700" appKeyboardClick tabindex="0" (click)="toggleSort('tipo_operacion')">
+                  <th class="px-4 py-3 text-left cursor-pointer select-none hover:text-slate-700" (click)="toggleSort('tipo_operacion')">
                     <div class="flex items-center gap-1">
                       Operaci&oacute;n
                       @if (sortKey === 'tipo_operacion') {
@@ -164,7 +164,7 @@
               </thead>
               <tbody class="divide-y divide-slate-50">
                 @for (item of paginated; track item.id_bitacora) {
-                  <tr class="hover:bg-slate-50 transition-colors cursor-pointer" appKeyboardClick tabindex="0" (click)="openDetail(item)">
+                  <tr class="hover:bg-slate-50 transition-colors cursor-pointer" (click)="openDetail(item)">
                     <td class="px-4 py-3 text-slate-600 whitespace-nowrap text-xs">
                       {{ formatFecha(item.fecha_cambio) }}
                     </td>

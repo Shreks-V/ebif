@@ -1,4 +1,4 @@
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" appKeyboardClick tabindex="0" (click)="closed.emit()">
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" (click)="closed.emit()">
   @if (recibo) {
     <div class="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
       <!-- Header -->

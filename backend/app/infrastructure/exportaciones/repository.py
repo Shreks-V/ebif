@@ -188,7 +188,7 @@ def _reporte_pdf_append_header(els, tipo, fecha_inicio, fecha_fin, mes, anio, *,
     els.append(HRFlowable(width='100%', thickness=1, color=nav, spaceAfter=10, spaceBefore=6))
 
 
-def _reporte_pdf_append_distrib_pct(els, h2, title, data, col_header, widths, *, _col, theme):
+def _reporte_pdf_append_distrib_pct(els, h2, title, data, col_header, widths, *, theme):
     from reportlab.platypus import Paragraph, Spacer, KeepTogether
     if not data.get('labels'):
         return
@@ -257,13 +257,13 @@ def _reporte_pdf_append_resumen(els, kwargs, fecha_inicio, fecha_fin, current_us
 
     _reporte_pdf_append_distrib_pct(
         els, h2, 'Distribución por Género', d_gen, _COL_GENERO,
-        [col * .55, col * .22, col * .23], col=col, theme=theme)
+        [col * .55, col * .22, col * .23], theme=theme)
     _reporte_pdf_append_distrib_pct(
         els, h2, 'Distribución por Etapa de Vida', d_etapa, _COL_ETAPA_VIDA,
-        [col * .60, col * .20, col * .20], col=col, theme=theme)
+        [col * .60, col * .20, col * .20], theme=theme)
     _reporte_pdf_append_distrib_pct(
         els, h2, 'Distribución por Tipo de Espina Bífida', d_esp, 'Tipo de Espina Bífida',
-        [col * .60, col * .20, col * .20], col=col, theme=theme)
+        [col * .60, col * .20, col * .20], theme=theme)
 
     if d_est_r.get('labels'):
         tot = d_est_r.get('total', 0)

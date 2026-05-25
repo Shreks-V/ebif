@@ -89,31 +89,31 @@
             <th class="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors"
                 [class.text-[#00328b]]="sortKey === 'fecha_movimiento'"
                 [class.text-slate-500]="sortKey !== 'fecha_movimiento'"
-                appKeyboardClick tabindex="0" (click)="toggleSort('fecha_movimiento')">
+                (click)="toggleSort('fecha_movimiento')">
               Fecha <span class="ml-0.5">{{ sortKey === 'fecha_movimiento' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
             <th class="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors"
                 [class.text-[#00328b]]="sortKey === 'nombre_producto'"
                 [class.text-slate-500]="sortKey !== 'nombre_producto'"
-                appKeyboardClick tabindex="0" (click)="toggleSort('nombre_producto')">
+                (click)="toggleSort('nombre_producto')">
               Producto <span class="ml-0.5">{{ sortKey === 'nombre_producto' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
             <th class="text-left px-4 py-3 text-xs font-bold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors"
                 [class.text-[#00328b]]="sortKey === 'clave_interna'"
                 [class.text-slate-500]="sortKey !== 'clave_interna'"
-                appKeyboardClick tabindex="0" (click)="toggleSort('clave_interna')">
+                (click)="toggleSort('clave_interna')">
               Clave <span class="ml-0.5">{{ sortKey === 'clave_interna' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
             <th class="text-center px-4 py-3 text-xs font-bold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors"
                 [class.text-[#00328b]]="sortKey === 'tipo_movimiento'"
                 [class.text-slate-500]="sortKey !== 'tipo_movimiento'"
-                appKeyboardClick tabindex="0" (click)="toggleSort('tipo_movimiento')">
+                (click)="toggleSort('tipo_movimiento')">
               Tipo <span class="ml-0.5">{{ sortKey === 'tipo_movimiento' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
             <th class="text-right px-4 py-3 text-xs font-bold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors"
                 [class.text-[#00328b]]="sortKey === 'cantidad'"
                 [class.text-slate-500]="sortKey !== 'cantidad'"
-                appKeyboardClick tabindex="0" (click)="toggleSort('cantidad')">
+                (click)="toggleSort('cantidad')">
               Cantidad <span class="ml-0.5">{{ sortKey === 'cantidad' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
             <th class="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Observaciones</th>
