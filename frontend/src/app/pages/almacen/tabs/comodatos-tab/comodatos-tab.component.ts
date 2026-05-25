@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
 import { AutoGrowDirective } from '../../../../shared/directives/auto-grow.directive';
 import { ComodatoItem, ProductoItem, TableSortState, sortRows } from '../../almacen.models';
+import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
 
 interface BeneficiarioRaw {
   id_paciente?: number;
@@ -31,7 +32,7 @@ interface ComodatoEditForm {
 @Component({
   selector: 'app-comodatos-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, AutoGrowDirective],
+  imports: [CommonModule, FormsModule, AutoGrowDirective, KeyboardClickDirective],
   templateUrl: './comodatos-tab.component.html',
 })
 export class ComodatosTabComponent {

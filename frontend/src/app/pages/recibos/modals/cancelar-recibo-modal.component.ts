@@ -2,13 +2,14 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 interface ReciboInput { idVenta: number; folioVenta?: string; nombrePaciente?: string; montoTotal?: number; }
 
 @Component({
   selector: 'app-cancelar-recibo-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, KeyboardClickDirective],
   templateUrl: './cancelar-recibo-modal.component.html',
 })
 export class CancelarReciboModalComponent implements OnChanges {

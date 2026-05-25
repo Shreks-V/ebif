@@ -1,6 +1,6 @@
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm backdrop-saturate-75" (click)="closed.emit()"><!-- NOSONAR -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm backdrop-saturate-75" appKeyboardClick tabindex="0" role="button" aria-label="Cerrar" (click)="closed.emit()">
   @if (recibo) {
-    <div class="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl p-6" (click)="$event.stopPropagation()"><!-- NOSONAR -->
+    <div class="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl p-6" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold text-slate-900">Cancelar Recibo</h2>
         <button (click)="closed.emit()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer">

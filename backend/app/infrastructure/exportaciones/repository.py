@@ -65,7 +65,421 @@ def _excel_payload(buffer: io.BytesIO, filename: str) -> FilePayload:
     buffer.seek(0)
     return FilePayload(content=buffer.read(), media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=filename)
 
-def _exportar_reporte_pdf(  # noqa: C901  # nosonar
+_MESES_N = [
+    '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+]
+
+_REPORTE_TIPO_LABELS = {
+    'resumen': 'Reporte de Resumen de Período',
+    'por-genero': 'Distribución por Género',
+    'por-etapa-vida': 'Distribución por Etapa de Vida',
+    'por-estado': 'Distribución por Estado de Residencia',
+    'por-tipo-espina': 'Distribución por Tipo de Espina Bífida',
+    'consolidado-mensual': 'Reporte Consolidado Mensual',
+    'indicadores': 'Indicadores de Desempeño',
+}
+
+_INDICADORES_TABLA_CFGS = [
+    ('por_curp', 'Sujetos por CURP', ['CURP N.L.', 'CURP Foráneo']),
+    ('curp_nl_genero', 'CURP N.L. por Género', ['Hombre', 'Mujer']),
+    ('curp_foraneo_genero', 'CURP Foráneo por Género', ['Hombre', 'Mujer']),
+    ('residencia', 'Lugar de Residencia por Etapa', ['Viven en N.L.', 'Viven en otros estados']),
+    ('nacimiento', 'País de Nacimiento por Etapa', ['Mexicanos', 'Nac. extranjera']),
+    ('etapa_vida_genero', 'Etapa de Vida por Género', ['Hombre', 'Mujer']),
+]
+
+_REPORTE_SIMPLE_COL_NAMES = {
+    'por-genero': _COL_GENERO,
+    'por-etapa-vida': _COL_ETAPA_VIDA,
+    'por-estado': 'Estado',
+    'por-tipo-espina': 'Tipo de Espina',
+}
+
+
+def _reporte_pdf_pct(v, total):
+    return f'{v / total * 100:.1f}%' if total else '—'
+
+
+def _reporte_pdf_money(v):
+    return f'${float(v or 0):,.2f}'
+
+
+def _reporte_pdf_data_table(rows, widths, *, nav, navy_lt, border, row_alt, white, has_totals=False):
+    from reportlab.platypus import Table, TableStyle
+    t = Table(rows, colWidths=widths)
+    cmds = [
+        ('BACKGROUND', (0, 0), (-1, 0), nav),
+        ('TEXTCOLOR', (0, 0), (-1, 0), white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.4, border),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2 if has_totals else -1), [white, row_alt]),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 7),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 7),
+    ]
+    if has_totals:
+        cmds += [
+            ('BACKGROUND', (0, -1), (-1, -1), navy_lt),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('LINEABOVE', (0, -1), (-1, -1), 1, nav),
+        ]
+    t.setStyle(TableStyle(cmds))
+    return t
+
+
+def _reporte_pdf_kpi_table(headers, values, *, col, nav, navy_lt, border, white):
+    from reportlab.platypus import Table, TableStyle
+    n = len(headers)
+    w = col / n
+    t = Table([headers, values], colWidths=[w] * n)
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), nav),
+        ('TEXTCOLOR', (0, 0), (-1, 0), white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 1), (-1, 1), navy_lt),
+        ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 0.5, border),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+    ]))
+    return t
+
+
+def _reporte_pdf_page_footer(l_margin, r_margin, page_w, gray):
+    from reportlab.lib.units import inch
+
+    def _footer(cv, doc):
+        cv.saveState()
+        cv.setFont('Helvetica', 7)
+        cv.setFillColor(gray)
+        cv.drawString(l_margin, 0.4 * inch,
+                      'Confidencial — Asociación de Espina Bífida de Nuevo León A.B.P.')
+        cv.drawRightString(page_w - r_margin, 0.4 * inch, f'Pág. {doc.page}')
+        cv.restoreState()
+    return _footer
+
+
+def _reporte_pdf_periodo_str(fecha_inicio, fecha_fin, mes, anio) -> str:
+    if fecha_inicio or fecha_fin:
+        return f'Período: {fecha_inicio or "—"} al {fecha_fin or "—"}   |   '
+    if mes and anio:
+        return f'Período: {_MESES_N[mes]} {anio}   |   '
+    return ''
+
+
+def _reporte_pdf_append_header(els, tipo, fecha_inicio, fecha_fin, mes, anio, *, h1, h2_style, note, nav):
+    from reportlab.lib.units import inch
+    from reportlab.platypus import Paragraph, Spacer, Image as RLImage, HRFlowable
+    if LOGO_PATH.exists():
+        logo = RLImage(str(LOGO_PATH), width=2.2 * inch, height=0.93 * inch)
+        logo.hAlign = 'CENTER'
+        els.append(logo)
+        els.append(Spacer(1, 4))
+    els.append(Paragraph(_ORG_NAME, h1))
+    els.append(Paragraph(_REPORTE_TIPO_LABELS.get(tipo, f'Reporte: {tipo}'), h2_style))
+    periodo_str = _reporte_pdf_periodo_str(fecha_inicio, fecha_fin, mes, anio)
+    els.append(Paragraph(
+        f'{periodo_str}Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}', note))
+    els.append(HRFlowable(width='100%', thickness=1, color=nav, spaceAfter=10, spaceBefore=6))
+
+
+def _reporte_pdf_append_distrib_pct(els, h2, title, data, col_header, widths, *, col, theme):
+    from reportlab.platypus import Paragraph, Spacer, KeepTogether
+    if not data.get('labels'):
+        return
+    tot = data.get('total', 0)
+    rows = [[col_header, 'Pacientes', '%']]
+    for label, val in zip(data['labels'], data['values']):
+        rows.append([label, str(val), _reporte_pdf_pct(val, tot)])
+    rows.append(['Total', str(tot), '100%'])
+    els.append(KeepTogether([
+        Paragraph(title, h2),
+        _reporte_pdf_data_table(rows, widths, has_totals=True, **theme),
+    ]))
+    els.append(Spacer(1, 8))
+
+
+def _reporte_pdf_append_resumen(els, kwargs, fecha_inicio, fecha_fin, current_user, *, h2, col, theme):
+    from app.infrastructure.reportes.repository import (
+        reporte_resumen, reporte_por_genero, reporte_por_etapa_vida,
+        reporte_por_estado, reporte_por_tipo_espina, reporte_servicios_por_tipo,
+        reporte_estudios_por_tipo, reporte_pagos_exentos, reporte_por_ciudad,
+    )
+    from reportlab.platypus import Paragraph, Spacer, KeepTogether
+
+    d_res = reporte_resumen(**kwargs)
+    d_gen = reporte_por_genero(**kwargs)
+    d_etapa = reporte_por_etapa_vida(**kwargs)
+    d_esp = reporte_por_tipo_espina(**kwargs)
+    d_est_r = reporte_por_estado(**kwargs)
+    d_svc = reporte_servicios_por_tipo(
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+    d_estu = reporte_estudios_por_tipo(
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+    d_pag = reporte_pagos_exentos(
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+    d_ciu = reporte_por_ciudad(current_user=current_user)
+
+    total_p = d_res.get('total_pacientes', 0)
+    els.append(Paragraph('Resumen Ejecutivo', h2))
+    els.append(_reporte_pdf_kpi_table(
+        [_COL_TOTAL_PACIENTES, 'Activos', 'Hombres', 'Mujeres', _COL_EDAD_PROMEDIO, 'Estados'],
+        [str(total_p), str(d_res.get('activos', 0)),
+         str(d_res.get('por_genero', {}).get('Hombre', 0)),
+         str(d_res.get('por_genero', {}).get('Mujer', 0)),
+         f'{d_res.get("edad_promedio", 0):.1f} años',
+         str(d_res.get('estados_representados', 0))],
+        col=col, **{k: theme[k] for k in ('nav', 'navy_lt', 'border', 'white')},
+    ))
+    els.append(Spacer(1, 10))
+
+    _reporte_pdf_append_distrib_pct(
+        els, h2, 'Distribución por Género', d_gen, _COL_GENERO,
+        [col * .55, col * .22, col * .23], col=col, theme=theme)
+    _reporte_pdf_append_distrib_pct(
+        els, h2, 'Distribución por Etapa de Vida', d_etapa, _COL_ETAPA_VIDA,
+        [col * .60, col * .20, col * .20], col=col, theme=theme)
+    _reporte_pdf_append_distrib_pct(
+        els, h2, 'Distribución por Tipo de Espina Bífida', d_esp, 'Tipo de Espina Bífida',
+        [col * .60, col * .20, col * .20], col=col, theme=theme)
+
+    if d_est_r.get('labels'):
+        tot = d_est_r.get('total', 0)
+        labels_e = d_est_r['labels'][:20]
+        values_e = d_est_r['values'][:20]
+        rows = [['Estado de Residencia', 'Pacientes', '%']]
+        for label, val in zip(labels_e, values_e):
+            rows.append([label, str(val), _reporte_pdf_pct(val, tot)])
+        if len(d_est_r['labels']) > 20:
+            resto = tot - sum(values_e)
+            rows.append([
+                f'Otros ({len(d_est_r["labels"]) - 20} estados)', str(resto),
+                _reporte_pdf_pct(resto, tot),
+            ])
+        rows.append(['Total', str(tot), '100%'])
+        els.append(KeepTogether([
+            Paragraph('Distribución por Estado de Residencia', h2),
+            _reporte_pdf_data_table(rows, [col * .58, col * .21, col * .21], has_totals=True, **theme),
+        ]))
+        els.append(Spacer(1, 8))
+
+    if d_svc.get('labels'):
+        montos = d_svc.get('montos', [0] * len(d_svc['labels']))
+        rows = [['Servicio', 'Cantidad', 'Monto']]
+        for label, val, monto in zip(d_svc['labels'], d_svc['values'], montos):
+            rows.append([label, str(val), _reporte_pdf_money(monto)])
+        rows.append(['Total', str(d_svc.get('total', 0)), _reporte_pdf_money(sum(montos))])
+        els.append(KeepTogether([
+            Paragraph('Servicios Brindados en el Período', h2),
+            _reporte_pdf_data_table(rows, [col * .55, col * .18, col * .27], has_totals=True, **theme),
+        ]))
+        els.append(Spacer(1, 8))
+
+    if d_estu.get('labels'):
+        rows = [['Estudio / Servicio', 'Cantidad']]
+        for label, val in zip(d_estu['labels'], d_estu['values']):
+            rows.append([label, str(val)])
+        rows.append(['Total', str(d_estu.get('total', 0))])
+        els.append(KeepTogether([
+            Paragraph('Estudios Realizados en el Período', h2),
+            _reporte_pdf_data_table(rows, [col * .75, col * .25], has_totals=True, **theme),
+        ]))
+        els.append(Spacer(1, 8))
+
+    els.append(Paragraph('Pagos Exentos vs Cuotas de Recuperación', h2))
+    pg_rows = [
+        ['Concepto', 'Cantidad', 'Monto Total'],
+        ['Pagos Exentos', str(d_pag.get('total_exentos', 0)), _reporte_pdf_money(d_pag.get('monto_exentos', 0))],
+        ['Cuotas de Recuperación', str(d_pag.get('total_cuotas', 0)), _reporte_pdf_money(d_pag.get('monto_cuotas', 0))],
+        ['Total General',
+         str(d_pag.get('total_exentos', 0) + d_pag.get('total_cuotas', 0)),
+         _reporte_pdf_money(d_pag.get('monto_total', 0))],
+    ]
+    els.append(_reporte_pdf_data_table(pg_rows, [col * .55, col * .18, col * .27], has_totals=True, **theme))
+    els.append(Spacer(1, 8))
+
+    if d_ciu.get('labels'):
+        top = 25
+        ci_tot = d_ciu.get('total', 0)
+        rows = [['Ciudad', 'Estado', 'Pacientes', '%']]
+        for label, estado, val in zip(
+            d_ciu['labels'][:top],
+            d_ciu.get('estados', [''] * top)[:top],
+            d_ciu['values'][:top],
+        ):
+            rows.append([label, estado, str(val), _reporte_pdf_pct(val, ci_tot)])
+        if len(d_ciu['labels']) > top:
+            resto = ci_tot - sum(d_ciu['values'][:top])
+            rows.append(['Otras ciudades', '', str(resto), _reporte_pdf_pct(resto, ci_tot)])
+        rows.append(['Total', '', str(ci_tot), '100%'])
+        els.append(KeepTogether([
+            Paragraph(f'Distribución por Ciudad de Residencia (Top {top})', h2),
+            _reporte_pdf_data_table(
+                rows, [col * .34, col * .29, col * .19, col * .18], has_totals=True, **theme),
+        ]))
+
+
+def _reporte_pdf_append_consolidado(els, mes, anio, current_user, *, h2, col, theme):
+    from datetime import date as _date
+    from app.infrastructure.reportes.repository import reporte_consolidado_mensual
+    from reportlab.platypus import Paragraph, Spacer, KeepTogether
+
+    _mes = mes or _date.today().month
+    _anio = anio or _date.today().year
+    d = reporte_consolidado_mensual(mes=_mes, anio=_anio, current_user=current_user)
+
+    els.append(Paragraph(f'Período: {_MESES_N[_mes]} {_anio}', h2))
+    els.append(_reporte_pdf_kpi_table(
+        [_COL_PAC_ATENDIDOS, 'Total Servicios', 'Monto Servicios', 'Total Ventas', 'Monto Ventas'],
+        [str(d.get('pacientes_atendidos', 0)), str(d.get('total_servicios', 0)),
+         _reporte_pdf_money(d.get('monto_servicios', 0)), str(d.get('total_ventas', 0)),
+         _reporte_pdf_money(d.get('monto_ventas', 0))],
+        col=col, **{k: theme[k] for k in ('nav', 'navy_lt', 'border', 'white')},
+    ))
+    els.append(Spacer(1, 12))
+
+    citas_est = d.get('citas_por_estatus', {})
+    if citas_est:
+        rows = [['Estatus', 'Cantidad']]
+        tot_c = sum(citas_est.values())
+        for k, v in citas_est.items():
+            rows.append([k, str(v)])
+        rows.append(['Total', str(tot_c)])
+        els.append(KeepTogether([
+            Paragraph('Citas por Estatus', h2),
+            _reporte_pdf_data_table(rows, [col * .65, col * .35], has_totals=True, **theme),
+        ]))
+        els.append(Spacer(1, 8))
+
+    pg = d.get('por_genero', {})
+    if pg:
+        rows = [[_COL_GENERO, _COL_PAC_ATENDIDOS]]
+        tot_g = sum(pg.values())
+        for k, v in pg.items():
+            rows.append([k, str(v)])
+        rows.append(['Total', str(tot_g)])
+        els.append(KeepTogether([
+            Paragraph('Pacientes Atendidos por Género', h2),
+            _reporte_pdf_data_table(rows, [col * .65, col * .35], has_totals=True, **theme),
+        ]))
+
+
+def _reporte_pdf_append_indicadores(els, fecha_inicio, fecha_fin, current_user, *, h2, col, theme):
+    from app.infrastructure.reportes.repository import indicadores_desempeno
+    from reportlab.platypus import Paragraph, Spacer, KeepTogether
+
+    d = indicadores_desempeno(
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
+
+    els.append(_reporte_pdf_kpi_table(
+        ['Beneficiarios Activos', 'Nuevos en Período', 'Hombres', 'Mujeres'],
+        [str(d.get('beneficiarios_activos', 0)), str(d.get('nuevos_en_periodo', 0)),
+         str(d.get('hombres', 0)), str(d.get('mujeres', 0))],
+        col=col, **{k: theme[k] for k in ('nav', 'navy_lt', 'border', 'white')},
+    ))
+    els.append(Spacer(1, 10))
+
+    municipios = d.get('municipios', [])
+    if municipios:
+        mun_tot = sum(m.get('value', 0) for m in municipios)
+        rows = [['Municipio / Lugar', 'Beneficiarios', '%']]
+        for m in municipios:
+            rows.append([
+                m.get('label', ''), str(m.get('value', 0)),
+                _reporte_pdf_pct(m.get('value', 0), mun_tot),
+            ])
+        rows.append(['Total', str(mun_tot), '100%'])
+        els.append(KeepTogether([
+            Paragraph('Beneficiarios por Municipio (Nuevo León)', h2),
+            _reporte_pdf_data_table(rows, [col * .58, col * .22, col * .20], has_totals=True, **theme),
+        ]))
+        els.append(Spacer(1, 10))
+
+    tablas = d.get('tablas', {})
+    for key, titulo_t, cols in _INDICADORES_TABLA_CFGS:
+        t_rows = tablas.get(key, [])
+        if not t_rows:
+            continue
+        rows = [[_COL_ETAPA_VIDA, cols[0], cols[1], 'Total']]
+        for r in t_rows:
+            rows.append([
+                r.get('etapa', ''),
+                str(r.get(cols[0], 0) or 0),
+                str(r.get(cols[1], 0) or 0),
+                str(r.get('total', 0) or 0),
+            ])
+        els.append(KeepTogether([
+            Paragraph(titulo_t, h2),
+            _reporte_pdf_data_table(
+                rows, [col * .44, col * .18, col * .20, col * .18], has_totals=True, **theme),
+        ]))
+        els.append(Spacer(1, 8))
+
+
+def _reporte_pdf_append_simple(els, tipo, kwargs, fecha_inicio, fecha_fin, *, col, theme):
+    from app.infrastructure.reportes.repository import (
+        reporte_por_genero, reporte_por_etapa_vida, reporte_por_estado,
+        reporte_por_tipo_espina, reporte_resumen,
+    )
+    from reportlab.platypus import Table, TableStyle, Spacer
+
+    report_funcs = {
+        'por-genero': reporte_por_genero,
+        'por-etapa-vida': reporte_por_etapa_vida,
+        'por-estado': reporte_por_estado,
+        'por-tipo-espina': reporte_por_tipo_espina,
+    }
+    func = report_funcs.get(tipo)
+    if not func:
+        raise ValidationError(f'Tipo de reporte no válido: {tipo}')
+    data = func(**kwargs)
+    d_res = reporte_resumen(**kwargs)
+
+    ctx = Table(
+        [['Pacientes Activos', 'Período', 'Generado'],
+         [str(d_res.get('activos', 0)),
+          f'{fecha_inicio or "—"} al {fecha_fin or "—"}',
+          datetime.now().strftime('%d/%m/%Y')]],
+        colWidths=[col / 3] * 3,
+    )
+    ctx.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), theme['nav']),
+        ('TEXTCOLOR', (0, 0), (-1, 0), theme['white']),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 1), (-1, 1), theme['navy_lt']),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 0.5, theme['border']),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+    ]))
+    els.append(ctx)
+    els.append(Spacer(1, 12))
+
+    tot = data.get('total', 0)
+    rows = [[_REPORTE_SIMPLE_COL_NAMES.get(tipo, 'Categoría'), 'Cantidad', '%']]
+    for label, val in zip(data['labels'], data['values']):
+        rows.append([label, str(val), _reporte_pdf_pct(val, tot)])
+    rows.append(['Total', str(tot), '100%'])
+    els.append(_reporte_pdf_data_table(
+        rows, [col * .60, col * .20, col * .20], has_totals=True, **theme))
+
+
+def _reporte_pdf_filename(tipo, mes, anio, fecha_inicio, fecha_fin) -> str:
+    ts = datetime.now().strftime('%Y%m%d')
+    if tipo == 'consolidado-mensual':
+        return f'consolidado_{mes or ""}_{anio or ""}_{ts}.pdf'
+    if tipo == 'indicadores':
+        return f'indicadores_{fecha_inicio or ts}_{fecha_fin or ts}.pdf'
+    return f'reporte_{tipo}_{fecha_inicio or ts}.pdf'
+
+
+def _exportar_reporte_pdf(
     tipo: str = 'resumen',
     genero: Optional[str] = None,
     estado: Optional[str] = None,
@@ -81,443 +495,59 @@ def _exportar_reporte_pdf(  # noqa: C901  # nosonar
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch
-    from reportlab.platypus import (
-        SimpleDocTemplate, Table, TableStyle, Paragraph,
-        Spacer, Image as RLImage, HRFlowable, KeepTogether,
-    )
-    from app.infrastructure.reportes.repository import (
-        reporte_resumen, reporte_por_genero, reporte_por_etapa_vida,
-        reporte_por_estado, reporte_por_tipo_espina, reporte_servicios_por_tipo,
-        reporte_estudios_por_tipo, reporte_pagos_exentos, reporte_por_ciudad,
-        reporte_consolidado_mensual, indicadores_desempeno,
-    )
+    from reportlab.platypus import SimpleDocTemplate
 
-    NAVY     = colors.HexColor('#1e3a5f')
-    NAVY_LT  = colors.HexColor('#f0f4f8')
-    BORDER   = colors.HexColor('#e2e8f0')
-    GRAY     = colors.HexColor('#64748b')
-    ROW_ALT  = colors.HexColor('#f8fafc')
-    WHITE    = colors.white
+    nav = colors.HexColor('#1e3a5f')
+    navy_lt = colors.HexColor('#f0f4f8')
+    border = colors.HexColor('#e2e8f0')
+    gray = colors.HexColor('#64748b')
+    row_alt = colors.HexColor('#f8fafc')
+    white = colors.white
+    theme = {'nav': nav, 'navy_lt': navy_lt, 'border': border, 'row_alt': row_alt, 'white': white}
 
-    PAGE_W, _ = letter
-    L_MARGIN = R_MARGIN = 0.75 * inch
-    COL = PAGE_W - L_MARGIN - R_MARGIN   # ~7 inches usable
+    page_w, _ = letter
+    l_margin = r_margin = 0.75 * inch
+    col = page_w - l_margin - r_margin
 
     try:
         styles = getSampleStyleSheet()
         h1 = ParagraphStyle('H1', parent=styles['Title'], fontSize=16, leading=20, spaceAfter=2)
-        h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=11, textColor=NAVY,
-                             spaceBefore=14, spaceAfter=4)
-        note = ParagraphStyle('Note', parent=styles['Normal'], fontSize=8, textColor=GRAY)
-
-        def _pct(v, total):
-            return f'{v / total * 100:.1f}%' if total else '—'
-
-        def _money(v):
-            return f'${float(v or 0):,.2f}'
-
-        def _data_table(rows, widths, has_totals=False):
-            t = Table(rows, colWidths=widths)
-            cmds = [
-                ('BACKGROUND',   (0, 0),  (-1, 0),  NAVY),
-                ('TEXTCOLOR',    (0, 0),  (-1, 0),  WHITE),
-                ('FONTNAME',     (0, 0),  (-1, 0),  'Helvetica-Bold'),
-                ('FONTSIZE',     (0, 0),  (-1, -1), 9),
-                ('GRID',         (0, 0),  (-1, -1), 0.4, BORDER),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -2 if has_totals else -1), [WHITE, ROW_ALT]),
-                ('TOPPADDING',   (0, 0),  (-1, -1), 5),
-                ('BOTTOMPADDING',(0, 0),  (-1, -1), 5),
-                ('LEFTPADDING',  (0, 0),  (-1, -1), 7),
-                ('RIGHTPADDING', (0, 0),  (-1, -1), 7),
-            ]
-            if has_totals:
-                cmds += [
-                    ('BACKGROUND', (0, -1), (-1, -1), NAVY_LT),
-                    ('FONTNAME',   (0, -1), (-1, -1), 'Helvetica-Bold'),
-                    ('LINEABOVE',  (0, -1), (-1, -1), 1, NAVY),
-                ]
-            t.setStyle(TableStyle(cmds))
-            return t
-
-        def _kpi_table(headers, values):
-            n = len(headers)
-            w = COL / n
-            t = Table([headers, values], colWidths=[w] * n)
-            t.setStyle(TableStyle([
-                ('BACKGROUND',    (0, 0), (-1, 0),  NAVY),
-                ('TEXTCOLOR',     (0, 0), (-1, 0),  WHITE),
-                ('FONTNAME',      (0, 0), (-1, 0),  'Helvetica-Bold'),
-                ('BACKGROUND',    (0, 1), (-1, 1),  NAVY_LT),
-                ('FONTNAME',      (0, 1), (-1, 1),  'Helvetica-Bold'),
-                ('FONTSIZE',      (0, 0), (-1, -1), 9),
-                ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
-                ('GRID',          (0, 0), (-1, -1), 0.5, BORDER),
-                ('TOPPADDING',    (0, 0), (-1, -1), 7),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
-            ]))
-            return t
-
-        def _page_footer(cv, doc):
-            cv.saveState()
-            cv.setFont('Helvetica', 7)
-            cv.setFillColor(GRAY)
-            cv.drawString(L_MARGIN, 0.4 * inch,
-                          'Confidencial — Asociación de Espina Bífida de Nuevo León A.B.P.')
-            cv.drawRightString(PAGE_W - R_MARGIN, 0.4 * inch, f'Pág. {doc.page}')
-            cv.restoreState()
+        h2 = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=11, textColor=nav,
+                            spaceBefore=14, spaceAfter=4)
+        note = ParagraphStyle('Note', parent=styles['Normal'], fontSize=8, textColor=gray)
 
         buf = io.BytesIO()
         doc = SimpleDocTemplate(
             buf, pagesize=letter,
             topMargin=0.6 * inch, bottomMargin=0.75 * inch,
-            leftMargin=L_MARGIN, rightMargin=R_MARGIN,
+            leftMargin=l_margin, rightMargin=r_margin,
         )
         els = []
+        _reporte_pdf_append_header(
+            els, tipo, fecha_inicio, fecha_fin, mes, anio,
+            h1=h1, h2_style=styles['Heading2'], note=note, nav=nav)
 
-        # ── Shared header ──────────────────────────────────────
-        if LOGO_PATH.exists():
-            logo = RLImage(str(LOGO_PATH), width=2.2 * inch, height=0.93 * inch)
-            logo.hAlign = 'CENTER'
-            els.append(logo)
-            els.append(Spacer(1, 4))
-
-        tipo_labels = {
-            'resumen':             'Reporte de Resumen de Período',
-            'por-genero':          'Distribución por Género',
-            'por-etapa-vida':      'Distribución por Etapa de Vida',
-            'por-estado':          'Distribución por Estado de Residencia',
-            'por-tipo-espina':     'Distribución por Tipo de Espina Bífida',
-            'consolidado-mensual': 'Reporte Consolidado Mensual',
-            'indicadores':         'Indicadores de Desempeño',
+        kwargs = {
+            'genero': genero, 'estado': estado, 'tipo_espina': tipo_espina,
+            'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, 'current_user': current_user,
         }
-        els.append(Paragraph(_ORG_NAME, h1))
-        els.append(Paragraph(tipo_labels.get(tipo, f'Reporte: {tipo}'), styles['Heading2']))
-        periodo_str = ''
-        if fecha_inicio or fecha_fin:
-            periodo_str = f'Período: {fecha_inicio or "—"} al {fecha_fin or "—"}   |   '
-        elif mes and anio:
-            meses_n = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-            periodo_str = f'Período: {meses_n[mes]} {anio}   |   '
-        els.append(Paragraph(
-            f'{periodo_str}Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}', note))
-        els.append(HRFlowable(width='100%', thickness=1, color=NAVY, spaceAfter=10, spaceBefore=6))
-
-        kwargs = {"genero": genero, "estado": estado, "tipo_espina": tipo_espina,
-                  "fecha_inicio": fecha_inicio, "fecha_fin": fecha_fin, "current_user": current_user}
-
-        # ═══════════════════════════════════════════════════════
-        # RESUMEN DE PERÍODO — multi-sección completo
-        # ═══════════════════════════════════════════════════════
         if tipo == 'resumen':
-            d_res   = reporte_resumen(**kwargs)
-            d_gen   = reporte_por_genero(**kwargs)
-            d_etapa = reporte_por_etapa_vida(**kwargs)
-            d_esp   = reporte_por_tipo_espina(**kwargs)
-            d_est_r = reporte_por_estado(**kwargs)
-            d_svc   = reporte_servicios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
-            d_estu  = reporte_estudios_por_tipo(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
-            d_pag   = reporte_pagos_exentos(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
-            d_ciu   = reporte_por_ciudad(current_user=current_user)
-
-            total_p = d_res.get('total_pacientes', 0)
-            activos = d_res.get('activos', 0)
-            hombres = d_res.get('por_genero', {}).get('Hombre', 0)
-            mujeres = d_res.get('por_genero', {}).get('Mujer', 0)
-            edad_p  = d_res.get('edad_promedio', 0)
-            estados_r = d_res.get('estados_representados', 0)
-
-            # KPI
-            els.append(Paragraph('Resumen Ejecutivo', h2))
-            els.append(_kpi_table(
-                [_COL_TOTAL_PACIENTES, 'Activos', 'Hombres', 'Mujeres', _COL_EDAD_PROMEDIO, 'Estados'],
-                [str(total_p), str(activos), str(hombres), str(mujeres),
-                 f'{edad_p:.1f} años', str(estados_r)],
-            ))
-            els.append(Spacer(1, 10))
-
-            # Género
-            if d_gen.get('labels'):
-                tot = d_gen.get('total', 0)
-                rows = [[_COL_GENERO, 'Pacientes', '%']]
-                for l, v in zip(d_gen['labels'], d_gen['values']):
-                    rows.append([l, str(v), _pct(v, tot)])
-                rows.append(['Total', str(tot), '100%'])
-                els.append(KeepTogether([
-                    Paragraph('Distribución por Género', h2),
-                    _data_table(rows, [COL * .55, COL * .22, COL * .23], has_totals=True),
-                ]))
-                els.append(Spacer(1, 8))
-
-            # Etapa de vida
-            if d_etapa.get('labels'):
-                tot = d_etapa.get('total', 0)
-                rows = [[_COL_ETAPA_VIDA, 'Pacientes', '%']]
-                for l, v in zip(d_etapa['labels'], d_etapa['values']):
-                    rows.append([l, str(v), _pct(v, tot)])
-                rows.append(['Total', str(tot), '100%'])
-                els.append(KeepTogether([
-                    Paragraph('Distribución por Etapa de Vida', h2),
-                    _data_table(rows, [COL * .60, COL * .20, COL * .20], has_totals=True),
-                ]))
-                els.append(Spacer(1, 8))
-
-            # Tipo de espina
-            if d_esp.get('labels'):
-                tot = d_esp.get('total', 0)
-                rows = [['Tipo de Espina Bífida', 'Pacientes', '%']]
-                for l, v in zip(d_esp['labels'], d_esp['values']):
-                    rows.append([l, str(v), _pct(v, tot)])
-                rows.append(['Total', str(tot), '100%'])
-                els.append(KeepTogether([
-                    Paragraph('Distribución por Tipo de Espina Bífida', h2),
-                    _data_table(rows, [COL * .60, COL * .20, COL * .20], has_totals=True),
-                ]))
-                els.append(Spacer(1, 8))
-
-            # Por estado
-            if d_est_r.get('labels'):
-                tot = d_est_r.get('total', 0)
-                labels_e = d_est_r['labels'][:20]
-                values_e = d_est_r['values'][:20]
-                rows = [['Estado de Residencia', 'Pacientes', '%']]
-                for l, v in zip(labels_e, values_e):
-                    rows.append([l, str(v), _pct(v, tot)])
-                if len(d_est_r['labels']) > 20:
-                    resto = tot - sum(values_e)
-                    rows.append([f'Otros ({len(d_est_r["labels"]) - 20} estados)', str(resto), _pct(resto, tot)])
-                rows.append(['Total', str(tot), '100%'])
-                els.append(KeepTogether([
-                    Paragraph('Distribución por Estado de Residencia', h2),
-                    _data_table(rows, [COL * .58, COL * .21, COL * .21], has_totals=True),
-                ]))
-                els.append(Spacer(1, 8))
-
-            # Servicios
-            if d_svc.get('labels'):
-                montos = d_svc.get('montos', [0] * len(d_svc['labels']))
-                rows = [['Servicio', 'Cantidad', 'Monto']]
-                for l, v, m in zip(d_svc['labels'], d_svc['values'], montos):
-                    rows.append([l, str(v), _money(m)])
-                rows.append(['Total', str(d_svc.get('total', 0)), _money(sum(montos))])
-                els.append(KeepTogether([
-                    Paragraph('Servicios Brindados en el Período', h2),
-                    _data_table(rows, [COL * .55, COL * .18, COL * .27], has_totals=True),
-                ]))
-                els.append(Spacer(1, 8))
-
-            # Estudios
-            if d_estu.get('labels'):
-                rows = [['Estudio / Servicio', 'Cantidad']]
-                for l, v in zip(d_estu['labels'], d_estu['values']):
-                    rows.append([l, str(v)])
-                rows.append(['Total', str(d_estu.get('total', 0))])
-                els.append(KeepTogether([
-                    Paragraph('Estudios Realizados en el Período', h2),
-                    _data_table(rows, [COL * .75, COL * .25], has_totals=True),
-                ]))
-                els.append(Spacer(1, 8))
-
-            # Pagos exentos
-            els.append(Paragraph('Pagos Exentos vs Cuotas de Recuperación', h2))
-            pg_rows = [
-                ['Concepto', 'Cantidad', 'Monto Total'],
-                ['Pagos Exentos',
-                 str(d_pag.get('total_exentos', 0)),
-                 _money(d_pag.get('monto_exentos', 0))],
-                ['Cuotas de Recuperación',
-                 str(d_pag.get('total_cuotas', 0)),
-                 _money(d_pag.get('monto_cuotas', 0))],
-                ['Total General',
-                 str(d_pag.get('total_exentos', 0) + d_pag.get('total_cuotas', 0)),
-                 _money(d_pag.get('monto_total', 0))],
-            ]
-            els.append(_data_table(pg_rows, [COL * .55, COL * .18, COL * .27], has_totals=True))
-            els.append(Spacer(1, 8))
-
-            # Ciudades
-            if d_ciu.get('labels'):
-                top = 25
-                ci_tot = d_ciu.get('total', 0)
-                rows = [['Ciudad', 'Estado', 'Pacientes', '%']]
-                for l, e, v in zip(
-                    d_ciu['labels'][:top],
-                    d_ciu.get('estados', [''] * top)[:top],
-                    d_ciu['values'][:top],
-                ):
-                    rows.append([l, e, str(v), _pct(v, ci_tot)])
-                if len(d_ciu['labels']) > top:
-                    resto = ci_tot - sum(d_ciu['values'][:top])
-                    rows.append(['Otras ciudades', '', str(resto), _pct(resto, ci_tot)])
-                rows.append(['Total', '', str(ci_tot), '100%'])
-                els.append(KeepTogether([
-                    Paragraph(f'Distribución por Ciudad de Residencia (Top {top})', h2),
-                    _data_table(rows, [COL * .34, COL * .29, COL * .19, COL * .18], has_totals=True),
-                ]))
-
-        # ═══════════════════════════════════════════════════════
-        # CONSOLIDADO MENSUAL
-        # ═══════════════════════════════════════════════════════
+            _reporte_pdf_append_resumen(
+                els, kwargs, fecha_inicio, fecha_fin, current_user,
+                h2=h2, col=col, theme=theme)
         elif tipo == 'consolidado-mensual':
-            from datetime import date as _date
-            _mes  = mes  or _date.today().month
-            _anio = anio or _date.today().year
-            d = reporte_consolidado_mensual(mes=_mes, anio=_anio, current_user=current_user)
-            meses_n = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-
-            els.append(Paragraph(f'Período: {meses_n[_mes]} {_anio}', h2))
-            els.append(_kpi_table(
-                [_COL_PAC_ATENDIDOS, 'Total Servicios', 'Monto Servicios', 'Total Ventas', 'Monto Ventas'],
-                [str(d.get('pacientes_atendidos', 0)),
-                 str(d.get('total_servicios', 0)),
-                 _money(d.get('monto_servicios', 0)),
-                 str(d.get('total_ventas', 0)),
-                 _money(d.get('monto_ventas', 0))],
-            ))
-            els.append(Spacer(1, 12))
-
-            citas_est = d.get('citas_por_estatus', {})
-            if citas_est:
-                rows = [['Estatus', 'Cantidad']]
-                tot_c = 0
-                for k, v in citas_est.items():
-                    rows.append([k, str(v)])
-                    tot_c += v
-                rows.append(['Total', str(tot_c)])
-                els.append(KeepTogether([
-                    Paragraph('Citas por Estatus', h2),
-                    _data_table(rows, [COL * .65, COL * .35], has_totals=True),
-                ]))
-                els.append(Spacer(1, 8))
-
-            pg = d.get('por_genero', {})
-            if pg:
-                rows = [[_COL_GENERO, _COL_PAC_ATENDIDOS]]
-                tot_g = 0
-                for k, v in pg.items():
-                    rows.append([k, str(v)])
-                    tot_g += v
-                rows.append(['Total', str(tot_g)])
-                els.append(KeepTogether([
-                    Paragraph('Pacientes Atendidos por Género', h2),
-                    _data_table(rows, [COL * .65, COL * .35], has_totals=True),
-                ]))
-
-        # ═══════════════════════════════════════════════════════
-        # INDICADORES DE DESEMPEÑO
-        # ═══════════════════════════════════════════════════════
+            _reporte_pdf_append_consolidado(
+                els, mes, anio, current_user, h2=h2, col=col, theme=theme)
         elif tipo == 'indicadores':
-            d = indicadores_desempeno(fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, current_user=current_user)
-
-            els.append(_kpi_table(
-                ['Beneficiarios Activos', 'Nuevos en Período', 'Hombres', 'Mujeres'],
-                [str(d.get('beneficiarios_activos', 0)),
-                 str(d.get('nuevos_en_periodo', 0)),
-                 str(d.get('hombres', 0)),
-                 str(d.get('mujeres', 0))],
-            ))
-            els.append(Spacer(1, 10))
-
-            municipios = d.get('municipios', [])
-            if municipios:
-                mun_tot = sum(m.get('value', 0) for m in municipios)
-                rows = [['Municipio / Lugar', 'Beneficiarios', '%']]
-                for m in municipios:
-                    rows.append([m.get('label', ''), str(m.get('value', 0)), _pct(m.get('value', 0), mun_tot)])
-                rows.append(['Total', str(mun_tot), '100%'])
-                els.append(KeepTogether([
-                    Paragraph('Beneficiarios por Municipio (Nuevo León)', h2),
-                    _data_table(rows, [COL * .58, COL * .22, COL * .20], has_totals=True),
-                ]))
-                els.append(Spacer(1, 10))
-
-            tablas = d.get('tablas', {})
-            tabla_cfgs = [
-                ('por_curp',           'Sujetos por CURP',                    ['CURP N.L.',          'CURP Foráneo'         ]),
-                ('curp_nl_genero',     'CURP N.L. por Género',                ['Hombre',             'Mujer'                ]),
-                ('curp_foraneo_genero','CURP Foráneo por Género',             ['Hombre',             'Mujer'                ]),
-                ('residencia',         'Lugar de Residencia por Etapa',        ['Viven en N.L.',      'Viven en otros estados']),
-                ('nacimiento',         'País de Nacimiento por Etapa',         ['Mexicanos',          'Nac. extranjera'      ]),
-                ('etapa_vida_genero',  'Etapa de Vida por Género',             ['Hombre',             'Mujer'                ]),
-            ]
-            for key, titulo_t, cols in tabla_cfgs:
-                t_rows = tablas.get(key, [])
-                if not t_rows:
-                    continue
-                rows = [[_COL_ETAPA_VIDA, cols[0], cols[1], 'Total']]
-                for r in t_rows:
-                    rows.append([
-                        r.get('etapa', ''),
-                        str(r.get(cols[0], 0) or 0),
-                        str(r.get(cols[1], 0) or 0),
-                        str(r.get('total', 0) or 0),
-                    ])
-                els.append(KeepTogether([
-                    Paragraph(titulo_t, h2),
-                    _data_table(rows, [COL * .44, COL * .18, COL * .20, COL * .18], has_totals=True),
-                ]))
-                els.append(Spacer(1, 8))
-
-        # ═══════════════════════════════════════════════════════
-        # REPORTES SIMPLES: por-genero, por-etapa-vida, etc.
-        # ═══════════════════════════════════════════════════════
+            _reporte_pdf_append_indicadores(
+                els, fecha_inicio, fecha_fin, current_user, h2=h2, col=col, theme=theme)
         else:
-            report_funcs = {
-                'por-genero':      reporte_por_genero,
-                'por-etapa-vida':  reporte_por_etapa_vida,
-                'por-estado':      reporte_por_estado,
-                'por-tipo-espina': reporte_por_tipo_espina,
-            }
-            func = report_funcs.get(tipo)
-            if not func:
-                raise ValidationError(f'Tipo de reporte no válido: {tipo}')
-            data  = func(**kwargs)
-            d_res = reporte_resumen(**kwargs)
+            _reporte_pdf_append_simple(
+                els, tipo, kwargs, fecha_inicio, fecha_fin, col=col, theme=theme)
 
-            # Context strip
-            ctx = Table(
-                [['Pacientes Activos', 'Período', 'Generado'],
-                 [str(d_res.get('activos', 0)),
-                  f'{fecha_inicio or "—"} al {fecha_fin or "—"}',
-                  datetime.now().strftime('%d/%m/%Y')]],
-                colWidths=[COL / 3] * 3,
-            )
-            ctx.setStyle(TableStyle([
-                ('BACKGROUND',    (0, 0), (-1, 0), NAVY),
-                ('TEXTCOLOR',     (0, 0), (-1, 0), WHITE),
-                ('FONTNAME',      (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('BACKGROUND',    (0, 1), (-1, 1), NAVY_LT),
-                ('FONTSIZE',      (0, 0), (-1, -1), 9),
-                ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
-                ('GRID',          (0, 0), (-1, -1), 0.5, BORDER),
-                ('TOPPADDING',    (0, 0), (-1, -1), 7),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
-            ]))
-            els.append(ctx)
-            els.append(Spacer(1, 12))
-
-            col_names = {
-                'por-genero': _COL_GENERO, 'por-etapa-vida': _COL_ETAPA_VIDA,
-                'por-estado': 'Estado', 'por-tipo-espina': 'Tipo de Espina',
-            }
-            tot = data.get('total', 0)
-            rows = [[col_names.get(tipo, 'Categoría'), 'Cantidad', '%']]
-            for l, v in zip(data['labels'], data['values']):
-                rows.append([l, str(v), _pct(v, tot)])
-            rows.append(['Total', str(tot), '100%'])
-            els.append(_data_table(rows, [COL * .60, COL * .20, COL * .20], has_totals=True))
-
-        doc.build(els, onFirstPage=_page_footer, onLaterPages=_page_footer)
-
-        ts = datetime.now().strftime('%Y%m%d')
-        if tipo == 'consolidado-mensual':
-            fname = f'consolidado_{mes or ""}_{anio or ""}_{ts}.pdf'
-        elif tipo == 'indicadores':
-            fname = f'indicadores_{fecha_inicio or ts}_{fecha_fin or ts}.pdf'
-        else:
-            fname = f'reporte_{tipo}_{fecha_inicio or ts}.pdf'
-        return _pdf_payload(buf, fname)
+        page_footer = _reporte_pdf_page_footer(l_margin, r_margin, page_w, gray)
+        doc.build(els, onFirstPage=page_footer, onLaterPages=page_footer)
+        return _pdf_payload(buf, _reporte_pdf_filename(tipo, mes, anio, fecha_inicio, fecha_fin))
 
     except (NotFoundError, ValidationError, InternalError):
         raise
@@ -602,194 +632,286 @@ def _exportar_beneficiario_pdf(folio: str, _current_user: CurrentUser | None = N
         logger.exception('Error al generar PDF del beneficiario')
         raise InternalError(_MSG_ERROR_INTERNO)
 
-def _exportar_credencial_pdf(folio: str, _current_user: CurrentUser | None = None):  # nosonar
-    """Generar credencial del beneficiario en PDF (RF-RB-06)."""
-    from reportlab.lib.pagesizes import landscape, A6
+_CREDENCIAL_IMAGE_FORMATS = frozenset({'JPG', 'JPEG', 'PNG', 'WEBP'})
+_CREDENCIAL_FOTO_MARKERS = ('foto', 'fotografia', 'imagen')
+
+
+def _credencial_pdf_sv(paciente: dict, key: str) -> str:
+    return _strip(paciente.get(key)) or ''
+
+
+def _credencial_pdf_lbl(cv, x, y, txt, navy):
+    cv.setFillColor(navy)
+    cv.setFont('Helvetica-Bold', 6.5)
+    cv.drawString(x, y, txt.upper())
+
+
+def _credencial_pdf_val(cv, x, y, txt, black, bold=False, size=8):
+    cv.setFillColor(black)
+    cv.setFont('Helvetica-Bold' if bold else 'Helvetica', size)
+    cv.drawString(x, y, str(txt) if txt else '-')
+
+
+def _credencial_pdf_load_data(folio: str):
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
+        paciente = row_to_dict(cur)
+        if not paciente:
+            raise NotFoundError('Beneficiario no encontrado')
+        paciente = decrypt_row(paciente, PACIENTE_ENCRYPTED_FIELDS)
+        cur.execute(
+            'SELECT te.NOMBRE FROM PACIENTE_TIPO_ESPINA pte '
+            'JOIN TIPO_ESPINA_BIFIDA te ON te.ID_TIPO_ESPINA = pte.ID_TIPO_ESPINA '
+            'WHERE pte.ID_PACIENTE = :id', {'id': paciente['id_paciente']}
+        )
+        tipos = [r[0].strip() for r in cur.fetchall()]
+        cur.execute(
+            'SELECT dp.ID_DOCUMENTO, dp.RUTA_ARCHIVO, dp.FORMATO_ARCHIVO, dp.FECHA_CARGA, '
+            '       td.NOMBRE AS TIPO_NOMBRE '
+            'FROM DOCUMENTO_PACIENTE dp '
+            'LEFT JOIN TIPO_DOCUMENTO td ON td.ID_TIPO_DOCUMENTO = dp.ID_TIPO_DOCUMENTO '
+            "WHERE dp.ID_PACIENTE = :id AND dp.ACTIVO = 'S'",
+            {'id': paciente['id_paciente']}
+        )
+        documentos = rows_to_dicts(cur)
+    return paciente, tipos, documentos
+
+
+def _credencial_pdf_resolve_foto_path(documentos: list) -> Path | None:
+    imagenes = [
+        d for d in documentos
+        if str(d.get('formato_archivo') or '').strip().upper() in _CREDENCIAL_IMAGE_FORMATS
+    ]
+    if not imagenes:
+        return None
+    fotos_por_tipo = [
+        d for d in imagenes
+        if any(
+            marker in str(d.get('tipo_nombre') or '').lower()
+            for marker in _CREDENCIAL_FOTO_MARKERS
+        )
+    ]
+    candidatas = fotos_por_tipo or imagenes
+    candidatas.sort(key=lambda d: d.get('fecha_carga') or datetime.min, reverse=True)
+    ruta = str(candidatas[0].get('ruta_archivo') or '').strip()
+    if not ruta:
+        return None
+    ruta_local = (UPLOAD_DOCUMENTOS_DIR / Path(ruta).name).resolve()
+    if ruta_local.exists() and ruta_local.is_file():
+        return ruta_local
+    return None
+
+
+def _credencial_pdf_display_fields(paciente: dict, tipos: list) -> dict:
+    sv = lambda k: _credencial_pdf_sv(paciente, k)
+    estado = sv('estado')
+    return {
+        'sv': sv,
+        'nombre_completo': f"{sv('nombre')} {sv('apellido_paterno')} {sv('apellido_materno')}".strip(),
+        'direccion': f"{sv('direccion')}, {sv('colonia')}",
+        'ciudad_est': f"{sv('ciudad')}{', ' + estado if estado else ''}",
+        'fecha_nac': str(sv('fecha_nacimiento') or '')[:10],
+        'fecha_exp': str(sv('fecha_alta') or '')[:10],
+        'valvula': 'Si' if (sv('usa_valvula') or 'N').upper() == 'S' else 'No',
+        'padecimiento': ', '.join(tipos) if tipos else 'No especificado',
+    }
+
+
+def _credencial_pdf_draw_photo_placeholder(cv, photo_x, photo_y, photo_w, photo_h, gray, cm):
+    cv.setFillColor(gray)
+    cv.setFont('Helvetica', 6)
+    cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 + 0.3 * cm, 'FOTOGRAFIA')
+    cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 - 0.1 * cm, 'DEL PORTADOR')
+
+
+def _credencial_pdf_draw_header(cv, w, h, hdr_h, folio, fields, theme, cm):
+    navy, white = theme['navy'], theme['white']
+    cv.setFillColor(navy)
+    cv.rect(0, h - hdr_h, w, hdr_h, fill=1, stroke=0)
+    logo_w_hdr = 1.4 * cm
+    logo_h_hdr = 1.4 * cm
+    if LOGO_PATH.exists():
+        try:
+            cv.drawImage(
+                str(LOGO_PATH), 0.2 * cm, h - hdr_h + 0.1 * cm,
+                logo_w_hdr, logo_h_hdr, preserveAspectRatio=True, anchor='c', mask='auto')
+        except Exception:
+            pass
+    txt_x = logo_w_hdr + 0.45 * cm
+    cv.setFillColor(white)
+    cv.setFont('Helvetica-Bold', 9)
+    cv.drawString(txt_x, h - 1.05 * cm, 'ESPINA BIFIDA - Asociacion de Nuevo Leon ABP')
+    cv.setFont('Helvetica', 7)
+    cv.drawString(txt_x, h - 1.4 * cm, 'CREDENCIAL DE BENEFICIARIO')
+    cv.setFont('Helvetica-Bold', 9)
+    cv.drawRightString(w - 0.5 * cm, h - 1.05 * cm, f'Folio: {folio}')
+    cv.setFont('Helvetica', 7)
+    membresia = fields['sv']('id_paciente') or 'N/A'
+    cv.drawRightString(w - 0.5 * cm, h - 1.4 * cm, f'Membresia No.: {membresia}')
+
+
+def _credencial_pdf_draw_photo(cv, w, h, hdr_h, foto_path, theme, cm):
+    from reportlab.lib import colors
+    lgray = theme['lgray']
+    gray = theme['gray']
+    photo_x, photo_y = 0.4 * cm, h - hdr_h - 3.9 * cm
+    photo_w, photo_h = 2.8 * cm, 3.5 * cm
+    cv.setFillColor(lgray)
+    cv.setStrokeColor(colors.HexColor('#cbd5e1'))
+    cv.rect(photo_x, photo_y, photo_w, photo_h, fill=1, stroke=1)
+    if foto_path:
+        try:
+            cv.drawImage(
+                str(foto_path),
+                photo_x + 0.05 * cm, photo_y + 0.05 * cm,
+                photo_w - 0.10 * cm, photo_h - 0.10 * cm,
+                preserveAspectRatio=True, anchor='c', mask='auto',
+            )
+            return photo_y
+        except Exception:
+            logger.warning(
+                'No se pudo renderizar la foto del beneficiario en credencial', exc_info=True)
+    _credencial_pdf_draw_photo_placeholder(cv, photo_x, photo_y, photo_w, photo_h, gray, cm)
+    return photo_y
+
+
+def _credencial_pdf_draw_left_column(cv, photo_y, fields, theme, cm):
+    navy, black = theme['navy'], theme['black']
+    sv = fields['sv']
+    lx = 0.4 * cm
+    ly = photo_y - 0.65 * cm
+    _credencial_pdf_lbl(cv, lx, ly, 'Nombre Completo', navy)
+    ly -= 0.35 * cm
+    _credencial_pdf_val(cv, lx, ly, fields['nombre_completo'][:42], black, bold=True, size=7)
+    ly -= 0.5 * cm
+    _credencial_pdf_lbl(cv, lx, ly, 'Direccion', navy)
+    ly -= 0.32 * cm
+    _credencial_pdf_val(cv, lx, ly, fields['direccion'][:38], black, size=7)
+    ly -= 0.28 * cm
+    _credencial_pdf_val(cv, lx, ly, fields['ciudad_est'][:38], black, size=7)
+    ly -= 0.45 * cm
+    _credencial_pdf_lbl(cv, lx, ly, 'Tel. Casa', navy)
+    ly -= 0.32 * cm
+    _credencial_pdf_val(cv, lx, ly, sv('telefono_casa') or '-', black, size=7)
+    ly -= 0.45 * cm
+    _credencial_pdf_lbl(cv, lx, ly, 'Nombre de Padre / Madre', navy)
+    ly -= 0.32 * cm
+    _credencial_pdf_val(cv, lx, ly, (sv('nombre_padre_madre') or '-')[:35], black, size=7)
+    ly -= 0.45 * cm
+    _credencial_pdf_lbl(cv, lx, ly, 'Fecha de Expedicion', navy)
+    ly -= 0.32 * cm
+    _credencial_pdf_val(cv, lx, ly, fields['fecha_exp'] or '-', black, size=7)
+
+
+def _credencial_pdf_draw_right_column(cv, w, h, hdr_h, fields, theme, cm):
+    from reportlab.lib import colors
+    navy, navy_l, black = theme['navy'], theme['navy_l'], theme['black']
+    sv = fields['sv']
+    mid_x = 3.6 * cm
+    cv.setStrokeColor(colors.HexColor('#e2e8f0'))
+    cv.line(mid_x, 0.55 * cm, mid_x, h - hdr_h - 0.2 * cm)
+    rx = mid_x + 0.4 * cm
+    ry = h - hdr_h - 0.55 * cm
+    _credencial_pdf_lbl(cv, rx, ry, 'Padecimiento', navy)
+    ry -= 0.32 * cm
+    _credencial_pdf_val(cv, rx, ry, fields['padecimiento'][:55], black, bold=True, size=7)
+    ry -= 0.5 * cm
+    col2 = rx + 3.5 * cm
+    _credencial_pdf_lbl(cv, rx, ry, 'Tipo de Sangre', navy)
+    _credencial_pdf_lbl(cv, col2, ry, 'Tiene Valvula', navy)
+    ry -= 0.32 * cm
+    _credencial_pdf_val(cv, rx, ry, sv('tipo_sangre') or '-', black, bold=True, size=9)
+    _credencial_pdf_val(cv, col2, ry, fields['valvula'], black, bold=True, size=8)
+    ry -= 0.55 * cm
+    _credencial_pdf_lbl(cv, rx, ry, 'En caso de accidente avisar a', navy)
+    ry -= 0.32 * cm
+    _credencial_pdf_val(cv, rx, ry, (sv('en_emergencia_avisar_a') or '-')[:42], black, size=7)
+    ry -= 0.42 * cm
+    _credencial_pdf_lbl(cv, rx, ry, 'Telefono de Emergencia', navy)
+    ry -= 0.32 * cm
+    _credencial_pdf_val(cv, rx, ry, sv('telefono_emergencia') or '-', black, size=7)
+    ry -= 0.42 * cm
+    _credencial_pdf_lbl(cv, rx, ry, 'Correo Electronico', navy)
+    ry -= 0.32 * cm
+    _credencial_pdf_val(cv, rx, ry, (sv('correo_electronico') or '-')[:45], black, size=7)
+    ry -= 0.52 * cm
+    cv.setStrokeColor(colors.HexColor('#e2e8f0'))
+    cv.line(rx, ry + 0.15 * cm, w - 0.4 * cm, ry + 0.15 * cm)
+    ry -= 0.25 * cm
+    c3a = rx
+    c3b = rx + 2.2 * cm
+    c3c = rx + 4.6 * cm
+    _credencial_pdf_lbl(cv, c3a, ry, 'Datos de Nacimiento', navy)
+    ry -= 0.32 * cm
+    _credencial_pdf_lbl(cv, c3a, ry, 'Fecha', navy)
+    _credencial_pdf_lbl(cv, c3b, ry, 'Lugar Nac.', navy)
+    _credencial_pdf_lbl(cv, c3c, ry, 'Hospital', navy)
+    ry -= 0.32 * cm
+    _credencial_pdf_val(cv, c3a, ry, fields['fecha_nac'] or '-', black, size=7)
+    _credencial_pdf_val(cv, c3b, ry, (sv('estado_nacimiento') or '-')[:16], black, size=7)
+    _credencial_pdf_val(cv, c3c, ry, (sv('hospital_nacimiento') or '-')[:18], black, size=7)
+    ry -= 0.5 * cm
+    box_w = w - rx - 0.4 * cm
+    box_h = 0.9 * cm
+    cv.setFillColor(navy_l)
+    cv.setStrokeColor(navy)
+    cv.roundRect(rx, ry - box_h + 0.25 * cm, box_w, box_h, 0.15 * cm, fill=1, stroke=1)
+    cx_box = rx + box_w / 2
+    cv.setFillColor(navy)
+    cv.setFont('Helvetica-Bold', 6.5)
+    cv.drawCentredString(cx_box, ry - 0.08 * cm, 'ASOCIACION DE ESPINA BIFIDA DE NUEVO LEON ABP')
+    cv.setFont('Helvetica', 6)
+    cv.drawCentredString(cx_box, ry - 0.42 * cm, 'www.espinabifida.org.mx')
+
+
+def _credencial_pdf_draw_footer(cv, w, fields, theme, cm):
+    lgray, gray = theme['lgray'], theme['gray']
+    sv = fields['sv']
+    cv.setFillColor(lgray)
+    cv.rect(0, 0, w, 0.55 * cm, fill=1, stroke=0)
+    cv.setFillColor(gray)
+    cv.setFont('Helvetica', 6)
+    cuota = sv('tipo_cuota') or 'No asignada'
+    vencimiento = str(sv('fecha_vencimiento_membresia') or '')[:10] or 'Indefinida'
+    cv.drawString(0.4 * cm, 0.2 * cm, f'Cuota: {cuota}')
+    cv.drawCentredString(w / 2, 0.2 * cm, f'Vigencia: {vencimiento}')
+    cv.drawRightString(w - 0.4 * cm, 0.2 * cm, f'CURP: {sv("curp") or "N/A"}')
+
+
+def _credencial_pdf_render(cv, w, h, folio, paciente, tipos, foto_path):
     from reportlab.lib.units import cm
     from reportlab.lib import colors
+    theme = {
+        'navy': colors.HexColor('#00328b'),
+        'navy_l': colors.HexColor('#e8eef8'),
+        'gray': colors.HexColor('#64748b'),
+        'lgray': colors.HexColor('#f1f5f9'),
+        'black': colors.HexColor('#1e293b'),
+        'white': colors.white,
+    }
+    fields = _credencial_pdf_display_fields(paciente, tipos)
+    hdr_h = 1.6 * cm
+    cv.setFillColor(theme['white'])
+    cv.rect(0, 0, w, h, fill=1, stroke=0)
+    _credencial_pdf_draw_header(cv, w, h, hdr_h, folio, fields, theme, cm)
+    photo_y = _credencial_pdf_draw_photo(cv, w, h, hdr_h, foto_path, theme, cm)
+    _credencial_pdf_draw_left_column(cv, photo_y, fields, theme, cm)
+    _credencial_pdf_draw_right_column(cv, w, h, hdr_h, fields, theme, cm)
+    _credencial_pdf_draw_footer(cv, w, fields, theme, cm)
+
+
+def _exportar_credencial_pdf(folio: str, _current_user: CurrentUser | None = None):
+    """Generar credencial del beneficiario en PDF (RF-RB-06)."""
+    from reportlab.lib.pagesizes import landscape, A6
     from reportlab.pdfgen import canvas as pdf_canvas
-    NAVY   = colors.HexColor('#00328b')
-    NAVY_L = colors.HexColor('#e8eef8')
-    GRAY   = colors.HexColor('#64748b')
-    LGRAY  = colors.HexColor('#f1f5f9')
-    BLACK  = colors.HexColor('#1e293b')
-    WHITE  = colors.white
-    def _lbl(cv, x, y, txt):
-        cv.setFillColor(NAVY); cv.setFont('Helvetica-Bold', 6.5)
-        cv.drawString(x, y, txt.upper())
-    def _val(cv, x, y, txt, bold=False, size=8):
-        cv.setFillColor(BLACK)
-        cv.setFont('Helvetica-Bold' if bold else 'Helvetica', size)
-        cv.drawString(x, y, str(txt) if txt else '-')
     try:
-        with get_db() as conn:
-            cur = conn.cursor()
-            cur.execute('SELECT * FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
-            paciente = row_to_dict(cur)
-            if not paciente:
-                raise NotFoundError('Beneficiario no encontrado')
-            paciente = decrypt_row(paciente, PACIENTE_ENCRYPTED_FIELDS)
-            cur.execute(
-                'SELECT te.NOMBRE FROM PACIENTE_TIPO_ESPINA pte '
-                'JOIN TIPO_ESPINA_BIFIDA te ON te.ID_TIPO_ESPINA = pte.ID_TIPO_ESPINA '
-                'WHERE pte.ID_PACIENTE = :id', {'id': paciente['id_paciente']}
-            )
-            tipos = [r[0].strip() for r in cur.fetchall()]
-            cur.execute(
-                'SELECT dp.ID_DOCUMENTO, dp.RUTA_ARCHIVO, dp.FORMATO_ARCHIVO, dp.FECHA_CARGA, '
-                '       td.NOMBRE AS TIPO_NOMBRE '
-                'FROM DOCUMENTO_PACIENTE dp '
-                'LEFT JOIN TIPO_DOCUMENTO td ON td.ID_TIPO_DOCUMENTO = dp.ID_TIPO_DOCUMENTO '
-                "WHERE dp.ID_PACIENTE = :id AND dp.ACTIVO = 'S'",
-                {'id': paciente['id_paciente']}
-            )
-            documentos = rows_to_dicts(cur)
-
-        foto_path = None
-        imagenes = [
-            d for d in documentos
-            if str(d.get('formato_archivo') or '').strip().upper() in {'JPG', 'JPEG', 'PNG', 'WEBP'}
-        ]
-        if imagenes:
-            fotos_por_tipo = [
-                d for d in imagenes
-                if any(
-                    marker in str(d.get('tipo_nombre') or '').lower()
-                    for marker in ('foto', 'fotografia', 'imagen')
-                )
-            ]
-            candidatas = fotos_por_tipo or imagenes
-            candidatas.sort(key=lambda d: d.get('fecha_carga') or datetime.min, reverse=True)
-            ruta = str(candidatas[0].get('ruta_archivo') or '').strip()
-            if ruta:
-                ruta_local = (UPLOAD_DOCUMENTOS_DIR / Path(ruta).name).resolve()
-                if ruta_local.exists() and ruta_local.is_file():
-                    foto_path = ruta_local
-
-        def _sv(k): return _strip(paciente.get(k)) or ''
-        nombre_completo = f"{_sv('nombre')} {_sv('apellido_paterno')} {_sv('apellido_materno')}".strip()
-        direccion = f"{_sv('direccion')}, {_sv('colonia')}"
-        ciudad_est = f"{_sv('ciudad')}{', ' + _sv('estado') if _sv('estado') else ''}"
-        fecha_nac = str(_sv('fecha_nacimiento') or '')[:10]
-        fecha_exp = str(_sv('fecha_alta') or '')[:10]
-        valvula = 'Si' if (_sv('usa_valvula') or 'N').upper() == 'S' else 'No'
-        padecimiento = ', '.join(tipos) if tipos else 'No especificado'
-        # Card size: A6 landscape (148 x 105 mm)
-        W, H = landscape(A6)
+        paciente, tipos, documentos = _credencial_pdf_load_data(folio)
+        foto_path = _credencial_pdf_resolve_foto_path(documentos)
+        w, h = landscape(A6)
         buf = io.BytesIO()
-        cv = pdf_canvas.Canvas(buf, pagesize=(W, H))
-        # Background
-        cv.setFillColor(WHITE); cv.rect(0, 0, W, H, fill=1, stroke=0)
-        # Header bar
-        hdr_h = 1.6 * cm
-        cv.setFillColor(NAVY); cv.rect(0, H - hdr_h, W, hdr_h, fill=1, stroke=0)
-        logo_w_hdr = 1.4 * cm
-        logo_h_hdr = 1.4 * cm
-        if LOGO_PATH.exists():
-            try:
-                cv.drawImage(str(LOGO_PATH), 0.2 * cm, H - hdr_h + 0.1 * cm, logo_w_hdr, logo_h_hdr, preserveAspectRatio=True, anchor='c', mask='auto')
-            except Exception:
-                pass
-        txt_x = logo_w_hdr + 0.45 * cm
-        cv.setFillColor(WHITE); cv.setFont('Helvetica-Bold', 9)
-        cv.drawString(txt_x, H - 1.05 * cm, 'ESPINA BIFIDA - Asociacion de Nuevo Leon ABP')
-        cv.setFont('Helvetica', 7)
-        cv.drawString(txt_x, H - 1.4 * cm, 'CREDENCIAL DE BENEFICIARIO')
-        cv.setFont('Helvetica-Bold', 9)
-        cv.drawRightString(W - 0.5 * cm, H - 1.05 * cm, f'Folio: {folio}')
-        cv.setFont('Helvetica', 7)
-        cv.drawRightString(W - 0.5 * cm, H - 1.4 * cm, f'Membresia No.: {_sv("id_paciente") or "N/A"}')
-        # Photo box (left column)
-        photo_x, photo_y = 0.4 * cm, H - hdr_h - 3.9 * cm
-        photo_w, photo_h = 2.8 * cm, 3.5 * cm
-        cv.setFillColor(LGRAY); cv.setStrokeColor(colors.HexColor('#cbd5e1'))
-        cv.rect(photo_x, photo_y, photo_w, photo_h, fill=1, stroke=1)
-        if foto_path:
-            try:
-                cv.drawImage(
-                    str(foto_path),
-                    photo_x + 0.05 * cm,
-                    photo_y + 0.05 * cm,
-                    photo_w - 0.10 * cm,
-                    photo_h - 0.10 * cm,
-                    preserveAspectRatio=True,
-                    anchor='c',
-                    mask='auto',
-                )
-            except Exception:
-                logger.warning('No se pudo renderizar la foto del beneficiario en credencial', exc_info=True)
-                cv.setFillColor(GRAY); cv.setFont('Helvetica', 6)
-                cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 + 0.3 * cm, 'FOTOGRAFIA')
-                cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 - 0.1 * cm, 'DEL PORTADOR')
-        else:
-            cv.setFillColor(GRAY); cv.setFont('Helvetica', 6)
-            cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 + 0.3 * cm, 'FOTOGRAFIA')
-            cv.drawCentredString(photo_x + photo_w / 2, photo_y + photo_h / 2 - 0.1 * cm, 'DEL PORTADOR')
-        # Left column content (below photo)
-        lx = 0.4 * cm
-        ly = photo_y - 0.65 * cm
-        _lbl(cv, lx, ly, 'Nombre Completo'); ly -= 0.35 * cm
-        _val(cv, lx, ly, nombre_completo[:42], bold=True, size=7); ly -= 0.5 * cm
-        _lbl(cv, lx, ly, 'Direccion'); ly -= 0.32 * cm
-        _val(cv, lx, ly, direccion[:38], size=7); ly -= 0.28 * cm
-        _val(cv, lx, ly, ciudad_est[:38], size=7); ly -= 0.45 * cm
-        _lbl(cv, lx, ly, 'Tel. Casa'); ly -= 0.32 * cm
-        _val(cv, lx, ly, _sv('telefono_casa') or '-', size=7); ly -= 0.45 * cm
-        _lbl(cv, lx, ly, 'Nombre de Padre / Madre'); ly -= 0.32 * cm
-        _val(cv, lx, ly, (_sv('nombre_padre_madre') or '-')[:35], size=7); ly -= 0.45 * cm
-        _lbl(cv, lx, ly, 'Fecha de Expedicion'); ly -= 0.32 * cm
-        _val(cv, lx, ly, fecha_exp or '-', size=7)
-        # Vertical divider
-        mid_x = 3.6 * cm
-        cv.setStrokeColor(colors.HexColor('#e2e8f0'))
-        cv.line(mid_x, 0.55 * cm, mid_x, H - hdr_h - 0.2 * cm)
-        # Right column
-        rx = mid_x + 0.4 * cm
-        ry = H - hdr_h - 0.55 * cm
-        _lbl(cv, rx, ry, 'Padecimiento'); ry -= 0.32 * cm
-        _val(cv, rx, ry, padecimiento[:55], bold=True, size=7); ry -= 0.5 * cm
-        col2 = rx + 3.5 * cm
-        _lbl(cv, rx, ry, 'Tipo de Sangre'); _lbl(cv, col2, ry, 'Tiene Valvula')
-        ry -= 0.32 * cm
-        _val(cv, rx, ry, _sv('tipo_sangre') or '-', bold=True, size=9)
-        _val(cv, col2, ry, valvula, bold=True, size=8); ry -= 0.55 * cm
-        _lbl(cv, rx, ry, 'En caso de accidente avisar a'); ry -= 0.32 * cm
-        _val(cv, rx, ry, (_sv('en_emergencia_avisar_a') or '-')[:42], size=7); ry -= 0.42 * cm
-        _lbl(cv, rx, ry, 'Telefono de Emergencia'); ry -= 0.32 * cm
-        _val(cv, rx, ry, _sv('telefono_emergencia') or '-', size=7); ry -= 0.42 * cm
-        _lbl(cv, rx, ry, 'Correo Electronico'); ry -= 0.32 * cm
-        _val(cv, rx, ry, (_sv('correo_electronico') or '-')[:45], size=7); ry -= 0.52 * cm
-        # Horizontal divider
-        cv.setStrokeColor(colors.HexColor('#e2e8f0'))
-        cv.line(rx, ry + 0.15 * cm, W - 0.4 * cm, ry + 0.15 * cm)
-        ry -= 0.25 * cm
-        # Birth data 3 sub-cols
-        c3a = rx; c3b = rx + 2.2 * cm; c3c = rx + 4.6 * cm
-        _lbl(cv, c3a, ry, 'Datos de Nacimiento'); ry -= 0.32 * cm
-        _lbl(cv, c3a, ry, 'Fecha'); _lbl(cv, c3b, ry, 'Lugar Nac.'); _lbl(cv, c3c, ry, 'Hospital')
-        ry -= 0.32 * cm
-        _val(cv, c3a, ry, fecha_nac or '-', size=7)
-        _val(cv, c3b, ry, (_sv('estado_nacimiento') or '-')[:16], size=7)
-        _val(cv, c3c, ry, (_sv('hospital_nacimiento') or '-')[:18], size=7)
-        ry -= 0.5 * cm
-        # Association box
-        box_w = W - rx - 0.4 * cm
-        box_h = 0.9 * cm
-        cv.setFillColor(NAVY_L); cv.setStrokeColor(NAVY)
-        cv.roundRect(rx, ry - box_h + 0.25 * cm, box_w, box_h, 0.15 * cm, fill=1, stroke=1)
-        cx_box = rx + box_w / 2
-        cv.setFillColor(NAVY); cv.setFont('Helvetica-Bold', 6.5)
-        cv.drawCentredString(cx_box, ry - 0.08 * cm, 'ASOCIACION DE ESPINA BIFIDA DE NUEVO LEON ABP')
-        cv.setFont('Helvetica', 6)
-        cv.drawCentredString(cx_box, ry - 0.42 * cm, 'www.espinabifida.org.mx')
-        # Bottom footer
-        cv.setFillColor(LGRAY); cv.rect(0, 0, W, 0.55 * cm, fill=1, stroke=0)
-        cv.setFillColor(GRAY); cv.setFont('Helvetica', 6)
-        cuota = _sv('tipo_cuota') or 'No asignada'
-        vencimiento = str(_sv('fecha_vencimiento_membresia') or '')[:10] or 'Indefinida'
-        cv.drawString(0.4 * cm, 0.2 * cm, f'Cuota: {cuota}')
-        cv.drawCentredString(W / 2, 0.2 * cm, f'Vigencia: {vencimiento}')
-        cv.drawRightString(W - 0.4 * cm, 0.2 * cm, f'CURP: {_sv("curp") or "N/A"}')
+        cv = pdf_canvas.Canvas(buf, pagesize=(w, h))
+        _credencial_pdf_render(cv, w, h, folio, paciente, tipos, foto_path)
         cv.save()
         return _pdf_payload(buf, f'credencial_{folio}.pdf')
     except (NotFoundError, ValidationError, InternalError):

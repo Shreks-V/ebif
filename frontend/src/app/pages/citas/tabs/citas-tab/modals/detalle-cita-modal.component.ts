@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { formatFechaHoraCita, getEstadoBadgeClass } from '../citas-tab.utils';
+import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 interface CitaServicioInput { idServicio: number; nombre: string; cantidad: number; montoPagado: number; }
 interface CitaInput {
@@ -11,7 +12,7 @@ interface CitaInput {
 @Component({
   selector: 'app-detalle-cita-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, KeyboardClickDirective],
   templateUrl: './detalle-cita-modal.component.html',
 })
 export class DetalleCitaModalComponent {

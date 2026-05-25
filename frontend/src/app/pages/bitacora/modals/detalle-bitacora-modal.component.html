@@ -1,6 +1,6 @@
-<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" (click)="closed.emit()"><!-- NOSONAR -->
+<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" appKeyboardClick tabindex="0" role="button" aria-label="Cerrar" (click)="closed.emit()">
   @if (item) {
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()"><!-- NOSONAR -->
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
       <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100">
         <div class="flex items-center gap-3">
           <span class="px-2.5 py-1 rounded-lg text-xs font-bold" [ngClass]="tipoClass(item.tipo_operacion)">

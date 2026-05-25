@@ -10,6 +10,7 @@ import { NuevaCitaModalComponent } from './modals/nueva-cita-modal.component';
 import { DetalleCitaModalComponent } from './modals/detalle-cita-modal.component';
 import { EditarCitaModalComponent } from './modals/editar-cita-modal.component';
 import { ConfirmarEliminarCitaModalComponent } from './modals/confirmar-eliminar-cita-modal.component';
+import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
 
 interface TableSortState { key: string; direction: 'asc' | 'desc'; }
 interface MedicoLocal { idDoctor: number; nombre: string; apellidoPaterno: string; especialidad?: string; }
@@ -29,7 +30,7 @@ interface CitaLocal {
 @Component({
   selector: 'app-citas-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, NuevaCitaModalComponent, DetalleCitaModalComponent, EditarCitaModalComponent, ConfirmarEliminarCitaModalComponent],
+  imports: [CommonModule, FormsModule, NuevaCitaModalComponent, DetalleCitaModalComponent, EditarCitaModalComponent, ConfirmarEliminarCitaModalComponent, KeyboardClickDirective],
   templateUrl: './citas-tab.component.html',
 })
 export class CitasTabComponent implements OnInit, OnDestroy {

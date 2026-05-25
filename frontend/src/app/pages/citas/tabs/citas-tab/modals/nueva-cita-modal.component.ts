@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../../services/api.service';
 import { ServicioRaw } from '../../../../../shared/models/almacen.models';
+import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 interface BeneficiarioOption { id_paciente: number; folio: string; nombre_completo: string; }
 interface NuevaCitaServicio { id_servicio: number | null; cantidad: number; monto_pagado: number; }
@@ -16,7 +17,7 @@ interface DoctorServicioRaw { id_servicio: number; }
 @Component({
   selector: 'app-nueva-cita-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, KeyboardClickDirective],
   templateUrl: './nueva-cita-modal.component.html',
 })
 export class NuevaCitaModalComponent implements OnInit {

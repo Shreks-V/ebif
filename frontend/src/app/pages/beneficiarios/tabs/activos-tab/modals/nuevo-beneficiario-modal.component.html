@@ -1,5 +1,5 @@
-<div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center">
-  <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()"><!-- NOSONAR -->
+<div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" appKeyboardClick tabindex="0" role="button" aria-label="Cerrar" (click)="closed.emit()">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-2xl font-black text-slate-900">Nuevo Beneficiario</h2>
       <button (click)="closed.emit()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
@@ -56,7 +56,7 @@
           </select>
         </div>
         <div class="flex items-center gap-3 pt-7">
-          <input type="checkbox" [(ngModel)]="formDataUsaValvula" name="usa_valvula" id="usa_valvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" aria-label="Usa Valvula" />
+          <input type="checkbox" [(ngModel)]="formDataUsaValvula" name="usa_valvula" id="usa_valvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" />
           <label for="usa_valvula" class="text-sm font-semibold text-slate-700">Usa Valvula</label>
         </div>
         <div class="md:col-span-2">
@@ -91,7 +91,8 @@
         @for (doc of nuevoBeneficiarioDocumentos; track doc; let i = $index) {
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
             <div class="md:col-span-5">
-              <select [(ngModel)]="doc.id_tipo_documento" [name]="'nuevoDocTipo' + i" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all text-sm bg-white" aria-label="Tipo de documento">
+              <label [for]="'nben-doc-tipo-' + i" class="block text-xs font-semibold text-slate-600 mb-1">Tipo de documento</label>
+              <select [(ngModel)]="doc.id_tipo_documento" [name]="'nuevoDocTipo' + i" [id]="'nben-doc-tipo-' + i" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 outline-none transition-all text-sm bg-white">
                 <option [ngValue]="0">Tipo de documento...</option>
                 @for (td of tiposDocumentoCatalogo; track td) { <option [ngValue]="td.id_tipo_documento">{{ td.nombre }}</option> }
               </select>

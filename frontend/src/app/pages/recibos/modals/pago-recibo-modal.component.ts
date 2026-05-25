@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { Recibo } from '../../../shared/models/recibo.models';
 import { getApiError } from '../../../shared/utils/error.utils';
+import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 interface ReciboInput { idVenta: number; saldoPendiente: number; folioVenta?: string; }
 
 @Component({
   selector: 'app-pago-recibo-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, KeyboardClickDirective],
   templateUrl: './pago-recibo-modal.component.html',
 })
 export class PagoReciboModalComponent implements OnChanges {

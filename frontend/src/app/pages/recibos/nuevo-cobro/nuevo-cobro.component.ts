@@ -2,6 +2,7 @@ import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 interface BeneficiarioOption {
   id: number;
@@ -41,7 +42,7 @@ interface ConceptoCobroOption {
 @Component({
   selector: 'app-nuevo-cobro',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, KeyboardClickDirective],
   templateUrl: './nuevo-cobro.component.html',
 })
 export class NuevoCobroComponent implements OnInit {

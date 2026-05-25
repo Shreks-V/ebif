@@ -7,6 +7,7 @@ import { NuevoMedicoModalComponent } from './modals/nuevo-medico-modal.component
 import { DetalleMedicoModalComponent } from './modals/detalle-medico-modal.component';
 import { EditarMedicoModalComponent } from './modals/editar-medico-modal.component';
 import { DisponibilidadModalComponent } from './modals/disponibilidad-modal.component';
+import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
 
 interface TableSortState { key: string; direction: 'asc' | 'desc'; }
 
@@ -27,7 +28,7 @@ interface MedicoLocal {
 @Component({
   selector: 'app-medicos-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, NuevoMedicoModalComponent, DetalleMedicoModalComponent, EditarMedicoModalComponent, DisponibilidadModalComponent],
+  imports: [CommonModule, FormsModule, NuevoMedicoModalComponent, DetalleMedicoModalComponent, EditarMedicoModalComponent, DisponibilidadModalComponent, KeyboardClickDirective],
   templateUrl: './medicos-tab.component.html',
 })
 export class MedicosTabComponent implements OnInit, OnDestroy {

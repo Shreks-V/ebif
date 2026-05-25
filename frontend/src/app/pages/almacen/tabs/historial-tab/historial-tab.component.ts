@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../services/api.service';
 import { Movimiento } from '../../../../shared/models/almacen.models';
 import { REFRESH_INTERVAL_MS, HISTORIAL_DEBOUNCE_MS } from '../../../../shared/constants/app.constants';
+import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
 
 interface MovimientoParams {
   limit: number;
@@ -17,7 +18,7 @@ interface MovimientoParams {
 @Component({
   selector: 'app-historial-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, KeyboardClickDirective],
   templateUrl: './historial-tab.component.html',
 })
 export class HistorialTabComponent implements OnInit, OnDestroy {

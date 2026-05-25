@@ -2,11 +2,12 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { KeyboardClickDirective } from '../../directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-cambiar-contrasena-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, KeyboardClickDirective],
   templateUrl: './cambiar-contrasena-modal.component.html',
 })
 export class CambiarContrasenaModalComponent {

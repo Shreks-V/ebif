@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../../services/api.service';
 import { ServicioRaw } from '../../../../../shared/models/almacen.models';
+import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 interface CitaServicioInput { idServicio: number; nombre: string; cantidad: number; montoPagado: number; }
 interface CitaInput {
@@ -17,7 +18,7 @@ interface EditCita {
 @Component({
   selector: 'app-editar-cita-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, KeyboardClickDirective],
   templateUrl: './editar-cita-modal.component.html',
 })
 export class EditarCitaModalComponent implements OnChanges {

@@ -10,6 +10,7 @@ import { AuthService } from '../../services/auth.service';
 import { UsuarioSistema } from '../../shared/models/usuario-sistema.models';
 import { getApiError } from '../../shared/utils/error.utils';
 import { TOAST_DURATION_MS } from '../../shared/constants/app.constants';
+import { KeyboardClickDirective } from '../../shared/directives/keyboard-click.directive';
 
 interface UsuarioFormData {
   nombre: string;
@@ -38,7 +39,7 @@ const ROL_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-usuarios-sistema',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent],
+  imports: [CommonModule, FormsModule, NavbarComponent, FooterComponent, KeyboardClickDirective],
   templateUrl: './usuarios-sistema.component.html',
 })
 export class UsuariosSistemaComponent implements OnInit {

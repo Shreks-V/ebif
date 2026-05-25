@@ -2,11 +2,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../../../services/api.service';
 import { Beneficiario } from '../activos-tab.types';
+import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-credencial-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, KeyboardClickDirective],
   templateUrl: './credencial-modal.component.html',
 })
 export class CredencialModalComponent {

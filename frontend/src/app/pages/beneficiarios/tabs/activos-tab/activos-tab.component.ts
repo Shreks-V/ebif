@@ -21,13 +21,13 @@ import {
 } from './activos-tab.types';
 import { getMembresiaBadgeClass, getMembresiaVencimientoClass } from './activos-tab.utils';
 import { REFRESH_INTERVAL_MS, BLOB_REVOKE_DELAY_MS, ACTION_NUEVO, MEMBRESIA_ACTIVO } from '../../../../shared/constants/app.constants';
+import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
 
 
 @Component({
   selector: 'app-activos-tab',
   standalone: true,
-  imports: [
-    CommonModule, FormsModule,
+  imports: [CommonModule, FormsModule,
     CuotaBadgeComponent, AvatarInicialesComponent,
     NuevoBeneficiarioModalComponent,
     DetalleBeneficiarioModalComponent,
@@ -35,8 +35,7 @@ import { REFRESH_INTERVAL_MS, BLOB_REVOKE_DELAY_MS, ACTION_NUEVO, MEMBRESIA_ACTI
     HistorialModalComponent,
     ConfirmarDesactivarModalComponent,
     RenovarMembresiaModalComponent,
-    CredencialModalComponent,
-  ],
+    CredencialModalComponent, KeyboardClickDirective],
   templateUrl: './activos-tab.component.html',
 })
 export class ActivosTabComponent implements OnInit, OnDestroy {

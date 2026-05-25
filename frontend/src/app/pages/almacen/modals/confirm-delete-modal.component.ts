@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
+import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-confirm-delete-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, KeyboardClickDirective],
   templateUrl: './confirm-delete-modal.component.html',
 })
 export class ConfirmDeleteModalComponent {
