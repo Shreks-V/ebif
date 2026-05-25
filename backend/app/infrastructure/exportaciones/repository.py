@@ -48,6 +48,15 @@ def _date_str(val) -> str:
         return val.strftime('%d/%m/%Y')
     return str(val)
 
+def _paciente_str(paciente: dict, key: str) -> str:
+    return paciente.get(key) or ''
+
+def _paciente_strip_str(paciente: dict, key: str) -> str:
+    return _strip(paciente.get(key)) or ''
+
+def _usa_valvula_label(paciente: dict) -> str:
+    return 'Sí' if _strip(paciente.get('usa_valvula')) == 'S' else 'No'
+
 def _pdf_payload(buffer: io.BytesIO, filename: str) -> FilePayload:
     buffer.seek(0)
     return FilePayload(content=buffer.read(), media_type='application/pdf', filename=filename)
@@ -518,26 +527,25 @@ def _exportar_reporte_pdf(  # noqa: C901  # nosonar
 
 def _beneficiario_pdf_fields(paciente: dict, nombre: str) -> list[tuple]:
     """Return ordered (label, value) pairs for a beneficiary expediente PDF."""
-    usa_valvula = 'Sí' if _strip(paciente.get('usa_valvula')) == 'S' else 'No'
     return [
         ('Nombre', nombre),
-        ('CURP', paciente.get('curp') or ''),
-        (_COL_GENERO, _strip(paciente.get('genero')) or ''),
+        ('CURP', _paciente_str(paciente, 'curp')),
+        (_COL_GENERO, _paciente_strip_str(paciente, 'genero')),
         ('Fecha de Nacimiento', _date_str(paciente.get('fecha_nacimiento'))),
-        ('Tipo de Sangre', paciente.get('tipo_sangre') or ''),
-        ('Usa Válvula', usa_valvula),
-        ('Dirección', paciente.get('direccion') or ''),
-        ('Colonia', paciente.get('colonia') or ''),
-        ('Ciudad', paciente.get('ciudad') or ''),
-        ('Estado', paciente.get('estado') or ''),
-        ('C.P.', paciente.get('codigo_postal') or ''),
-        ('Teléfono Casa', paciente.get('telefono_casa') or ''),
-        ('Teléfono Celular', paciente.get('telefono_celular') or ''),
-        ('Correo', paciente.get('correo_electronico') or ''),
-        ('Contacto Emergencia', paciente.get('en_emergencia_avisar_a') or ''),
-        ('Tel. Emergencia', paciente.get('telefono_emergencia') or ''),
-        ('Membresía', _strip(paciente.get('membresia_estatus')) or ''),
-        ('Tipo Cuota', _strip(paciente.get('tipo_cuota')) or ''),
+        ('Tipo de Sangre', _paciente_str(paciente, 'tipo_sangre')),
+        ('Usa Válvula', _usa_valvula_label(paciente)),
+        ('Dirección', _paciente_str(paciente, 'direccion')),
+        ('Colonia', _paciente_str(paciente, 'colonia')),
+        ('Ciudad', _paciente_str(paciente, 'ciudad')),
+        ('Estado', _paciente_str(paciente, 'estado')),
+        ('C.P.', _paciente_str(paciente, 'codigo_postal')),
+        ('Teléfono Casa', _paciente_str(paciente, 'telefono_casa')),
+        ('Teléfono Celular', _paciente_str(paciente, 'telefono_celular')),
+        ('Correo', _paciente_str(paciente, 'correo_electronico')),
+        ('Contacto Emergencia', _paciente_str(paciente, 'en_emergencia_avisar_a')),
+        ('Tel. Emergencia', _paciente_str(paciente, 'telefono_emergencia')),
+        ('Membresía', _paciente_strip_str(paciente, 'membresia_estatus')),
+        ('Tipo Cuota', _paciente_strip_str(paciente, 'tipo_cuota')),
         ('Fecha Alta', _date_str(paciente.get('fecha_alta'))),
     ]
 
