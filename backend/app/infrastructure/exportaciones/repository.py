@@ -188,7 +188,7 @@ def _reporte_pdf_append_header(els, tipo, fecha_inicio, fecha_fin, mes, anio, *,
     els.append(HRFlowable(width='100%', thickness=1, color=nav, spaceAfter=10, spaceBefore=6))
 
 
-def _reporte_pdf_append_distrib_pct(els, h2, title, data, col_header, widths, *, col, theme):
+def _reporte_pdf_append_distrib_pct(els, h2, title, data, col_header, widths, *, _col, theme):
     from reportlab.platypus import Paragraph, Spacer, KeepTogether
     if not data.get('labels'):
         return
@@ -202,6 +202,23 @@ def _reporte_pdf_append_distrib_pct(els, h2, title, data, col_header, widths, *,
         _reporte_pdf_data_table(rows, widths, has_totals=True, **theme),
     ]))
     els.append(Spacer(1, 8))
+
+
+def _reporte_pdf_ciudades_rows(d_ciu: dict, top: int = 25) -> tuple[list, int]:
+    """Build (rows_list, total) for the city-distribution PDF table."""
+    ci_tot = d_ciu.get('total', 0)
+    rows: list = [['Ciudad', 'Estado', 'Pacientes', '%']]
+    for label, estado, val in zip(
+        d_ciu['labels'][:top],
+        d_ciu.get('estados', [''] * top)[:top],
+        d_ciu['values'][:top],
+    ):
+        rows.append([label, estado, str(val), _reporte_pdf_pct(val, ci_tot)])
+    if len(d_ciu['labels']) > top:
+        resto = ci_tot - sum(d_ciu['values'][:top])
+        rows.append(['Otras ciudades', '', str(resto), _reporte_pdf_pct(resto, ci_tot)])
+    rows.append(['Total', '', str(ci_tot), '100%'])
+    return rows, ci_tot
 
 
 def _reporte_pdf_append_resumen(els, kwargs, fecha_inicio, fecha_fin, current_user, *, h2, col, theme):
@@ -305,18 +322,7 @@ def _reporte_pdf_append_resumen(els, kwargs, fecha_inicio, fecha_fin, current_us
 
     if d_ciu.get('labels'):
         top = 25
-        ci_tot = d_ciu.get('total', 0)
-        rows = [['Ciudad', 'Estado', 'Pacientes', '%']]
-        for label, estado, val in zip(
-            d_ciu['labels'][:top],
-            d_ciu.get('estados', [''] * top)[:top],
-            d_ciu['values'][:top],
-        ):
-            rows.append([label, estado, str(val), _reporte_pdf_pct(val, ci_tot)])
-        if len(d_ciu['labels']) > top:
-            resto = ci_tot - sum(d_ciu['values'][:top])
-            rows.append(['Otras ciudades', '', str(resto), _reporte_pdf_pct(resto, ci_tot)])
-        rows.append(['Total', '', str(ci_tot), '100%'])
+        rows, _ = _reporte_pdf_ciudades_rows(d_ciu, top)
         els.append(KeepTogether([
             Paragraph(f'Distribución por Ciudad de Residencia (Top {top})', h2),
             _reporte_pdf_data_table(
@@ -751,7 +757,7 @@ def _credencial_pdf_draw_header(cv, w, h, hdr_h, folio, fields, theme, cm):
     cv.drawRightString(w - 0.5 * cm, h - 1.4 * cm, f'Membresia No.: {membresia}')
 
 
-def _credencial_pdf_draw_photo(cv, w, h, hdr_h, foto_path, theme, cm):
+def _credencial_pdf_draw_photo(cv, _w, h, hdr_h, foto_path, theme, cm):
     from reportlab.lib import colors
     lgray = theme['lgray']
     gray = theme['gray']

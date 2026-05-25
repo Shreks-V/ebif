@@ -214,7 +214,7 @@
 
 <!-- MODAL: Quick Stock -->
 @if (quickStockItem) {
-  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" appKeyboardClick tabindex="0" role="button" aria-label="Cerrar" (click)="closeQuickStock()">
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" appKeyboardClick tabindex="0" (click)="closeQuickStock()">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
       <div class="flex items-center gap-3 px-6 pt-6 pb-4">
         <div class="bg-emerald-100 rounded-xl p-2.5 shrink-0">

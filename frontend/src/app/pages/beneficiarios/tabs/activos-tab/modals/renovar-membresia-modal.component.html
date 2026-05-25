@@ -1,4 +1,4 @@
-<div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" appKeyboardClick tabindex="0" role="button" aria-label="Cerrar" (click)="closed.emit()">
+<div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center" appKeyboardClick tabindex="0" (click)="closed.emit()" (keydown)="$event.key==='Escape'&&closed.emit()">
   <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between mb-5">
       <div><h2 class="text-xl font-black text-slate-900">Renovar Membresía</h2><p class="text-sm text-slate-500">{{ beneficiario!.nombre }} {{ beneficiario!.apellidoPaterno }}</p></div>
