@@ -1,6 +1,6 @@
 typing_extensions>=4.15.0
 fastapi==0.136.3
-uvicorn==0.47.0
+uvicorn==0.48.0
 pydantic==2.13.4
 python-multipart==0.0.29
 python-jose[cryptography]==3.5.0
