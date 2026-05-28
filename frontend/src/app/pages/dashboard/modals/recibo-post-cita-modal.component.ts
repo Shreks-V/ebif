@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { getApiError } from '../../../shared/utils/error.utils';
-import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 interface VentaLineaForm {
   tipo: 'SERVICIO' | 'PRODUCTO';
@@ -35,7 +34,7 @@ export interface ReciboModalPaciente {
 @Component({
   selector: 'app-recibo-post-cita-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './recibo-post-cita-modal.component.html',
 })
 export class ReciboPostCitaModalComponent implements OnChanges {

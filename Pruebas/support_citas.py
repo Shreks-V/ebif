@@ -137,6 +137,8 @@ class InMemoryCitasRepository:
                     filt.append(r)
             rows = filt
         rows.sort(key=lambda x: str(x.get("fecha_hora") or ""), reverse=True)
+        # Apply pagination
+        rows = rows[_offset : _offset + _limit]
         return rows
 
     def obtener_cita(self, id_cita: int, _current_user: dict | None = None) -> dict[str, Any]:

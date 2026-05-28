@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../../services/api.service';
 import { ServicioRaw } from '../../../../../shared/models/almacen.models';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 interface MedicoServicioInput { idServicio: number; nombre: string; }
 interface MedicoInput {
@@ -19,7 +18,7 @@ interface EditMedicoForm {
 @Component({
   selector: 'app-editar-medico-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './editar-medico-modal.component.html',
 })
 export class EditarMedicoModalComponent implements OnChanges {

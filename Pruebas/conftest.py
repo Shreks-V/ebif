@@ -3,14 +3,17 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
-from slowapi import _rate_limit_exceeded_handler
+from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 from app.application.auth.use_cases import AuthService
 from app.core.config import settings
+from app.domain.exceptions import NotFoundError, ConflictError, ValidationError as DomainValidationError, InternalError
 from app.infrastructure.security.adapters import JwtAccessTokenIssuer, SecurityPasswordHasher
 from app.presentation.api.dependencies import get_auth_service
 from app.presentation.api.routers import auth as auth_router
@@ -18,6 +21,27 @@ from app.presentation.api.routers import beneficiarios as beneficiarios_router
 from app.presentation.api.routers import citas as citas_router
 from app.presentation.api.routers import preregistro as preregistro_router
 from app.presentation.api.routers import recibos as recibos_router
+
+
+def _add_domain_handlers(app: FastAPI) -> FastAPI:
+    """Register domain exception → HTTP status handlers (mirrors app_factory)."""
+    @app.exception_handler(NotFoundError)
+    async def _nf(req: Request, exc: NotFoundError):
+        return JSONResponse(status_code=404, content={"detail": exc.detail})
+
+    @app.exception_handler(ConflictError)
+    async def _cf(req: Request, exc: ConflictError):
+        return JSONResponse(status_code=409, content={"detail": exc.detail})
+
+    @app.exception_handler(DomainValidationError)
+    async def _vl(req: Request, exc: DomainValidationError):
+        return JSONResponse(status_code=400, content={"detail": exc.detail})
+
+    @app.exception_handler(InternalError)
+    async def _ie(req: Request, exc: InternalError):
+        return JSONResponse(status_code=500, content={"detail": exc.detail})
+
+    return app
 
 from Pruebas.support_auth import InMemoryUserRepository, build_user
 from Pruebas.support_beneficiarios import (
@@ -36,21 +60,30 @@ _STUB_ADMIN_CRED = "adm123"
 _STUB_RECEP_CRED = "rec123"
 
 
-def build_minimal_auth_app(auth_service: AuthService) -> FastAPI:
+def _base_app() -> FastAPI:
+    """FastAPI instance with rate-limiting and domain exception handlers.
+
+    Creates a FRESH Limiter per test app so rate-limit counters never bleed
+    across test suites when both backend/tests/ and Pruebas/ run together.
+    """
     app = FastAPI()
-    app.state.limiter = auth_router.limiter
+    # Fresh in-memory limiter — isolated from auth_router.limiter's state
+    app.state.limiter = Limiter(key_func=get_remote_address)
     app.add_middleware(SlowAPIMiddleware)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    _add_domain_handlers(app)
+    return app
+
+
+def build_minimal_auth_app(auth_service: AuthService) -> FastAPI:
+    app = _base_app()
     app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.dependency_overrides[get_auth_service] = lambda: auth_service
     return app
 
 
 def build_minimal_app_with_beneficiarios(auth_service: AuthService) -> FastAPI:
-    app = FastAPI()
-    app.state.limiter = auth_router.limiter
-    app.add_middleware(SlowAPIMiddleware)
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app = _base_app()
     app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.include_router(
         beneficiarios_router.router, prefix="/api/beneficiarios", tags=["Beneficiarios"]
@@ -60,10 +93,7 @@ def build_minimal_app_with_beneficiarios(auth_service: AuthService) -> FastAPI:
 
 
 def build_minimal_app_with_citas(auth_service: AuthService) -> FastAPI:
-    app = FastAPI()
-    app.state.limiter = auth_router.limiter
-    app.add_middleware(SlowAPIMiddleware)
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app = _base_app()
     app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.include_router(citas_router.router, prefix="/api/citas", tags=["Citas"])
     app.dependency_overrides[get_auth_service] = lambda: auth_service
@@ -71,10 +101,7 @@ def build_minimal_app_with_citas(auth_service: AuthService) -> FastAPI:
 
 
 def build_minimal_app_with_preregistro(auth_service: AuthService) -> FastAPI:
-    app = FastAPI()
-    app.state.limiter = auth_router.limiter
-    app.add_middleware(SlowAPIMiddleware)
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app = _base_app()
     app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.include_router(
         preregistro_router.router, prefix="/api/preregistro", tags=["Pre-Registro"]
@@ -84,10 +111,7 @@ def build_minimal_app_with_preregistro(auth_service: AuthService) -> FastAPI:
 
 
 def build_minimal_app_with_recibos(auth_service: AuthService) -> FastAPI:
-    app = FastAPI()
-    app.state.limiter = auth_router.limiter
-    app.add_middleware(SlowAPIMiddleware)
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app = _base_app()
     app.include_router(auth_router.router, prefix=_PREFIX_AUTH, tags=[_TAG_AUTH])
     app.include_router(recibos_router.router, prefix="/api/recibos", tags=["Recibos"])
     app.dependency_overrides[get_auth_service] = lambda: auth_service
@@ -97,6 +121,10 @@ def build_minimal_app_with_recibos(auth_service: AuthService) -> FastAPI:
 @pytest.fixture(autouse=True)
 def stable_jwt_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "SECRET_KEY", "pytest-jwt-secret-key-exactly-32bytes!")
+    # Reset auth_router.limiter storage so backend/tests rate-limit counts don't
+    # bleed into Pruebas tests when both suites run together in the same process.
+    from app.presentation.api.routers import auth as _auth_router
+    _auth_router.limiter.reset()
 
 
 @pytest.fixture

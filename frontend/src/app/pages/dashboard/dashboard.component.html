@@ -438,7 +438,12 @@
   }
 
   @if (pacienteParaRecibo) {
-    <app-recibo-post-cita-modal [paciente]="pacienteParaRecibo" (closed)="pacienteParaRecibo = null" (guardado)="onReciboGuardado()" />
+    <app-nuevo-cobro
+      [preselectedPaciente]="pacienteParaRecibo"
+      [preselectedServicioId]="pacienteParaRecibo.idServicio ?? null"
+      [preselectedServicioNombre]="pacienteParaRecibo.servicio ?? null"
+      (closed)="pacienteParaRecibo = null"
+      (saved)="onReciboGuardado()" />
   }
 
   <app-footer></app-footer>

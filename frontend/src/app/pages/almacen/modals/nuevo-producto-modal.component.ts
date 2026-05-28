@@ -4,12 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { AutoGrowDirective } from '../../../shared/directives/auto-grow.directive';
 import { ProductoItem } from '../almacen.models';
-import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-nuevo-producto-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, AutoGrowDirective, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule, AutoGrowDirective],
   templateUrl: './nuevo-producto-modal.component.html',
 })
 export class NuevoProductoModalComponent implements OnChanges {

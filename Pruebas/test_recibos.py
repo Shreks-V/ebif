@@ -262,7 +262,7 @@ def test_sv50_ui_guardarCobro_validaciones_en_fuente():
         parts.append(_NUEVO_COBRO_COMPONENT.read_text(encoding="utf-8"))
     src = "\n".join(parts)
     assert "if (!this.nuevoCobro.id_paciente)" in src
-    assert "Selecciona un paciente." in src
+    assert "Selecciona un beneficiario." in src
     assert "this.nuevoCobro.monto_total <= 0" in src
     assert "El monto total debe ser mayor a 0." in src
     assert "metodosValidos.length === 0" in src

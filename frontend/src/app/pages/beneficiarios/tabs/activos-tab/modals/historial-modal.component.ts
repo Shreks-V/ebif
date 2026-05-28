@@ -8,12 +8,11 @@ import {
   getPagoStatusLabel, getPagoStatusClass,
   getComodatoStatusLabel, getComodatoStatusClass,
 } from '../activos-tab.utils';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-historial-modal',
   standalone: true,
-  imports: [CommonModule, KeyboardClickDirective],
+  imports: [CommonModule],
   templateUrl: './historial-modal.component.html',
 })
 export class HistorialModalComponent implements OnChanges {

@@ -8,7 +8,7 @@ import { ApiService } from '../../services/api.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { ToastService } from '../../core/toast.service';
 import { WalkInModalComponent } from './modals/walk-in-modal.component';
-import { ReciboPostCitaModalComponent, ReciboModalPaciente } from './modals/recibo-post-cita-modal.component';
+import { NuevoCobroComponent, PreselectedPacienteCobro } from '../recibos/nuevo-cobro/nuevo-cobro.component';
 import { PacienteDashboard, AlmacenAlerta } from '../../shared/models/dashboard.models';
 import { Recibo } from '../../shared/models/recibo.models';
 import { getApiError } from '../../shared/utils/error.utils';
@@ -16,7 +16,7 @@ import { getApiError } from '../../shared/utils/error.utils';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, FooterComponent, WalkInModalComponent, ReciboPostCitaModalComponent],
+  imports: [CommonModule, NavbarComponent, FooterComponent, WalkInModalComponent, NuevoCobroComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
@@ -51,7 +51,7 @@ export class DashboardComponent implements OnInit {
   doctorHorario = '—';
 
   showWalkInModal = false;
-  pacienteParaRecibo: ReciboModalPaciente | null = null;
+  pacienteParaRecibo: (PreselectedPacienteCobro & { idServicio?: number | null; servicio?: string | null }) | null = null;
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
@@ -140,8 +140,8 @@ export class DashboardComponent implements OnInit {
             nombre: `${paciente.nombre} ${paciente.apellido}`.trim(),
             folio: paciente.folio,
             tipoCuota: paciente.tipoCuota || 'A',
-            idServicio: paciente.idServicio,
-            servicio: paciente.servicio,
+            idServicio: paciente.idServicio ?? null,
+            servicio: paciente.servicio ?? null,
           };
         },
         error: (err) => {

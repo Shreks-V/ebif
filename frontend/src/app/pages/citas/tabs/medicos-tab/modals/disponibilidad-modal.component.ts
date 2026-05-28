@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../../services/api.service';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 interface MedicoInput { idDoctor: number; nombre?: string; apellidoPaterno?: string; }
 interface SlotDisponibilidad { id_disponibilidad: number; dia_semana: number; hora_inicio: string; hora_fin: string; }
@@ -13,7 +12,7 @@ interface NuevoSlotForm { dia_semana: number; hora_inicio: string; hora_fin: str
 @Component({
   selector: 'app-disponibilidad-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './disponibilidad-modal.component.html',
 })
 export class DisponibilidadModalComponent implements OnChanges {

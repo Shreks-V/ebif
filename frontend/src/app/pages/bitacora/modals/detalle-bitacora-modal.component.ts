@@ -1,12 +1,11 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BitacoraItem } from '../../../shared/models/bitacora.models';
-import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-detalle-bitacora-modal',
   standalone: true,
-  imports: [CommonModule, KeyboardClickDirective],
+  imports: [CommonModule],
   templateUrl: './detalle-bitacora-modal.component.html',
 })
 export class DetalleBitacoraModalComponent {

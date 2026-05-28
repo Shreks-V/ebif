@@ -121,6 +121,8 @@ class InMemoryBeneficiariosRepository:
     ) -> list[dict[str, Any]]:
         rows = [p for p in self._all() if _visible(p)]
         rows = _aplicar_filtros_beneficiarios(rows, nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota)
+        # Apply pagination (mirrors Oracle OFFSET/FETCH behaviour)
+        rows = rows[_offset : _offset + _limit]
         return [self._response_dict(p) for p in rows]
 
     def obtener_beneficiario(self, folio: str, _current_user: dict | None = None) -> dict[str, Any]:

@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
 import { ReciboItem } from '../../../shared/models/recibo.models';
-import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 interface MetodoPagoItem { idMetodoPago?: number; nombre: string; monto: number; }
 interface ReciboInput {
@@ -15,7 +14,7 @@ interface ReciboInput {
 @Component({
   selector: 'app-detalle-recibo-modal',
   standalone: true,
-  imports: [CommonModule, KeyboardClickDirective],
+  imports: [CommonModule],
   templateUrl: './detalle-recibo-modal.component.html',
 })
 export class DetalleReciboModalComponent implements OnChanges {

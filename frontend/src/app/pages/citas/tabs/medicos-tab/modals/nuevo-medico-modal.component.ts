@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../../services/api.service';
 import { ServicioRaw } from '../../../../../shared/models/almacen.models';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 interface NuevoMedicoForm {
   nombre: string; apellido_paterno: string; apellido_materno: string;
@@ -13,7 +12,7 @@ interface NuevoMedicoForm {
 @Component({
   selector: 'app-nuevo-medico-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './nuevo-medico-modal.component.html',
 })
 export class NuevoMedicoModalComponent {

@@ -9,7 +9,6 @@ import { FooterComponent } from '../../shared/footer/footer.component';
 import { DetalleBitacoraModalComponent } from './modals/detalle-bitacora-modal.component';
 import { BitacoraItem, BitacoraFilter } from '../../shared/models/bitacora.models';
 import { REFRESH_INTERVAL_MS } from '../../shared/constants/app.constants';
-import { KeyboardClickDirective } from '../../shared/directives/keyboard-click.directive';
 
 const TIPO_LABELS: Record<string, string> = {
   INSERT: 'Inserción',
@@ -32,7 +31,7 @@ const TABLA_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-bitacora',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NavbarComponent, FooterComponent, DetalleBitacoraModalComponent, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule, RouterLink, NavbarComponent, FooterComponent, DetalleBitacoraModalComponent],
   templateUrl: './bitacora.component.html',
 })
 export class BitacoraComponent implements OnInit, OnDestroy {

@@ -207,13 +207,10 @@
       <form (ngSubmit)="submitNuevo()" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label for="cod-paciente" class="block text-sm font-semibold text-slate-700 mb-1">Paciente <span aria-hidden="true">*</span></label>
-            <select id="cod-paciente" [(ngModel)]="comodatoForm.id_paciente" name="id_paciente" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
-              <option [ngValue]="null">Seleccionar paciente...</option>
-              @for (b of beneficiariosList; track b.id) {
-                <option [ngValue]="b.id">{{ b.nombre }}</option>
-              }
-            </select>
+            <label for="cod-beneficiario" class="block text-sm font-semibold text-slate-700 mb-1">Beneficiario <span aria-hidden="true">*</span></label>
+            <app-beneficiario-combobox
+              inputId="cod-beneficiario"
+              (seleccionado)="onBeneficiarioSeleccionado($event)" />
           </div>
           <div>
             <label for="cod-equipo" class="block text-sm font-semibold text-slate-700 mb-1">Equipo <span aria-hidden="true">*</span></label>
@@ -251,27 +248,81 @@
           <div>
             <label for="cod-exento-pago" class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
             <select id="cod-exento-pago" [(ngModel)]="comodatoForm.exento_pago" name="exento_pago"
+              (ngModelChange)="onExentoNuevoChange()"
               class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
               <option value="N">No</option>
               <option value="S">S&iacute;</option>
             </select>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <!-- Monto total del comodato -->
+        <div>
+          <label for="cod-monto-total" class="block text-sm font-semibold text-slate-700 mb-1">Monto Total del Comodato</label>
+          <input id="cod-monto-total" type="number" [(ngModel)]="comodatoForm.monto_total" name="monto_total"
+            step="0.01" min="0" placeholder="0.00"
+            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+        </div>
+
+        <!-- Métodos de pago -->
+        @if (comodatoForm.exento_pago !== 'S') {
           <div>
-            <label for="cod-monto-total" class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
-            <input id="cod-monto-total" type="number" [(ngModel)]="comodatoForm.monto_total" name="monto_total" step="0.01" min="0"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+            <div class="flex items-center justify-between mb-2">
+              <label for="cod-metodo-pago-0" class="text-sm font-semibold text-slate-700">Métodos de Pago</label>
+              <button type="button" (click)="agregarMetodoPagoNuevo()"
+                class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+                </svg>
+                Agregar
+              </button>
+            </div>
+            <div class="space-y-2">
+              @for (mp of metodosPagoNuevo; track mp; let i = $index) {
+                <div class="flex items-end gap-3">
+                  <div class="flex-1">
+                    <label [for]="'cod-metodo-pago-' + i" class="block text-xs font-semibold text-slate-600 mb-1">Método</label>
+                    <select [(ngModel)]="mp.id_metodo_pago" [id]="'cod-metodo-pago-' + i" [name]="'cod_metodo_pago_' + i"
+                      class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                      <option [ngValue]="0" disabled>Seleccionar...</option>
+                      @for (m of metodosPagoCatalogo; track m) {
+                        <option [ngValue]="m.id">{{ m.nombre }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="w-36">
+                    <label [for]="'cod-monto-metodo-' + i" class="block text-xs font-semibold text-slate-600 mb-1">Monto</label>
+                    <input type="number" [(ngModel)]="mp.monto" [id]="'cod-monto-metodo-' + i" [name]="'cod_monto_metodo_' + i"
+                      min="0" step="0.01" placeholder="0.00"
+                      class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+                  </div>
+                  @if (metodosPagoNuevo.length > 1) {
+                    <button type="button" (click)="removerMetodoPagoNuevo(i)"
+                      class="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-600 transition-all cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                      </svg>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
           </div>
-          <div>
-            <label for="cod-monto-pagado" class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
-            <input id="cod-monto-pagado" type="number" [(ngModel)]="comodatoForm.monto_pagado" name="monto_pagado" step="0.01" min="0"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+        }
+
+        <!-- Resumen automático -->
+        <div class="bg-slate-50 rounded-xl p-4 space-y-2">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600 font-semibold">Monto Total</span>
+            <span class="font-bold text-slate-900">${{ comodatoForm.monto_total | number:'1.2-2' }}</span>
           </div>
-          <div>
-            <label for="cod-saldo-pendiente" class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
-            <input id="cod-saldo-pendiente" type="number" [(ngModel)]="comodatoForm.saldo_pendiente" name="saldo_pendiente" step="0.01" min="0"
-              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" placeholder="0.00" />
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600 font-semibold">Monto Pagado</span>
+            <span class="font-bold text-emerald-600">${{ montoPagadoNuevo | number:'1.2-2' }}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm pt-2 border-t border-slate-200">
+            <span class="font-bold" [ngClass]="saldoPendienteNuevo > 0 ? 'text-amber-600' : 'text-emerald-600'">Saldo Pendiente</span>
+            <span class="font-black text-lg" [ngClass]="saldoPendienteNuevo > 0 ? 'text-amber-600' : 'text-emerald-600'">${{ saldoPendienteNuevo | number:'1.2-2' }}</span>
           </div>
         </div>
         <div>

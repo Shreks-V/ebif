@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 interface MedicoServicioInput { idServicio: number; nombre: string; }
 interface MedicoInput {
@@ -12,7 +11,7 @@ interface MedicoInput {
 @Component({
   selector: 'app-detalle-medico-modal',
   standalone: true,
-  imports: [CommonModule, KeyboardClickDirective],
+  imports: [CommonModule],
   templateUrl: './detalle-medico-modal.component.html',
 })
 export class DetalleMedicoModalComponent {

@@ -3,18 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
 import { AutoGrowDirective } from '../../../../shared/directives/auto-grow.directive';
+import { BeneficiarioComboboxComponent, BeneficiarioSeleccionado } from '../../../../shared/components/beneficiario-combobox/beneficiario-combobox.component';
 import { ComodatoItem, ProductoItem, TableSortState, sortRows } from '../../almacen.models';
-import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
-
-interface BeneficiarioRaw {
-  id_paciente?: number;
-  id?: number;
-  nombre?: string;
-  apellido_paterno?: string;
-  apellido_materno?: string;
-  nombre_completo?: string;
-  folio?: string;
-}
 
 interface ComodatoEditForm {
   id_paciente: number | null;
@@ -32,7 +22,7 @@ interface ComodatoEditForm {
 @Component({
   selector: 'app-comodatos-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, AutoGrowDirective, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule, AutoGrowDirective, BeneficiarioComboboxComponent],
   templateUrl: './comodatos-tab.component.html',
 })
 export class ComodatosTabComponent {
@@ -49,7 +39,8 @@ export class ComodatosTabComponent {
   // Nuevo comodato
   showNuevoModal = false;
   comodatoForm = this._emptyForm();
-  beneficiariosList: { id: number; nombre: string }[] = [];
+  metodosPagoCatalogo: { id: number; nombre: string }[] = [];
+  metodosPagoNuevo: { id_metodo_pago: number; monto: number }[] = [{ id_metodo_pago: 0, monto: 0 }];
   submittingNuevo = false;
 
   // Edit comodato
@@ -123,28 +114,64 @@ export class ComodatosTabComponent {
 
   // ── Nuevo comodato ──
 
+  get montoPagadoNuevo(): number {
+    return this.metodosPagoNuevo.reduce((sum, mp) => sum + (mp.monto || 0), 0);
+  }
+
+  get saldoPendienteNuevo(): number {
+    return Math.max(0, (this.comodatoForm.monto_total || 0) - this.montoPagadoNuevo);
+  }
+
   openNuevo(): void {
     this.comodatoForm = this._emptyForm();
-    this.api.getBeneficiarios().subscribe({
-      next: (data) => {
-        this.beneficiariosList = data.map((b: BeneficiarioRaw) => ({
-          id: b.id_paciente ?? b.id ?? 0,
-          nombre: `${b.nombre ?? ''} ${b.apellido_paterno ?? ''} ${b.apellido_materno ?? ''}`.trim()
-            || b.nombre_completo || `Paciente ${b.folio}`,
-        }));
-      },
-      error: (err) => console.error('Error loading beneficiarios:', err),
-    });
+    this.metodosPagoNuevo = [{ id_metodo_pago: 0, monto: 0 }];
+    if (this.metodosPagoCatalogo.length === 0) {
+      this.api.getMetodosPago().subscribe({
+        next: (data) => {
+          this.metodosPagoCatalogo = data.map((m) => ({ id: m.id_metodo_pago ?? 0, nombre: m.nombre }));
+        },
+        error: (err) => console.error('Error al cargar métodos de pago:', err),
+      });
+    }
     this.showNuevoModal = true;
   }
 
-  closeNuevo(): void { this.showNuevoModal = false; }
+  closeNuevo(): void {
+    this.showNuevoModal = false;
+  }
+
+  onBeneficiarioSeleccionado(b: BeneficiarioSeleccionado | null): void {
+    this.comodatoForm.id_paciente = b ? b.id : null;
+  }
+
+  agregarMetodoPagoNuevo(): void {
+    this.metodosPagoNuevo.push({ id_metodo_pago: 0, monto: 0 });
+  }
+
+  removerMetodoPagoNuevo(index: number): void {
+    this.metodosPagoNuevo.splice(index, 1);
+  }
+
+  onExentoNuevoChange(): void {
+    if (this.comodatoForm.exento_pago === 'S') {
+      const exentoMethod = this.metodosPagoCatalogo.find(m => m.nombre === 'EXENTO');
+      this.metodosPagoNuevo = exentoMethod
+        ? [{ id_metodo_pago: exentoMethod.id, monto: this.comodatoForm.monto_total || 0 }]
+        : [];
+    } else {
+      this.metodosPagoNuevo = [{ id_metodo_pago: 0, monto: 0 }];
+    }
+  }
 
   submitNuevo(): void {
     if (!this.comodatoForm.id_paciente || !this.comodatoForm.id_equipo || !this.comodatoForm.fecha_prestamo) return;
     this.submittingNuevo = true;
-    const payload = { ...this.comodatoForm };
-    if (!payload.fecha_devolucion) payload.fecha_devolucion = null;
+    const payload = {
+      ...this.comodatoForm,
+      monto_pagado: this.montoPagadoNuevo,
+      saldo_pendiente: this.saldoPendienteNuevo,
+      fecha_devolucion: this.comodatoForm.fecha_devolucion || null,
+    };
 
     this.api.createComodato(payload).subscribe({
       next: () => {

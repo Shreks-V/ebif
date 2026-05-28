@@ -9,7 +9,6 @@ import { CuotaBadgeComponent } from '../../../../shared/components/cuota-badge/c
 import { AvatarInicialesComponent } from '../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
 import { getMunicipiosParaEstado } from '../../../../shared/data/mexico-municipios';
 import { ESTADOS_MEXICANOS } from '../../../../shared/data/mexico-estados';
-import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
 
 interface Preregistro {
   id: number;
@@ -75,7 +74,7 @@ interface PreregistroEditForm {
 @Component({
   selector: 'app-preregistros-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, CuotaBadgeComponent, AvatarInicialesComponent, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule, CuotaBadgeComponent, AvatarInicialesComponent],
   templateUrl: './preregistros-tab.component.html',
 })
 export class PreregistrosTabComponent implements OnInit {

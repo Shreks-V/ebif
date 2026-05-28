@@ -5,12 +5,11 @@ import { CuotaBadgeComponent } from '../../../../../shared/components/cuota-badg
 import { AvatarInicialesComponent } from '../../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
 import { Beneficiario, CobroResumen, Documento } from '../activos-tab.types';
 import { esImagen, getMembresiaBadgeClass, getMembresiaVencimientoClass } from '../activos-tab.utils';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-detalle-beneficiario-modal',
   standalone: true,
-  imports: [CommonModule, CuotaBadgeComponent, AvatarInicialesComponent, KeyboardClickDirective],
+  imports: [CommonModule, CuotaBadgeComponent, AvatarInicialesComponent],
   templateUrl: './detalle-beneficiario-modal.component.html',
 })
 export class DetalleBeneficiarioModalComponent implements OnChanges {

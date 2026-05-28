@@ -1,15 +1,8 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
-import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
-
-interface BeneficiarioOption {
-  id: number;
-  folio: string;
-  nombre: string;
-  tipoCuota: string;
-}
+import { BeneficiarioComboboxComponent, BeneficiarioSeleccionado } from '../../../shared/components/beneficiario-combobox/beneficiario-combobox.component';
 
 interface MetodoPagoCatalogo {
   id: number;
@@ -39,22 +32,29 @@ interface ConceptoCobroOption {
   precioDefault: number;
 }
 
+export interface PreselectedPacienteCobro {
+  idPaciente: number;
+  nombre: string;
+  folio: string;
+  tipoCuota: string;
+}
+
 @Component({
   selector: 'app-nuevo-cobro',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule, BeneficiarioComboboxComponent],
   templateUrl: './nuevo-cobro.component.html',
 })
 export class NuevoCobroComponent implements OnInit {
+  @Input() preselectedPaciente: PreselectedPacienteCobro | null = null;
+  @Input() preselectedServicioId: number | null = null;
+  @Input() preselectedServicioNombre: string | null = null;
+
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<void>();
 
   guardandoCobro = false;
   nuevoCobroError = '';
-  beneficiariosList: BeneficiarioOption[] = [];
-  beneficiarioBusqueda = '';
-  showBeneficiarioDropdown = false;
-  beneficiariosFiltradosCobro: BeneficiarioOption[] = [];
   metodosPagoCatalogo: MetodoPagoCatalogo[] = [];
   serviciosCatalogo: ConceptoCobroOption[] = [];
   productosCatalogo: ConceptoCobroOption[] = [];
@@ -66,6 +66,9 @@ export class NuevoCobroComponent implements OnInit {
   catalogoFiltro = '';
   cantidadesCatalogo: Record<string, number> = {};
 
+  /** tipoCuota del beneficiario actualmente seleccionado. */
+  selectedTipoCuota = 'A';
+
   nuevoCobro = {
     id_paciente: 0,
     monto_total: 0,
@@ -76,17 +79,10 @@ export class NuevoCobroComponent implements OnInit {
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
-    this.api.getBeneficiarios().subscribe({
-      next: (data) => {
-        this.beneficiariosList = data.map((b) => ({
-          id: b.id_paciente,
-          folio: b.folio_paciente ?? b.folio,
-          nombre: b.nombre_completo ?? ((b.nombre || '') + ' ' + (b.apellido_paterno || '') + ' ' + (b.apellido_materno || '')).trim(),
-          tipoCuota: b.tipo_cuota || 'A',
-        }));
-      },
-      error: (err) => console.error('Error al cargar beneficiarios:', err),
-    });
+    if (this.preselectedPaciente) {
+      this.nuevoCobro.id_paciente = this.preselectedPaciente.idPaciente;
+      this.selectedTipoCuota = this.preselectedPaciente.tipoCuota || 'A';
+    }
 
     this.api.getMetodosPago().subscribe({
       next: (data) => {
@@ -99,6 +95,28 @@ export class NuevoCobroComponent implements OnInit {
     });
 
     this._cargarCatalogoCobros();
+  }
+
+  /** Computed initial value for the combobox when a patient is pre-selected. */
+  get comboboxInitialValue(): BeneficiarioSeleccionado | null {
+    if (!this.preselectedPaciente) return null;
+    return {
+      id: this.preselectedPaciente.idPaciente,
+      folio: this.preselectedPaciente.folio,
+      nombre: this.preselectedPaciente.nombre,
+      tipoCuota: this.preselectedPaciente.tipoCuota,
+    };
+  }
+
+  onBeneficiarioSeleccionado(b: BeneficiarioSeleccionado | null): void {
+    if (b) {
+      this.nuevoCobro.id_paciente = b.id;
+      this.selectedTipoCuota = b.tipoCuota || 'A';
+      if (this.itemsNuevoCobro.length > 0) this.recalcularTotalDesdeItems();
+    } else {
+      this.nuevoCobro.id_paciente = 0;
+      this.selectedTipoCuota = 'A';
+    }
   }
 
   // ── Multi-select catalog ──
@@ -133,8 +151,7 @@ export class NuevoCobroComponent implements OnInit {
   }
 
   get tipoCuotaBeneficiarioSeleccionado(): string {
-    const b = this.beneficiariosList.find(item => item.id === this.nuevoCobro.id_paciente);
-    return b?.tipoCuota === 'B' ? 'B' : 'A';
+    return this.selectedTipoCuota === 'B' ? 'B' : 'A';
   }
 
   precioParaCuota(item: ConceptoCobroOption): number {
@@ -179,42 +196,6 @@ export class NuevoCobroComponent implements OnInit {
     this.calcularSaldoCobro();
   }
 
-  // ── Beneficiary combobox ──
-
-  filtrarBeneficiariosCobro(): void {
-    const q = this.beneficiarioBusqueda.toLowerCase().trim();
-    this.nuevoCobro.id_paciente = 0;
-    this.beneficiariosFiltradosCobro = q
-      ? this.beneficiariosList.filter(b => b.nombre.toLowerCase().includes(q) || (b.folio || '').toLowerCase().includes(q)).slice(0, 20)
-      : this.beneficiariosList.slice(0, 10);
-    this.showBeneficiarioDropdown = true;
-  }
-
-  onBeneficiarioBusquedaFocus(): void {
-    const q = this.beneficiarioBusqueda.toLowerCase().trim();
-    this.beneficiariosFiltradosCobro = q
-      ? this.beneficiariosList.filter(b => b.nombre.toLowerCase().includes(q) || (b.folio || '').toLowerCase().includes(q)).slice(0, 20)
-      : this.beneficiariosList.slice(0, 10);
-    this.showBeneficiarioDropdown = true;
-  }
-
-  onBeneficiarioBusquedaBlur(): void {
-    setTimeout(() => { this.showBeneficiarioDropdown = false; }, 200);
-  }
-
-  seleccionarBeneficiarioCobro(b: BeneficiarioOption): void {
-    this.nuevoCobro.id_paciente = b.id;
-    this.beneficiarioBusqueda = `${b.folio} - ${b.nombre}`;
-    this.showBeneficiarioDropdown = false;
-    if (this.itemsNuevoCobro.length > 0) this.recalcularTotalDesdeItems();
-  }
-
-  limpiarSeleccionBeneficiario(): void {
-    this.nuevoCobro.id_paciente = 0;
-    this.beneficiarioBusqueda = '';
-    this.beneficiariosFiltradosCobro = this.beneficiariosList.slice(0, 10);
-  }
-
   // ── Payment methods ──
 
   agregarMetodoPago(): void {
@@ -251,7 +232,7 @@ export class NuevoCobroComponent implements OnInit {
 
   guardarCobro(): void {
     if (!this.nuevoCobro.id_paciente) {
-      this.nuevoCobroError = 'Selecciona un paciente.';
+      this.nuevoCobroError = 'Selecciona un beneficiario.';
       return;
     }
     if (this.nuevoCobro.monto_total <= 0) {
@@ -301,6 +282,28 @@ export class NuevoCobroComponent implements OnInit {
     });
   }
 
+  private _preAddServicio(): void {
+    if (!this.preselectedServicioId || this.itemsNuevoCobro.length > 0) return;
+    const tipoCuota = this.preselectedPaciente?.tipoCuota || 'A';
+    const found = this.serviciosCatalogo.find(s => s.id === this.preselectedServicioId);
+    if (found) {
+      let precio = tipoCuota === 'B' ? found.precioB : found.precioA;
+      if (!precio || precio <= 0) precio = found.precioDefault || 0;
+      this.itemsNuevoCobro.push({
+        tipo: 'SERVICIO', id: found.id, descripcion: found.nombre,
+        cantidad: 1, precio_unitario: precio,
+        subtotal: Number(precio.toFixed(2)),
+      });
+    } else if (this.preselectedServicioNombre) {
+      this.itemsNuevoCobro.push({
+        tipo: 'SERVICIO', id: this.preselectedServicioId,
+        descripcion: this.preselectedServicioNombre,
+        cantidad: 1, precio_unitario: 0, subtotal: 0,
+      });
+    }
+    this.recalcularTotalDesdeItems();
+  }
+
   private _cargarCatalogoCobros(): void {
     this.api.getServicios({ activo: 'S', categoria: 'SERVICIO' }).subscribe({
       next: (data) => {
@@ -310,6 +313,7 @@ export class NuevoCobroComponent implements OnInit {
           precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
           precioDefault: Number(s.cuota_recuperacion ?? s.precio_cuota_a ?? s.precio_cuota_b ?? 0),
         }));
+        this._preAddServicio();
       },
       error: (err) => console.error('Error al cargar servicios para cobro:', err),
     });

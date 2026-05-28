@@ -137,3 +137,7 @@ async def notificaciones_ws(websocket: WebSocket, token: str = Query(...)):
         pass
     except Exception as exc:
         logger.warning('notificaciones_ws: conexión cerrada con error: %s', exc)
+        try:
+            await websocket.close(code=1011)
+        except Exception:
+            pass

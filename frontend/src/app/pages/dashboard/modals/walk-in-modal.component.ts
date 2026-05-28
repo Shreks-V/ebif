@@ -5,12 +5,11 @@ import { ApiService } from '../../../services/api.service';
 import { Beneficiario } from '../../../shared/models/beneficiario.models';
 import { ServicioRaw } from '../../../shared/models/almacen.models';
 import { getApiError } from '../../../shared/utils/error.utils';
-import { KeyboardClickDirective } from '../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-walk-in-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './walk-in-modal.component.html',
 })
 export class WalkInModalComponent implements OnInit {

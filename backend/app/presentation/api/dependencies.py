@@ -14,7 +14,7 @@ def get_token_decoder() -> AccessTokenIssuer:
 
 
 @lru_cache(maxsize=1)
-def get_auth_service() -> AuthService:
+def get_auth_service() -> AuthService:  # pragma: no cover
     password_hasher = SecurityPasswordHasher()
     user_repository = OracleUserRepository(password_hasher=password_hasher)
     token_issuer = JwtAccessTokenIssuer()

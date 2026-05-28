@@ -8,12 +8,11 @@ import { getMunicipiosParaEstado } from '../../../../../shared/data/mexico-munic
 import { PAISES } from '../../../../../shared/data/paises';
 import { BeneficiarioFormData, NuevoBeneficiarioDocumento, TipoDocumento, TipoEspinaCatalogo } from '../activos-tab.types';
 import { getApiError } from '../../../../../shared/utils/error.utils';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-nuevo-beneficiario-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './nuevo-beneficiario-modal.component.html',
 })
 export class NuevoBeneficiarioModalComponent implements OnInit {

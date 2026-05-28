@@ -8,7 +8,6 @@ import {
   sortRows,
   formatCurrency,
 } from '../../almacen.models';
-import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
 
 type QuickFilter = 'none' | 'existencias-bajas' | 'proximos-vencer';
 
@@ -28,7 +27,7 @@ export interface InventarioRow {
 @Component({
   selector: 'app-inventario-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './inventario-tab.component.html',
 })
 export class InventarioTabComponent {

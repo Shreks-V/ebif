@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
 import { AutoGrowDirective } from '../../../../shared/directives/auto-grow.directive';
 import { ServicioItem, formatCurrency } from '../../almacen.models';
-import { KeyboardClickDirective } from '../../../../shared/directives/keyboard-click.directive';
 
 interface ServicioEditForm {
   nombre: string;
@@ -18,7 +17,7 @@ interface ServicioEditForm {
 @Component({
   selector: 'app-servicios-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, AutoGrowDirective, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule, AutoGrowDirective],
   templateUrl: './servicios-tab.component.html',
 })
 export class ServiciosTabComponent {

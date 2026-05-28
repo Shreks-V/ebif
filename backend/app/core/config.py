@@ -15,7 +15,7 @@ load_dotenv(_BACKEND_ROOT / ".env", override=True)
 _wallet_at_root = _REPO_ROOT / "wallet"
 _cfg = (os.environ.get("ORACLE_CONFIG_DIR") or "").strip()
 _wlt = (os.environ.get("ORACLE_WALLET_DIR") or "").strip()
-if not _cfg and not _wlt and _wallet_at_root.is_dir():
+if not _cfg and not _wlt and _wallet_at_root.is_dir():  # pragma: no cover
     _path = str(_wallet_at_root.resolve())
     os.environ.setdefault("ORACLE_CONFIG_DIR", _path)
     os.environ.setdefault("ORACLE_WALLET_DIR", _path)

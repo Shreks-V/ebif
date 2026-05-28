@@ -6,12 +6,11 @@ import { getMunicipiosParaEstado } from '../../../../../shared/data/mexico-munic
 import { PAISES } from '../../../../../shared/data/paises';
 import { Beneficiario, BeneficiarioEditFormData, TipoDocumento, TipoEspinaCatalogo } from '../activos-tab.types';
 import { getApiError } from '../../../../../shared/utils/error.utils';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 @Component({
   selector: 'app-editar-beneficiario-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './editar-beneficiario-modal.component.html',
 })
 export class EditarBeneficiarioModalComponent implements OnChanges {

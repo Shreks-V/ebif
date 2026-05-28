@@ -4,9 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../../services/api.service';
 import { ServicioRaw } from '../../../../../shared/models/almacen.models';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
+import { BeneficiarioComboboxComponent, BeneficiarioSeleccionado } from '../../../../../shared/components/beneficiario-combobox/beneficiario-combobox.component';
 
-interface BeneficiarioOption { id_paciente: number; folio: string; nombre_completo: string; }
 interface NuevaCitaServicio { id_servicio: number | null; cantidad: number; monto_pagado: number; }
 interface NuevaCitaForm {
   id_paciente: number | null; estatus: string; notas: string; servicios: NuevaCitaServicio[];
@@ -17,7 +16,7 @@ interface DoctorServicioRaw { id_servicio: number; }
 @Component({
   selector: 'app-nueva-cita-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule, BeneficiarioComboboxComponent],
   templateUrl: './nueva-cita-modal.component.html',
 })
 export class NuevaCitaModalComponent implements OnInit {
@@ -29,10 +28,6 @@ export class NuevaCitaModalComponent implements OnInit {
   nuevaCita: NuevaCitaForm = { id_paciente: null, estatus: 'PROGRAMADA', notas: '', servicios: [] };
   nuevaCitaFechaHora = '';
   nuevaCitaIdDoctor: number | null = null;
-  beneficiariosList: BeneficiarioOption[] = [];
-  beneficiariosFiltrados: BeneficiarioOption[] = [];
-  busquedaPaciente = '';
-  showPacienteDropdown = false;
   nuevaCitaServiciosFiltrados: ServicioRaw[] = [];
   nuevaCitaLoadingServicios = false;
   guardandoCita = false;
@@ -43,38 +38,10 @@ export class NuevaCitaModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.nuevaCitaServiciosFiltrados = this.serviciosList;
-    this.api.getBeneficiarios()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (data) => {
-          this.beneficiariosList = data.map((b) => ({
-            id_paciente: b.id_paciente,
-            folio: b.folio,
-            nombre_completo: `${b.nombre || ''} ${b.apellido_paterno || ''} ${b.apellido_materno || ''}`.trim(),
-          }));
-        },
-        error: (err) => console.error('Error al cargar beneficiarios:', err),
-      });
   }
 
-  filtrarBeneficiarios(): void {
-    this.showPacienteDropdown = true;
-    if (!this.busquedaPaciente) {
-      this.beneficiariosFiltrados = [];
-      this.nuevaCita.id_paciente = null;
-      return;
-    }
-    const term = this.busquedaPaciente.toLowerCase();
-    this.beneficiariosFiltrados = this.beneficiariosList
-      .filter(b => b.folio?.toLowerCase().includes(term) || b.nombre_completo.toLowerCase().includes(term))
-      .slice(0, 10);
-  }
-
-  seleccionarPaciente(b: BeneficiarioOption): void {
-    this.nuevaCita.id_paciente = b.id_paciente;
-    this.busquedaPaciente = `${b.folio} - ${b.nombre_completo}`;
-    this.showPacienteDropdown = false;
-    this.beneficiariosFiltrados = [];
+  onBeneficiarioSeleccionado(b: BeneficiarioSeleccionado | null): void {
+    this.nuevaCita.id_paciente = b ? b.id : null;
   }
 
   agregarServicioCita(): void {

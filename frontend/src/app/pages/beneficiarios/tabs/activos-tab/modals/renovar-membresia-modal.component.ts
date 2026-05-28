@@ -5,7 +5,6 @@ import { ApiService } from '../../../../../services/api.service';
 import { Beneficiario } from '../activos-tab.types';
 import { getMembresiaBadgeClass } from '../activos-tab.utils';
 import { getApiError } from '../../../../../shared/utils/error.utils';
-import { KeyboardClickDirective } from '../../../../../shared/directives/keyboard-click.directive';
 
 interface MetodoPagoRaw {
   id_metodo_pago?: number;
@@ -16,7 +15,7 @@ interface MetodoPagoRaw {
 @Component({
   selector: 'app-renovar-membresia-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, KeyboardClickDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './renovar-membresia-modal.component.html',
 })
 export class RenovarMembresiaModalComponent implements OnInit {
