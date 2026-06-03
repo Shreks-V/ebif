@@ -1,0 +1,128 @@
+name: pytest → Qase TestOps
+
+# Submits real test results to Qase on every push / PR.
+# Manual trigger also available via workflow_dispatch.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  # ── Backend unit + API (no Oracle required) ───────────────────────────────
+  backend-unit:
+    name: "Backend — Unit & API tests → Qase"
+    runs-on: ubuntu-latest
+    env:
+      # qase-pytest v8: activate TestOps mode via env var
+      QASE_MODE: testops
+      QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
+      QASE_TESTOPS_PROJECT: FJ26SV
+      QASE_TESTOPS_RUN_TITLE: "CI — Backend Unit+API (${{ github.ref_name }})"
+      QASE_TESTOPS_COMPLETE_AFTER_RUN: "true"
+      SECRET_KEY: ci-dummy-secret-key-not-used-in-prod
+      ORACLE_USER: ""
+      ORACLE_PASSWORD: ""
+      ORACLE_DSN: ""
+      ALLOWED_HOSTS: "*"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Eliminar runs anteriores de CI en Qase (conservar solo el más reciente)
+        run: |
+          python3 - <<'EOF'
+          import requests, os, time
+          token = os.getenv("QASE_TESTOPS_API_TOKEN", "")
+          if not token:
+              print("Sin token — se omite limpieza de runs")
+              exit(0)
+          h   = {"Token": token}
+          url = "https://api.qase.io/v1/run/FJ26SV"
+          r   = requests.get(url, params={"limit": 100}, headers=h)
+          runs = r.json().get("result", {}).get("entities", [])
+          titulo = f"CI — Backend Unit+API (${{ github.ref_name }})"
+          ids_a_borrar = sorted(
+              [run["id"] for run in runs if run["title"] == titulo],
+              reverse=True,
+          )[0:]          # borrar todos; pytest creará el nuevo al terminar
+          for rid in ids_a_borrar:
+              resp = requests.delete(f"{url}/{rid}", headers=h)
+              print(f"  run {rid} {'eliminado' if resp.json().get('status') else 'error'}")
+              time.sleep(0.2)
+          print(f"Limpieza: {len(ids_a_borrar)} runs previos eliminados")
+          EOF
+
+      - name: Run backend tests (unit + API) with Qase reporter
+        # --qase activates the plugin; falls back to JUnit XML if Qase is unreachable
+        run: |
+          python -m pytest backend/tests/ \
+            --tb=short -q \
+            --junit-xml=backend-ci-results.xml \
+            || true
+
+      - name: Upload JUnit XML (fallback artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-ci-results
+          path: backend-ci-results.xml
+
+  # ── Python E2E integration (requires live Oracle — skips gracefully if absent) ──
+  e2e-python:
+    name: "Python E2E integration → Qase"
+    runs-on: ubuntu-latest
+    # Only run when Oracle secrets are configured (skip on forks / PRs without secrets)
+    if: ${{ vars.ORACLE_E2E_ENABLED == 'true' }}
+    env:
+      QASE_MODE: testops
+      QASE_TESTOPS_API_TOKEN: ${{ secrets.QASE_TESTOPS_API_TOKEN }}
+      QASE_TESTOPS_PROJECT: FJ26SV
+      QASE_TESTOPS_RUN_TITLE: "CI — E2E Python (${{ github.ref_name }})"
+      QASE_TESTOPS_COMPLETE_AFTER_RUN: "true"
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      ORACLE_USER: ${{ secrets.ORACLE_USER }}
+      ORACLE_PASSWORD: ${{ secrets.ORACLE_PASSWORD }}
+      ORACLE_DSN: ${{ secrets.ORACLE_DSN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install Oracle Instant Client (thin mode — no native libs needed)
+        run: pip install python-oracledb
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Run Python E2E integration tests with Qase reporter
+        run: |
+          python -m pytest Pruebas/ \
+            --tb=short -q \
+            --junit-xml=e2e-py-ci-results.xml \
+            || true
+
+      - name: Upload JUnit XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-py-ci-results
+          path: e2e-py-ci-results.xml

@@ -1,0 +1,229 @@
+<div class="min-h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff]">
+  <app-navbar />
+
+  <main class="flex-1">
+    <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
+
+      <!-- Header -->
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 bg-[#00328b] rounded-2xl flex items-center justify-center shadow-lg">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-slate-800">Almac&eacute;n y Servicios</h1>
+          <p class="text-slate-500 text-sm">Control de medicamentos, equipo, servicios y comodatos</p>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Elementos en inventario -->
+        <button type="button" (click)="mostrarInventarioCompleto()"
+          [class]="(activeTab === 'inventario' && quickInventoryFilter === 'none')
+            ? 'relative rounded-2xl p-6 shadow-lg border-2 text-left cursor-pointer transition-all bg-blue-50 border-blue-500 ring-2 ring-blue-300'
+            : 'relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200 text-left cursor-pointer hover:shadow-xl transition-all hover:border-blue-400'">
+          <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
+          <svg class="w-8 h-8 text-blue-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          <p class="text-4xl font-black text-slate-900">{{ productos.length + servicios.length }}</p>
+          <p class="text-sm text-slate-600 mt-1">Elementos en inventario</p>
+          @if (activeTab === 'inventario' && quickInventoryFilter === 'none') {
+            <p class="text-xs text-blue-600 font-semibold mt-2">&#10003; Filtro activo</p>
+          }
+        </button>
+
+        <!-- Alertas de existencias -->
+        <button type="button" (click)="mostrarExistenciasBajas()" [disabled]="getBajoStockCount() === 0"
+          [class]="(activeTab === 'inventario' && quickInventoryFilter === 'existencias-bajas')
+            ? 'relative rounded-2xl p-6 shadow-lg border-2 text-left transition-all bg-amber-50 border-amber-500 ring-2 ring-amber-300 cursor-pointer'
+            : 'relative bg-white rounded-2xl p-6 shadow-lg border-2 border-amber-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl hover:border-amber-400'">
+          <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+          <svg class="w-8 h-8 text-amber-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <p class="text-4xl font-black text-slate-900">{{ getBajoStockCount() }}</p>
+          <p class="text-sm text-slate-600 mt-1">Alertas de existencias</p>
+          @if (activeTab === 'inventario' && quickInventoryFilter === 'existencias-bajas') {
+            <p class="text-xs text-amber-600 font-semibold mt-2">&#10003; Filtro activo</p>
+          }
+        </button>
+
+        <!-- Comodatos activos -->
+        <button type="button" (click)="mostrarComodatosActivos()" [disabled]="getComodatosActivosCount() === 0"
+          [class]="activeTab === 'comodatos'
+            ? 'relative rounded-2xl p-6 shadow-lg border-2 text-left transition-all bg-green-50 border-green-500 ring-2 ring-green-300 cursor-pointer'
+            : 'relative bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl hover:border-green-400'">
+          <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+          <svg class="w-8 h-8 text-green-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          <p class="text-4xl font-black text-slate-900">{{ getComodatosActivosCount() }}</p>
+          <p class="text-sm text-slate-600 mt-1">Comodatos activos</p>
+          @if (activeTab === 'comodatos') {
+            <p class="text-xs text-green-600 font-semibold mt-2">&#10003; Filtro activo</p>
+          }
+        </button>
+      </div>
+
+      <!-- Tab Nav -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
+        <div class="flex gap-1.5">
+          <button (click)="activeTab = 'inventario'"
+            [class]="activeTab === 'inventario'
+              ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
+              : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            Inventario
+          </button>
+          <button (click)="activeTab = 'servicios'"
+            [class]="activeTab === 'servicios'
+              ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
+              : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+              <rect width="6" height="4" x="9" y="3" rx="1"/>
+              <path d="m9 14 2 2 4-4"/>
+            </svg>
+            Servicios
+          </button>
+          <button (click)="activeTab = 'comodatos'"
+            [class]="activeTab === 'comodatos'
+              ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
+              : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            Comodatos
+          </button>
+          <button (click)="activeTab = 'historial'"
+            [class]="activeTab === 'historial'
+              ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
+              : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
+            </svg>
+            Historial
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading Skeleton -->
+      @if (loading) {
+        <div class="bg-white rounded-2xl shadow-lg border-2 border-slate-100 p-6">
+          <div class="animate-pulse space-y-4">
+            <div class="grid grid-cols-3 gap-6">
+              @for (_ of [1,2,3]; track _) {
+                <div class="h-28 bg-slate-200 rounded-2xl"></div>
+              }
+            </div>
+            <div class="space-y-3 mt-6">
+              @for (_ of [1,2,3,4,5]; track _) {
+                <div class="flex items-center gap-4 py-3">
+                  <div class="w-12 h-12 bg-slate-200 rounded-xl"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+                    <div class="h-3 bg-slate-100 rounded w-1/4"></div>
+                  </div>
+                  <div class="h-4 bg-slate-200 rounded w-16"></div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- TAB: Inventario -->
+      @if (activeTab === 'inventario' && !loading) {
+        <div>
+          <app-inventario-tab
+            [productos]="productos"
+            [isAdmin]="isAdmin"
+            [stockBajoIds]="stockBajoProductoIds"
+            [quickFilter]="quickInventoryFilter"
+            [selectedCategory]="selectedCategory"
+            (quickFilterChange)="quickInventoryFilter = $event"
+            (selectedCategoryChange)="selectedCategory = $event"
+            (requestAdd)="openNuevoProductoModal()"
+            (requestEdit)="openEditProductoModal($event)"
+            (requestDelete)="openConfirmDeleteModal($event)"
+            (refreshNeeded)="loadProductos(); loadAlmacenStats()"
+          />
+        </div>
+      }
+
+      <!-- TAB: Servicios -->
+      @if (activeTab === 'servicios' && !loading) {
+        <div>
+          <app-servicios-tab
+            [servicios]="servicios"
+            [isAdmin]="isAdmin"
+            (requestAdd)="openNuevoProductoModal('SERVICIO')"
+            (requestDelete)="openConfirmDeleteModal($event)"
+            (refreshNeeded)="loadServicios()"
+          />
+        </div>
+      }
+
+      <!-- TAB: Comodatos -->
+      @if (activeTab === 'comodatos') {
+        <div>
+          <app-comodatos-tab
+            [comodatos]="comodatos"
+            [productos]="productos"
+            [isAdmin]="isAdmin"
+            [debugMode]="debugMode"
+            (refreshNeeded)="loadComodatos(); loadProductos(); loadAlmacenStats()"
+            (printRequested)="handlePrintComodato($event)"
+          />
+        </div>
+      }
+
+      <!-- TAB: Historial -->
+      @if (activeTab === 'historial') {
+        <div>
+          <app-historial-tab />
+        </div>
+      }
+
+    </div>
+  </main>
+
+  <app-footer />
+</div>
+
+@if (productoParaModal) {
+  <app-nuevo-producto-modal
+    [editingProduct]="productoParaModal.editingProduct"
+    [initialTipo]="productoParaModal.initialTipo"
+    (closed)="productoParaModal = null"
+    (guardado)="onProductoGuardado()"
+  />
+}
+
+<!-- PRINT CONTAINER — must be outside div.min-h-screen so the @media print rule doesn't hide it -->
+@if (printingComodato) {
+  <div id="print-comodato" class="hidden print:block print:p-8">
+    <h1 class="text-2xl font-bold mb-4">Comodato {{ printingComodato.folioComodato }}</h1>
+    <table class="w-full border-collapse text-sm">
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold w-40 text-left">Folio:</th><td class="py-2">{{ printingComodato.folioComodato }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Paciente:</th><td class="py-2">{{ printingComodato.nombrePaciente }} ({{ printingComodato.folioPaciente }})</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Equipo:</th><td class="py-2">{{ printingComodato.nombreEquipo }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Fecha Pr&eacute;stamo:</th><td class="py-2">{{ printingComodato.fechaPrestamo }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Fecha Devoluci&oacute;n:</th><td class="py-2">{{ printingComodato.fechaDevolucion ?? 'Pendiente' }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Estatus:</th><td class="py-2">{{ printingComodato.estatus }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Monto Total:</th><td class="py-2">${{ printingComodato.montoTotal.toFixed(2) }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Monto Pagado:</th><td class="py-2">${{ printingComodato.montoPagado.toFixed(2) }}</td></tr>
+      <tr class="border-b"><th scope="row" class="py-2 font-semibold text-left">Saldo Pendiente:</th><td class="py-2">${{ printingComodato.saldoPendiente.toFixed(2) }}</td></tr>
+      <tr><th scope="row" class="py-2 font-semibold text-left">Exento de Pago:</th><td class="py-2">{{ printingComodato.exentoPago === 'S' ? 'S&iacute;' : 'No' }}</td></tr>
+    </table>
+  </div>
+}
+
+@if (productoToDelete) {
+  <app-confirm-delete-modal [item]="productoToDelete" (closed)="productoToDelete = null" (eliminado)="onProductoEliminado()" />
+}

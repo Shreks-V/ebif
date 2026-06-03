@@ -1,0 +1,2192 @@
+project: FJ26SV
+suites:
+- title: '[Backend] Almacén — DTOs — Validaciones de dominio'
+  cases:
+  - automation_id: almacen_dtos_ajusteexistencia_test_valid_adjustment_passes
+    title: 'Ajuste Existencia: Valid adjustment passes'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestAjusteExistencia | Función:
+      test_valid_adjustment_passes'
+  - automation_id: almacen_dtos_ajusteexistencia_test_negative_stock_is_rejected
+    title: 'Ajuste Existencia: Negative stock is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestAjusteExistencia | Función:
+      test_negative_stock_is_rejected'
+  - automation_id: almacen_dtos_ajusteexistencia_test_empty_motivo_is_rejected
+    title: 'Ajuste Existencia: Empty motivo is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestAjusteExistencia | Función:
+      test_empty_motivo_is_rejected'
+  - automation_id: almacen_dtos_ajusteexistencia_test_motivo_too_long_is_rejected
+    title: 'Ajuste Existencia: Motivo too long is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestAjusteExistencia | Función:
+      test_motivo_too_long_is_rejected'
+  - automation_id: almacen_dtos_comodatocreate_test_valid_comodato_passes
+    title: 'Comodato Create: Valid comodato passes'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestComodatoCreate | Función:
+      test_valid_comodato_passes'
+  - automation_id: almacen_dtos_comodatocreate_test_missing_required_fields_rejected
+    title: 'Comodato Create: Missing required fields rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestComodatoCreate | Función:
+      test_missing_required_fields_rejected'
+  - automation_id: almacen_dtos_productocreate_test_valid_medicamento_passes
+    title: 'Producto Create: Valid medicamento passes'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestProductoCreate | Función:
+      test_valid_medicamento_passes'
+  - automation_id: almacen_dtos_productocreate_test_invalid_tipo_producto_is_rejected
+    title: 'Producto Create: Invalid tipo producto is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestProductoCreate | Función:
+      test_invalid_tipo_producto_is_rejected'
+  - automation_id: almacen_dtos_productocreate_test_empty_clave_interna_is_rejected
+    title: 'Producto Create: Empty clave interna is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestProductoCreate | Función:
+      test_empty_clave_interna_is_rejected'
+  - automation_id: almacen_dtos_productocreate_test_negative_cantidad_is_rejected
+    title: 'Producto Create: Negative cantidad is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestProductoCreate | Función:
+      test_negative_cantidad_is_rejected'
+  - automation_id: almacen_dtos_productocreate_test_negative_precio_is_rejected
+    title: 'Producto Create: Negative precio is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestProductoCreate | Función:
+      test_negative_precio_is_rejected'
+  - automation_id: almacen_dtos_productocreate_test_optional_fields_default_to_none
+    title: 'Producto Create: Optional fields default to none'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestProductoCreate | Función:
+      test_optional_fields_default_to_none'
+  - automation_id: almacen_dtos_serviciocreate_test_valid_servicio_passes
+    title: 'Servicio Create: Valid servicio passes'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestServicioCreate | Función:
+      test_valid_servicio_passes'
+  - automation_id: almacen_dtos_serviciocreate_test_valid_laboratorio_passes
+    title: 'Servicio Create: Valid laboratorio passes'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestServicioCreate | Función:
+      test_valid_laboratorio_passes'
+  - automation_id: almacen_dtos_serviciocreate_test_invalid_categoria_is_rejected
+    title: 'Servicio Create: Invalid categoria is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestServicioCreate | Función:
+      test_invalid_categoria_is_rejected'
+  - automation_id: almacen_dtos_serviciocreate_test_negative_cuota_is_rejected
+    title: 'Servicio Create: Negative cuota is rejected'
+    description: 'Archivo: test_almacen_dtos.py | Clase: TestServicioCreate | Función:
+      test_negative_cuota_is_rejected'
+- title: '[Backend] Almacén — Servicio — casos de uso'
+  cases:
+  - automation_id: almacen_service_productos_test_crear_producto_returns_with_id
+    title: 'Productos: Crear producto returns with id'
+    description: 'Archivo: test_almacen_service.py | Clase: TestProductos | Función:
+      test_crear_producto_returns_with_id'
+  - automation_id: almacen_service_productos_test_listar_productos_returns_created
+    title: 'Productos: Listar productos returns created'
+    description: 'Archivo: test_almacen_service.py | Clase: TestProductos | Función:
+      test_listar_productos_returns_created'
+  - automation_id: almacen_service_productos_test_listar_filtra_por_tipo
+    title: 'Productos: Listar filtra por tipo'
+    description: 'Archivo: test_almacen_service.py | Clase: TestProductos | Función:
+      test_listar_filtra_por_tipo'
+  - automation_id: almacen_service_productos_test_obtener_producto_inexistente_raises_not_found
+    title: 'Productos: Obtener producto inexistente raises not found'
+    description: 'Archivo: test_almacen_service.py | Clase: TestProductos | Función:
+      test_obtener_producto_inexistente_raises_not_found'
+  - automation_id: almacen_service_productos_test_desactivar_producto_marca_inactivo
+    title: 'Productos: Desactivar producto marca inactivo'
+    description: 'Archivo: test_almacen_service.py | Clase: TestProductos | Función:
+      test_desactivar_producto_marca_inactivo'
+  - automation_id: almacen_service_productos_test_ajustar_existencia_actualiza_stock
+    title: 'Productos: Ajustar existencia actualiza stock'
+    description: 'Archivo: test_almacen_service.py | Clase: TestProductos | Función:
+      test_ajustar_existencia_actualiza_stock'
+  - automation_id: almacen_service_productos_test_ajustar_existencia_producto_inexistente_raises
+    title: 'Productos: Ajustar existencia producto inexistente raises'
+    description: 'Archivo: test_almacen_service.py | Clase: TestProductos | Función:
+      test_ajustar_existencia_producto_inexistente_raises'
+  - automation_id: almacen_service_servicios_test_crear_servicio_laboratorio
+    title: 'Servicios: Crear servicio laboratorio'
+    description: 'Archivo: test_almacen_service.py | Clase: TestServicios | Función:
+      test_crear_servicio_laboratorio'
+  - automation_id: almacen_service_servicios_test_listar_filtra_por_categoria
+    title: 'Servicios: Listar filtra por categoria'
+    description: 'Archivo: test_almacen_service.py | Clase: TestServicios | Función:
+      test_listar_filtra_por_categoria'
+  - automation_id: almacen_service_servicios_test_obtener_servicio_inexistente_raises
+    title: 'Servicios: Obtener servicio inexistente raises'
+    description: 'Archivo: test_almacen_service.py | Clase: TestServicios | Función:
+      test_obtener_servicio_inexistente_raises'
+  - automation_id: almacen_service_servicios_test_almacen_stats_returns_dict
+    title: 'Servicios: Almacen stats returns dict'
+    description: 'Archivo: test_almacen_service.py | Clase: TestServicios | Función:
+      test_almacen_stats_returns_dict'
+- title: '[Backend] Autenticación — Flujos principales'
+  cases:
+  - automation_id: auth_cambiarcontrasena_test_correct_current_password_changes_successfully
+    title: 'Cambiar Contrasena: Correct current password changes successfully'
+    description: 'Archivo: test_auth.py | Clase: TestCambiarContrasena | Función:
+      test_correct_current_password_changes_successfully'
+  - automation_id: auth_cambiarcontrasena_test_wrong_current_password_returns_401
+    title: 'Cambiar Contrasena: Wrong current password returns 401'
+    description: 'Archivo: test_auth.py | Clase: TestCambiarContrasena | Función:
+      test_wrong_current_password_returns_401'
+  - automation_id: auth_cambiarcontrasena_test_new_password_too_short_returns_422
+    title: 'Cambiar Contrasena: New password too short returns 422'
+    description: 'Archivo: test_auth.py | Clase: TestCambiarContrasena | Función:
+      test_new_password_too_short_returns_422'
+  - automation_id: auth_crearusuario_test_admin_can_create_user
+    title: 'Crear Usuario: Admin can create user'
+    description: 'Archivo: test_auth.py | Clase: TestCrearUsuario | Función: test_admin_can_create_user'
+  - automation_id: auth_crearusuario_test_short_password_returns_422
+    title: 'Crear Usuario: Short password returns 422'
+    description: 'Archivo: test_auth.py | Clase: TestCrearUsuario | Función: test_short_password_returns_422'
+  - automation_id: auth_crearusuario_test_recepcionista_cannot_create_user
+    title: 'Crear Usuario: Recepcionista cannot create user'
+    description: 'Archivo: test_auth.py | Clase: TestCrearUsuario | Función: test_recepcionista_cannot_create_user'
+  - automation_id: auth_getme_test_me_with_valid_token_returns_user
+    title: 'Get Me: Me with valid token returns user'
+    description: 'Archivo: test_auth.py | Clase: TestGetMe | Función: test_me_with_valid_token_returns_user'
+  - automation_id: auth_getme_test_me_without_token_returns_401
+    title: 'Get Me: Me without token returns 401'
+    description: 'Archivo: test_auth.py | Clase: TestGetMe | Función: test_me_without_token_returns_401'
+  - automation_id: auth_getme_test_me_with_invalid_token_returns_401
+    title: 'Get Me: Me with invalid token returns 401'
+    description: 'Archivo: test_auth.py | Clase: TestGetMe | Función: test_me_with_invalid_token_returns_401'
+  - automation_id: auth_health_test_health_returns_ok
+    title: 'Health: Health returns ok'
+    description: 'Archivo: test_auth.py | Clase: TestHealth | Función: test_health_returns_ok'
+  - automation_id: auth_health_test_config_endpoint_returns_debug_flag
+    title: 'Health: Config endpoint returns debug flag'
+    description: 'Archivo: test_auth.py | Clase: TestHealth | Función: test_config_endpoint_returns_debug_flag'
+  - automation_id: auth_listarusuarios_test_admin_can_list_users
+    title: 'Listar Usuarios: Admin can list users'
+    description: 'Archivo: test_auth.py | Clase: TestListarUsuarios | Función: test_admin_can_list_users'
+  - automation_id: auth_listarusuarios_test_recepcionista_cannot_list_users
+    title: 'Listar Usuarios: Recepcionista cannot list users'
+    description: 'Archivo: test_auth.py | Clase: TestListarUsuarios | Función: test_recepcionista_cannot_list_users'
+  - automation_id: auth_login_test_login_valid_credentials_returns_token
+    title: 'Login: Login valid credentials returns token'
+    description: 'Archivo: test_auth.py | Clase: TestLogin | Función: test_login_valid_credentials_returns_token'
+  - automation_id: auth_login_test_login_wrong_password_returns_401
+    title: 'Login: Login wrong password returns 401'
+    description: 'Archivo: test_auth.py | Clase: TestLogin | Función: test_login_wrong_password_returns_401'
+  - automation_id: auth_login_test_login_unknown_email_returns_401
+    title: 'Login: Login unknown email returns 401'
+    description: 'Archivo: test_auth.py | Clase: TestLogin | Función: test_login_unknown_email_returns_401'
+  - automation_id: auth_login_test_login_inactive_user_returns_401
+    title: 'Login: Login inactive user returns 401'
+    description: 'Archivo: test_auth.py | Clase: TestLogin | Función: test_login_inactive_user_returns_401'
+- title: '[Backend] Autenticación — Casos borde y seguridad'
+  cases:
+  - automation_id: auth_edge_cases_actualizarusuario_test_admin_puede_actualizar_usuario
+    title: 'Actualizar Usuario: Admin puede actualizar usuario'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestActualizarUsuario
+      | Función: test_admin_puede_actualizar_usuario'
+  - automation_id: auth_edge_cases_actualizarusuario_test_recepcionista_no_puede_actualizar_usuario
+    title: 'Actualizar Usuario: Recepcionista no puede actualizar usuario'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestActualizarUsuario
+      | Función: test_recepcionista_no_puede_actualizar_usuario'
+  - automation_id: auth_edge_cases_actualizarusuario_test_actualizar_usuario_inexistente_404
+    title: 'Actualizar Usuario: Actualizar usuario inexistente 404'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestActualizarUsuario
+      | Función: test_actualizar_usuario_inexistente_404'
+  - automation_id: auth_edge_cases_cambiarcontrasenaedgecases_test_nueva_contrasena_igual_a_actual
+    title: 'Cambiar Contrasena Edge Cases: Nueva contrasena igual a actual'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestCambiarContrasenaEdgeCases
+      | Función: test_nueva_contrasena_igual_a_actual'
+  - automation_id: auth_edge_cases_cambiarcontrasenaedgecases_test_cambiar_contrasena_sin_auth_401
+    title: 'Cambiar Contrasena Edge Cases: Cambiar contrasena sin auth 401'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestCambiarContrasenaEdgeCases
+      | Función: test_cambiar_contrasena_sin_auth_401'
+  - automation_id: auth_edge_cases_cambiarcontrasenaedgecases_test_nueva_contrasena_con_espacios_ex
+    title: 'Cambiar Contrasena Edge Cases: Nueva contrasena con espacios extremos'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestCambiarContrasenaEdgeCases
+      | Función: test_nueva_contrasena_con_espacios_extremos'
+  - automation_id: auth_edge_cases_crearusuarioedgecases_test_correo_duplicado_retorna_409
+    title: 'Crear Usuario Edge Cases: Correo duplicado retorna 409'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestCrearUsuarioEdgeCases
+      | Función: test_correo_duplicado_retorna_409'
+  - automation_id: auth_edge_cases_crearusuarioedgecases_test_campo_nombre_requerido
+    title: 'Crear Usuario Edge Cases: Campo nombre requerido'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestCrearUsuarioEdgeCases
+      | Función: test_campo_nombre_requerido'
+  - automation_id: auth_edge_cases_crearusuarioedgecases_test_rol_invalido_retorna_422
+    title: 'Crear Usuario Edge Cases: Rol invalido retorna 422'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestCrearUsuarioEdgeCases
+      | Función: test_rol_invalido_retorna_422'
+  - automation_id: auth_edge_cases_crearusuarioedgecases_test_correo_sin_formato_422
+    title: 'Crear Usuario Edge Cases: Correo sin formato 422'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestCrearUsuarioEdgeCases
+      | Función: test_correo_sin_formato_422'
+  - automation_id: auth_edge_cases_jwtinvalidos_test_token_expirado_retorna_401
+    title: 'Jwt Invalidos: Token expirado retorna 401'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestJwtInvalidos | Función:
+      test_token_expirado_retorna_401'
+  - automation_id: auth_edge_cases_jwtinvalidos_test_firma_incorrecta_retorna_401
+    title: 'Jwt Invalidos: Firma incorrecta retorna 401'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestJwtInvalidos | Función:
+      test_firma_incorrecta_retorna_401'
+  - automation_id: auth_edge_cases_jwtinvalidos_test_sin_sub_retorna_401
+    title: 'Jwt Invalidos: Sin sub retorna 401'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestJwtInvalidos | Función:
+      test_sin_sub_retorna_401'
+  - automation_id: auth_edge_cases_jwtinvalidos_test_token_completamente_invalido
+    title: 'Jwt Invalidos: Token completamente invalido'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestJwtInvalidos | Función:
+      test_token_completamente_invalido'
+  - automation_id: auth_edge_cases_jwtinvalidos_test_bearer_vacio_retorna_401
+    title: 'Jwt Invalidos: Bearer vacio retorna 401'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestJwtInvalidos | Función:
+      test_bearer_vacio_retorna_401'
+  - automation_id: auth_edge_cases_jwtinvalidos_test_sin_header_retorna_401
+    title: 'Jwt Invalidos: Sin header retorna 401'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestJwtInvalidos | Función:
+      test_sin_header_retorna_401'
+  - automation_id: auth_edge_cases_loginedgecases_test_login_con_correo_en_mayusculas
+    title: 'Login Edge Cases: Login con correo en mayusculas'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestLoginEdgeCases | Función:
+      test_login_con_correo_en_mayusculas'
+  - automation_id: auth_edge_cases_loginedgecases_test_login_body_vacio_422
+    title: 'Login Edge Cases: Login body vacio 422'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestLoginEdgeCases | Función:
+      test_login_body_vacio_422'
+  - automation_id: auth_edge_cases_loginedgecases_test_login_password_vacio_422
+    title: 'Login Edge Cases: Login password vacio 422'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestLoginEdgeCases | Función:
+      test_login_password_vacio_422'
+  - automation_id: auth_edge_cases_loginedgecases_test_login_correo_vacio_422
+    title: 'Login Edge Cases: Login correo vacio 422'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestLoginEdgeCases | Función:
+      test_login_correo_vacio_422'
+  - automation_id: auth_edge_cases_loginedgecases_test_login_retorna_token_type_bearer
+    title: 'Login Edge Cases: Login retorna token type bearer'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestLoginEdgeCases | Función:
+      test_login_retorna_token_type_bearer'
+  - automation_id: auth_edge_cases_loginedgecases_test_login_token_decodificable
+    title: 'Login Edge Cases: Login token decodificable'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestLoginEdgeCases | Función:
+      test_login_token_decodificable'
+  - automation_id: auth_edge_cases_meendpointextendido_test_me_retorna_rol_correcto_recepcionista
+    title: 'Me Endpoint Extendido: Me retorna rol correcto recepcionista'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestMeEndpointExtendido
+      | Función: test_me_retorna_rol_correcto_recepcionista'
+  - automation_id: auth_edge_cases_meendpointextendido_test_me_no_expone_hashed_password
+    title: 'Me Endpoint Extendido: Me no expone hashed password'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestMeEndpointExtendido
+      | Función: test_me_no_expone_hashed_password'
+  - automation_id: auth_edge_cases_meendpointextendido_test_me_incluye_campos_esperados
+    title: 'Me Endpoint Extendido: Me incluye campos esperados'
+    description: 'Archivo: test_auth_edge_cases.py | Clase: TestMeEndpointExtendido
+      | Función: test_me_incluye_campos_esperados'
+- title: '[Backend] Beneficiarios — DTOs — Validaciones de dominio'
+  cases:
+  - automation_id: beneficiarios_dtos_correovalidator_test_valid_email_is_accepted
+    title: 'Correo Validator: Valid email is accepted'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestCorreoValidator
+      | Función: test_valid_email_is_accepted'
+  - automation_id: beneficiarios_dtos_correovalidator_test_empty_string_becomes_none
+    title: 'Correo Validator: Empty string becomes none'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestCorreoValidator
+      | Función: test_empty_string_becomes_none'
+  - automation_id: beneficiarios_dtos_correovalidator_test_none_email_stays_none
+    title: 'Correo Validator: None email stays none'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestCorreoValidator
+      | Función: test_none_email_stays_none'
+  - automation_id: beneficiarios_dtos_correovalidator_test_missing_at_sign_is_rejected
+    title: 'Correo Validator: Missing at sign is rejected'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestCorreoValidator
+      | Función: test_missing_at_sign_is_rejected'
+  - automation_id: beneficiarios_dtos_correovalidator_test_missing_domain_dot_is_rejected
+    title: 'Correo Validator: Missing domain dot is rejected'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestCorreoValidator
+      | Función: test_missing_domain_dot_is_rejected'
+  - automation_id: beneficiarios_dtos_defaults_test_defaults_are_correct
+    title: 'Defaults: Defaults are correct'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestDefaults | Función:
+      test_defaults_are_correct'
+  - automation_id: beneficiarios_dtos_fechanacimientovalidator_test_valid_iso_date_is_accepted
+    title: 'Fecha Nacimiento Validator: Valid iso date is accepted'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestFechaNacimientoValidator
+      | Función: test_valid_iso_date_is_accepted'
+  - automation_id: beneficiarios_dtos_fechanacimientovalidator_test_date_with_time_is_truncated
+    title: 'Fecha Nacimiento Validator: Date with time is truncated'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestFechaNacimientoValidator
+      | Función: test_date_with_time_is_truncated'
+  - automation_id: beneficiarios_dtos_fechanacimientovalidator_test_empty_string_becomes_none
+    title: 'Fecha Nacimiento Validator: Empty string becomes none'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestFechaNacimientoValidator
+      | Función: test_empty_string_becomes_none'
+  - automation_id: beneficiarios_dtos_fechanacimientovalidator_test_invalid_date_format_is_rejected
+    title: 'Fecha Nacimiento Validator: Invalid date format is rejected'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestFechaNacimientoValidator
+      | Función: test_invalid_date_format_is_rejected'
+  - automation_id: beneficiarios_dtos_fechanacimientovalidator_test_invalid_date_value_is_rejected
+    title: 'Fecha Nacimiento Validator: Invalid date value is rejected'
+    description: 'Archivo: test_beneficiarios_dtos.py | Clase: TestFechaNacimientoValidator
+      | Función: test_invalid_date_value_is_rejected'
+- title: '[Backend] Beneficiarios — Servicio — casos de uso'
+  cases:
+  - automation_id: beneficiarios_services_calculateage_test_string_birthday_today_returns_exact_age
+    title: 'Calculate Age: String birthday today returns exact age'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestCalculateAge
+      | Función: test_string_birthday_today_returns_exact_age'
+  - automation_id: beneficiarios_services_calculateage_test_birthday_not_yet_this_year_returns_age_
+    title: 'Calculate Age: Birthday not yet this year returns age minus one'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestCalculateAge
+      | Función: test_birthday_not_yet_this_year_returns_age_minus_one'
+  - automation_id: beneficiarios_services_calculateage_test_date_object_is_accepted
+    title: 'Calculate Age: Date object is accepted'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestCalculateAge
+      | Función: test_date_object_is_accepted'
+  - automation_id: beneficiarios_services_calculateage_test_datetime_object_is_accepted
+    title: 'Calculate Age: Datetime object is accepted'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestCalculateAge
+      | Función: test_datetime_object_is_accepted'
+  - automation_id: beneficiarios_services_calculateage_test_none_returns_zero
+    title: 'Calculate Age: None returns zero'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestCalculateAge
+      | Función: test_none_returns_zero'
+  - automation_id: beneficiarios_services_calculateage_test_empty_string_returns_zero
+    title: 'Calculate Age: Empty string returns zero'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestCalculateAge
+      | Función: test_empty_string_returns_zero'
+  - automation_id: beneficiarios_services_calculateage_test_invalid_string_returns_zero
+    title: 'Calculate Age: Invalid string returns zero'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestCalculateAge
+      | Función: test_invalid_string_returns_zero'
+  - automation_id: beneficiarios_services_calculateage_test_unknown_type_returns_zero
+    title: 'Calculate Age: Unknown type returns zero'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestCalculateAge
+      | Función: test_unknown_type_returns_zero'
+  - automation_id: beneficiarios_services_etapavida_test_primera_infancia_lower_bound
+    title: 'Etapa Vida: Primera infancia lower bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_primera_infancia_lower_bound'
+  - automation_id: beneficiarios_services_etapavida_test_primera_infancia_upper_bound
+    title: 'Etapa Vida: Primera infancia upper bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_primera_infancia_upper_bound'
+  - automation_id: beneficiarios_services_etapavida_test_infancia_lower_bound
+    title: 'Etapa Vida: Infancia lower bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_infancia_lower_bound'
+  - automation_id: beneficiarios_services_etapavida_test_infancia_upper_bound
+    title: 'Etapa Vida: Infancia upper bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_infancia_upper_bound'
+  - automation_id: beneficiarios_services_etapavida_test_adolescencia_lower_bound
+    title: 'Etapa Vida: Adolescencia lower bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_adolescencia_lower_bound'
+  - automation_id: beneficiarios_services_etapavida_test_adolescencia_upper_bound
+    title: 'Etapa Vida: Adolescencia upper bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_adolescencia_upper_bound'
+  - automation_id: beneficiarios_services_etapavida_test_juventud_lower_bound
+    title: 'Etapa Vida: Juventud lower bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_juventud_lower_bound'
+  - automation_id: beneficiarios_services_etapavida_test_juventud_upper_bound
+    title: 'Etapa Vida: Juventud upper bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_juventud_upper_bound'
+  - automation_id: beneficiarios_services_etapavida_test_adultez_lower_bound
+    title: 'Etapa Vida: Adultez lower bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_adultez_lower_bound'
+  - automation_id: beneficiarios_services_etapavida_test_adultez_upper_bound
+    title: 'Etapa Vida: Adultez upper bound'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_adultez_upper_bound'
+  - automation_id: beneficiarios_services_etapavida_test_adulto_mayor
+    title: 'Etapa Vida: Adulto mayor'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_adulto_mayor'
+  - automation_id: beneficiarios_services_etapavida_test_adulto_mayor_high_age
+    title: 'Etapa Vida: Adulto mayor high age'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestEtapaVida |
+      Función: test_adulto_mayor_high_age'
+  - automation_id: beneficiarios_services_isnuevoleon_test_with_accent
+    title: 'Is Nuevo Leon: With accent'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestIsNuevoLeon
+      | Función: test_with_accent'
+  - automation_id: beneficiarios_services_isnuevoleon_test_without_accent
+    title: 'Is Nuevo Leon: Without accent'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestIsNuevoLeon
+      | Función: test_without_accent'
+  - automation_id: beneficiarios_services_isnuevoleon_test_uppercase
+    title: 'Is Nuevo Leon: Uppercase'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestIsNuevoLeon
+      | Función: test_uppercase'
+  - automation_id: beneficiarios_services_isnuevoleon_test_lowercase
+    title: 'Is Nuevo Leon: Lowercase'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestIsNuevoLeon
+      | Función: test_lowercase'
+  - automation_id: beneficiarios_services_isnuevoleon_test_other_state_returns_false
+    title: 'Is Nuevo Leon: Other state returns false'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestIsNuevoLeon
+      | Función: test_other_state_returns_false'
+  - automation_id: beneficiarios_services_isnuevoleon_test_empty_string_returns_false
+    title: 'Is Nuevo Leon: Empty string returns false'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestIsNuevoLeon
+      | Función: test_empty_string_returns_false'
+  - automation_id: beneficiarios_services_isnuevoleon_test_none_returns_false
+    title: 'Is Nuevo Leon: None returns false'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestIsNuevoLeon
+      | Función: test_none_returns_false'
+  - automation_id: beneficiarios_services_normalizegenero_test_h_returns_hombre
+    title: 'Normalize Genero: H returns hombre'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_h_returns_hombre'
+  - automation_id: beneficiarios_services_normalizegenero_test_hombre_returns_hombre
+    title: 'Normalize Genero: Hombre returns hombre'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_hombre_returns_hombre'
+  - automation_id: beneficiarios_services_normalizegenero_test_masculino_returns_hombre
+    title: 'Normalize Genero: Masculino returns hombre'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_masculino_returns_hombre'
+  - automation_id: beneficiarios_services_normalizegenero_test_m_returns_mujer
+    title: 'Normalize Genero: M returns mujer'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_m_returns_mujer'
+  - automation_id: beneficiarios_services_normalizegenero_test_mujer_returns_mujer
+    title: 'Normalize Genero: Mujer returns mujer'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_mujer_returns_mujer'
+  - automation_id: beneficiarios_services_normalizegenero_test_f_returns_mujer
+    title: 'Normalize Genero: F returns mujer'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_f_returns_mujer'
+  - automation_id: beneficiarios_services_normalizegenero_test_femenino_returns_mujer
+    title: 'Normalize Genero: Femenino returns mujer'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_femenino_returns_mujer'
+  - automation_id: beneficiarios_services_normalizegenero_test_lowercase_is_normalized
+    title: 'Normalize Genero: Lowercase is normalized'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_lowercase_is_normalized'
+  - automation_id: beneficiarios_services_normalizegenero_test_whitespace_is_stripped
+    title: 'Normalize Genero: Whitespace is stripped'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_whitespace_is_stripped'
+  - automation_id: beneficiarios_services_normalizegenero_test_none_returns_none
+    title: 'Normalize Genero: None returns none'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_none_returns_none'
+  - automation_id: beneficiarios_services_normalizegenero_test_unknown_value_returns_none
+    title: 'Normalize Genero: Unknown value returns none'
+    description: 'Archivo: test_beneficiarios_services.py | Clase: TestNormalizeGenero
+      | Función: test_unknown_value_returns_none'
+- title: '[Backend] Citas — Casos de uso'
+  cases:
+  - automation_id: citas_use_cases_citasmodulefunctions_test_citas_stats
+    title: 'Citas Module Functions: Citas stats'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_citas_stats'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_citas_hoy
+    title: 'Citas Module Functions: Citas hoy'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_citas_hoy'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_listar_citas
+    title: 'Citas Module Functions: Listar citas'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_listar_citas'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_obtener_cita
+    title: 'Citas Module Functions: Obtener cita'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_obtener_cita'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_crear_cita
+    title: 'Citas Module Functions: Crear cita'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_crear_cita'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_actualizar_cita
+    title: 'Citas Module Functions: Actualizar cita'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_actualizar_cita'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_iniciar_cita
+    title: 'Citas Module Functions: Iniciar cita'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_iniciar_cita'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_completar_cita
+    title: 'Citas Module Functions: Completar cita'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_completar_cita'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_cancelar_cita
+    title: 'Citas Module Functions: Cancelar cita'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_cancelar_cita'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_eliminar_cita
+    title: 'Citas Module Functions: Eliminar cita'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_eliminar_cita'
+  - automation_id: citas_use_cases_citasmodulefunctions_test_citas_proximas
+    title: 'Citas Module Functions: Citas proximas'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasModuleFunctions
+      | Función: test_citas_proximas'
+  - automation_id: citas_use_cases_citasserviceclass_test_citas_stats_delega
+    title: 'Citas Service Class: Citas stats delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_citas_stats_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_citas_hoy_delega
+    title: 'Citas Service Class: Citas hoy delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_citas_hoy_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_listar_citas_delega
+    title: 'Citas Service Class: Listar citas delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_listar_citas_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_obtener_cita_delega
+    title: 'Citas Service Class: Obtener cita delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_obtener_cita_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_crear_cita_delega_con_fecha_hora_valida
+    title: 'Citas Service Class: Crear cita delega con fecha hora valida'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_crear_cita_delega_con_fecha_hora_valida'
+  - automation_id: citas_use_cases_citasserviceclass_test_crear_cita_strips_notas
+    title: 'Citas Service Class: Crear cita strips notas'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_crear_cita_strips_notas'
+  - automation_id: citas_use_cases_citasserviceclass_test_crear_cita_sin_fecha_hora_lanza_error
+    title: 'Citas Service Class: Crear cita sin fecha hora lanza error'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_crear_cita_sin_fecha_hora_lanza_error'
+  - automation_id: citas_use_cases_citasserviceclass_test_actualizar_cita_delega
+    title: 'Citas Service Class: Actualizar cita delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_actualizar_cita_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_iniciar_cita_valido_delega
+    title: 'Citas Service Class: Iniciar cita valido delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_iniciar_cita_valido_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_iniciar_cita_id_invalido_lanza_error
+    title: 'Citas Service Class: Iniciar cita id invalido lanza error'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_iniciar_cita_id_invalido_lanza_error'
+  - automation_id: citas_use_cases_citasserviceclass_test_completar_cita_valido_delega
+    title: 'Citas Service Class: Completar cita valido delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_completar_cita_valido_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_completar_cita_id_invalido_lanza_error
+    title: 'Citas Service Class: Completar cita id invalido lanza error'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_completar_cita_id_invalido_lanza_error'
+  - automation_id: citas_use_cases_citasserviceclass_test_cancelar_cita_valido_delega
+    title: 'Citas Service Class: Cancelar cita valido delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_cancelar_cita_valido_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_cancelar_cita_id_invalido_lanza_error
+    title: 'Citas Service Class: Cancelar cita id invalido lanza error'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_cancelar_cita_id_invalido_lanza_error'
+  - automation_id: citas_use_cases_citasserviceclass_test_eliminar_cita_valido_delega
+    title: 'Citas Service Class: Eliminar cita valido delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_eliminar_cita_valido_delega'
+  - automation_id: citas_use_cases_citasserviceclass_test_eliminar_cita_id_invalido_lanza_error
+    title: 'Citas Service Class: Eliminar cita id invalido lanza error'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_eliminar_cita_id_invalido_lanza_error'
+  - automation_id: citas_use_cases_citasserviceclass_test_citas_proximas_delega
+    title: 'Citas Service Class: Citas proximas delega'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceClass
+      | Función: test_citas_proximas_delega'
+  - automation_id: citas_use_cases_citasserviceunconfigured_test_svc_raises_cuando_no_configurado
+    title: 'Citas Service Unconfigured: Svc raises cuando no configurado'
+    description: 'Archivo: test_citas_use_cases.py | Clase: TestCitasServiceUnconfigured
+      | Función: test_svc_raises_cuando_no_configurado'
+- title: '[Backend] Exportaciones — Casos de uso'
+  cases:
+  - automation_id: exportaciones_use_cases_exportacionesmodulefunctions_test_exportar_reporte_pdf
+    title: 'Exportaciones Module Functions: Exportar reporte pdf'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesModuleFunctions
+      | Función: test_exportar_reporte_pdf'
+  - automation_id: exportaciones_use_cases_exportacionesmodulefunctions_test_exportar_beneficiario_
+    title: 'Exportaciones Module Functions: Exportar beneficiario pdf'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesModuleFunctions
+      | Función: test_exportar_beneficiario_pdf'
+  - automation_id: exportaciones_use_cases_exportacionesmodulefunctions_test_exportar_credencial_pd
+    title: 'Exportaciones Module Functions: Exportar credencial pdf'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesModuleFunctions
+      | Función: test_exportar_credencial_pdf'
+  - automation_id: exportaciones_use_cases_exportacionesmodulefunctions_test_exportar_comprobante_c
+    title: 'Exportaciones Module Functions: Exportar comprobante cita'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesModuleFunctions
+      | Función: test_exportar_comprobante_cita'
+  - automation_id: exportaciones_use_cases_exportacionesmodulefunctions_test_exportar_contrato_como
+    title: 'Exportaciones Module Functions: Exportar contrato comodato'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesModuleFunctions
+      | Función: test_exportar_contrato_comodato'
+  - automation_id: exportaciones_use_cases_exportacionesmodulefunctions_test_exportar_beneficiarios
+    title: 'Exportaciones Module Functions: Exportar beneficiarios excel'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesModuleFunctions
+      | Función: test_exportar_beneficiarios_excel'
+  - automation_id: exportaciones_use_cases_exportacionesmodulefunctions_test_exportar_reporte_excel
+    title: 'Exportaciones Module Functions: Exportar reporte excel'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesModuleFunctions
+      | Función: test_exportar_reporte_excel'
+  - automation_id: exportaciones_use_cases_exportacionesserviceclass_test_exportar_reporte_pdf_dele
+    title: 'Exportaciones Service Class: Exportar reporte pdf delega'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesServiceClass
+      | Función: test_exportar_reporte_pdf_delega'
+  - automation_id: exportaciones_use_cases_exportacionesserviceclass_test_exportar_beneficiario_pdf
+    title: 'Exportaciones Service Class: Exportar beneficiario pdf delega'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesServiceClass
+      | Función: test_exportar_beneficiario_pdf_delega'
+  - automation_id: exportaciones_use_cases_exportacionesserviceclass_test_exportar_credencial_pdf_d
+    title: 'Exportaciones Service Class: Exportar credencial pdf delega'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesServiceClass
+      | Función: test_exportar_credencial_pdf_delega'
+  - automation_id: exportaciones_use_cases_exportacionesserviceclass_test_exportar_comprobante_cita
+    title: 'Exportaciones Service Class: Exportar comprobante cita delega'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesServiceClass
+      | Función: test_exportar_comprobante_cita_delega'
+  - automation_id: exportaciones_use_cases_exportacionesserviceclass_test_exportar_contrato_comodat
+    title: 'Exportaciones Service Class: Exportar contrato comodato delega'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesServiceClass
+      | Función: test_exportar_contrato_comodato_delega'
+  - automation_id: exportaciones_use_cases_exportacionesserviceclass_test_exportar_beneficiarios_ex
+    title: 'Exportaciones Service Class: Exportar beneficiarios excel delega'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesServiceClass
+      | Función: test_exportar_beneficiarios_excel_delega'
+  - automation_id: exportaciones_use_cases_exportacionesserviceclass_test_exportar_reporte_excel_de
+    title: 'Exportaciones Service Class: Exportar reporte excel delega'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesServiceClass
+      | Función: test_exportar_reporte_excel_delega'
+  - automation_id: exportaciones_use_cases_exportacionesserviceunconfigured_test_svc_raises_cuando_
+    title: 'Exportaciones Service Unconfigured: Svc raises cuando no configurado'
+    description: 'Archivo: test_exportaciones_use_cases.py | Clase: TestExportacionesServiceUnconfigured
+      | Función: test_svc_raises_cuando_no_configurado'
+- title: '[Backend] Preregistro — DTOs — Validaciones de dominio'
+  cases:
+  - automation_id: preregistro_dtos_general_test_preregistro_tipo_cuota_accepts_short_aliases
+    title: Preregistro tipo cuota accepts short aliases
+    description: 'Archivo: test_preregistro_dtos.py | Clase: General | Función: test_preregistro_tipo_cuota_accepts_short_aliases'
+  - automation_id: preregistro_dtos_general_test_preregistro_tipo_cuota_rejects_invalid_values
+    title: Preregistro tipo cuota rejects invalid values
+    description: 'Archivo: test_preregistro_dtos.py | Clase: General | Función: test_preregistro_tipo_cuota_rejects_invalid_values'
+  - automation_id: preregistro_dtos_general_test_preregistro_curp_invalido_es_rechazado
+    title: Preregistro curp invalido es rechazado
+    description: 'Archivo: test_preregistro_dtos.py | Clase: General | Función: test_preregistro_curp_invalido_es_rechazado'
+  - automation_id: preregistro_dtos_general_test_aprobacion_tipo_cuota_none_es_aceptado
+    title: Aprobacion tipo cuota none es aceptado
+    description: 'Archivo: test_preregistro_dtos.py | Clase: General | Función: test_aprobacion_tipo_cuota_none_es_aceptado'
+  - automation_id: preregistro_dtos_general_test_preregistro_correo_electronico_es_aceptado
+    title: Preregistro correo electronico es aceptado
+    description: 'Archivo: test_preregistro_dtos.py | Clase: General | Función: test_preregistro_correo_electronico_es_aceptado'
+  - automation_id: preregistro_dtos_general_test_preregistro_fecha_nacimiento_trunca_tiempo
+    title: Preregistro fecha nacimiento trunca tiempo
+    description: 'Archivo: test_preregistro_dtos.py | Clase: General | Función: test_preregistro_fecha_nacimiento_trunca_tiempo'
+- title: '[Backend] Preregistro — Casos de uso'
+  cases:
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_listar_preregistros
+    title: 'Preregistro Module Functions: Listar preregistros'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_listar_preregistros'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_crear_preregistro
+    title: 'Preregistro Module Functions: Crear preregistro'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_crear_preregistro'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_listar_tipos_espina_public
+    title: 'Preregistro Module Functions: Listar tipos espina publico'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_listar_tipos_espina_publico'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_listar_tipos_documento_pub
+    title: 'Preregistro Module Functions: Listar tipos documento publico'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_listar_tipos_documento_publico'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_check_curp_disponible
+    title: 'Preregistro Module Functions: Check curp disponible'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_check_curp_disponible'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_obtener_preregistro
+    title: 'Preregistro Module Functions: Obtener preregistro'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_obtener_preregistro'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_actualizar_preregistro
+    title: 'Preregistro Module Functions: Actualizar preregistro'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_actualizar_preregistro'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_aprobar_preregistro
+    title: 'Preregistro Module Functions: Aprobar preregistro'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_aprobar_preregistro'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_subir_documento
+    title: 'Preregistro Module Functions: Subir documento'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_subir_documento'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_listar_documentos
+    title: 'Preregistro Module Functions: Listar documentos'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_listar_documentos'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_obtener_documento_archivo
+    title: 'Preregistro Module Functions: Obtener documento archivo'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_obtener_documento_archivo'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_eliminar_documento
+    title: 'Preregistro Module Functions: Eliminar documento'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_eliminar_documento'
+  - automation_id: preregistro_use_cases_preregistromodulefunctions_test_rechazar_preregistro
+    title: 'Preregistro Module Functions: Rechazar preregistro'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroModuleFunctions
+      | Función: test_rechazar_preregistro'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_listar_delega_al_repo
+    title: 'Preregistro Service Class: Listar delega al repo'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_listar_delega_al_repo'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_crear_normaliza_espacios_y_cu
+    title: 'Preregistro Service Class: Crear normaliza espacios y curp'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_crear_normaliza_espacios_y_curp'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_listar_tipos_espina_publico_d
+    title: 'Preregistro Service Class: Listar tipos espina publico delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_listar_tipos_espina_publico_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_listar_tipos_documento_public
+    title: 'Preregistro Service Class: Listar tipos documento publico delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_listar_tipos_documento_publico_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_check_curp_disponible_normali
+    title: 'Preregistro Service Class: Check curp disponible normaliza y delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_check_curp_disponible_normaliza_y_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_obtener_preregistro_delega
+    title: 'Preregistro Service Class: Obtener preregistro delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_obtener_preregistro_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_actualizar_preregistro_delega
+    title: 'Preregistro Service Class: Actualizar preregistro delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_actualizar_preregistro_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_aprobar_preregistro_delega
+    title: 'Preregistro Service Class: Aprobar preregistro delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_aprobar_preregistro_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_subir_documento_construye_upl
+    title: 'Preregistro Service Class: Subir documento construye uploaded file'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_subir_documento_construye_uploaded_file'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_listar_documentos_delega
+    title: 'Preregistro Service Class: Listar documentos delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_listar_documentos_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_obtener_documento_archivo_del
+    title: 'Preregistro Service Class: Obtener documento archivo delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_obtener_documento_archivo_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_eliminar_documento_delega
+    title: 'Preregistro Service Class: Eliminar documento delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_eliminar_documento_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceclass_test_rechazar_preregistro_delega
+    title: 'Preregistro Service Class: Rechazar preregistro delega'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceClass
+      | Función: test_rechazar_preregistro_delega'
+  - automation_id: preregistro_use_cases_preregistroserviceunconfigured_test_svc_raises_cuando_no_c
+    title: 'Preregistro Service Unconfigured: Svc raises cuando no configurado'
+    description: 'Archivo: test_preregistro_use_cases.py | Clase: TestPreregistroServiceUnconfigured
+      | Función: test_svc_raises_cuando_no_configurado'
+- title: '[Backend] Recibos & Ventas — DTOs — Validaciones de dominio'
+  cases:
+  - automation_id: recibos_dtos_ventalineacreate_test_tipo_producto_es_valido
+    title: 'Venta Linea Create: Tipo producto es valido'
+    description: 'Archivo: test_recibos_dtos.py | Clase: TestVentaLineaCreate | Función:
+      test_tipo_producto_es_valido'
+  - automation_id: recibos_dtos_ventalineacreate_test_tipo_servicio_es_valido
+    title: 'Venta Linea Create: Tipo servicio es valido'
+    description: 'Archivo: test_recibos_dtos.py | Clase: TestVentaLineaCreate | Función:
+      test_tipo_servicio_es_valido'
+  - automation_id: recibos_dtos_ventalineacreate_test_tipo_invalido_es_rechazado
+    title: 'Venta Linea Create: Tipo invalido es rechazado'
+    description: 'Archivo: test_recibos_dtos.py | Clase: TestVentaLineaCreate | Función:
+      test_tipo_invalido_es_rechazado'
+  - automation_id: recibos_dtos_ventalineacreate_test_cantidad_positiva_es_aceptada
+    title: 'Venta Linea Create: Cantidad positiva es aceptada'
+    description: 'Archivo: test_recibos_dtos.py | Clase: TestVentaLineaCreate | Función:
+      test_cantidad_positiva_es_aceptada'
+  - automation_id: recibos_dtos_ventalineacreate_test_cantidad_cero_es_rechazada
+    title: 'Venta Linea Create: Cantidad cero es rechazada'
+    description: 'Archivo: test_recibos_dtos.py | Clase: TestVentaLineaCreate | Función:
+      test_cantidad_cero_es_rechazada'
+  - automation_id: recibos_dtos_ventalineacreate_test_cantidad_negativa_es_rechazada
+    title: 'Venta Linea Create: Cantidad negativa es rechazada'
+    description: 'Archivo: test_recibos_dtos.py | Clase: TestVentaLineaCreate | Función:
+      test_cantidad_negativa_es_rechazada'
+- title: '[Backend] Reportes — Indicadores y métricas'
+  cases:
+  - automation_id: reportes_indicadores_general_test_curp_es_nl_uses_curp_entity_code
+    title: Curp es nl uses curp entity code
+    description: 'Archivo: test_reportes_indicadores.py | Clase: General | Función:
+      test_curp_es_nl_uses_curp_entity_code'
+  - automation_id: reportes_indicadores_general_test_genero_label_accepts_current_and_seed_values
+    title: Genero label accepts current and seed values
+    description: 'Archivo: test_reportes_indicadores.py | Clase: General | Función:
+      test_genero_label_accepts_current_and_seed_values'
+- title: '[Backend] Reportes — Casos de uso'
+  cases:
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_por_genero
+    title: 'Reportes Module Functions: Reporte por genero'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_por_genero'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_por_etapa_vida
+    title: 'Reportes Module Functions: Reporte por etapa vida'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_por_etapa_vida'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_por_tipo_espina
+    title: 'Reportes Module Functions: Reporte por tipo espina'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_por_tipo_espina'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_por_estado
+    title: 'Reportes Module Functions: Reporte por estado'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_por_estado'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_resumen
+    title: 'Reportes Module Functions: Reporte resumen'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_resumen'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_servicios_por_tipo
+    title: 'Reportes Module Functions: Reporte servicios por tipo'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_servicios_por_tipo'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_estudios_por_tipo
+    title: 'Reportes Module Functions: Reporte estudios por tipo'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_estudios_por_tipo'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_pagos_exentos
+    title: 'Reportes Module Functions: Reporte pagos exentos'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_pagos_exentos'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_consolidado_mensual
+    title: 'Reportes Module Functions: Reporte consolidado mensual'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_consolidado_mensual'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_historial_reportes
+    title: 'Reportes Module Functions: Historial reportes'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_historial_reportes'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_por_ciudad
+    title: 'Reportes Module Functions: Reporte por ciudad'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_por_ciudad'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_indicadores_desempeno
+    title: 'Reportes Module Functions: Indicadores desempeno'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_indicadores_desempeno'
+  - automation_id: reportes_use_cases_reportesmodulefunctions_test_reporte_pagos_por_metodo
+    title: 'Reportes Module Functions: Reporte pagos por metodo'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesModuleFunctions
+      | Función: test_reporte_pagos_por_metodo'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_por_genero_delega
+    title: 'Reportes Service Class: Reporte por genero delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_por_genero_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_por_etapa_vida_delega
+    title: 'Reportes Service Class: Reporte por etapa vida delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_por_etapa_vida_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_por_tipo_espina_delega
+    title: 'Reportes Service Class: Reporte por tipo espina delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_por_tipo_espina_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_por_estado_delega
+    title: 'Reportes Service Class: Reporte por estado delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_por_estado_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_resumen_delega
+    title: 'Reportes Service Class: Reporte resumen delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_resumen_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_servicios_por_tipo_delega
+    title: 'Reportes Service Class: Reporte servicios por tipo delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_servicios_por_tipo_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_estudios_por_tipo_delega
+    title: 'Reportes Service Class: Reporte estudios por tipo delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_estudios_por_tipo_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_pagos_exentos_delega
+    title: 'Reportes Service Class: Reporte pagos exentos delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_pagos_exentos_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_consolidado_mensual_delega
+    title: 'Reportes Service Class: Reporte consolidado mensual delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_consolidado_mensual_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_historial_reportes_delega
+    title: 'Reportes Service Class: Historial reportes delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_historial_reportes_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_por_ciudad_delega
+    title: 'Reportes Service Class: Reporte por ciudad delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_por_ciudad_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_indicadores_desempeno_delega
+    title: 'Reportes Service Class: Indicadores desempeno delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_indicadores_desempeno_delega'
+  - automation_id: reportes_use_cases_reportesserviceclass_test_reporte_pagos_por_metodo_delega
+    title: 'Reportes Service Class: Reporte pagos por metodo delega'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceClass
+      | Función: test_reporte_pagos_por_metodo_delega'
+  - automation_id: reportes_use_cases_reportesserviceunconfigured_test_svc_raises_cuando_no_configu
+    title: 'Reportes Service Unconfigured: Svc raises cuando no configurado'
+    description: 'Archivo: test_reportes_use_cases.py | Clase: TestReportesServiceUnconfigured
+      | Función: test_svc_raises_cuando_no_configurado'
+- title: '[Backend] API — Routers — Citas y Recibos'
+  cases:
+  - automation_id: router_citas_recibos_bitacorarouter_test_listar_bitacora
+    title: 'Bitacora Router: Listar bitacora'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_listar_bitacora'
+  - automation_id: router_citas_recibos_bitacorarouter_test_filtrar_por_tabla
+    title: 'Bitacora Router: Filtrar por tabla'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_filtrar_por_tabla'
+  - automation_id: router_citas_recibos_bitacorarouter_test_filtrar_por_operacion
+    title: 'Bitacora Router: Filtrar por operacion'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_filtrar_por_operacion'
+  - automation_id: router_citas_recibos_bitacorarouter_test_filtrar_por_fechas
+    title: 'Bitacora Router: Filtrar por fechas'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_filtrar_por_fechas'
+  - automation_id: router_citas_recibos_bitacorarouter_test_filtrar_por_busqueda
+    title: 'Bitacora Router: Filtrar por busqueda'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_filtrar_por_busqueda'
+  - automation_id: router_citas_recibos_bitacorarouter_test_paginacion
+    title: 'Bitacora Router: Paginacion'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_paginacion'
+  - automation_id: router_citas_recibos_bitacorarouter_test_limit_invalido_422
+    title: 'Bitacora Router: Limit invalido 422'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_limit_invalido_422'
+  - automation_id: router_citas_recibos_bitacorarouter_test_recepcionista_no_puede_ver_bitacora
+    title: 'Bitacora Router: Recepcionista no puede ver bitacora'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_recepcionista_no_puede_ver_bitacora'
+  - automation_id: router_citas_recibos_bitacorarouter_test_sin_auth_401
+    title: 'Bitacora Router: Sin auth 401'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestBitacoraRouter
+      | Función: test_sin_auth_401'
+  - automation_id: router_citas_recibos_citasrouter_test_stats
+    title: 'Citas Router: Stats'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_stats'
+  - automation_id: router_citas_recibos_citasrouter_test_hoy
+    title: 'Citas Router: Hoy'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_hoy'
+  - automation_id: router_citas_recibos_citasrouter_test_listar_default
+    title: 'Citas Router: Listar default'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_listar_default'
+  - automation_id: router_citas_recibos_citasrouter_test_listar_con_filtros
+    title: 'Citas Router: Listar con filtros'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_listar_con_filtros'
+  - automation_id: router_citas_recibos_citasrouter_test_listar_limit_invalido_422
+    title: 'Citas Router: Listar limit invalido 422'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_listar_limit_invalido_422'
+  - automation_id: router_citas_recibos_citasrouter_test_listar_limit_excesivo_422
+    title: 'Citas Router: Listar limit excesivo 422'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_listar_limit_excesivo_422'
+  - automation_id: router_citas_recibos_citasrouter_test_obtener_cita
+    title: 'Citas Router: Obtener cita'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_obtener_cita'
+  - automation_id: router_citas_recibos_citasrouter_test_crear_cita_201
+    title: 'Citas Router: Crear cita 201'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_crear_cita_201'
+  - automation_id: router_citas_recibos_citasrouter_test_crear_cita_sin_body_422
+    title: 'Citas Router: Crear cita sin body 422'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_crear_cita_sin_body_422'
+  - automation_id: router_citas_recibos_citasrouter_test_actualizar_cita
+    title: 'Citas Router: Actualizar cita'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_actualizar_cita'
+  - automation_id: router_citas_recibos_citasrouter_test_iniciar_cita
+    title: 'Citas Router: Iniciar cita'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_iniciar_cita'
+  - automation_id: router_citas_recibos_citasrouter_test_completar_cita
+    title: 'Citas Router: Completar cita'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_completar_cita'
+  - automation_id: router_citas_recibos_citasrouter_test_cancelar_cita
+    title: 'Citas Router: Cancelar cita'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_cancelar_cita'
+  - automation_id: router_citas_recibos_citasrouter_test_eliminar_cita
+    title: 'Citas Router: Eliminar cita'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_eliminar_cita'
+  - automation_id: router_citas_recibos_citasrouter_test_not_found_propagado
+    title: 'Citas Router: Not found propagado'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_not_found_propagado'
+  - automation_id: router_citas_recibos_citasrouter_test_sin_auth_401
+    title: 'Citas Router: Sin auth 401'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestCitasRouter |
+      Función: test_sin_auth_401'
+  - automation_id: router_citas_recibos_doctoresrouter_test_listar_doctores
+    title: 'Doctores Router: Listar doctores'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_listar_doctores'
+  - automation_id: router_citas_recibos_doctoresrouter_test_doctor_del_dia
+    title: 'Doctores Router: Doctor del dia'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_doctor_del_dia'
+  - automation_id: router_citas_recibos_doctoresrouter_test_disponibilidad_semana
+    title: 'Doctores Router: Disponibilidad semana'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_disponibilidad_semana'
+  - automation_id: router_citas_recibos_doctoresrouter_test_obtener_doctor
+    title: 'Doctores Router: Obtener doctor'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_obtener_doctor'
+  - automation_id: router_citas_recibos_doctoresrouter_test_crear_doctor_201
+    title: 'Doctores Router: Crear doctor 201'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_crear_doctor_201'
+  - automation_id: router_citas_recibos_doctoresrouter_test_actualizar_doctor
+    title: 'Doctores Router: Actualizar doctor'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_actualizar_doctor'
+  - automation_id: router_citas_recibos_doctoresrouter_test_desactivar_doctor
+    title: 'Doctores Router: Desactivar doctor'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_desactivar_doctor'
+  - automation_id: router_citas_recibos_doctoresrouter_test_obtener_disponibilidad
+    title: 'Doctores Router: Obtener disponibilidad'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_obtener_disponibilidad'
+  - automation_id: router_citas_recibos_doctoresrouter_test_crear_disponibilidad_201
+    title: 'Doctores Router: Crear disponibilidad 201'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_crear_disponibilidad_201'
+  - automation_id: router_citas_recibos_doctoresrouter_test_eliminar_disponibilidad
+    title: 'Doctores Router: Eliminar disponibilidad'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_eliminar_disponibilidad'
+  - automation_id: router_citas_recibos_doctoresrouter_test_not_found_doctor
+    title: 'Doctores Router: Not found doctor'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_not_found_doctor'
+  - automation_id: router_citas_recibos_doctoresrouter_test_recepcionista_no_puede_crear_doctor
+    title: 'Doctores Router: Recepcionista no puede crear doctor'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestDoctoresRouter
+      | Función: test_recepcionista_no_puede_crear_doctor'
+  - automation_id: router_citas_recibos_recibosrouter_test_stats
+    title: 'Recibos Router: Stats'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_stats'
+  - automation_id: router_citas_recibos_recibosrouter_test_metodos_pago
+    title: 'Recibos Router: Metodos pago'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_metodos_pago'
+  - automation_id: router_citas_recibos_recibosrouter_test_listar_ventas
+    title: 'Recibos Router: Listar ventas'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_listar_ventas'
+  - automation_id: router_citas_recibos_recibosrouter_test_listar_con_filtros
+    title: 'Recibos Router: Listar con filtros'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_listar_con_filtros'
+  - automation_id: router_citas_recibos_recibosrouter_test_listar_limit_invalido_422
+    title: 'Recibos Router: Listar limit invalido 422'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_listar_limit_invalido_422'
+  - automation_id: router_citas_recibos_recibosrouter_test_crear_venta_201
+    title: 'Recibos Router: Crear venta 201'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_crear_venta_201'
+  - automation_id: router_citas_recibos_recibosrouter_test_crear_venta_sin_paciente_422
+    title: 'Recibos Router: Crear venta sin paciente 422'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_crear_venta_sin_paciente_422'
+  - automation_id: router_citas_recibos_recibosrouter_test_obtener_venta
+    title: 'Recibos Router: Obtener venta'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_obtener_venta'
+  - automation_id: router_citas_recibos_recibosrouter_test_cancelar_venta
+    title: 'Recibos Router: Cancelar venta'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_cancelar_venta'
+  - automation_id: router_citas_recibos_recibosrouter_test_registrar_pago_parcial
+    title: 'Recibos Router: Registrar pago parcial'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_registrar_pago_parcial'
+  - automation_id: router_citas_recibos_recibosrouter_test_exentar_venta
+    title: 'Recibos Router: Exentar venta'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_exentar_venta'
+  - automation_id: router_citas_recibos_recibosrouter_test_listar_items_venta
+    title: 'Recibos Router: Listar items venta'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_listar_items_venta'
+  - automation_id: router_citas_recibos_recibosrouter_test_not_found_venta
+    title: 'Recibos Router: Not found venta'
+    description: 'Archivo: test_router_citas_recibos.py | Clase: TestRecibosRouter
+      | Función: test_not_found_venta'
+- title: '[Backend] API — Routers — Cobertura completa de endpoints'
+  cases:
+  - automation_id: router_coverage_appfactorymiddleware_test_request_size_limit_413
+    title: 'App Factory Middleware: Request size limit 413'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAppFactoryMiddleware
+      | Función: test_request_size_limit_413'
+  - automation_id: router_coverage_appfactorymiddleware_test_request_size_limit_invalid_content_len
+    title: 'App Factory Middleware: Request size limit invalid content length 400'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAppFactoryMiddleware
+      | Función: test_request_size_limit_invalid_content_length_400'
+  - automation_id: router_coverage_appfactorymiddleware_test_security_headers_non_debug_csp
+    title: 'App Factory Middleware: Security headers non debug csp'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAppFactoryMiddleware
+      | Función: test_security_headers_non_debug_csp'
+  - automation_id: router_coverage_appfactorymiddleware_test_request_logging_skip_no_log_path
+    title: 'App Factory Middleware: Request logging skip no log path'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAppFactoryMiddleware
+      | Función: test_request_logging_skip_no_log_path'
+  - automation_id: router_coverage_authrouterextracoverage_test_get_me_user_not_found_returns_404
+    title: 'Auth Router Extra Coverage: Get me user not found returns 404'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAuthRouterExtraCoverage
+      | Función: test_get_me_user_not_found_returns_404'
+  - automation_id: router_coverage_authrouterextracoverage_test_cambiar_contrasena_user_not_found_r
+    title: 'Auth Router Extra Coverage: Cambiar contrasena user not found returns
+      404'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAuthRouterExtraCoverage
+      | Función: test_cambiar_contrasena_user_not_found_returns_404'
+  - automation_id: router_coverage_authrouterextracoverage_test_crear_usuario_conflict_returns_409
+    title: 'Auth Router Extra Coverage: Crear usuario conflict returns 409'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAuthRouterExtraCoverage
+      | Función: test_crear_usuario_conflict_returns_409'
+  - automation_id: router_coverage_authrouterextracoverage_test_crear_usuario_generic_exception_ret
+    title: 'Auth Router Extra Coverage: Crear usuario generic exception returns 500'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAuthRouterExtraCoverage
+      | Función: test_crear_usuario_generic_exception_returns_500'
+  - automation_id: router_coverage_authrouterextracoverage_test_actualizar_usuario_generic_exceptio
+    title: 'Auth Router Extra Coverage: Actualizar usuario generic exception returns
+      500'
+    description: 'Archivo: test_router_coverage.py | Clase: TestAuthRouterExtraCoverage
+      | Función: test_actualizar_usuario_generic_exception_returns_500'
+  - automation_id: router_coverage_beneficiariosrouterextraendpoints_test_stats_beneficiarios_retur
+    title: 'Beneficiarios Router Extra Endpoints: Stats beneficiarios returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterExtraEndpoints
+      | Función: test_stats_beneficiarios_returns_200'
+  - automation_id: router_coverage_beneficiariosrouterextraendpoints_test_dashboard_stats_returns_2
+    title: 'Beneficiarios Router Extra Endpoints: Dashboard stats returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterExtraEndpoints
+      | Función: test_dashboard_stats_returns_200'
+  - automation_id: router_coverage_beneficiariosrouterextraendpoints_test_listar_beneficiarios_retu
+    title: 'Beneficiarios Router Extra Endpoints: Listar beneficiarios returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterExtraEndpoints
+      | Función: test_listar_beneficiarios_returns_200'
+  - automation_id: router_coverage_beneficiariosrouterextraendpoints_test_obtener_beneficiario_retu
+    title: 'Beneficiarios Router Extra Endpoints: Obtener beneficiario returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterExtraEndpoints
+      | Función: test_obtener_beneficiario_returns_200'
+  - automation_id: router_coverage_beneficiariosrouterextraendpoints_test_crear_beneficiario_return
+    title: 'Beneficiarios Router Extra Endpoints: Crear beneficiario returns 201'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterExtraEndpoints
+      | Función: test_crear_beneficiario_returns_201'
+  - automation_id: router_coverage_beneficiariosrouterextraendpoints_test_actualizar_beneficiario_r
+    title: 'Beneficiarios Router Extra Endpoints: Actualizar beneficiario returns
+      200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterExtraEndpoints
+      | Función: test_actualizar_beneficiario_returns_200'
+  - automation_id: router_coverage_beneficiariosrouterextraendpoints_test_eliminar_beneficiario_ret
+    title: 'Beneficiarios Router Extra Endpoints: Eliminar beneficiario returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterExtraEndpoints
+      | Función: test_eliminar_beneficiario_returns_200'
+  - automation_id: router_coverage_beneficiariosrouterextraendpoints_test_historial_beneficiario_re
+    title: 'Beneficiarios Router Extra Endpoints: Historial beneficiario returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterExtraEndpoints
+      | Función: test_historial_beneficiario_returns_200'
+  - automation_id: router_coverage_beneficiariosroutermissingendpoints_test_tipos_espina_returns_20
+    title: 'Beneficiarios Router Missing Endpoints: Tipos espina returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterMissingEndpoints
+      | Función: test_tipos_espina_returns_200'
+  - automation_id: router_coverage_beneficiariosroutermissingendpoints_test_mapa_returns_200
+    title: 'Beneficiarios Router Missing Endpoints: Mapa returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterMissingEndpoints
+      | Función: test_mapa_returns_200'
+  - automation_id: router_coverage_beneficiariosroutermissingendpoints_test_membresias_proximas_a_v
+    title: 'Beneficiarios Router Missing Endpoints: Membresias proximas a vencer returns
+      200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterMissingEndpoints
+      | Función: test_membresias_proximas_a_vencer_returns_200'
+  - automation_id: router_coverage_beneficiariosroutermissingendpoints_test_renovar_membresia_retur
+    title: 'Beneficiarios Router Missing Endpoints: Renovar membresia returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosRouterMissingEndpoints
+      | Función: test_renovar_membresia_returns_200'
+  - automation_id: router_coverage_beneficiariosserviceoptionalnormalization_test_crear_beneficiari
+    title: 'Beneficiarios Service Optional Normalization: Crear beneficiario with
+      optional fields normalizes correo'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBeneficiariosServiceOptionalNormalization
+      | Función: test_crear_beneficiario_with_optional_fields_normalizes_correo'
+  - automation_id: router_coverage_bitacoraservicelistar_test_bitacora_service_listar_returns_dict
+    title: 'Bitacora Service Listar: Bitacora service listar returns dict'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBitacoraServiceListar
+      | Función: test_bitacora_service_listar_returns_dict'
+  - automation_id: router_coverage_busquedarouter_test_buscar_global_returns_scored_results
+    title: 'Busqueda Router: Buscar global returns scored results'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBusquedaRouter | Función:
+      test_buscar_global_returns_scored_results'
+  - automation_id: router_coverage_busquedarouter_test_buscar_global_no_match_returns_empty
+    title: 'Busqueda Router: Buscar global no match returns empty'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBusquedaRouter | Función:
+      test_buscar_global_no_match_returns_empty'
+  - automation_id: router_coverage_busquedarouter_test_buscar_global_too_short_returns_422
+    title: 'Busqueda Router: Buscar global too short returns 422'
+    description: 'Archivo: test_router_coverage.py | Clase: TestBusquedaRouter | Función:
+      test_buscar_global_too_short_returns_422'
+  - automation_id: router_coverage_doctoresrouterextraendpoints_test_obtener_servicios_doctor_retur
+    title: 'Doctores Router Extra Endpoints: Obtener servicios doctor returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterExtraEndpoints
+      | Función: test_obtener_servicios_doctor_returns_200'
+  - automation_id: router_coverage_doctoresrouterextraendpoints_test_listar_disponibilidad_especial
+    title: 'Doctores Router Extra Endpoints: Listar disponibilidad especial returns
+      200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterExtraEndpoints
+      | Función: test_listar_disponibilidad_especial_returns_200'
+  - automation_id: router_coverage_doctoresrouterextraendpoints_test_crear_disponibilidad_especial_
+    title: 'Doctores Router Extra Endpoints: Crear disponibilidad especial returns
+      201'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterExtraEndpoints
+      | Función: test_crear_disponibilidad_especial_returns_201'
+  - automation_id: router_coverage_doctoresrouterextraendpoints_test_eliminar_disponibilidad_especi
+    title: 'Doctores Router Extra Endpoints: Eliminar disponibilidad especial returns
+      200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterExtraEndpoints
+      | Función: test_eliminar_disponibilidad_especial_returns_200'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_doctor_del_dia_returns_200
+    title: 'Doctores Router Main Endpoints: Doctor del dia returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_doctor_del_dia_returns_200'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_listar_doctores_returns_200
+    title: 'Doctores Router Main Endpoints: Listar doctores returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_listar_doctores_returns_200'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_disponibilidad_semana_returns_2
+    title: 'Doctores Router Main Endpoints: Disponibilidad semana returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_disponibilidad_semana_returns_200'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_obtener_doctor_returns_200
+    title: 'Doctores Router Main Endpoints: Obtener doctor returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_obtener_doctor_returns_200'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_crear_doctor_returns_201
+    title: 'Doctores Router Main Endpoints: Crear doctor returns 201'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_crear_doctor_returns_201'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_actualizar_doctor_returns_200
+    title: 'Doctores Router Main Endpoints: Actualizar doctor returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_actualizar_doctor_returns_200'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_desactivar_doctor_returns_200
+    title: 'Doctores Router Main Endpoints: Desactivar doctor returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_desactivar_doctor_returns_200'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_obtener_disponibilidad_returns_
+    title: 'Doctores Router Main Endpoints: Obtener disponibilidad returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_obtener_disponibilidad_returns_200'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_crear_disponibilidad_returns_20
+    title: 'Doctores Router Main Endpoints: Crear disponibilidad returns 201'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_crear_disponibilidad_returns_201'
+  - automation_id: router_coverage_doctoresroutermainendpoints_test_eliminar_disponibilidad_returns
+    title: 'Doctores Router Main Endpoints: Eliminar disponibilidad returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestDoctoresRouterMainEndpoints
+      | Función: test_eliminar_disponibilidad_returns_200'
+  - automation_id: router_coverage_ensurepreregistroaccess_test_no_token_no_user_raises_401
+    title: 'Ensure Preregistro Access: No token no user raises 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestEnsurePreregistroAccess
+      | Función: test_no_token_no_user_raises_401'
+  - automation_id: router_coverage_ensurepreregistroaccess_test_wrong_id_paciente_raises_403
+    title: 'Ensure Preregistro Access: Wrong id paciente raises 403'
+    description: 'Archivo: test_router_coverage.py | Clase: TestEnsurePreregistroAccess
+      | Función: test_wrong_id_paciente_raises_403'
+  - automation_id: router_coverage_ensurepreregistroaccess_test_current_user_bypasses_token_check
+    title: 'Ensure Preregistro Access: Current user bypasses token check'
+    description: 'Archivo: test_router_coverage.py | Clase: TestEnsurePreregistroAccess
+      | Función: test_current_user_bypasses_token_check'
+  - automation_id: router_coverage_ensurepreregistroaccessreturnsprereg_test_matching_id_paciente_r
+    title: 'Ensure Preregistro Access Returns Prereg: Matching id paciente returns
+      prereg claims'
+    description: 'Archivo: test_router_coverage.py | Clase: TestEnsurePreregistroAccessReturnsPrereg
+      | Función: test_matching_id_paciente_returns_prereg_claims'
+  - automation_id: router_coverage_exportacioneswserrorpaths_test_ws_exportar_reporte_exception_sen
+    title: 'Exportaciones Ws Error Paths: Ws exportar reporte exception sends error
+      json'
+    description: 'Archivo: test_router_coverage.py | Clase: TestExportacionesWsErrorPaths
+      | Función: test_ws_exportar_reporte_exception_sends_error_json'
+  - automation_id: router_coverage_issuepreregistrotoken_test_issue_preregistro_token_returns_strin
+    title: 'Issue Preregistro Token: Issue preregistro token returns string'
+    description: 'Archivo: test_router_coverage.py | Clase: TestIssuePreregistroToken
+      | Función: test_issue_preregistro_token_returns_string'
+  - automation_id: router_coverage_metricasnoespecificadogenero_test_metricas_no_especificado_gener
+    title: 'Metricas No Especificado Genero: Metricas no especificado genero'
+    description: 'Archivo: test_router_coverage.py | Clase: TestMetricasNoEspecificadoGenero
+      | Función: test_metricas_no_especificado_genero'
+  - automation_id: router_coverage_metricasrouter_test_metricas_avanzadas_returns_200
+    title: 'Metricas Router: Metricas avanzadas returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestMetricasRouter | Función:
+      test_metricas_avanzadas_returns_200'
+  - automation_id: router_coverage_metricasrouter_test_metricas_distribucion_edades
+    title: 'Metricas Router: Metricas distribucion edades'
+    description: 'Archivo: test_router_coverage.py | Clase: TestMetricasRouter | Función:
+      test_metricas_distribucion_edades'
+  - automation_id: router_coverage_metricasrouter_test_metricas_concentracion_geografica
+    title: 'Metricas Router: Metricas concentracion geografica'
+    description: 'Archivo: test_router_coverage.py | Clase: TestMetricasRouter | Función:
+      test_metricas_concentracion_geografica'
+  - automation_id: router_coverage_metricasrouter_test_metricas_membresias
+    title: 'Metricas Router: Metricas membresias'
+    description: 'Archivo: test_router_coverage.py | Clase: TestMetricasRouter | Función:
+      test_metricas_membresias'
+  - automation_id: router_coverage_metricasrouter_test_metricas_distribucion_genero
+    title: 'Metricas Router: Metricas distribucion genero'
+    description: 'Archivo: test_router_coverage.py | Clase: TestMetricasRouter | Función:
+      test_metricas_distribucion_genero'
+  - automation_id: router_coverage_metricasrouter_test_metricas_tipos_espina_prevalencia
+    title: 'Metricas Router: Metricas tipos espina prevalencia'
+    description: 'Archivo: test_router_coverage.py | Clase: TestMetricasRouter | Función:
+      test_metricas_tipos_espina_prevalencia'
+  - automation_id: router_coverage_metricasrouter_test_metricas_tendencias
+    title: 'Metricas Router: Metricas tendencias'
+    description: 'Archivo: test_router_coverage.py | Clase: TestMetricasRouter | Función:
+      test_metricas_tendencias'
+  - automation_id: router_coverage_notificacionesroutercoverage_test_get_notificaciones_exception_i
+    title: 'Notificaciones Router Coverage: Get notificaciones exception in fn is
+      swallowed'
+    description: 'Archivo: test_router_coverage.py | Clase: TestNotificacionesRouterCoverage
+      | Función: test_get_notificaciones_exception_in_fn_is_swallowed'
+  - automation_id: router_coverage_notificacionesroutercoverage_test_get_notificaciones_happy_path_
+    title: 'Notificaciones Router Coverage: Get notificaciones happy path returns
+      200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestNotificacionesRouterCoverage
+      | Función: test_get_notificaciones_happy_path_returns_200'
+  - automation_id: router_coverage_notificacionesroutercoverage_test_websocket_invalid_token_closes
+    title: 'Notificaciones Router Coverage: Websocket invalid token closes 1008'
+    description: 'Archivo: test_router_coverage.py | Clase: TestNotificacionesRouterCoverage
+      | Función: test_websocket_invalid_token_closes_1008'
+  - automation_id: router_coverage_notificacioneswebsocketvalidtoken_test_ws_valid_token_sends_noti
+    title: 'Notificaciones Web Socket Valid Token: Ws valid token sends notifications'
+    description: 'Archivo: test_router_coverage.py | Clase: TestNotificacionesWebSocketValidToken
+      | Función: test_ws_valid_token_sends_notifications'
+  - automation_id: router_coverage_notificacioneswebsocketvalidtoken_test_ws_valid_token_exception_
+    title: 'Notificaciones Web Socket Valid Token: Ws valid token exception in recopilar
+      logs warning'
+    description: 'Archivo: test_router_coverage.py | Clase: TestNotificacionesWebSocketValidToken
+      | Función: test_ws_valid_token_exception_in_recopilar_logs_warning'
+  - automation_id: router_coverage_preregistrorouterallendpoints_test_listar_preregistros_returns_2
+    title: 'Preregistro Router All Endpoints: Listar preregistros returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterAllEndpoints
+      | Función: test_listar_preregistros_returns_200'
+  - automation_id: router_coverage_preregistrorouterallendpoints_test_crear_preregistro_returns_201
+    title: 'Preregistro Router All Endpoints: Crear preregistro returns 201'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterAllEndpoints
+      | Función: test_crear_preregistro_returns_201'
+  - automation_id: router_coverage_preregistrorouterallendpoints_test_listar_tipos_espina_publico_r
+    title: 'Preregistro Router All Endpoints: Listar tipos espina publico returns
+      200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterAllEndpoints
+      | Función: test_listar_tipos_espina_publico_returns_200'
+  - automation_id: router_coverage_preregistrorouterallendpoints_test_listar_tipos_documento_public
+    title: 'Preregistro Router All Endpoints: Listar tipos documento publico returns
+      200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterAllEndpoints
+      | Función: test_listar_tipos_documento_publico_returns_200'
+  - automation_id: router_coverage_preregistrorouterallendpoints_test_obtener_preregistro_returns_2
+    title: 'Preregistro Router All Endpoints: Obtener preregistro returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterAllEndpoints
+      | Función: test_obtener_preregistro_returns_200'
+  - automation_id: router_coverage_preregistrorouterallendpoints_test_actualizar_preregistro_return
+    title: 'Preregistro Router All Endpoints: Actualizar preregistro returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterAllEndpoints
+      | Función: test_actualizar_preregistro_returns_200'
+  - automation_id: router_coverage_preregistrorouterallendpoints_test_aprobar_preregistro_returns_2
+    title: 'Preregistro Router All Endpoints: Aprobar preregistro returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterAllEndpoints
+      | Función: test_aprobar_preregistro_returns_200'
+  - automation_id: router_coverage_preregistrorouterallendpoints_test_rechazar_preregistro_returns_
+    title: 'Preregistro Router All Endpoints: Rechazar preregistro returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterAllEndpoints
+      | Función: test_rechazar_preregistro_returns_200'
+  - automation_id: router_coverage_preregistroroutermissingendpoints_test_check_curp_disponible_ret
+    title: 'Preregistro Router Missing Endpoints: Check curp disponible returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterMissingEndpoints
+      | Función: test_check_curp_disponible_returns_200'
+  - automation_id: router_coverage_preregistroroutermissingendpoints_test_subir_documento_returns_2
+    title: 'Preregistro Router Missing Endpoints: Subir documento returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterMissingEndpoints
+      | Función: test_subir_documento_returns_200'
+  - automation_id: router_coverage_preregistroroutermissingendpoints_test_listar_documentos_returns
+    title: 'Preregistro Router Missing Endpoints: Listar documentos returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterMissingEndpoints
+      | Función: test_listar_documentos_returns_200'
+  - automation_id: router_coverage_preregistroroutermissingendpoints_test_obtener_documento_archivo
+    title: 'Preregistro Router Missing Endpoints: Obtener documento archivo returns
+      200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterMissingEndpoints
+      | Función: test_obtener_documento_archivo_returns_200'
+  - automation_id: router_coverage_preregistroroutermissingendpoints_test_eliminar_documento_return
+    title: 'Preregistro Router Missing Endpoints: Eliminar documento returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestPreregistroRouterMissingEndpoints
+      | Función: test_eliminar_documento_returns_200'
+  - automation_id: router_coverage_recibosrouterwithrealservice_test_stats_ventas_returns_200
+    title: 'Recibos Router With Real Service: Stats ventas returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestRecibosRouterWithRealService
+      | Función: test_stats_ventas_returns_200'
+  - automation_id: router_coverage_recibosrouterwithrealservice_test_listar_metodos_pago_returns_20
+    title: 'Recibos Router With Real Service: Listar metodos pago returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestRecibosRouterWithRealService
+      | Función: test_listar_metodos_pago_returns_200'
+  - automation_id: router_coverage_recibosrouterwithrealservice_test_listar_ventas_returns_200
+    title: 'Recibos Router With Real Service: Listar ventas returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestRecibosRouterWithRealService
+      | Función: test_listar_ventas_returns_200'
+  - automation_id: router_coverage_recibosrouterwithrealservice_test_crear_venta_returns_201
+    title: 'Recibos Router With Real Service: Crear venta returns 201'
+    description: 'Archivo: test_router_coverage.py | Clase: TestRecibosRouterWithRealService
+      | Función: test_crear_venta_returns_201'
+  - automation_id: router_coverage_recibosrouterwithrealservice_test_obtener_venta_returns_200
+    title: 'Recibos Router With Real Service: Obtener venta returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestRecibosRouterWithRealService
+      | Función: test_obtener_venta_returns_200'
+  - automation_id: router_coverage_recibosrouterwithrealservice_test_cancelar_venta_con_motivo_retu
+    title: 'Recibos Router With Real Service: Cancelar venta con motivo returns 200'
+    description: 'Archivo: test_router_coverage.py | Clase: TestRecibosRouterWithRealService
+      | Función: test_cancelar_venta_con_motivo_returns_200'
+  - automation_id: router_coverage_securitybuildpreregistrofromtoken_test_wrong_scope_raises_401
+    title: 'Security Build Preregistro From Token: Wrong scope raises 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestSecurityBuildPreregistroFromToken
+      | Función: test_wrong_scope_raises_401'
+  - automation_id: router_coverage_securitybuildpreregistrofromtoken_test_missing_id_paciente_raise
+    title: 'Security Build Preregistro From Token: Missing id paciente raises 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestSecurityBuildPreregistroFromToken
+      | Función: test_missing_id_paciente_raises_401'
+  - automation_id: router_coverage_securitybuildpreregistrofromtoken_test_token_decode_error_raises
+    title: 'Security Build Preregistro From Token: Token decode error raises 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestSecurityBuildPreregistroFromToken
+      | Función: test_token_decode_error_raises_401'
+  - automation_id: router_coverage_securitybuildpreregistrofromtoken_test_valid_preregistro_token
+    title: 'Security Build Preregistro From Token: Valid preregistro token'
+    description: 'Archivo: test_router_coverage.py | Clase: TestSecurityBuildPreregistroFromToken
+      | Función: test_valid_preregistro_token'
+  - automation_id: router_coverage_securitybuilduserfromtoken_test_no_sub_in_payload_raises_401
+    title: 'Security Build User From Token: No sub in payload raises 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestSecurityBuildUserFromToken
+      | Función: test_no_sub_in_payload_raises_401'
+  - automation_id: router_coverage_securitybuilduserfromtoken_test_token_decode_error_raises_401
+    title: 'Security Build User From Token: Token decode error raises 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestSecurityBuildUserFromToken
+      | Función: test_token_decode_error_raises_401'
+  - automation_id: router_coverage_securityoptionalcurrentuser_test_optional_current_user_with_vali
+    title: 'Security Optional Current User: Optional current user with valid token
+      returns user'
+    description: 'Archivo: test_router_coverage.py | Clase: TestSecurityOptionalCurrentUser
+      | Función: test_optional_current_user_with_valid_token_returns_user'
+  - automation_id: router_coverage_securityoptionalcurrentuser_test_optional_current_user_no_token_
+    title: 'Security Optional Current User: Optional current user no token returns
+      none'
+    description: 'Archivo: test_router_coverage.py | Clase: TestSecurityOptionalCurrentUser
+      | Función: test_optional_current_user_no_token_returns_none'
+  - automation_id: router_coverage_tokenrefreshjticonsumed_test_jti_not_in_store_returns_401
+    title: 'Token Refresh Jti Consumed: Jti not in store returns 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestTokenRefreshJtiConsumed
+      | Función: test_jti_not_in_store_returns_401'
+  - automation_id: router_coverage_tokenrefreshjticonsumed_test_invalid_token_returns_401
+    title: 'Token Refresh Jti Consumed: Invalid token returns 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestTokenRefreshJtiConsumed
+      | Función: test_invalid_token_returns_401'
+  - automation_id: router_coverage_tokenrefreshjticonsumed_test_wrong_token_type_returns_401
+    title: 'Token Refresh Jti Consumed: Wrong token type returns 401'
+    description: 'Archivo: test_router_coverage.py | Clase: TestTokenRefreshJtiConsumed
+      | Función: test_wrong_token_type_returns_401'
+  - automation_id: router_coverage_tokenrefreshsuccesspath_test_valid_refresh_token_returns_new_tok
+    title: 'Token Refresh Success Path: Valid refresh token returns new tokens'
+    description: 'Archivo: test_router_coverage.py | Clase: TestTokenRefreshSuccessPath
+      | Función: test_valid_refresh_token_returns_new_tokens'
+- title: '[Backend] API — Routers — Módulos extra'
+  cases:
+  - automation_id: router_extras_almacenrouter_test_listar_productos
+    title: 'Almacen Router: Listar productos'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_productos'
+  - automation_id: router_extras_almacenrouter_test_listar_productos_con_filtros
+    title: 'Almacen Router: Listar productos con filtros'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_productos_con_filtros'
+  - automation_id: router_extras_almacenrouter_test_obtener_producto
+    title: 'Almacen Router: Obtener producto'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_obtener_producto'
+  - automation_id: router_extras_almacenrouter_test_crear_producto_201
+    title: 'Almacen Router: Crear producto 201'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_crear_producto_201'
+  - automation_id: router_extras_almacenrouter_test_crear_producto_sin_nombre_422
+    title: 'Almacen Router: Crear producto sin nombre 422'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_crear_producto_sin_nombre_422'
+  - automation_id: router_extras_almacenrouter_test_actualizar_producto
+    title: 'Almacen Router: Actualizar producto'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_actualizar_producto'
+  - automation_id: router_extras_almacenrouter_test_desactivar_producto
+    title: 'Almacen Router: Desactivar producto'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_desactivar_producto'
+  - automation_id: router_extras_almacenrouter_test_ajustar_existencia
+    title: 'Almacen Router: Ajustar existencia'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_ajustar_existencia'
+  - automation_id: router_extras_almacenrouter_test_listar_productos_limit_invalido_422
+    title: 'Almacen Router: Listar productos limit invalido 422'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_productos_limit_invalido_422'
+  - automation_id: router_extras_almacenrouter_test_listar_servicios
+    title: 'Almacen Router: Listar servicios'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_servicios'
+  - automation_id: router_extras_almacenrouter_test_listar_servicios_con_filtros
+    title: 'Almacen Router: Listar servicios con filtros'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_servicios_con_filtros'
+  - automation_id: router_extras_almacenrouter_test_obtener_servicio
+    title: 'Almacen Router: Obtener servicio'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_obtener_servicio'
+  - automation_id: router_extras_almacenrouter_test_crear_servicio_201
+    title: 'Almacen Router: Crear servicio 201'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_crear_servicio_201'
+  - automation_id: router_extras_almacenrouter_test_crear_servicio_sin_nombre_422
+    title: 'Almacen Router: Crear servicio sin nombre 422'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_crear_servicio_sin_nombre_422'
+  - automation_id: router_extras_almacenrouter_test_actualizar_servicio
+    title: 'Almacen Router: Actualizar servicio'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_actualizar_servicio'
+  - automation_id: router_extras_almacenrouter_test_desactivar_servicio
+    title: 'Almacen Router: Desactivar servicio'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_desactivar_servicio'
+  - automation_id: router_extras_almacenrouter_test_listar_comodatos
+    title: 'Almacen Router: Listar comodatos'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_comodatos'
+  - automation_id: router_extras_almacenrouter_test_listar_comodatos_con_filtros
+    title: 'Almacen Router: Listar comodatos con filtros'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_comodatos_con_filtros'
+  - automation_id: router_extras_almacenrouter_test_obtener_comodato
+    title: 'Almacen Router: Obtener comodato'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_obtener_comodato'
+  - automation_id: router_extras_almacenrouter_test_crear_comodato_201
+    title: 'Almacen Router: Crear comodato 201'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_crear_comodato_201'
+  - automation_id: router_extras_almacenrouter_test_actualizar_comodato
+    title: 'Almacen Router: Actualizar comodato'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_actualizar_comodato'
+  - automation_id: router_extras_almacenrouter_test_listar_movimientos
+    title: 'Almacen Router: Listar movimientos'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_movimientos'
+  - automation_id: router_extras_almacenrouter_test_listar_movimientos_con_filtros
+    title: 'Almacen Router: Listar movimientos con filtros'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_listar_movimientos_con_filtros'
+  - automation_id: router_extras_almacenrouter_test_almacen_stats
+    title: 'Almacen Router: Almacen stats'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_almacen_stats'
+  - automation_id: router_extras_almacenrouter_test_not_found_producto
+    title: 'Almacen Router: Not found producto'
+    description: 'Archivo: test_router_extras.py | Clase: TestAlmacenRouter | Función:
+      test_not_found_producto'
+  - automation_id: router_extras_authextras_test_seed_admin_200
+    title: 'Auth Extras: Seed admin 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_seed_admin_200'
+  - automation_id: router_extras_authextras_test_seed_forbidden_403
+    title: 'Auth Extras: Seed forbidden 403'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_seed_forbidden_403'
+  - automation_id: router_extras_authextras_test_seed_exception_500
+    title: 'Auth Extras: Seed exception 500'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_seed_exception_500'
+  - automation_id: router_extras_authextras_test_token_refresh_sin_body_422
+    title: 'Auth Extras: Token refresh sin body 422'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_token_refresh_sin_body_422'
+  - automation_id: router_extras_authextras_test_token_refresh_token_invalido_401
+    title: 'Auth Extras: Token refresh token invalido 401'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_token_refresh_token_invalido_401'
+  - automation_id: router_extras_authextras_test_token_refresh_tipo_incorrecto_401
+    title: 'Auth Extras: Token refresh tipo incorrecto 401'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_token_refresh_tipo_incorrecto_401'
+  - automation_id: router_extras_authextras_test_refresh_con_auth_200
+    title: 'Auth Extras: Refresh con auth 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_refresh_con_auth_200'
+  - automation_id: router_extras_authextras_test_refresh_sin_auth_401
+    title: 'Auth Extras: Refresh sin auth 401'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_refresh_sin_auth_401'
+  - automation_id: router_extras_authextras_test_reset_password_admin_200
+    title: 'Auth Extras: Reset password admin 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_reset_password_admin_200'
+  - automation_id: router_extras_authextras_test_reset_password_forbidden_403
+    title: 'Auth Extras: Reset password forbidden 403'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_reset_password_forbidden_403'
+  - automation_id: router_extras_authextras_test_reset_password_not_found_404
+    title: 'Auth Extras: Reset password not found 404'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_reset_password_not_found_404'
+  - automation_id: router_extras_authextras_test_reset_password_corta_422
+    title: 'Auth Extras: Reset password corta 422'
+    description: 'Archivo: test_router_extras.py | Clase: TestAuthExtras | Función:
+      test_reset_password_corta_422'
+  - automation_id: router_extras_exportacionesrouter_test_reporte_pdf_200
+    title: 'Exportaciones Router: Reporte pdf 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_reporte_pdf_200'
+  - automation_id: router_extras_exportacionesrouter_test_reporte_pdf_con_filtros
+    title: 'Exportaciones Router: Reporte pdf con filtros'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_reporte_pdf_con_filtros'
+  - automation_id: router_extras_exportacionesrouter_test_beneficiario_pdf_200
+    title: 'Exportaciones Router: Beneficiario pdf 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_beneficiario_pdf_200'
+  - automation_id: router_extras_exportacionesrouter_test_credencial_pdf_200
+    title: 'Exportaciones Router: Credencial pdf 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_credencial_pdf_200'
+  - automation_id: router_extras_exportacionesrouter_test_comprobante_cita_pdf_200
+    title: 'Exportaciones Router: Comprobante cita pdf 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_comprobante_cita_pdf_200'
+  - automation_id: router_extras_exportacionesrouter_test_contrato_comodato_pdf_200
+    title: 'Exportaciones Router: Contrato comodato pdf 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_contrato_comodato_pdf_200'
+  - automation_id: router_extras_exportacionesrouter_test_beneficiarios_excel_200
+    title: 'Exportaciones Router: Beneficiarios excel 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_beneficiarios_excel_200'
+  - automation_id: router_extras_exportacionesrouter_test_beneficiarios_excel_con_filtros
+    title: 'Exportaciones Router: Beneficiarios excel con filtros'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_beneficiarios_excel_con_filtros'
+  - automation_id: router_extras_exportacionesrouter_test_reporte_excel_200
+    title: 'Exportaciones Router: Reporte excel 200'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_reporte_excel_200'
+  - automation_id: router_extras_exportacionesrouter_test_reporte_excel_con_filtros
+    title: 'Exportaciones Router: Reporte excel con filtros'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_reporte_excel_con_filtros'
+  - automation_id: router_extras_exportacionesrouter_test_sin_auth_401
+    title: 'Exportaciones Router: Sin auth 401'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesRouter
+      | Función: test_sin_auth_401'
+  - automation_id: router_extras_exportacioneswebsocket_test_ws_sin_token_cierra_con_error
+    title: 'Exportaciones Web Socket: Ws sin token cierra con error'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesWebSocket
+      | Función: test_ws_sin_token_cierra_con_error'
+  - automation_id: router_extras_exportacioneswebsocket_test_ws_token_invalido_cierra_con_error
+    title: 'Exportaciones Web Socket: Ws token invalido cierra con error'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesWebSocket
+      | Función: test_ws_token_invalido_cierra_con_error'
+  - automation_id: router_extras_exportacioneswebsocket_test_ws_token_valido_flujo_completo
+    title: 'Exportaciones Web Socket: Ws token valido flujo completo'
+    description: 'Archivo: test_router_extras.py | Clase: TestExportacionesWebSocket
+      | Función: test_ws_token_valido_flujo_completo'
+  - automation_id: router_extras_geocodingservice_test_lote_vacio_retorna_cero
+    title: 'Geocoding Service: Lote vacio retorna cero'
+    description: 'Archivo: test_router_extras.py | Clase: TestGeocodingService | Función:
+      test_lote_vacio_retorna_cero'
+  - automation_id: router_extras_geocodingservice_test_lote_con_coordenadas_geocodifica
+    title: 'Geocoding Service: Lote con coordenadas geocodifica'
+    description: 'Archivo: test_router_extras.py | Clase: TestGeocodingService | Función:
+      test_lote_con_coordenadas_geocodifica'
+  - automation_id: router_extras_geocodingservice_test_lote_sin_coordenadas_marca_fallo
+    title: 'Geocoding Service: Lote sin coordenadas marca fallo'
+    description: 'Archivo: test_router_extras.py | Clase: TestGeocodingService | Función:
+      test_lote_sin_coordenadas_marca_fallo'
+  - automation_id: router_extras_geocodingservice_test_lote_mixto_parcial
+    title: 'Geocoding Service: Lote mixto parcial'
+    description: 'Archivo: test_router_extras.py | Clase: TestGeocodingService | Función:
+      test_lote_mixto_parcial'
+  - automation_id: router_extras_geocodingservice_test_lote_respeta_batch_size
+    title: 'Geocoding Service: Lote respeta batch size'
+    description: 'Archivo: test_router_extras.py | Clase: TestGeocodingService | Función:
+      test_lote_respeta_batch_size'
+  - automation_id: router_extras_geocodingservice_test_lote_ciudad_sin_estado
+    title: 'Geocoding Service: Lote ciudad sin estado'
+    description: 'Archivo: test_router_extras.py | Clase: TestGeocodingService | Función:
+      test_lote_ciudad_sin_estado'
+  - automation_id: router_extras_geocodingservice_test_configure_service
+    title: 'Geocoding Service: Configure service'
+    description: 'Archivo: test_router_extras.py | Clase: TestGeocodingService | Función:
+      test_configure_service'
+  - automation_id: router_extras_geocodingservice_test_svc_sin_configurar_lanza_runtime
+    title: 'Geocoding Service: Svc sin configurar lanza runtime'
+    description: 'Archivo: test_router_extras.py | Clase: TestGeocodingService | Función:
+      test_svc_sin_configurar_lanza_runtime'
+  - automation_id: router_extras_notificacionesws_test_ws_token_invalido_cierra_1008
+    title: 'Notificaciones W S: Ws token invalido cierra 1008'
+    description: 'Archivo: test_router_extras.py | Clase: TestNotificacionesWS | Función:
+      test_ws_token_invalido_cierra_1008'
+  - automation_id: router_extras_notificacionesws_test_ws_token_sin_sub_cierra
+    title: 'Notificaciones W S: Ws token sin sub cierra'
+    description: 'Archivo: test_router_extras.py | Clase: TestNotificacionesWS | Función:
+      test_ws_token_sin_sub_cierra'
+- title: '[Backend] API — Routers — HTTP general'
+  cases:
+  - automation_id: router_http_exportacionesrouter_test_reporte_pdf
+    title: 'Exportaciones Router: Reporte pdf'
+    description: 'Archivo: test_router_http.py | Clase: TestExportacionesRouter |
+      Función: test_reporte_pdf'
+  - automation_id: router_http_exportacionesrouter_test_beneficiario_pdf
+    title: 'Exportaciones Router: Beneficiario pdf'
+    description: 'Archivo: test_router_http.py | Clase: TestExportacionesRouter |
+      Función: test_beneficiario_pdf'
+  - automation_id: router_http_exportacionesrouter_test_credencial_pdf
+    title: 'Exportaciones Router: Credencial pdf'
+    description: 'Archivo: test_router_http.py | Clase: TestExportacionesRouter |
+      Función: test_credencial_pdf'
+  - automation_id: router_http_exportacionesrouter_test_comprobante_cita
+    title: 'Exportaciones Router: Comprobante cita'
+    description: 'Archivo: test_router_http.py | Clase: TestExportacionesRouter |
+      Función: test_comprobante_cita'
+  - automation_id: router_http_exportacionesrouter_test_contrato_comodato
+    title: 'Exportaciones Router: Contrato comodato'
+    description: 'Archivo: test_router_http.py | Clase: TestExportacionesRouter |
+      Función: test_contrato_comodato'
+  - automation_id: router_http_exportacionesrouter_test_beneficiarios_excel
+    title: 'Exportaciones Router: Beneficiarios excel'
+    description: 'Archivo: test_router_http.py | Clase: TestExportacionesRouter |
+      Función: test_beneficiarios_excel'
+  - automation_id: router_http_exportacionesrouter_test_reporte_excel
+    title: 'Exportaciones Router: Reporte excel'
+    description: 'Archivo: test_router_http.py | Clase: TestExportacionesRouter |
+      Función: test_reporte_excel'
+  - automation_id: router_http_notificacionesrouter_test_get_notificaciones_sin_alertas
+    title: 'Notificaciones Router: Get notificaciones sin alertas'
+    description: 'Archivo: test_router_http.py | Clase: TestNotificacionesRouter |
+      Función: test_get_notificaciones_sin_alertas'
+  - automation_id: router_http_notificacionesrouter_test_get_notificaciones_con_citas_hoy
+    title: 'Notificaciones Router: Get notificaciones con citas hoy'
+    description: 'Archivo: test_router_http.py | Clase: TestNotificacionesRouter |
+      Función: test_get_notificaciones_con_citas_hoy'
+  - automation_id: router_http_notificacionesrouter_test_get_notificaciones_con_proximas
+    title: 'Notificaciones Router: Get notificaciones con proximas'
+    description: 'Archivo: test_router_http.py | Clase: TestNotificacionesRouter |
+      Función: test_get_notificaciones_con_proximas'
+  - automation_id: router_http_notificacionesrouter_test_get_notificaciones_membresias_500_plus
+    title: 'Notificaciones Router: Get notificaciones membresias 500 plus'
+    description: 'Archivo: test_router_http.py | Clase: TestNotificacionesRouter |
+      Función: test_get_notificaciones_membresias_500_plus'
+  - automation_id: router_http_notificacionesrouter_test_get_notificaciones_membresias_menos_500
+    title: 'Notificaciones Router: Get notificaciones membresias menos 500'
+    description: 'Archivo: test_router_http.py | Clase: TestNotificacionesRouter |
+      Función: test_get_notificaciones_membresias_menos_500'
+  - automation_id: router_http_notificacionesrouter_test_get_notificaciones_almacen_alertas
+    title: 'Notificaciones Router: Get notificaciones almacen alertas'
+    description: 'Archivo: test_router_http.py | Clase: TestNotificacionesRouter |
+      Función: test_get_notificaciones_almacen_alertas'
+  - automation_id: router_http_notificacionesrouter_test_get_notificaciones_excepcion_citas_no_romp
+    title: 'Notificaciones Router: Get notificaciones excepcion citas no rompe'
+    description: 'Archivo: test_router_http.py | Clase: TestNotificacionesRouter |
+      Función: test_get_notificaciones_excepcion_citas_no_rompe'
+  - automation_id: router_http_reportesrouter_test_por_genero
+    title: 'Reportes Router: Por genero'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_por_genero'
+  - automation_id: router_http_reportesrouter_test_por_etapa_vida
+    title: 'Reportes Router: Por etapa vida'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_por_etapa_vida'
+  - automation_id: router_http_reportesrouter_test_por_tipo_espina
+    title: 'Reportes Router: Por tipo espina'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_por_tipo_espina'
+  - automation_id: router_http_reportesrouter_test_por_estado
+    title: 'Reportes Router: Por estado'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_por_estado'
+  - automation_id: router_http_reportesrouter_test_resumen
+    title: 'Reportes Router: Resumen'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_resumen'
+  - automation_id: router_http_reportesrouter_test_servicios_por_tipo
+    title: 'Reportes Router: Servicios por tipo'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_servicios_por_tipo'
+  - automation_id: router_http_reportesrouter_test_estudios_por_tipo
+    title: 'Reportes Router: Estudios por tipo'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_estudios_por_tipo'
+  - automation_id: router_http_reportesrouter_test_pagos_exentos
+    title: 'Reportes Router: Pagos exentos'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_pagos_exentos'
+  - automation_id: router_http_reportesrouter_test_consolidado_mensual
+    title: 'Reportes Router: Consolidado mensual'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_consolidado_mensual'
+  - automation_id: router_http_reportesrouter_test_por_ciudad
+    title: 'Reportes Router: Por ciudad'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_por_ciudad'
+  - automation_id: router_http_reportesrouter_test_indicadores_desempeno
+    title: 'Reportes Router: Indicadores desempeno'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_indicadores_desempeno'
+  - automation_id: router_http_reportesrouter_test_pagos_por_metodo
+    title: 'Reportes Router: Pagos por metodo'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_pagos_por_metodo'
+  - automation_id: router_http_reportesrouter_test_historial
+    title: 'Reportes Router: Historial'
+    description: 'Archivo: test_router_http.py | Clase: TestReportesRouter | Función:
+      test_historial'
+- title: '[Backend] Unitarias puras — Servicios y casos de uso sin HTTP'
+  cases:
+  - automation_id: use_cases_unit_almacenservicemethods_test_actualizar_producto_delegates
+    title: 'Almacen Service Methods: Actualizar producto delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_actualizar_producto_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_listar_servicios_delegates
+    title: 'Almacen Service Methods: Listar servicios delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_listar_servicios_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_actualizar_servicio_delegates
+    title: 'Almacen Service Methods: Actualizar servicio delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_actualizar_servicio_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_desactivar_servicio_delegates
+    title: 'Almacen Service Methods: Desactivar servicio delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_desactivar_servicio_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_listar_comodatos_delegates
+    title: 'Almacen Service Methods: Listar comodatos delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_listar_comodatos_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_obtener_comodato_delegates
+    title: 'Almacen Service Methods: Obtener comodato delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_obtener_comodato_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_crear_comodato_delegates
+    title: 'Almacen Service Methods: Crear comodato delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_crear_comodato_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_actualizar_comodato_delegates
+    title: 'Almacen Service Methods: Actualizar comodato delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_actualizar_comodato_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_listar_movimientos_delegates
+    title: 'Almacen Service Methods: Listar movimientos delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_listar_movimientos_delegates'
+  - automation_id: use_cases_unit_almacenservicemethods_test_ajustar_existencia_empty_motivo_raises
+    title: 'Almacen Service Methods: Ajustar existencia empty motivo raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_ajustar_existencia_empty_motivo_raises'
+  - automation_id: use_cases_unit_almacenservicemethods_test_ajustar_existencia_none_motivo_raises
+    title: 'Almacen Service Methods: Ajustar existencia none motivo raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenServiceMethods
+      | Función: test_ajustar_existencia_none_motivo_raises'
+  - automation_id: use_cases_unit_almacensvcruntimeerror_test_svc_raises_when_not_configured
+    title: 'Almacen Svc Runtime Error: Svc raises when not configured'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAlmacenSvcRuntimeError
+      | Función: test_svc_raises_when_not_configured'
+  - automation_id: use_cases_unit_authserviceadminresetpassword_test_admin_reset_forbidden_for_non_
+    title: 'Auth Service Admin Reset Password: Admin reset forbidden for non admin'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceAdminResetPassword
+      | Función: test_admin_reset_forbidden_for_non_admin'
+  - automation_id: use_cases_unit_authserviceadminresetpassword_test_admin_reset_short_password_rai
+    title: 'Auth Service Admin Reset Password: Admin reset short password raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceAdminResetPassword
+      | Función: test_admin_reset_short_password_raises'
+  - automation_id: use_cases_unit_authserviceadminresetpassword_test_admin_reset_user_not_found
+    title: 'Auth Service Admin Reset Password: Admin reset user not found'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceAdminResetPassword
+      | Función: test_admin_reset_user_not_found'
+  - automation_id: use_cases_unit_authserviceadminresetpassword_test_admin_reset_success
+    title: 'Auth Service Admin Reset Password: Admin reset success'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceAdminResetPassword
+      | Función: test_admin_reset_success'
+  - automation_id: use_cases_unit_authservicechangepassword_test_change_password_user_not_found
+    title: 'Auth Service Change Password: Change password user not found'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceChangePassword
+      | Función: test_change_password_user_not_found'
+  - automation_id: use_cases_unit_authservicefallbackpaths_test_login_fallback_user_found
+    title: 'Auth Service Fallback Paths: Login fallback user found'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceFallbackPaths
+      | Función: test_login_fallback_user_found'
+  - automation_id: use_cases_unit_authservicefallbackpaths_test_login_fallback_user_wrong_password
+    title: 'Auth Service Fallback Paths: Login fallback user wrong password'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceFallbackPaths
+      | Función: test_login_fallback_user_wrong_password'
+  - automation_id: use_cases_unit_authservicefallbackpaths_test_login_fallback_user_not_found
+    title: 'Auth Service Fallback Paths: Login fallback user not found'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceFallbackPaths
+      | Función: test_login_fallback_user_not_found'
+  - automation_id: use_cases_unit_authservicefallbackpaths_test_find_fallback_returns_none
+    title: 'Auth Service Fallback Paths: Find fallback returns none'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceFallbackPaths
+      | Función: test_find_fallback_returns_none'
+  - automation_id: use_cases_unit_authservicegetme_test_get_me_user_not_found_raises
+    title: 'Auth Service Get Me: Get me user not found raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceGetMe |
+      Función: test_get_me_user_not_found_raises'
+  - automation_id: use_cases_unit_authserviceseeddefaultusers_test_seed_forbidden_for_non_admin
+    title: 'Auth Service Seed Default Users: Seed forbidden for non admin'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceSeedDefaultUsers
+      | Función: test_seed_forbidden_for_non_admin'
+  - automation_id: use_cases_unit_authserviceseeddefaultusers_test_seed_returns_already_exist_messa
+    title: 'Auth Service Seed Default Users: Seed returns already exist message'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceSeedDefaultUsers
+      | Función: test_seed_returns_already_exist_message'
+  - automation_id: use_cases_unit_authserviceseeddefaultusers_test_seed_returns_inserted_message
+    title: 'Auth Service Seed Default Users: Seed returns inserted message'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestAuthServiceSeedDefaultUsers
+      | Función: test_seed_returns_inserted_message'
+  - automation_id: use_cases_unit_beneficiariosdtosdatevalidator_test_non_string_value_passthrough
+    title: 'Beneficiarios Dtos Date Validator: Non string value passthrough'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosDtosDateValidator
+      | Función: test_non_string_value_passthrough'
+  - automation_id: use_cases_unit_beneficiariosdtosdatevalidator_test_string_too_short_raises
+    title: 'Beneficiarios Dtos Date Validator: String too short raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosDtosDateValidator
+      | Función: test_string_too_short_raises'
+  - automation_id: use_cases_unit_beneficiariosdtosdatevalidator_test_none_value_returns_none
+    title: 'Beneficiarios Dtos Date Validator: None value returns none'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosDtosDateValidator
+      | Función: test_none_value_returns_none'
+  - automation_id: use_cases_unit_beneficiariosdtosdatevalidator_test_valid_datetime_string_truncat
+    title: 'Beneficiarios Dtos Date Validator: Valid datetime string truncated'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosDtosDateValidator
+      | Función: test_valid_datetime_string_truncated'
+  - automation_id: use_cases_unit_beneficiariosservicemethods_test_listar_tipos_espina_delegates
+    title: 'Beneficiarios Service Methods: Listar tipos espina delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosServiceMethods
+      | Función: test_listar_tipos_espina_delegates'
+  - automation_id: use_cases_unit_beneficiariosservicemethods_test_obtener_beneficiario_empty_folio
+    title: 'Beneficiarios Service Methods: Obtener beneficiario empty folio raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosServiceMethods
+      | Función: test_obtener_beneficiario_empty_folio_raises'
+  - automation_id: use_cases_unit_beneficiariosservicemethods_test_obtener_beneficiario_whitespace_
+    title: 'Beneficiarios Service Methods: Obtener beneficiario whitespace folio raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosServiceMethods
+      | Función: test_obtener_beneficiario_whitespace_folio_raises'
+  - automation_id: use_cases_unit_beneficiariosservicemethods_test_actualizar_beneficiario_empty_fo
+    title: 'Beneficiarios Service Methods: Actualizar beneficiario empty folio raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosServiceMethods
+      | Función: test_actualizar_beneficiario_empty_folio_raises'
+  - automation_id: use_cases_unit_beneficiariosservicemethods_test_renovar_membresia_delegates
+    title: 'Beneficiarios Service Methods: Renovar membresia delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosServiceMethods
+      | Función: test_renovar_membresia_delegates'
+  - automation_id: use_cases_unit_beneficiariosservicemethods_test_mapa_beneficiarios_delegates
+    title: 'Beneficiarios Service Methods: Mapa beneficiarios delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosServiceMethods
+      | Función: test_mapa_beneficiarios_delegates'
+  - automation_id: use_cases_unit_beneficiariosservicemethods_test_expirar_membresias_vencidas_dele
+    title: 'Beneficiarios Service Methods: Expirar membresias vencidas delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosServiceMethods
+      | Función: test_expirar_membresias_vencidas_delegates'
+  - automation_id: use_cases_unit_beneficiariossvcmodulelevelfunctions_test_module_listar_tipos_esp
+    title: 'Beneficiarios Svc Module Level Functions: Module listar tipos espina'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosSvcModuleLevelFunctions
+      | Función: test_module_listar_tipos_espina'
+  - automation_id: use_cases_unit_beneficiariossvcmodulelevelfunctions_test_module_renovar_membresi
+    title: 'Beneficiarios Svc Module Level Functions: Module renovar membresia'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosSvcModuleLevelFunctions
+      | Función: test_module_renovar_membresia'
+  - automation_id: use_cases_unit_beneficiariossvcmodulelevelfunctions_test_module_expirar_membresi
+    title: 'Beneficiarios Svc Module Level Functions: Module expirar membresias vencidas'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosSvcModuleLevelFunctions
+      | Función: test_module_expirar_membresias_vencidas'
+  - automation_id: use_cases_unit_beneficiariossvcmodulelevelfunctions_test_module_mapa_beneficiari
+    title: 'Beneficiarios Svc Module Level Functions: Module mapa beneficiarios'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosSvcModuleLevelFunctions
+      | Función: test_module_mapa_beneficiarios'
+  - automation_id: use_cases_unit_beneficiariossvcruntimeerror_test_svc_raises_when_not_configured
+    title: 'Beneficiarios Svc Runtime Error: Svc raises when not configured'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBeneficiariosSvcRuntimeError
+      | Función: test_svc_raises_when_not_configured'
+  - automation_id: use_cases_unit_bitacorasvcruntimeerror_test_svc_raises_when_not_configured
+    title: 'Bitacora Svc Runtime Error: Svc raises when not configured'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBitacoraSvcRuntimeError
+      | Función: test_svc_raises_when_not_configured'
+  - automation_id: use_cases_unit_buildfallbackusers_test_returns_two_users
+    title: 'Build Fallback Users: Returns two users'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBuildFallbackUsers
+      | Función: test_returns_two_users'
+  - automation_id: use_cases_unit_buildfallbackusers_test_admin_user_exists
+    title: 'Build Fallback Users: Admin user exists'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBuildFallbackUsers
+      | Función: test_admin_user_exists'
+  - automation_id: use_cases_unit_buildfallbackusers_test_recepcionista_user_exists
+    title: 'Build Fallback Users: Recepcionista user exists'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBuildFallbackUsers
+      | Función: test_recepcionista_user_exists'
+  - automation_id: use_cases_unit_busquedascorefield_test_score_field_empty_value_returns_0
+    title: 'Busqueda Score Field: Score field empty value returns 0'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBusquedaScoreField
+      | Función: test_score_field_empty_value_returns_0'
+  - automation_id: use_cases_unit_busquedascorefield_test_score_field_exact_match
+    title: 'Busqueda Score Field: Score field exact match'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBusquedaScoreField
+      | Función: test_score_field_exact_match'
+  - automation_id: use_cases_unit_busquedascorefield_test_score_field_prefix_match
+    title: 'Busqueda Score Field: Score field prefix match'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBusquedaScoreField
+      | Función: test_score_field_prefix_match'
+  - automation_id: use_cases_unit_busquedascorefield_test_score_field_contains_match
+    title: 'Busqueda Score Field: Score field contains match'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBusquedaScoreField
+      | Función: test_score_field_contains_match'
+  - automation_id: use_cases_unit_busquedascorefield_test_score_field_token_prefix_match
+    title: 'Busqueda Score Field: Score field token prefix match'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBusquedaScoreField
+      | Función: test_score_field_token_prefix_match'
+  - automation_id: use_cases_unit_busquedascorefield_test_score_field_no_match_returns_0
+    title: 'Busqueda Score Field: Score field no match returns 0'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestBusquedaScoreField
+      | Función: test_score_field_no_match_returns_0'
+  - automation_id: use_cases_unit_doctoresservicenormalize_test_normalize_doctor_with_correo
+    title: 'Doctores Service Normalize: Normalize doctor with correo'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestDoctoresServiceNormalize
+      | Función: test_normalize_doctor_with_correo'
+  - automation_id: use_cases_unit_doctoresservicenormalize_test_normalize_doctor_without_correo
+    title: 'Doctores Service Normalize: Normalize doctor without correo'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestDoctoresServiceNormalize
+      | Función: test_normalize_doctor_without_correo'
+  - automation_id: use_cases_unit_doctoresservicenormalize_test_normalize_doctor_with_apellido_mate
+    title: 'Doctores Service Normalize: Normalize doctor with apellido materno'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestDoctoresServiceNormalize
+      | Función: test_normalize_doctor_with_apellido_materno'
+  - automation_id: use_cases_unit_doctoressvcruntimeerror_test_svc_raises_when_not_configured
+    title: 'Doctores Svc Runtime Error: Svc raises when not configured'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestDoctoresSvcRuntimeError
+      | Función: test_svc_raises_when_not_configured'
+  - automation_id: use_cases_unit_geocodingsvcreturnpath_test_module_geocodificar_lote_with_no_pend
+    title: 'Geocoding Svc Return Path: Module geocodificar lote with no pending'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestGeocodingSvcReturnPath
+      | Función: test_module_geocodificar_lote_with_no_pending'
+  - automation_id: use_cases_unit_geocodingsvcruntimeerror_test_svc_raises_when_not_configured
+    title: 'Geocoding Svc Runtime Error: Svc raises when not configured'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestGeocodingSvcRuntimeError
+      | Función: test_svc_raises_when_not_configured'
+  - automation_id: use_cases_unit_metricashelpers_test_edad_anios_invalid_date_returns_none
+    title: 'Metricas Helpers: Edad anios invalid date returns none'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestMetricasHelpers | Función:
+      test_edad_anios_invalid_date_returns_none'
+  - automation_id: use_cases_unit_metricashelpers_test_edad_anios_none_returns_none
+    title: 'Metricas Helpers: Edad anios none returns none'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestMetricasHelpers | Función:
+      test_edad_anios_none_returns_none'
+  - automation_id: use_cases_unit_metricashelpers_test_edad_anios_valid_date
+    title: 'Metricas Helpers: Edad anios valid date'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestMetricasHelpers | Función:
+      test_edad_anios_valid_date'
+  - automation_id: use_cases_unit_metricashelpers_test_percentile_returns_value
+    title: 'Metricas Helpers: Percentile returns value'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestMetricasHelpers | Función:
+      test_percentile_returns_value'
+  - automation_id: use_cases_unit_metricashelpers_test_percentile_empty_returns_none
+    title: 'Metricas Helpers: Percentile empty returns none'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestMetricasHelpers | Función:
+      test_percentile_empty_returns_none'
+  - automation_id: use_cases_unit_recibosregistrarpagohappypath_test_registrar_pago_valid_args_dele
+    title: 'Recibos Registrar Pago Happy Path: Registrar pago valid args delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosRegistrarPagoHappyPath
+      | Función: test_registrar_pago_valid_args_delegates'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_cancelar_venta_empty_motivo_raises
+    title: 'Recibos Service Validation: Cancelar venta empty motivo raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_cancelar_venta_empty_motivo_raises'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_cancelar_venta_none_motivo_raises
+    title: 'Recibos Service Validation: Cancelar venta none motivo raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_cancelar_venta_none_motivo_raises'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_cancelar_venta_whitespace_motivo_ra
+    title: 'Recibos Service Validation: Cancelar venta whitespace motivo raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_cancelar_venta_whitespace_motivo_raises'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_registrar_pago_monto_cero_raises
+    title: 'Recibos Service Validation: Registrar pago monto cero raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_registrar_pago_monto_cero_raises'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_registrar_pago_monto_negativo_raise
+    title: 'Recibos Service Validation: Registrar pago monto negativo raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_registrar_pago_monto_negativo_raises'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_registrar_pago_id_metodo_cero_raise
+    title: 'Recibos Service Validation: Registrar pago id metodo cero raises'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_registrar_pago_id_metodo_cero_raises'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_exentar_venta_delegates
+    title: 'Recibos Service Validation: Exentar venta delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_exentar_venta_delegates'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_exentar_venta_none_nota
+    title: 'Recibos Service Validation: Exentar venta none nota'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_exentar_venta_none_nota'
+  - automation_id: use_cases_unit_recibosservicevalidation_test_listar_items_venta_delegates
+    title: 'Recibos Service Validation: Listar items venta delegates'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosServiceValidation
+      | Función: test_listar_items_venta_delegates'
+  - automation_id: use_cases_unit_recibossvcruntimeerror_test_svc_raises_when_not_configured
+    title: 'Recibos Svc Runtime Error: Svc raises when not configured'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRecibosSvcRuntimeError
+      | Función: test_svc_raises_when_not_configured'
+  - automation_id: use_cases_unit_refreshtokenstore_test_consume_missing_jti_returns_false
+    title: 'Refresh Token Store: Consume missing jti returns false'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRefreshTokenStore |
+      Función: test_consume_missing_jti_returns_false'
+  - automation_id: use_cases_unit_refreshtokenstore_test_consume_expired_jti_returns_false
+    title: 'Refresh Token Store: Consume expired jti returns false'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRefreshTokenStore |
+      Función: test_consume_expired_jti_returns_false'
+  - automation_id: use_cases_unit_refreshtokenstore_test_consume_valid_jti_returns_true_and_removes
+    title: 'Refresh Token Store: Consume valid jti returns true and removes'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRefreshTokenStore |
+      Función: test_consume_valid_jti_returns_true_and_removes'
+  - automation_id: use_cases_unit_refreshtokenstore_test_add_and_evict_expired
+    title: 'Refresh Token Store: Add and evict expired'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestRefreshTokenStore |
+      Función: test_add_and_evict_expired'
+  - automation_id: use_cases_unit_sessioncontext_test_get_current_user_id_returns_none_by_default
+    title: 'Session Context: Get current user id returns none by default'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestSessionContext | Función:
+      test_get_current_user_id_returns_none_by_default'
+  - automation_id: use_cases_unit_sessioncontext_test_get_current_user_id_returns_set_value
+    title: 'Session Context: Get current user id returns set value'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestSessionContext | Función:
+      test_get_current_user_id_returns_set_value'
+  - automation_id: use_cases_unit_sessioncontext_test_reset_current_user_id_happy_path
+    title: 'Session Context: Reset current user id happy path'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestSessionContext | Función:
+      test_reset_current_user_id_happy_path'
+  - automation_id: use_cases_unit_sessioncontext_test_reset_current_user_id_bad_token_sets_none
+    title: 'Session Context: Reset current user id bad token sets none'
+    description: 'Archivo: test_use_cases_unit.py | Clase: TestSessionContext | Función:
+      test_reset_current_user_id_bad_token_sets_none'

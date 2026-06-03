@@ -1,0 +1,75 @@
+<div class="min-h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff]">
+  <app-navbar></app-navbar>
+
+  <main class="flex-1">
+    <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div class="flex items-center gap-4">
+          <div class="bg-[#00328b] p-3 rounded-xl shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" x2="8" y1="13" y2="13"/>
+              <line x1="16" x2="8" y1="17" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-slate-800">Reportes e Indicadores</h1>
+            <p class="text-slate-500 text-sm mt-1">Reportes de periodo, indicadores de desempeño y mapa geográfico</p>
+          </div>
+        </div>
+        <!-- Section toggle -->
+        <div class="flex rounded-xl border-2 border-slate-200 overflow-hidden bg-white shadow-sm">
+          <button (click)="activeSection = 'reportes'"
+            class="px-5 py-2.5 text-sm font-bold flex items-center gap-2 transition-all"
+            [class]="activeSection === 'reportes' ? 'bg-[#00328b] text-white' : 'text-slate-500 hover:bg-slate-50'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+            Reportes
+          </button>
+          <button (click)="activeSection = 'analisis'"
+            class="px-5 py-2.5 text-sm font-bold flex items-center gap-2 transition-all border-l-2 border-slate-200"
+            [class]="activeSection === 'analisis' ? 'bg-[#00328b] text-white' : 'text-slate-500 hover:bg-slate-50'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+            </svg>
+            Análisis
+          </button>
+          <button (click)="activeSection = 'mapa'"
+            class="px-5 py-2.5 text-sm font-bold flex items-center gap-2 transition-all border-l-2 border-slate-200"
+            [class]="activeSection === 'mapa' ? 'bg-[#00328b] text-white' : 'text-slate-500 hover:bg-slate-50'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+              <line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/>
+            </svg>
+            Mapa
+          </button>
+        </div>
+      </div>
+
+      @defer (when activeSection === 'reportes') {
+        <div [hidden]="activeSection !== 'reportes'">
+          <app-reportes-tab />
+        </div>
+      }
+
+      @defer (when activeSection === 'analisis') {
+        <div [hidden]="activeSection !== 'analisis'">
+          <app-analisis-tab />
+        </div>
+      }
+
+      @defer (when activeSection === 'mapa') {
+        <div [hidden]="activeSection !== 'mapa'">
+          <app-mapa-tab />
+        </div>
+      }
+
+    </div>
+  </main>
+
+  <app-footer></app-footer>
+</div>

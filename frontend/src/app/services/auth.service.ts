@@ -1,0 +1,127 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { BehaviorSubject, Observable, tap, catchError, of } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+interface UserInfo {
+  id_usuario: number;
+  correo: string;
+  nombre: string;
+  rol: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private readonly apiUrl = `${environment.apiUrl}/auth`;
+  private readonly userSubject = new BehaviorSubject<UserInfo | null>(null);
+  user$ = this.userSubject.asObservable();
+
+  constructor(private readonly http: HttpClient, private readonly router: Router) {
+    this.loadUser();
+  }
+
+  private getToken(): string | null {
+    const sessionToken = sessionStorage.getItem('token');
+    if (sessionToken) return sessionToken;
+
+    const legacyToken = localStorage.getItem('token');
+    if (legacyToken) {
+      sessionStorage.setItem('token', legacyToken);
+      localStorage.removeItem('token');
+      return legacyToken;
+    }
+    return null;
+  }
+
+  login(correo: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { correo, password }).pipe(
+      tap((res) => {
+        sessionStorage.setItem('token', res.access_token);
+        localStorage.removeItem('token');
+        this.loadUser();
+      })
+    );
+  }
+
+  loadUser(): void {
+    const token = this.getToken();
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        this.userSubject.next({
+          id_usuario: payload.id_usuario,
+          correo: payload.sub,
+          nombre: payload.nombre || payload.sub,
+          rol: payload.rol || 'OPERATIVO',
+        });
+      } catch {
+        this.logout();
+      }
+    }
+  }
+
+  logout(): void {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('preregistro_token');
+    localStorage.removeItem('token');
+    this.userSubject.next(null);
+    this.router.navigate(['/']);
+  }
+
+  isAuthenticated(): boolean {
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 > Date.now();
+    } catch {
+      return false;
+    }
+  }
+
+  /** Returns seconds until token expires, or 0 if expired/invalid. */
+  tokenSecondsLeft(): number {
+    const token = this.getToken();
+    if (!token) return 0;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return Math.max(0, Math.floor(payload.exp - Date.now() / 1000));
+    } catch {
+      return 0;
+    }
+  }
+
+  private _refreshing = false;
+
+  refreshToken(): Observable<void> {
+    if (this._refreshing) return of(undefined);
+    this._refreshing = true;
+    return this.http.post<LoginResponse>(`${this.apiUrl}/refresh`, {}).pipe(
+      tap((res) => {
+        sessionStorage.setItem('token', res.access_token);
+        this._refreshing = false;
+      }),
+      catchError(() => { this._refreshing = false; return of(undefined as void); }), // NOSONAR: typescript:S4325
+    ) as Observable<void>;
+  }
+
+  getUser(): UserInfo | null {
+    return this.userSubject.value;
+  }
+
+  isAdmin(): boolean {
+    const rol = (this.userSubject.value?.rol || '').toUpperCase();
+    return rol === 'ADMINISTRADOR' || rol === 'ADMIN';
+  }
+
+  hasRole(...roles: string[]): boolean {
+    const rol = (this.userSubject.value?.rol || '').toUpperCase();
+    return roles.map(r => r.toUpperCase()).includes(rol);
+  }
+}

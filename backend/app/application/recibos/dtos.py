@@ -1,0 +1,45 @@
+from pydantic import BaseModel, field_validator
+
+
+class VentaBase(BaseModel):
+    id_paciente: int
+    monto_total: float
+    monto_pagado: float = 0.0
+    saldo_pendiente: float = 0.0
+    exento_pago: str = "N"
+
+
+class VentaLineaCreate(BaseModel):
+    tipo: str                  # 'PRODUCTO' | 'SERVICIO'
+    id_referencia: int
+    descripcion: str
+    precio_unitario: float
+    cantidad: int = 1
+
+    @field_validator('tipo')
+    @classmethod
+    def tipo_valido(cls, v: str) -> str:
+        if v not in ('PRODUCTO', 'SERVICIO'):
+            raise ValueError("tipo debe ser 'PRODUCTO' o 'SERVICIO'")
+        return v
+
+    @field_validator('cantidad')
+    @classmethod
+    def cantidad_positiva(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("cantidad debe ser al menos 1")
+        return v
+
+
+class VentaCreate(VentaBase):
+    metodos_pago: list[dict] | None = None
+    items: list[VentaLineaCreate] | None = None
+
+
+class PagoParcialCreate(BaseModel):
+    id_metodo_pago: int
+    monto: float
+
+
+class ExentarVentaBody(BaseModel):
+    nota: str | None = None

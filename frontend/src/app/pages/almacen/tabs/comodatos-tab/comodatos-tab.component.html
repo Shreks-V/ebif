@@ -1,0 +1,428 @@
+<div class="space-y-5">
+<!-- Alert: comodatos vencidos -->
+@if (comodatosVencidos.length > 0) {
+  <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-start gap-3">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <div class="flex-1">
+      <p class="text-sm font-bold text-red-800">
+        {{ comodatosVencidos.length }} comodato{{ comodatosVencidos.length !== 1 ? 's' : '' }} con devolución vencida
+      </p>
+      <ul class="mt-1 space-y-0.5">
+        @for (c of comodatosVencidos.slice(0, 5); track c.idComodato) {
+          <li class="text-xs text-red-700">
+            <span class="font-semibold">{{ c.folioComodato }}</span> — {{ c.nombreEquipo }} · {{ c.nombrePaciente }}
+            <span class="ml-1 text-red-500">(venció {{ c.fechaDevolucion | slice:0:10 }})</span>
+          </li>
+        }
+        @if (comodatosVencidos.length > 5) {
+          <li class="text-xs text-red-500 font-semibold">...y {{ comodatosVencidos.length - 5 }} más</li>
+        }
+      </ul>
+    </div>
+  </div>
+}
+
+<!-- Search + Nuevo -->
+<div class="flex flex-col sm:flex-row gap-4 items-center">
+  <div class="relative flex-1">
+    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.3-4.3"/>
+    </svg>
+    <input aria-label="Buscar comodatos..."
+      type="text"
+      [(ngModel)]="search"
+      placeholder="Buscar comodatos..."
+      class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+      />
+  </div>
+  <button (click)="openNuevo()" class="px-6 py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors shadow-lg flex items-center gap-2">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+    </svg>
+    Nuevo Comodato
+  </button>
+</div>
+
+<!-- Table -->
+<div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-auto max-h-[calc(100vh-320px)]">
+  <div>
+    <table class="w-full text-sm">
+      <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
+        <tr class="bg-slate-50 border-b border-slate-200">
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('folioComodato')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Folio</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('folioComodato') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('beneficiario')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Beneficiario</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('beneficiario') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('equipo')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Equipo</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('equipo') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('fechaPrestamo')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Fecha Pr&eacute;stamo</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('fechaPrestamo') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('fechaDevolucion')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Devoluci&oacute;n</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('fechaDevolucion') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">
+            <button type="button" (click)="toggleSort('estatus')" class="flex items-center gap-1 hover:text-slate-800 transition-colors">
+              <span>Estatus</span>
+              <span class="text-[10px] font-black leading-none">{{ sortIndicator('estatus') }}</span>
+            </button>
+          </th>
+          <th class="text-left px-5 py-4 font-semibold text-slate-600">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (filtered.length === 0) {
+          <tr><td colspan="7" class="px-6 py-14 text-center">
+            <div class="flex flex-col items-center gap-2 text-slate-400">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+              <p class="text-sm font-semibold">No hay comodatos registrados</p>
+            </div>
+          </td></tr>
+        }
+        @for (com of filtered; track com.idComodato) {
+          <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+            <td class="px-5 py-4">
+              <span class="font-mono text-green-700 font-semibold bg-green-50 px-2 py-0.5 rounded">{{ com.folioComodato }}</span>
+            </td>
+            <td class="px-5 py-4">
+              <div>
+                <p class="text-slate-800 font-medium">{{ com.nombrePaciente }}</p>
+                <p class="text-xs text-slate-400">{{ com.folioPaciente }}</p>
+              </div>
+            </td>
+            <td class="px-5 py-4 text-slate-700">{{ com.nombreEquipo }}</td>
+            <td class="px-5 py-4 text-slate-600">{{ com.fechaPrestamo }}</td>
+            <td class="px-5 py-4 text-slate-600">{{ com.fechaDevolucion ?? '—' }}</td>
+            <td class="px-5 py-4">
+              <span [ngClass]="getEstadoBadgeClass(com.estatus)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                {{ com.estatus }}
+              </span>
+            </td>
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-1">
+                @if (debugMode && com.estatus === 'PRESTADO') {
+                  <button (click)="openDevolucion(com)"
+                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors" title="Registrar devolución">
+                    Devolver
+                  </button>
+                }
+                <button (click)="openEdit(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Editar">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button (click)="descargarContrato(com)" class="p-1.5 rounded-lg hover:bg-blue-50 text-slate-500 hover:text-blue-600 transition-colors" title="Contrato PDF">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                  </svg>
+                </button>
+                <button (click)="printComodato(com)" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition-colors" title="Imprimir">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+</div><!-- /space-y-5 -->
+
+<!-- MODAL: Confirmar Devolución -->
+@if (showDevolucionModal && comodatoToDevolver) {
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm backdrop-saturate-75 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-slate-800">Registrar Devolución</h2>
+        <button (click)="closeDevolucion()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="mb-6">
+        <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+        </div>
+        <p class="text-center text-slate-700 text-base font-semibold">¿Confirmar devolución del equipo?</p>
+        <p class="text-center text-slate-500 text-sm mt-2">
+          <span class="font-semibold text-slate-700">{{ comodatoToDevolver.nombreEquipo }}</span><br/>
+          Paciente: {{ comodatoToDevolver.nombrePaciente }}<br/>
+          Folio: <span class="font-mono font-semibold text-emerald-700">{{ comodatoToDevolver.folioComodato }}</span>
+        </p>
+        <p class="text-center text-xs text-slate-400 mt-3">Se marcará como devuelto con fecha de hoy y el stock del producto se actualizará automáticamente.</p>
+      </div>
+      <div class="flex items-center justify-end gap-3">
+        <button (click)="closeDevolucion()"
+          class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+          Cancelar
+        </button>
+        <button (click)="confirmDevolucion()" [disabled]="submittingDevolucion"
+          class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ submittingDevolucion ? 'Registrando...' : 'Confirmar devolución' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: Nuevo Comodato -->
+@if (showNuevoModal) {
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm backdrop-saturate-75 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Nuevo Comodato</h2>
+        <button (click)="closeNuevo()" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <form (ngSubmit)="submitNuevo()" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="cod-beneficiario" class="block text-sm font-semibold text-slate-700 mb-1">Beneficiario <span aria-hidden="true">*</span></label>
+            <app-beneficiario-combobox
+              inputId="cod-beneficiario"
+              (seleccionado)="onBeneficiarioSeleccionado($event)" />
+          </div>
+          <div>
+            <label for="cod-equipo" class="block text-sm font-semibold text-slate-700 mb-1">Equipo <span aria-hidden="true">*</span></label>
+            <select id="cod-equipo" [(ngModel)]="comodatoForm.id_equipo" name="id_equipo" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+              <option [ngValue]="null">Seleccionar equipo...</option>
+              @for (e of equiposList; track e.idProducto) {
+                <option [ngValue]="e.idProducto">{{ e.nombre }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="cod-fecha-prestamo" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
+            <input id="cod-fecha-prestamo" type="date" [(ngModel)]="comodatoForm.fecha_prestamo" name="fecha_prestamo" required
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+          </div>
+          <div>
+            <label for="cod-fecha-devolucion" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
+            <input id="cod-fecha-devolucion" type="date" [(ngModel)]="comodatoForm.fecha_devolucion" name="fecha_devolucion"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="cod-estatus" class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
+            <select id="cod-estatus" [(ngModel)]="comodatoForm.estatus" name="estatus"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+              <option value="PRESTADO">Prestado</option>
+              <option value="DEVUELTO">Devuelto</option>
+              <option value="CANCELADO">Cancelado</option>
+              <option value="DONADO">Donado</option>
+            </select>
+          </div>
+          <div>
+            <label for="cod-exento-pago" class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
+            <select id="cod-exento-pago" [(ngModel)]="comodatoForm.exento_pago" name="exento_pago"
+              (ngModelChange)="onExentoNuevoChange()"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+              <option value="N">No</option>
+              <option value="S">S&iacute;</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Monto total del comodato -->
+        <div>
+          <label for="cod-monto-total" class="block text-sm font-semibold text-slate-700 mb-1">Monto Total del Comodato</label>
+          <input id="cod-monto-total" type="number" [(ngModel)]="comodatoForm.monto_total" name="monto_total"
+            step="0.01" min="0" placeholder="0.00"
+            class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+        </div>
+
+        <!-- Métodos de pago -->
+        @if (comodatoForm.exento_pago !== 'S') {
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label for="cod-metodo-pago-0" class="text-sm font-semibold text-slate-700">Métodos de Pago</label>
+              <button type="button" (click)="agregarMetodoPagoNuevo()"
+                class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+                </svg>
+                Agregar
+              </button>
+            </div>
+            <div class="space-y-2">
+              @for (mp of metodosPagoNuevo; track mp; let i = $index) {
+                <div class="flex items-end gap-3">
+                  <div class="flex-1">
+                    <label [for]="'cod-metodo-pago-' + i" class="block text-xs font-semibold text-slate-600 mb-1">Método</label>
+                    <select [(ngModel)]="mp.id_metodo_pago" [id]="'cod-metodo-pago-' + i" [name]="'cod_metodo_pago_' + i"
+                      class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+                      <option [ngValue]="0" disabled>Seleccionar...</option>
+                      @for (m of metodosPagoCatalogo; track m) {
+                        <option [ngValue]="m.id">{{ m.nombre }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="w-36">
+                    <label [for]="'cod-monto-metodo-' + i" class="block text-xs font-semibold text-slate-600 mb-1">Monto</label>
+                    <input type="number" [(ngModel)]="mp.monto" [id]="'cod-monto-metodo-' + i" [name]="'cod_monto_metodo_' + i"
+                      min="0" step="0.01" placeholder="0.00"
+                      class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+                  </div>
+                  @if (metodosPagoNuevo.length > 1) {
+                    <button type="button" (click)="removerMetodoPagoNuevo(i)"
+                      class="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-600 transition-all cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                      </svg>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Resumen automático -->
+        <div class="bg-slate-50 rounded-xl p-4 space-y-2">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600 font-semibold">Monto Total</span>
+            <span class="font-bold text-slate-900">${{ comodatoForm.monto_total | number:'1.2-2' }}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600 font-semibold">Monto Pagado</span>
+            <span class="font-bold text-emerald-600">${{ montoPagadoNuevo | number:'1.2-2' }}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm pt-2 border-t border-slate-200">
+            <span class="font-bold" [ngClass]="saldoPendienteNuevo > 0 ? 'text-amber-600' : 'text-emerald-600'">Saldo Pendiente</span>
+            <span class="font-black text-lg" [ngClass]="saldoPendienteNuevo > 0 ? 'text-amber-600' : 'text-emerald-600'">${{ saldoPendienteNuevo | number:'1.2-2' }}</span>
+          </div>
+        </div>
+        <div>
+          <label for="cod-notas" class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
+          <textarea id="cod-notas" autoGrow [(ngModel)]="comodatoForm.notas" name="notas" rows="3"
+          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden" placeholder="Notas adicionales..."></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
+          <button type="button" (click)="closeNuevo()"
+            class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="submittingNuevo"
+            class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ submittingNuevo ? 'Guardando...' : 'Crear Comodato' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- MODAL: Editar Comodato -->
+@if (showEditModal) {
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm backdrop-saturate-75 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Editar Comodato</h2>
+        <button (click)="showEditModal = false" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <form (ngSubmit)="guardarEdit()" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="cod-edit-fecha-prestamo" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Pr&eacute;stamo *</label>
+            <input id="cod-edit-fecha-prestamo" type="date" [(ngModel)]="editForm.fecha_prestamo" name="ecFechaPrest" required
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+          </div>
+          <div>
+            <label for="cod-edit-fecha-devolucion" class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Devoluci&oacute;n</label>
+            <input id="cod-edit-fecha-devolucion" type="date" [(ngModel)]="editForm.fecha_devolucion" name="ecFechaDev"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="cod-edit-estatus" class="block text-sm font-semibold text-slate-700 mb-1">Estatus</label>
+            <select id="cod-edit-estatus" [(ngModel)]="editForm.estatus" name="ecEstatus"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+              <option value="PRESTADO">Prestado</option>
+              <option value="DEVUELTO">Devuelto</option>
+              <option value="CANCELADO">Cancelado</option>
+              <option value="DONADO">Donado</option>
+            </select>
+          </div>
+          <div>
+            <label for="cod-edit-exento-pago" class="block text-sm font-semibold text-slate-700 mb-1">Exento de Pago</label>
+            <select id="cod-edit-exento-pago" [(ngModel)]="editForm.exento_pago" name="ecExento"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm bg-white">
+              <option value="N">No</option>
+              <option value="S">S&iacute;</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label for="cod-edit-monto-total" class="block text-sm font-semibold text-slate-700 mb-1">Monto Total</label>
+            <input id="cod-edit-monto-total" type="number" [(ngModel)]="editForm.monto_total" name="ecMontoTotal" step="0.01" min="0"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+          </div>
+          <div>
+            <label for="cod-edit-monto-pagado" class="block text-sm font-semibold text-slate-700 mb-1">Monto Pagado</label>
+            <input id="cod-edit-monto-pagado" type="number" [(ngModel)]="editForm.monto_pagado" name="ecMontoPagado" step="0.01" min="0"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+          </div>
+          <div>
+            <label for="cod-edit-saldo-pendiente" class="block text-sm font-semibold text-slate-700 mb-1">Saldo Pendiente</label>
+            <input id="cod-edit-saldo-pendiente" type="number" [(ngModel)]="editForm.saldo_pendiente" name="ecSaldo" step="0.01" min="0"
+              class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm" />
+          </div>
+        </div>
+        <div>
+          <label for="cod-edit-notas" class="block text-sm font-semibold text-slate-700 mb-1">Notas</label>
+          <textarea id="cod-edit-notas" autoGrow [(ngModel)]="editForm.notas" name="ecNotas" rows="3"
+          class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none transition-colors text-sm resize-none overflow-hidden"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4 border-t-2 border-slate-100">
+          <button type="button" (click)="showEditModal = false"
+            class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="submittingEdit"
+            class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ submittingEdit ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

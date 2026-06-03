@@ -1,0 +1,17 @@
+# Desarrollo local con hot-reload (backend) y frontend en puerto 80.
+# Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+services:
+  backend:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      disable: true
+
+  frontend:
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

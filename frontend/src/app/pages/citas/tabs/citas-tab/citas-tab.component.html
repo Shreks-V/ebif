@@ -1,0 +1,364 @@
+<div class="bg-white rounded-xl shadow-sm border border-slate-200">
+  <!-- Card Header -->
+  <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+    <h2 class="text-lg font-bold text-slate-900 tracking-wide">CITAS</h2>
+    <div class="flex items-center gap-2 ml-auto">
+      <!-- View toggle -->
+      <div class="flex rounded-lg border border-slate-200 overflow-hidden">
+        <button (click)="citasView = 'lista'"
+          class="px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5"
+          [class]="citasView === 'lista' ? 'bg-[#00328b] text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+          Lista
+        </button>
+        <button (click)="citasView = 'calendario'"
+          class="px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 border-l border-slate-200"
+          [class]="citasView === 'calendario' ? 'bg-[#00328b] text-white' : 'bg-white text-slate-500 hover:bg-slate-50'">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+          Calendario
+        </button>
+      </div>
+      <button (click)="exportarCitasCSV()" class="px-3 py-1.5 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        CSV
+      </button>
+      <button (click)="abrirNuevaCita()" class="px-4 py-2 bg-[#00328b] text-white text-sm font-semibold rounded-lg hover:bg-[#002a75] transition-colors flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" x2="12" y1="5" y2="19"/>
+          <line x1="5" x2="19" y1="12" y2="12"/>
+        </svg>
+        Nueva Cita
+      </button>
+    </div>
+  </div>
+  <!-- Search + Filters -->
+  <div class="px-6 py-4 space-y-4 sticky top-16 z-20 bg-white border-b border-slate-100 shadow-sm">
+    <!-- Search -->
+    <div class="relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input aria-label="Buscar por nombre de paciente..."
+        type="text"
+        placeholder="Buscar por nombre de paciente..."
+        [(ngModel)]="searchCitas"
+        (input)="filtrarCitas()"
+        class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00328b]/20 focus:border-[#00328b] transition-all"
+        />
+    </div>
+    <!-- Date filter + Estado filters -->
+    <div class="flex items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-2">
+        <label for="ctab-filtro-fecha" class="text-xs font-semibold text-slate-500">Fecha:</label>
+        <button (click)="filtroFecha = todayStr; filtrarCitas()"
+          class="px-3 py-2 text-xs font-semibold rounded-lg transition-all"
+          [ngClass]="filtroFecha === todayStr ? 'bg-[#00328b] text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+          Hoy
+        </button>
+        <button (click)="filtroFecha = ''; filtrarCitas()"
+          class="px-3 py-2 text-xs font-semibold rounded-lg transition-all"
+          [ngClass]="!filtroFecha ? 'bg-[#00328b] text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'">
+          Todas
+        </button>
+        <input id="ctab-filtro-fecha" aria-label="Filtro fecha"
+          type="date"
+          [(ngModel)]="filtroFecha"
+          (change)="filtrarCitas()"
+          class="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#00328b]/20 focus:border-[#00328b] transition-all"
+          />
+      </div>
+      <div class="flex flex-wrap gap-2">
+        @for (estado of estadoFilters; track estado) {
+          <button
+            (click)="filtroEstado = estado; filtrarCitas()"
+            class="px-4 py-2 text-xs font-semibold rounded-lg transition-all"
+            [ngClass]="filtroEstado === estado ? 'bg-[#00328b] text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+            >
+            {{ estado }}
+          </button>
+        }
+      </div>
+    </div>
+    <!-- Tipo consulta filters -->
+    <div class="flex flex-wrap gap-2">
+      @for (tipo of tipoFilters; track tipo) {
+        <button
+          (click)="filtroTipo = tipo; filtrarCitas()"
+          class="px-4 py-2 text-xs font-semibold rounded-lg transition-all"
+          [ngClass]="filtroTipo === tipo ? 'bg-[#f3ad1c] text-slate-900 shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+          >
+          {{ tipo }}
+        </button>
+      }
+    </div>
+  </div>
+  <!-- Loading Skeleton -->
+  @if (loading) {
+    <div class="p-6">
+      <div class="animate-pulse space-y-4">
+        @for (_ of [1,2,3,4,5]; track _) {
+          <div class="flex items-center gap-4 py-3">
+            <div class="w-10 h-10 bg-slate-200 rounded-full"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+              <div class="h-3 bg-slate-100 rounded w-1/4"></div>
+            </div>
+            <div class="h-6 bg-slate-200 rounded-full w-20"></div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Calendar View -->
+  @if (!loading && citasView === 'calendario') {
+    <div class="p-5">
+      <!-- Month navigation -->
+      <div class="flex items-center justify-between mb-4">
+        <button (click)="calendarPrev()" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <h3 class="text-base font-black text-slate-800 capitalize">{{ calendarMonthLabel }}</h3>
+        <button (click)="calendarNext()" class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <!-- Day headers -->
+      <div class="grid grid-cols-7 mb-1">
+        @for (d of ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']; track d) {
+          <div class="text-center text-[10px] font-bold text-slate-400 uppercase py-1">{{ d }}</div>
+        }
+      </div>
+      <!-- Day cells -->
+      <div class="grid grid-cols-7 gap-1">
+        @for (cell of calendarDays; track cell.dateStr) {
+          <div class="min-h-[90px] rounded-xl border p-1.5 transition-colors"
+            [class]="cell.isToday ? 'border-[#00328b] bg-[#00328b]/5' :
+                     cell.isCurrentMonth ? 'border-slate-200 bg-white hover:border-slate-300' :
+                     'border-transparent bg-slate-50'">
+            <p class="text-xs font-bold mb-1 text-right"
+              [class]="cell.isToday ? 'text-[#00328b]' : cell.isCurrentMonth ? 'text-slate-700' : 'text-slate-300'">
+              {{ cell.day }}
+            </p>
+            @for (cita of cell.citas.slice(0,3); track cita.idCita) {
+              <div [attr.aria-label]="'Ver cita: ' + cita.nombrePaciente" (click)="verDetalleCita(cita)"
+                class="text-[10px] font-semibold px-1.5 py-0.5 rounded mb-0.5 truncate cursor-pointer"
+                [ngClass]="getEstadoBadgeClass(cita.estatus)"
+                [title]="cita.nombrePaciente">
+                {{ getHora(cita.fechaHora) }} {{ cita.nombrePaciente }}
+              </div>
+            }
+            @if (cell.citas.length > 3) {
+              <p class="text-[9px] font-bold text-slate-400 text-right">+{{ cell.citas.length - 3 }} más</p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Table -->
+  @if (!loading && citasView === 'lista') {
+    <div class="overflow-y-auto" style="max-height: calc(100vh - 24rem);">
+      <table class="w-full text-sm">
+        <thead class="sticky top-0 z-10 shadow-sm">
+          <tr class="border-t border-slate-200 bg-slate-50">
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <button type="button" (click)="toggleCitasSort('fechaHora')" class="flex items-center gap-1.5 hover:text-slate-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                  <line x1="16" x2="16" y1="2" y2="6"/>
+                  <line x1="8" x2="8" y1="2" y2="6"/>
+                  <line x1="3" x2="21" y1="10" y2="10"/>
+                </svg>
+                <span>Fecha / Hora</span>
+                <span class="text-[10px] font-black leading-none">{{ getSortIndicator(citasSort, 'fechaHora') }}</span>
+              </button>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <button type="button" (click)="toggleCitasSort('paciente')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                <span>Paciente</span>
+                <span class="text-[10px] font-black leading-none">{{ getSortIndicator(citasSort, 'paciente') }}</span>
+              </button>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <button type="button" (click)="toggleCitasSort('tipoConsulta')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                <span>Tipo de Consulta</span>
+                <span class="text-[10px] font-black leading-none">{{ getSortIndicator(citasSort, 'tipoConsulta') }}</span>
+              </button>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <button type="button" (click)="toggleCitasSort('estado')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+                <span>Estado</span>
+                <span class="text-[10px] font-black leading-none">{{ getSortIndicator(citasSort, 'estado') }}</span>
+              </button>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (cita of citasPaginadas; track cita) {
+            <tr class="group hover:bg-slate-50 transition-colors">
+              <td class="px-6 py-4 font-medium text-slate-900">
+                <div>{{ getFecha(cita.fechaHora) }}</div>
+                <div class="text-xs text-slate-500">{{ getHora(cita.fechaHora) }}</div>
+              </td>
+              <td class="px-6 py-4 text-slate-700">{{ cita.nombrePaciente }}</td>
+              <td class="px-6 py-4 text-slate-700">{{ cita.servicios[0]?.nombre || 'N/A' }}</td>
+              <td class="px-6 py-4">
+                <span
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                  [ngClass]="getEstadoBadgeClass(cita.estatus)"
+                  >
+                  {{ cita.estatus }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <button (click)="toggleCitaMenu(cita, $event)"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center transition-all border"
+                  [ngClass]="openCitaMenu === cita.idCita
+                    ? 'bg-slate-700 border-slate-700 text-white shadow-md'
+                    : 'bg-white border-slate-200 text-slate-400 group-hover:border-slate-300 group-hover:text-slate-600 hover:bg-slate-50'">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+          @if (citasFiltradas.length === 0) {
+            <tr>
+              <td colspan="5" class="px-6 py-12 text-center text-slate-400 text-sm">
+                No se encontraron citas con los filtros seleccionados.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    @if (citasFiltradas.length > citasPageSize) {
+      <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-4 flex-wrap">
+        <p class="text-xs text-slate-500 font-medium">
+          Mostrando
+          <span class="font-bold text-slate-700">{{ (citasPaginaActual - 1) * citasPageSize + 1 }}–{{ citasPaginaFin }}</span>
+          de <span class="font-bold text-slate-700">{{ citasFiltradas.length }}</span> citas
+        </p>
+        <nav class="flex items-center gap-1">
+          <button
+            (click)="irAPagina(citasPaginaActual - 1)"
+            [disabled]="citasPaginaActual === 1"
+            class="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            [ngClass]="citasPaginaActual === 1 ? 'border-slate-200 text-slate-400' : 'border-slate-200 text-slate-700 hover:bg-slate-100'">
+            ← Anterior
+          </button>
+          @for (p of citasPaginasVisibles; track p) {
+            @if (p === '...') {
+              <span class="px-2 py-1.5 text-xs text-slate-400">…</span>
+            } @else {
+              <button
+                (click)="irAPagina(+p)"
+                class="w-8 h-8 text-xs font-semibold rounded-lg border transition-all"
+                [ngClass]="citasPaginaActual === p ? 'bg-[#00328b] border-[#00328b] text-white shadow-sm' : 'border-slate-200 text-slate-700 hover:bg-slate-100'">
+                {{ p }}
+              </button>
+            }
+          }
+          <button
+            (click)="irAPagina(citasPaginaActual + 1)"
+            [disabled]="citasPaginaActual === citasTotalPaginas"
+            class="px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            [ngClass]="citasPaginaActual === citasTotalPaginas ? 'border-slate-200 text-slate-400' : 'border-slate-200 text-slate-700 hover:bg-slate-100'">
+            Siguiente →
+          </button>
+        </nav>
+      </div>
+    }
+  }
+</div>
+
+<!-- ==================== MENÚ ⋮ CITAS ==================== -->
+@if (openCitaMenu !== null) {
+  <div class="fixed inset-0 z-40" (click)="closeCitaMenu()"></div>
+}
+@if (openCitaMenu !== null && menuCita) {
+  <div class="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 w-48 overflow-hidden" [style.top.px]="menuCitaPosition.top" [style.left.px]="menuCitaPosition.left" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+    <button (click)="verDetalleCita(menuCita); closeCitaMenu()"
+      class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span class="font-medium">Ver detalle</span>
+    </button>
+    <button (click)="editarCita(menuCita); closeCitaMenu()"
+      class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m15 5 4 4"/>
+      </svg>
+      <span class="font-medium">Editar</span>
+    </button>
+    @if (menuCita.estatus !== 'COMPLETADA') {
+      <button (click)="completarCitaInline(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span class="font-medium">Marcar completada</span>
+      </button>
+    }
+    @if (menuCita.estatus !== 'CANCELADA') {
+      <button (click)="cancelarCitaInline(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <span class="font-medium">Cancelar cita</span>
+      </button>
+    }
+    <button (click)="descargarComprobante(menuCita); closeCitaMenu()"
+      class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M6 20h12a2 2 0 002-2V8l-6-6H6a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+      </svg>
+      <span class="font-medium">Comprobante PDF</span>
+    </button>
+    @if (isAdmin) {
+      <div class="h-px bg-slate-100 my-1"></div>
+      <button (click)="confirmarEliminarCita(menuCita); closeCitaMenu()"
+        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+        </svg>
+        <span class="font-medium">Eliminar</span>
+      </button>
+    }
+  </div>
+}
+
+@if (showNuevaCitaModal) {
+  <app-nueva-cita-modal
+    [serviciosList]="serviciosList"
+    [medicos]="medicos"
+    (closed)="showNuevaCitaModal = false"
+    (guardada)="onNuevaCitaGuardada()" />
+}
+@if (citaParaDetalle) {
+  <app-detalle-cita-modal
+    [cita]="citaParaDetalle"
+    (closed)="citaParaDetalle = null" />
+}
+@if (citaParaEditar) {
+  <app-editar-cita-modal
+    [cita]="citaParaEditar"
+    [serviciosList]="serviciosList"
+    (closed)="citaParaEditar = null"
+    (guardada)="onEdicionGuardada()" />
+}
+@if (citaParaEliminar) {
+  <app-confirmar-eliminar-cita-modal
+    [cita]="citaParaEliminar"
+    (eliminado)="onCitaEliminada()"
+    (cancelado)="citaParaEliminar = null" />
+}

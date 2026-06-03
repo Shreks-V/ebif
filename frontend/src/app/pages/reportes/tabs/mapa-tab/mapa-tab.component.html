@@ -1,0 +1,200 @@
+<div class="rounded-2xl overflow-hidden shadow-xl border border-slate-200">
+
+  <!-- Header bar -->
+  <div class="bg-gradient-to-r from-[#00328b] via-[#0041b0] to-[#0052cc] px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+      <div class="bg-white/15 rounded-xl p-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-white leading-tight">Distribución Geográfica</h2>
+        <p class="text-blue-200 text-xs">Beneficiarios activos en el mapa</p>
+      </div>
+    </div>
+    @if (!mapaLoading) {
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1.5">
+          <div class="w-2 h-2 rounded-full bg-white/80"></div>
+          <span class="text-white text-xs font-semibold">{{ mapaBeneficiarios.length }} total</span>
+        </div>
+        <div class="flex items-center gap-1.5 bg-emerald-400/25 rounded-full px-3 py-1.5">
+          <div class="w-2 h-2 rounded-full bg-emerald-300"></div>
+          <span class="text-emerald-100 text-xs font-semibold">{{ mapaTotalUbicados }} en mapa</span>
+        </div>
+        @if (mapaPendientesGeocode > 0) {
+          <div class="flex items-center gap-1.5 bg-amber-400/25 rounded-full px-3 py-1.5">
+            <div class="w-2 h-2 rounded-full bg-amber-300 animate-pulse"></div>
+            <span class="text-amber-100 text-xs font-semibold">{{ mapaPendientesGeocode }} procesando</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Filters toolbar -->
+  <div class="bg-white border-b border-slate-100 px-6 py-3 flex items-center gap-3 flex-wrap">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+    <label for="mapa-tab-filtro-cuota" class="text-xs font-semibold text-slate-500">Cuota</label>
+    <select id="mapa-tab-filtro-cuota" [(ngModel)]="mapaFiltroCuota" (ngModelChange)="mapaAplicarFiltro()"
+      class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium focus:border-[#00328b] focus:outline-none bg-white text-slate-700">
+      <option value="">Todas las cuotas</option>
+      <option value="CUOTA A">Cuota A</option>
+      <option value="CUOTA B">Cuota B</option>
+    </select>
+    <label for="mapa-tab-filtro-estado" class="text-xs font-semibold text-slate-500">Estado</label>
+    <select id="mapa-tab-filtro-estado" [(ngModel)]="mapaFiltroEstado" (ngModelChange)="mapaAplicarFiltro()"
+      class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium focus:border-[#00328b] focus:outline-none bg-white text-slate-700">
+      <option value="">Todos los estados</option>
+      @for (e of mapaEstados; track e) {
+        <option [value]="e">{{ e }}</option>
+      }
+    </select>
+    @if (mapaFiltroCuota || mapaFiltroEstado) {
+      <button (click)="mapaFiltroCuota=''; mapaFiltroEstado=''; mapaAplicarFiltro()"
+        class="text-xs text-slate-400 hover:text-slate-600 underline ml-1">
+        Limpiar filtros
+      </button>
+    }
+  </div>
+
+  <!-- Map area with sidebar -->
+  <div class="flex bg-slate-50" style="height:600px">
+
+    <!-- Sidebar stats panel -->
+    <div class="w-64 flex-shrink-0 bg-white border-r border-slate-100 flex flex-col overflow-y-auto">
+      <div class="px-4 py-3 border-b border-slate-100">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estadísticas</p>
+      </div>
+
+      @if (mapaBeneficiarios.length > 0 && !mapaLoading) {
+        <div class="px-4 py-3 border-b border-slate-100 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">Total beneficiarios</span>
+            <span class="text-sm font-bold text-slate-800">{{ mapaBeneficiarios.length }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500">En el mapa</span>
+            <span class="text-sm font-bold text-emerald-600">{{ mapaTotalUbicados }}</span>
+          </div>
+          @if (mapaPendientesGeocode > 0) {
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-500 flex items-center gap-1.5">
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                Procesando
+              </span>
+              <span class="text-sm font-bold text-amber-500">{{ mapaPendientesGeocode }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Cuota breakdown -->
+        <div class="px-4 py-3 border-b border-slate-100">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Por cuota</p>
+          <div class="space-y-2.5">
+            <div class="flex items-center gap-2.5">
+              <div class="w-3 h-3 rounded-full flex-shrink-0" style="background:#1d4ed8"></div>
+              <span class="text-xs text-slate-600 flex-1">Cuota A</span>
+              <span class="text-xs font-bold text-slate-800 tabular-nums">{{ mapaCuotaA }}</span>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <div class="w-3 h-3 rounded-full flex-shrink-0" style="background:#ea580c"></div>
+              <span class="text-xs text-slate-600 flex-1">Cuota B</span>
+              <span class="text-xs font-bold text-slate-800 tabular-nums">{{ mapaCuotaB }}</span>
+            </div>
+          </div>
+          @if (mapaCuotaA + mapaCuotaB > 0) {
+            <div class="mt-3 h-1.5 rounded-full overflow-hidden flex">
+              <div class="h-full" style="background:#1d4ed8"
+                [style.width.%]="mapaCuotaA / (mapaCuotaA + mapaCuotaB) * 100"></div>
+              <div class="h-full" style="background:#ea580c"
+                [style.width.%]="mapaCuotaB / (mapaCuotaA + mapaCuotaB) * 100"></div>
+            </div>
+            <div class="flex justify-between mt-1">
+              <span class="text-[10px] font-semibold" style="color:#1d4ed8">{{ mapaCuotaA / (mapaCuotaA + mapaCuotaB) * 100 | number:'1.0-0' }}%</span>
+              <span class="text-[10px] font-semibold" style="color:#ea580c">{{ mapaCuotaB / (mapaCuotaA + mapaCuotaB) * 100 | number:'1.0-0' }}%</span>
+            </div>
+          }
+        </div>
+
+        <!-- Top cities -->
+        <div class="px-4 py-3 flex-1">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Top ciudades</p>
+          <div class="space-y-2.5">
+            @for (c of mapaTopCiudades; track c.nombre) {
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs text-slate-600 truncate pr-2">{{ c.nombre }}</span>
+                  <span class="text-xs font-bold text-slate-700 tabular-nums flex-shrink-0">{{ c.count }}</span>
+                </div>
+                <div class="h-1 rounded-full bg-slate-100 overflow-hidden">
+                  <div class="h-full rounded-full" style="background:#00328b;opacity:.5"
+                    [style.width.%]="mapaTopCiudades[0].count > 0 ? c.count / mapaTopCiudades[0].count * 100 : 0"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      } @else if (!mapaLoading && !mapaError) {
+        <div class="flex-1 flex items-center justify-center px-4">
+          <p class="text-xs text-slate-400 text-center">Sin datos aún</p>
+        </div>
+      }
+    </div>
+
+    <!-- Map canvas -->
+    <div class="flex-1 relative">
+      @if (mapaLoading) {
+        <div class="absolute inset-0 flex items-center justify-center z-10 bg-white/80">
+          <div class="text-center">
+            <div class="w-10 h-10 border-[3px] border-[#00328b] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <p class="text-slate-500 font-medium text-sm">Cargando mapa...</p>
+          </div>
+        </div>
+      }
+      @if (mapaError) {
+        <div class="absolute inset-0 flex items-center justify-center bg-red-50">
+          <div class="text-center max-w-sm px-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-red-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p class="text-red-700 font-semibold text-sm mb-1">Error al cargar el mapa</p>
+            <p class="text-red-500 text-xs mb-4">{{ mapaError }}</p>
+            <button (click)="mapaCargarBeneficiariosPublic()" class="px-4 py-2 bg-[#00328b] text-white text-sm font-semibold rounded-lg hover:bg-[#0041b0] transition-colors">
+              Reintentar
+            </button>
+          </div>
+        </div>
+      }
+      <div #mapaContainer class="w-full h-full"></div>
+
+      @if (!mapaLoading && mapaPendientesGeocode > 0) {
+        <div class="absolute bottom-4 left-4 z-[1000] bg-white/90 backdrop-blur-sm border border-amber-200 rounded-full px-4 py-2 shadow-md flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+          <span class="text-xs text-amber-700 font-semibold">
+            Geocodificando {{ mapaPendientesGeocode }} en segundo plano
+          </span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="bg-white border-t border-slate-100 px-6 py-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-slate-400">
+        Mostrando {{ mapaTotalUbicados }} de {{ mapaBeneficiarios.length }} beneficiarios
+      </span>
+      <button (click)="mapaCargarBeneficiariosPublic()"
+        class="flex items-center gap-1.5 text-xs text-[#00328b] font-semibold hover:underline">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+        Recargar
+      </button>
+    </div>
+    <span class="text-xs text-slate-300">© OpenStreetMap contributors © CARTO</span>
+  </div>
+
+</div>

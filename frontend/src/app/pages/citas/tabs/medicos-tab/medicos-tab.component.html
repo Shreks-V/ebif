@@ -1,0 +1,192 @@
+<div class="bg-white rounded-xl shadow-sm border border-slate-200">
+  <!-- Card Header -->
+  <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+    <h2 class="text-lg font-bold text-slate-900 tracking-wide">M&Eacute;DICOS</h2>
+    <button (click)="abrirNuevoMedico()" class="px-4 py-2 bg-[#00328b] text-white text-sm font-semibold rounded-lg hover:bg-[#002a75] transition-colors flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" x2="12" y1="5" y2="19"/>
+        <line x1="5" x2="19" y1="12" y2="12"/>
+      </svg>
+      Agregar M&eacute;dico
+    </button>
+  </div>
+  <!-- Search -->
+  <div class="px-6 py-4">
+    <div class="relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input aria-label="Buscar m&eacute;dico por nombre o especialidad..."
+        type="text"
+        placeholder="Buscar m&eacute;dico por nombre o especialidad..."
+        [(ngModel)]="searchMedicos"
+        (input)="filtrarMedicos()"
+        class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00328b]/20 focus:border-[#00328b] transition-all"
+        />
+    </div>
+  </div>
+  <!-- Table -->
+  <div>
+    <table class="w-full text-sm">
+      <thead class="sticky top-0 z-10 shadow-sm">
+        <tr class="border-t border-slate-200 bg-slate-50">
+          <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleMedicosSort('nombre')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Nombre</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'nombre') }}</span>
+            </button>
+          </th>
+          <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleMedicosSort('especialidad')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Especialidad</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'especialidad') }}</span>
+            </button>
+          </th>
+          <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleMedicosSort('contacto')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Contacto</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'contacto') }}</span>
+            </button>
+          </th>
+          <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleMedicosSort('servicios')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Servicios</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'servicios') }}</span>
+            </button>
+          </th>
+          <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <button type="button" (click)="toggleMedicosSort('estado')" class="flex items-center gap-1 hover:text-slate-700 transition-colors">
+              <span>Estado</span>
+              <span class="text-[10px] font-black leading-none">{{ getSortIndicator(medicosSort, 'estado') }}</span>
+            </button>
+          </th>
+          <th class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        @for (medico of medicosFiltrados; track medico) {
+          <tr class="group hover:bg-slate-50 transition-colors">
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#00328b] to-[#0052cc] flex items-center justify-center text-white text-xs font-bold">
+                  {{ medico.iniciales }}
+                </div>
+                <span class="font-medium text-slate-900">Dr(a). {{ medico.nombre }} {{ medico.apellidoPaterno }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                {{ medico.especialidad }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-slate-700 flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  {{ medico.telefono }}
+                </span>
+                <span class="text-slate-500 text-xs flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                  {{ medico.correo }}
+                </span>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex flex-wrap gap-1">
+                @for (servicio of medico.servicios; track servicio) {
+                  <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded border border-amber-200">
+                    {{ servicio.nombre }}
+                  </span>
+                }
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                [ngClass]="medico.activo === 'S' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'"
+                >
+                {{ medico.activo === 'S' ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <button (click)="toggleMedicoMenu(medico, $event)"
+                class="w-8 h-8 rounded-lg flex items-center justify-center transition-all border"
+                [ngClass]="openMedicoMenu === medico.idDoctor
+                  ? 'bg-slate-700 border-slate-700 text-white shadow-md'
+                  : 'bg-white border-slate-200 text-slate-400 group-hover:border-slate-300 group-hover:text-slate-600 hover:bg-slate-50'">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+        }
+        @if (medicosFiltrados.length === 0) {
+          <tr>
+            <td colspan="6" class="px-6 py-12 text-center text-slate-400 text-sm">
+              No se encontraron m&eacute;dicos con la b&uacute;squeda actual.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== MENÚ ⋮ MÉDICOS ==================== -->
+@if (openMedicoMenu !== null) {
+  <div class="fixed inset-0 z-40" (click)="closeMedicoMenu()"></div>
+}
+@if (openMedicoMenu !== null && menuMedico) {
+  <div class="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 w-48 overflow-hidden" [style.top.px]="menuMedicoPosition.top" [style.left.px]="menuMedicoPosition.left" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+    <button (click)="verDetalleMedico(menuMedico); closeMedicoMenu()"
+      class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span class="font-medium">Ver detalle</span>
+    </button>
+    <button (click)="editarMedico(menuMedico); closeMedicoMenu()"
+      class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m15 5 4 4"/>
+      </svg>
+      <span class="font-medium">Editar</span>
+    </button>
+    <button (click)="abrirDisponibilidad(menuMedico); closeMedicoMenu()"
+      class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+      </svg>
+      <span class="font-medium">Disponibilidad</span>
+    </button>
+    <div class="h-px bg-slate-100 my-1"></div>
+    <button (click)="toggleActivoMedico(menuMedico); closeMedicoMenu()"
+      class="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left"
+      [ngClass]="menuMedico.activo === 'S' ? 'text-red-600 hover:bg-red-50' : 'text-emerald-700 hover:bg-emerald-50'">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" [ngClass]="menuMedico.activo === 'S' ? 'text-red-500' : 'text-emerald-500'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+      </svg>
+      <span class="font-medium">{{ menuMedico.activo === 'S' ? 'Desactivar' : 'Activar' }}</span>
+    </button>
+  </div>
+}
+
+@if (showNuevoMedicoModal) {
+  <app-nuevo-medico-modal [serviciosList]="serviciosList" (closed)="showNuevoMedicoModal = false" (guardado)="onMedicoGuardado()" />
+}
+@if (medicoParaDetalle) {
+  <app-detalle-medico-modal [medico]="medicoParaDetalle" (closed)="medicoParaDetalle = null" />
+}
+@if (medicoParaEditar) {
+  <app-editar-medico-modal [medico]="medicoParaEditar" [serviciosList]="serviciosList" (closed)="medicoParaEditar = null" (guardado)="onEdicionGuardada()" />
+}
+@if (medicoParaDisponibilidad) {
+  <app-disponibilidad-modal [medico]="medicoParaDisponibilidad" (closed)="medicoParaDisponibilidad = null" />
+}

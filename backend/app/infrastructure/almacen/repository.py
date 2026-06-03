@@ -1,0 +1,719 @@
+from __future__ import annotations
+
+import logging
+from app.domain.exceptions import ConflictError, NotFoundError, ValidationError
+from app.domain.almacen.ports import AlmacenRepository
+from app.domain.shared.current_user import CurrentUser
+from datetime import date, datetime
+
+import oracledb
+
+from app.infrastructure.audit.bitacora import log_insert
+from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
+from app.infrastructure.persistence.sp_helpers import sp_error_to_http
+from app.infrastructure.persistence.helpers import normalize_pagination as _normalize_pagination
+
+logger = logging.getLogger(__name__)
+
+_MSG_PRODUCTO_NO_ENCONTRADO = 'Producto no encontrado'
+_MSG_SERVICIO_NO_ENCONTRADO = 'Servicio no encontrado'
+_MSG_COMODATO_NO_ENCONTRADO = 'Comodato no encontrado'
+
+_SP_CREAR_PRODUCTO_ERRORS = {
+    20701: (400, 'Tipo de producto inválido'),
+    20702: (400, 'Clave interna requerida'),
+    20703: (409, 'La clave interna ya existe'),
+}
+
+_SP_MOVIMIENTO_STOCK_ERRORS = {
+    20501: (400, 'Tipo de movimiento inválido'),
+    20502: (400, 'Cantidad inválida para el movimiento'),
+    20503: (400, 'Referencia de usuario inválida'),
+    20504: (400, 'Producto no encontrado o inactivo'),
+    20505: (409, 'Existencias insuficientes para realizar la operación'),
+}
+
+_SP_AJUSTAR_EXISTENCIA_ERRORS = {
+    20504: (404, 'Producto no encontrado o inactivo'),
+    20506: (400, 'Existencia objetivo inválida'),
+}
+
+
+def _normalize_tipo_producto_for_db(value: str | None) -> str:
+    """Accept API aliases and return the DB/SP canonical value."""
+    tipo = str(value or '').strip().upper()
+    if tipo == 'EQUIPO':
+        return 'EQUIPO_MEDICO'
+    return tipo
+
+
+def _normalize_tipo_producto_for_api(value: str | None) -> str | None:
+    """Return API-friendly type names for frontend compatibility."""
+    if value is None:
+        return None
+    tipo = str(value).strip().upper()
+    if tipo == 'EQUIPO_MEDICO':
+        return 'EQUIPO'
+    return tipo
+
+def _serialize(row: dict) -> dict:
+    """Strip CHAR padding and convert dates to ISO strings."""
+    result = {}
+    for key, value in row.items():
+        if isinstance(value, (datetime, date)):
+            result[key] = value.isoformat()
+        elif isinstance(value, str):
+            result[key] = value.strip()
+        else:
+            result[key] = value
+    if 'tipo_producto' in result:
+        result['tipo_producto'] = _normalize_tipo_producto_for_api(result['tipo_producto'])
+    return result
+
+_PRODUCTOS_BASE_SQL = """
+    SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE, p.DESCRIPCION,
+           p.TIPO_PRODUCTO, p.ACTIVO, p.ID_USUARIO_REGISTRO, p.FECHA_REGISTRO,
+           p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,
+           p.ID_PRODUCTO_PADRE, p.NOMBRE_VARIANTE,
+           m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,
+           eq.NUMERO_SERIE, eq.MARCA, eq.MODELO, eq.ESTATUS_EQUIPO, eq.OBSERVACIONES,
+           ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA, ex.FECHA_CADUCIDAD
+    FROM PRODUCTO p
+    LEFT JOIN MEDICAMENTO m        ON m.ID_PRODUCTO  = p.ID_PRODUCTO
+    LEFT JOIN EQUIPO_MEDICO eq     ON eq.ID_PRODUCTO = p.ID_PRODUCTO
+    LEFT JOIN EXISTENCIA_PRODUCTO ex ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'
+"""
+
+def _is_unique_key_error(exc: Exception, constraint_hint: str) -> bool:
+    message = str(exc).upper()
+    return 'ORA-00001' in message and constraint_hint.upper() in message
+
+def _generate_internal_key(conn, tipo_producto: str) -> str:
+    prefix = 'MED' if tipo_producto == 'MEDICAMENTO' else 'EQP'
+    cur = conn.cursor()
+    pattern = f'^{prefix}-[0-9]+$'
+    cur.execute(
+        """
+        SELECT NVL(MAX(
+            CASE
+                WHEN REGEXP_LIKE(CLAVE_INTERNA, :pattern)
+                THEN TO_NUMBER(REGEXP_SUBSTR(CLAVE_INTERNA, '[0-9]+$'))
+            END
+        ), 0) AS max_seq
+        FROM PRODUCTO
+        WHERE CLAVE_INTERNA LIKE :prefix
+        """,
+        {'pattern': pattern, 'prefix': f'{prefix}-%'},
+    )
+    row = row_to_dict(cur) or {}
+    next_seq = int(row.get('max_seq') or 0) + 1
+    return f'{prefix}-{next_seq:03d}'
+
+def _listar_productos(tipo_producto: str | None=None, busqueda: str | None=None, activo: str | None=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+    """Listar productos del almacen con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
+    sql = _PRODUCTOS_BASE_SQL + ' WHERE 1=1'
+    params: dict = {}
+    if tipo_producto:
+        sql += ' AND p.TIPO_PRODUCTO = :tipo_producto'
+        params['tipo_producto'] = _normalize_tipo_producto_for_db(tipo_producto)
+    if activo:
+        sql += ' AND p.ACTIVO = :activo'
+        params['activo'] = activo
+    if busqueda:
+        sql += ' AND (LOWER(p.NOMBRE) LIKE :busqueda OR LOWER(p.DESCRIPCION) LIKE :busqueda OR LOWER(p.CLAVE_INTERNA) LIKE :busqueda)'
+        params['busqueda'] = f'%{busqueda.lower()}%'
+    sql += ' ORDER BY p.ID_PRODUCTO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+    return [_serialize(r) for r in rows]
+
+def _obtener_producto(id_producto: int, _current_user: CurrentUser | None = None):
+    """Obtener un producto por ID."""
+    sql = _PRODUCTOS_BASE_SQL + ' WHERE p.ID_PRODUCTO = :id_producto'
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {'id_producto': id_producto})
+        row = row_to_dict(cursor)
+    if not row:
+        raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
+    return _serialize(row)
+
+def _sp_crear_producto_con_reintento(cursor, conn, data, tipo_producto_db, id_usuario):
+    """Llama SP_CREAR_PRODUCTO_CON_EXISTENCIA reintentando hasta 5 veces si hay colisión de clave."""
+    for _ in range(5):
+        clave_interna = _generate_internal_key(conn, tipo_producto_db)
+        id_out = cursor.var(int)
+        try:
+            cursor.callproc('SP_CREAR_PRODUCTO_CON_EXISTENCIA', [
+                clave_interna, data.nombre, data.descripcion, tipo_producto_db,
+                data.precio_cuota_a, data.precio_cuota_b, id_usuario,
+                data.nivel_minimo or 0, data.unidad_medida,
+                data.presentacion, data.dosis, data.requiere_caducidad or 'N',
+                data.numero_serie, data.marca, data.modelo, data.observaciones,
+                id_out,
+            ])
+            return id_out.getvalue(), clave_interna
+        except oracledb.DatabaseError as exc:
+            code = getattr(exc.args[0], 'code', None) if exc.args else None
+            if code == 20703:
+                logger.warning('Colision de clave interna %s al crear producto; reintentando', clave_interna)
+                continue
+            raise sp_error_to_http(exc, _SP_CREAR_PRODUCTO_ERRORS,
+                                   default_detail='No se pudo crear el producto')
+    return None, None
+
+
+def _registrar_stock_inicial(cursor, id_producto, data, id_usuario, clave_interna):
+    cantidad = data.cantidad_disponible or 0
+    if cantidad <= 0:
+        return
+    try:
+        cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
+            id_producto, 'ENTRADA', cantidad, id_usuario, None, None,
+            f'Existencia inicial alta producto {clave_interna}',
+        ])
+    except oracledb.DatabaseError as exc:
+        raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
+                               default_detail='No se pudo registrar la existencia inicial')
+
+
+def _crear_producto(data, current_user: CurrentUser | None = None):
+    """Crear un nuevo producto vía SP_CREAR_PRODUCTO_CON_EXISTENCIA."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get('id_usuario', 1)
+        tipo_producto_db = _normalize_tipo_producto_for_db(data.tipo_producto)
+
+        id_producto, clave_interna = _sp_crear_producto_con_reintento(cursor, conn, data, tipo_producto_db, id_usuario)
+        if id_producto is None:
+            raise ConflictError('No se pudo generar una clave interna unica para el producto')
+
+        _registrar_stock_inicial(cursor, id_producto, data, id_usuario, clave_interna)
+
+        if data.fecha_caducidad:
+            cursor.execute(
+                "UPDATE EXISTENCIA_PRODUCTO SET FECHA_CADUCIDAD = TO_DATE(:fc, 'YYYY-MM-DD') "
+                "WHERE ID_PRODUCTO = :id AND ACTIVO = 'S'",
+                {'fc': data.fecha_caducidad, 'id': id_producto},
+            )
+
+        log_insert(conn, 'PRODUCTO', id_producto, id_usuario, f'Producto {clave_interna} creado')
+        conn.commit()
+    return _fetch_producto(id_producto)
+
+def _fetch_producto(id_producto: int) -> dict:
+    """Fetch a single product with its variants (internal helper, no auth)."""
+    sql = _PRODUCTOS_BASE_SQL + ' WHERE p.ID_PRODUCTO = :id_producto'
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {'id_producto': id_producto})
+        row = row_to_dict(cursor)
+        if not row:
+            raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
+        producto = _serialize(row)
+        # Include variants if this is a parent product
+        cursor.execute(
+            _PRODUCTOS_BASE_SQL + ' WHERE p.ID_PRODUCTO_PADRE = :id_padre ORDER BY p.NOMBRE_VARIANTE',
+            {'id_padre': id_producto},
+        )
+        variantes_rows = rows_to_dicts(cursor)
+        producto['variantes'] = [_serialize(v) for v in variantes_rows]
+    return producto
+
+
+def _listar_variantes(id_producto_padre: int, _current_user: CurrentUser | None = None) -> list:
+    """Listar todas las variantes de un producto padre."""
+    sql = _PRODUCTOS_BASE_SQL + ' WHERE p.ID_PRODUCTO_PADRE = :id_padre ORDER BY p.NOMBRE_VARIANTE'
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {'id_padre': id_producto_padre})
+        rows = rows_to_dicts(cursor)
+    return [_serialize(r) for r in rows]
+
+
+def _fetch_padre_producto(cursor, id_producto_padre: int) -> dict:
+    cursor.execute(
+        'SELECT ID_PRODUCTO, NOMBRE, TIPO_PRODUCTO, PRECIO_CUOTA_A, PRECIO_CUOTA_B '
+        "FROM PRODUCTO WHERE ID_PRODUCTO = :id AND ACTIVO = 'S'",
+        {'id': id_producto_padre},
+    )
+    padre = row_to_dict(cursor)
+    if not padre:
+        raise NotFoundError('Producto padre no encontrado')
+    return padre
+
+
+def _generar_clave_variante(cursor, tipo_padre: str) -> str:
+    prefix = 'MED' if tipo_padre == 'MEDICAMENTO' else 'EQP'
+    cursor.execute(
+        """
+        SELECT NVL(MAX(
+            CASE WHEN REGEXP_LIKE(CLAVE_INTERNA, :pattern)
+                 THEN TO_NUMBER(REGEXP_SUBSTR(CLAVE_INTERNA, '[0-9]+$'))
+            END
+        ), 0) AS max_seq FROM PRODUCTO WHERE CLAVE_INTERNA LIKE :prefix
+        """,
+        {'pattern': f'^{prefix}-[0-9]+$', 'prefix': f'{prefix}-%'},
+    )
+    seq_row = row_to_dict(cursor) or {}
+    next_seq = int(seq_row.get('max_seq') or 0) + 1
+    return f'{prefix}-{next_seq:03d}'
+
+
+def _insertar_producto_variante(cursor, padre: dict, data, clave: str, id_usuario: int,
+                                precio_a: float, precio_b: float) -> int:
+    id_var = cursor.var(int)
+    cursor.execute("""
+        INSERT INTO PRODUCTO
+            (CLAVE_INTERNA, NOMBRE, DESCRIPCION, TIPO_PRODUCTO, ACTIVO,
+             ID_USUARIO_REGISTRO, FECHA_REGISTRO,
+             PRECIO_CUOTA_A, PRECIO_CUOTA_B,
+             ID_PRODUCTO_PADRE, NOMBRE_VARIANTE)
+        VALUES (:clave, :nombre, :descripcion, :tipo, 'S',
+                :id_usuario, SYSDATE,
+                :precio_a, :precio_b,
+                :id_padre, :nombre_variante)
+        RETURNING ID_PRODUCTO INTO :id_out
+    """, {
+        'clave': clave,
+        'nombre': padre['nombre'],
+        'descripcion': f'Variante: {data.nombre_variante}',
+        'tipo': padre.get('tipo_producto', 'MEDICAMENTO'),
+        'id_usuario': id_usuario,
+        'precio_a': precio_a,
+        'precio_b': precio_b,
+        'id_padre': padre['id_producto'],
+        'nombre_variante': data.nombre_variante,
+        'id_out': id_var,
+    })
+    return id_var.getvalue()[0]
+
+
+def _insertar_registro_tipo_variante(cursor, tipo_padre: str, id_variante: int, nombre_variante: str) -> None:
+    if tipo_padre == 'MEDICAMENTO':
+        cursor.execute(
+            "INSERT INTO MEDICAMENTO (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD) "
+            "VALUES (:id, :pres, NULL, 'N')",
+            {'id': id_variante, 'pres': nombre_variante},
+        )
+
+
+def _insertar_existencia_variante(cursor, id_variante: int, data) -> None:
+    cursor.execute("""
+        INSERT INTO EXISTENCIA_PRODUCTO
+            (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO)
+        VALUES (:id, :cantidad, :nivel, :unidad, 'S')
+    """, {
+        'id': id_variante,
+        'cantidad': data.cantidad_disponible or 0,
+        'nivel': data.nivel_minimo or 5,
+        'unidad': data.unidad_medida or 'pieza',
+    })
+    if data.fecha_caducidad:
+        cursor.execute(
+            "UPDATE EXISTENCIA_PRODUCTO SET FECHA_CADUCIDAD = TO_DATE(:fc, 'YYYY-MM-DD') "
+            "WHERE ID_PRODUCTO = :id AND ACTIVO = 'S'",
+            {'fc': data.fecha_caducidad, 'id': id_variante},
+        )
+
+
+def _crear_variante(id_producto_padre: int, data, current_user: CurrentUser | None = None) -> dict:
+    """Crear una variante (calibre/talla) de un producto padre existente."""
+    from app.application.almacen.dtos import VarianteCreate  # local import avoids circular
+    assert isinstance(data, VarianteCreate)
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get('id_usuario', 1) if current_user else 1
+        padre = _fetch_padre_producto(cursor, id_producto_padre)
+        tipo_padre = padre.get('tipo_producto', 'MEDICAMENTO')
+        clave = _generar_clave_variante(cursor, tipo_padre)
+        precio_a = data.precio_cuota_a if data.precio_cuota_a is not None else padre.get('precio_cuota_a') or 0
+        precio_b = data.precio_cuota_b if data.precio_cuota_b is not None else padre.get('precio_cuota_b') or 0
+        id_variante = _insertar_producto_variante(cursor, padre, data, clave, id_usuario, precio_a, precio_b)
+        _insertar_registro_tipo_variante(cursor, tipo_padre, id_variante, data.nombre_variante)
+        _insertar_existencia_variante(cursor, id_variante, data)
+        log_insert(conn, 'PRODUCTO', id_variante, id_usuario,
+                   f'Variante {data.nombre_variante} de producto #{id_producto_padre} ({clave}) creada')
+        conn.commit()
+
+    return _fetch_producto(id_variante)
+
+def _actualizar_producto(id_producto: int, data, _current_user: CurrentUser | None = None):
+    """Actualizar un producto existente."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        tipo_producto_db = _normalize_tipo_producto_for_db(data.tipo_producto)
+        cursor.execute('SELECT ID_PRODUCTO, TIPO_PRODUCTO FROM PRODUCTO WHERE ID_PRODUCTO = :id', {'id': id_producto})
+        existing = cursor.fetchone()
+        if not existing:
+            raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
+        cursor.execute('UPDATE PRODUCTO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                TIPO_PRODUCTO = :tipo, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b\n               WHERE ID_PRODUCTO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'tipo': tipo_producto_db, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'id': id_producto})
+        if tipo_producto_db == 'MEDICAMENTO':
+            cursor.execute('MERGE INTO MEDICAMENTO m\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (m.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       PRESENTACION = :presentacion, DOSIS = :dosis,\n                       REQUIERE_CADUCIDAD = :requiere\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD)\n                       VALUES (:id, :presentacion, :dosis, :requiere)', {'id': id_producto, 'presentacion': data.presentacion, 'dosis': data.dosis, 'requiere': data.requiere_caducidad or 'N'})
+        else:
+            cursor.execute('MERGE INTO EQUIPO_MEDICO eq\n                   USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src\n                   ON (eq.ID_PRODUCTO = src.ID_PRODUCTO)\n                   WHEN MATCHED THEN UPDATE SET\n                       NUMERO_SERIE = :serie, MARCA = :marca, MODELO = :modelo,\n                       ESTATUS_EQUIPO = :estatus, OBSERVACIONES = :obs\n                   WHEN NOT MATCHED THEN INSERT\n                       (ID_PRODUCTO, NUMERO_SERIE, MARCA, MODELO, ESTATUS_EQUIPO, OBSERVACIONES)\n                       VALUES (:id, :serie, :marca, :modelo, :estatus, :obs)', {'id': id_producto, 'serie': data.numero_serie, 'marca': data.marca, 'modelo': data.modelo, 'estatus': data.estatus_equipo or 'DISPONIBLE', 'obs': data.observaciones})
+        fecha_cad_val = (
+            datetime.strptime(data.fecha_caducidad[:10], '%Y-%m-%d').date()
+            if data.fecha_caducidad else None
+        )
+        cursor.execute(
+            "MERGE INTO EXISTENCIA_PRODUCTO ex"
+            " USING (SELECT :id AS ID_PRODUCTO FROM DUAL) src"
+            " ON (ex.ID_PRODUCTO = src.ID_PRODUCTO AND ex.ACTIVO = 'S')"
+            " WHEN MATCHED THEN UPDATE SET"
+            "     CANTIDAD_DISPONIBLE = :cant, NIVEL_MINIMO = :nmin,"
+            "     UNIDAD_MEDIDA = :unidad,"
+            "     FECHA_CADUCIDAD = :fecha_cad"
+            " WHEN NOT MATCHED THEN INSERT"
+            "     (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO, FECHA_CADUCIDAD)"
+            "     VALUES (:id, :cant, :nmin, :unidad, 'S', :fecha_cad)",
+            {
+                'id': id_producto,
+                'cant': data.cantidad_disponible,
+                'nmin': data.nivel_minimo,
+                'unidad': data.unidad_medida,
+                'fecha_cad': fecha_cad_val,
+            },
+        )
+        conn.commit()
+    return _fetch_producto(id_producto)
+
+def _desactivar_producto(id_producto: int, _current_user: CurrentUser | None = None):
+    """Desactivar un producto (soft delete)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE PRODUCTO SET ACTIVO = 'N' WHERE ID_PRODUCTO = :id", {'id': id_producto})
+        if cursor.rowcount == 0:
+            raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
+        conn.commit()
+    return {'message': 'Producto desactivado correctamente'}
+
+def _listar_servicios(busqueda: str | None=None, activo: str | None=None, categoria: str | None=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+    """Listar servicios con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
+    sql = '\n        SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n               ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n               PRECIO_CUOTA_A, PRECIO_CUOTA_B, CATEGORIA\n        FROM SERVICIO WHERE 1=1\n    '
+    params: dict = {}
+    if activo:
+        sql += ' AND ACTIVO = :activo'
+        params['activo'] = activo
+    if busqueda:
+        sql += ' AND (LOWER(NOMBRE) LIKE :busqueda OR LOWER(DESCRIPCION) LIKE :busqueda)'
+        params['busqueda'] = f'%{busqueda.lower()}%'
+    if categoria:
+        sql += ' AND CATEGORIA = :categoria'
+        params['categoria'] = categoria.upper()
+    sql += ' ORDER BY ID_SERVICIO OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+    return [_serialize(r) for r in rows]
+
+def _obtener_servicio(id_servicio: int, _current_user: CurrentUser | None = None):
+    """Obtener un servicio por ID."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n                      ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                      PRECIO_CUOTA_A, PRECIO_CUOTA_B, CATEGORIA\n               FROM SERVICIO WHERE ID_SERVICIO = :id', {'id': id_servicio})
+        row = row_to_dict(cursor)
+    if not row:
+        raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
+    return _serialize(row)
+
+def _crear_servicio(data, current_user: CurrentUser | None = None):
+    """Crear un nuevo servicio."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get('id_usuario', 1)
+        id_var = cursor.var(int)
+        categoria = getattr(data, 'categoria', None) or 'SERVICIO'
+        cursor.execute('INSERT INTO SERVICIO\n               (NOMBRE, DESCRIPCION, CUOTA_RECUPERACION, ACTIVO,\n                ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                PRECIO_CUOTA_A, PRECIO_CUOTA_B, CATEGORIA)\n               VALUES (:nombre, :descripcion, :cuota, :activo,\n                       :id_usuario, SYSDATE, :precio_a, :precio_b, :categoria)\n               RETURNING ID_SERVICIO INTO :id_out', {'nombre': data.nombre, 'descripcion': data.descripcion, 'cuota': data.cuota_recuperacion, 'activo': data.activo, 'id_usuario': id_usuario, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'categoria': categoria, 'id_out': id_var})
+        id_servicio = id_var.getvalue()[0]
+        conn.commit()
+    return _fetch_servicio(id_servicio)
+
+def _fetch_servicio(id_servicio: int) -> dict:
+    """Fetch a single service (internal helper)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT ID_SERVICIO, NOMBRE, DESCRIPCION, CUOTA_RECUPERACION,\n                      ACTIVO, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                      PRECIO_CUOTA_A, PRECIO_CUOTA_B, CATEGORIA\n               FROM SERVICIO WHERE ID_SERVICIO = :id', {'id': id_servicio})
+        row = row_to_dict(cursor)
+    if not row:
+        raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
+    return _serialize(row)
+
+def _actualizar_servicio(id_servicio: int, data, _current_user: CurrentUser | None = None):
+    """Actualizar un servicio existente."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        categoria = getattr(data, 'categoria', None) or 'SERVICIO'
+        cursor.execute('UPDATE SERVICIO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                CUOTA_RECUPERACION = :cuota, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b,\n                CATEGORIA = :categoria\n               WHERE ID_SERVICIO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'cuota': data.cuota_recuperacion, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'categoria': categoria, 'id': id_servicio})
+        if cursor.rowcount == 0:
+            raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
+        conn.commit()
+    return _fetch_servicio(id_servicio)
+
+def _desactivar_servicio(id_servicio: int, _current_user: CurrentUser | None = None):
+    """Desactivar un servicio (soft delete)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE SERVICIO SET ACTIVO = 'N' WHERE ID_SERVICIO = :id", {'id': id_servicio})
+        if cursor.rowcount == 0:
+            raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
+        conn.commit()
+    return {'message': 'Servicio desactivado correctamente'}
+_COMODATOS_BASE_SQL = "\n    SELECT c.ID_COMODATO, c.FOLIO_COMODATO, c.ID_EQUIPO, c.ID_PACIENTE,\n           c.ID_USUARIO_REGISTRO, c.FECHA_PRESTAMO, c.FECHA_DEVOLUCION,\n           c.ESTATUS, c.MONTO_TOTAL, c.MONTO_PAGADO, c.SALDO_PENDIENTE,\n           c.EXENTO_PAGO, c.NOTAS,\n           pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO || ' ' || NVL(pa.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           pa.FOLIO AS FOLIO_PACIENTE,\n           pr.NOMBRE AS NOMBRE_EQUIPO\n    FROM COMODATO c\n    LEFT JOIN PACIENTE pa ON pa.ID_PACIENTE = c.ID_PACIENTE\n    LEFT JOIN PRODUCTO pr ON pr.ID_PRODUCTO = c.ID_EQUIPO\n"
+
+def _listar_comodatos(estatus: str | None=None, busqueda: str | None=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+    """Listar comodatos con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
+    sql = _COMODATOS_BASE_SQL + ' WHERE 1=1'
+    params: dict = {}
+    if estatus:
+        sql += ' AND c.ESTATUS = :estatus'
+        params['estatus'] = estatus
+    if busqueda:
+        sql += " AND (LOWER(pa.NOMBRE || ' ' || pa.APELLIDO_PATERNO) LIKE :busqueda OR LOWER(pr.NOMBRE) LIKE :busqueda OR LOWER(pa.FOLIO) LIKE :busqueda OR LOWER(c.FOLIO_COMODATO) LIKE :busqueda)"
+        params['busqueda'] = f'%{busqueda.lower()}%'
+    sql += ' ORDER BY c.ID_COMODATO DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+    return [_serialize(r) for r in rows]
+
+def _obtener_comodato(id_comodato: int, _current_user: CurrentUser | None = None):
+    """Obtener un comodato por ID."""
+    sql = _COMODATOS_BASE_SQL + ' WHERE c.ID_COMODATO = :id'
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {'id': id_comodato})
+        row = row_to_dict(cursor)
+    if not row:
+        raise NotFoundError(_MSG_COMODATO_NO_ENCONTRADO)
+    return _serialize(row)
+
+def _crear_comodato(data, current_user: CurrentUser | None = None):
+    """Registrar un nuevo comodato (RF-PS-06). Stock vía SP_REGISTRAR_MOVIMIENTO_STOCK."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get('id_usuario', 1)
+        cursor.execute('SELECT NVL(MAX(ID_COMODATO), 0) + 1 FROM COMODATO')
+        next_num = cursor.fetchone()[0]
+        folio = f'COM-{next_num:06d}'
+        id_var = cursor.var(int)
+        cursor.execute("INSERT INTO COMODATO\n               (FOLIO_COMODATO, ID_EQUIPO, ID_PACIENTE, ID_USUARIO_REGISTRO,\n                FECHA_PRESTAMO, FECHA_DEVOLUCION, ESTATUS,\n                MONTO_TOTAL, MONTO_PAGADO, SALDO_PENDIENTE,\n                EXENTO_PAGO, NOTAS)\n               VALUES (:folio, :id_equipo, :id_paciente, :id_usuario,\n                       TO_DATE(:fecha_prest, 'YYYY-MM-DD'),\n                       CASE WHEN :fecha_dev IS NOT NULL\n                            THEN TO_DATE(:fecha_dev, 'YYYY-MM-DD')\n                            ELSE NULL END,\n                       :estatus, :monto_total, :monto_pagado, :saldo,\n                       :exento, :notas)\n               RETURNING ID_COMODATO INTO :id_out", {'folio': folio, 'id_equipo': data.id_equipo, 'id_paciente': data.id_paciente, 'id_usuario': id_usuario, 'fecha_prest': data.fecha_prestamo, 'fecha_dev': data.fecha_devolucion, 'estatus': data.estatus, 'monto_total': data.monto_total, 'monto_pagado': data.monto_pagado, 'saldo': data.saldo_pendiente, 'exento': data.exento_pago, 'notas': data.notas, 'id_out': id_var})
+        id_comodato = id_var.getvalue()[0]
+        try:
+            cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
+                data.id_equipo,
+                'SALIDA_COMODATO',
+                1,
+                id_usuario,
+                None,
+                id_comodato,
+                f'Préstamo comodato {folio}',
+            ])
+        except oracledb.DatabaseError as exc:
+            conn.rollback()
+            raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
+                                   default_detail='No se pudo registrar el movimiento de existencias')
+        log_insert(conn, 'COMODATO', id_comodato, id_usuario, f'Comodato {folio} creado para paciente {data.id_paciente}')
+        conn.commit()
+    return _fetch_comodato(id_comodato)
+
+def _fetch_comodato(id_comodato: int) -> dict:
+    """Fetch a single comodato (internal helper)."""
+    sql = _COMODATOS_BASE_SQL + ' WHERE c.ID_COMODATO = :id'
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, {'id': id_comodato})
+        row = row_to_dict(cursor)
+    if not row:
+        raise NotFoundError(_MSG_COMODATO_NO_ENCONTRADO)
+    return _serialize(row)
+
+def _actualizar_comodato(id_comodato: int, data, current_user: CurrentUser | None = None):
+    """Actualizar un comodato existente (RF-PS-07: auto-update stock on return)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get('id_usuario', 1)
+        cursor.execute('SELECT ESTATUS, ID_EQUIPO FROM COMODATO WHERE ID_COMODATO = :id', {'id': id_comodato})
+        prev = cursor.fetchone()
+        if prev is None:
+            raise NotFoundError(_MSG_COMODATO_NO_ENCONTRADO)
+        prev_estatus = prev[0].strip() if prev[0] else ''
+        id_equipo_prev = prev[1]
+        cursor.execute("UPDATE COMODATO SET\n                ID_EQUIPO = :id_equipo, ID_PACIENTE = :id_paciente,\n                FECHA_PRESTAMO = TO_DATE(:fecha_prest, 'YYYY-MM-DD'),\n                FECHA_DEVOLUCION = CASE WHEN :fecha_dev IS NOT NULL\n                                        THEN TO_DATE(:fecha_dev, 'YYYY-MM-DD')\n                                        ELSE NULL END,\n                ESTATUS = :estatus, MONTO_TOTAL = :monto_total,\n                MONTO_PAGADO = :monto_pagado, SALDO_PENDIENTE = :saldo,\n                EXENTO_PAGO = :exento, NOTAS = :notas\n               WHERE ID_COMODATO = :id", {'id_equipo': data.id_equipo, 'id_paciente': data.id_paciente, 'fecha_prest': data.fecha_prestamo, 'fecha_dev': data.fecha_devolucion, 'estatus': data.estatus, 'monto_total': data.monto_total, 'monto_pagado': data.monto_pagado, 'saldo': data.saldo_pendiente, 'exento': data.exento_pago, 'notas': data.notas, 'id': id_comodato})
+        new_estatus = data.estatus.strip() if data.estatus else ''
+        if prev_estatus == 'PRESTADO' and new_estatus == 'DEVUELTO':
+            try:
+                cursor.callproc('SP_REGISTRAR_MOVIMIENTO_STOCK', [
+                    id_equipo_prev,
+                    'DEVOLUCION_COMODATO',
+                    1,
+                    id_usuario,
+                    None,
+                    id_comodato,
+                    'Devolución de comodato',
+                ])
+            except oracledb.DatabaseError as exc:
+                conn.rollback()
+                raise sp_error_to_http(exc, _SP_MOVIMIENTO_STOCK_ERRORS,
+                                       default_detail='No se pudo registrar la devolución')
+        conn.commit()
+    return _fetch_comodato(id_comodato)
+
+def _ajustar_existencia(id_producto: int, stock_nuevo: int, motivo: str, current_user: CurrentUser | None = None):
+    """Ajustar stock objetivo de un producto vía SP_AJUSTAR_EXISTENCIA_PRODUCTO."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        id_usuario = current_user.get('id_usuario', 1) if current_user else 1
+        try:
+            cursor.callproc('SP_AJUSTAR_EXISTENCIA_PRODUCTO', [
+                id_producto,
+                int(stock_nuevo),
+                motivo,
+                id_usuario,
+            ])
+        except oracledb.DatabaseError as exc:
+            raise sp_error_to_http(exc, _SP_AJUSTAR_EXISTENCIA_ERRORS,
+                                   default_detail='No se pudo ajustar la existencia')
+        conn.commit()
+    return _fetch_producto(id_producto)
+
+
+def _listar_movimientos(id_producto: int | None=None, tipo_movimiento: str | None=None,
+                       busqueda: str | None=None, fecha_inicio: str | None=None,
+                       fecha_fin: str | None=None, _current_user: CurrentUser | None = None,
+                       limit: int=100, offset: int=0):
+    """Listar movimientos de inventario con filtros opcionales."""
+    safe_limit, safe_offset = _normalize_pagination(limit, offset)
+    sql = """
+        SELECT mi.ID_MOVIMIENTO, mi.ID_PRODUCTO, p.NOMBRE AS NOMBRE_PRODUCTO,
+               p.CLAVE_INTERNA,
+               mi.ID_USUARIO_REGISTRO, mi.ID_VENTA, mi.ID_COMODATO,
+               mi.FECHA_MOVIMIENTO, mi.TIPO_MOVIMIENTO, mi.CANTIDAD, mi.OBSERVACIONES
+          FROM MOVIMIENTO_INVENTARIO mi
+          LEFT JOIN PRODUCTO p ON p.ID_PRODUCTO = mi.ID_PRODUCTO
+         WHERE 1=1
+    """
+    params: dict = {}
+    if id_producto:
+        sql += ' AND mi.ID_PRODUCTO = :id_producto'
+        params['id_producto'] = id_producto
+    if tipo_movimiento:
+        sql += ' AND mi.TIPO_MOVIMIENTO = :tipo'
+        params['tipo'] = tipo_movimiento
+    if busqueda:
+        sql += " AND (LOWER(p.NOMBRE) LIKE :busq OR LOWER(p.CLAVE_INTERNA) LIKE :busq OR LOWER(mi.OBSERVACIONES) LIKE :busq)"
+        params['busq'] = f'%{busqueda.lower()}%'
+    if fecha_inicio:
+        sql += " AND mi.FECHA_MOVIMIENTO >= TO_DATE(:fi, 'YYYY-MM-DD')"
+        params['fi'] = fecha_inicio
+    if fecha_fin:
+        sql += " AND mi.FECHA_MOVIMIENTO < TO_DATE(:ff, 'YYYY-MM-DD') + 1"
+        params['ff'] = fecha_fin
+    sql += ' ORDER BY mi.FECHA_MOVIMIENTO DESC, mi.ID_MOVIMIENTO DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY'
+    params['offset'] = safe_offset
+    params['limit'] = safe_limit
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
+        rows = rows_to_dicts(cursor)
+    return [_serialize(r) for r in rows]
+
+def _almacen_stats(_current_user: CurrentUser | None = None):
+    """Estadisticas del almacen para dashboard."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(p.ID_PRODUCTO),\n                      NVL(SUM(ex.CANTIDAD_DISPONIBLE), 0)\n               FROM PRODUCTO p\n               LEFT JOIN EXISTENCIA_PRODUCTO ex\n                   ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'\n               WHERE p.ACTIVO = 'S'")
+        row = cursor.fetchone()
+        total_productos = row[0]
+        total_unidades = int(row[1])
+        cursor.execute("SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE,\n                      ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO\n               FROM PRODUCTO p\n               JOIN EXISTENCIA_PRODUCTO ex\n                   ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'\n               WHERE p.ACTIVO = 'S'\n                 AND ex.CANTIDAD_DISPONIBLE < ex.NIVEL_MINIMO")
+        stock_bajo = rows_to_dicts(cursor)
+        stock_bajo = [_serialize(r) for r in stock_bajo]
+        cursor.execute("SELECT TIPO_PRODUCTO, COUNT(*)\n               FROM PRODUCTO WHERE ACTIVO = 'S'\n               GROUP BY TIPO_PRODUCTO")
+        por_tipo = {r[0].strip(): r[1] for r in cursor.fetchall()}
+        cursor.execute("SELECT COUNT(*) FROM COMODATO WHERE ESTATUS = 'PRESTADO'")
+        comodatos_activos = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM SERVICIO WHERE ACTIVO = 'S'")
+        servicios_activos = cursor.fetchone()[0]
+        cursor.execute('SELECT COUNT(*) FROM MOVIMIENTO_INVENTARIO')
+        total_movimientos = cursor.fetchone()[0]
+        try:
+            cursor.execute("SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE,\n                          ex.FECHA_CADUCIDAD, ex.CANTIDAD_DISPONIBLE,\n                          CASE WHEN ex.FECHA_CADUCIDAD < TRUNC(SYSDATE)\n                               THEN 'VENCIDO' ELSE 'PROXIMO' END AS ESTATUS_CADUCIDAD\n                   FROM PRODUCTO p\n                   JOIN EXISTENCIA_PRODUCTO ex\n                       ON ex.ID_PRODUCTO = p.ID_PRODUCTO AND ex.ACTIVO = 'S'\n                   JOIN MEDICAMENTO m ON m.ID_PRODUCTO = p.ID_PRODUCTO\n                   WHERE p.ACTIVO = 'S'\n                     AND m.REQUIERE_CADUCIDAD = 'S'\n                     AND ex.FECHA_CADUCIDAD IS NOT NULL\n                     AND ex.FECHA_CADUCIDAD <= TRUNC(SYSDATE) + 30\n                   ORDER BY ex.FECHA_CADUCIDAD")
+            proximos_vencer = [_serialize(r) for r in rows_to_dicts(cursor)]
+        except oracledb.DatabaseError:
+            logger.warning("No se pudo consultar productos próximos a vencer", exc_info=True)
+            proximos_vencer = []
+    return {'total_productos': total_productos, 'total_unidades': total_unidades, 'stock_bajo': stock_bajo, 'alertas_stock_bajo': len(stock_bajo), 'por_tipo': por_tipo, 'comodatos_activos': comodatos_activos, 'servicios_activos': servicios_activos, 'total_movimientos': total_movimientos, 'proximos_vencer': proximos_vencer, 'alertas_caducidad': len(proximos_vencer)}
+
+
+class OracleAlmacenRepository(AlmacenRepository):
+    def listar_productos(self, tipo_producto=None, busqueda=None, activo=None, current_user=None, limit=100, offset=0):
+        return _listar_productos(tipo_producto, busqueda, activo, current_user, limit, offset)
+
+    def obtener_producto(self, id_producto, current_user=None):
+        return _obtener_producto(id_producto, current_user)
+
+    def crear_producto(self, data, current_user=None):
+        return _crear_producto(data, current_user)
+
+    def actualizar_producto(self, id_producto, data, current_user=None):
+        return _actualizar_producto(id_producto, data, current_user)
+
+    def desactivar_producto(self, id_producto, current_user=None):
+        return _desactivar_producto(id_producto, current_user)
+
+    def listar_variantes(self, id_producto_padre, current_user=None):
+        return _listar_variantes(id_producto_padre, current_user)
+
+    def crear_variante(self, id_producto_padre, data, current_user=None):
+        return _crear_variante(id_producto_padre, data, current_user)
+
+    def listar_servicios(self, busqueda=None, activo=None, categoria=None, current_user=None, limit=100, offset=0):
+        return _listar_servicios(busqueda, activo, categoria, current_user, limit, offset)
+
+    def obtener_servicio(self, id_servicio, current_user=None):
+        return _obtener_servicio(id_servicio, current_user)
+
+    def crear_servicio(self, data, current_user=None):
+        return _crear_servicio(data, current_user)
+
+    def actualizar_servicio(self, id_servicio, data, current_user=None):
+        return _actualizar_servicio(id_servicio, data, current_user)
+
+    def desactivar_servicio(self, id_servicio, current_user=None):
+        return _desactivar_servicio(id_servicio, current_user)
+
+    def listar_comodatos(self, estatus=None, busqueda=None, current_user=None, limit=100, offset=0):
+        return _listar_comodatos(estatus, busqueda, current_user, limit, offset)
+
+    def obtener_comodato(self, id_comodato, current_user=None):
+        return _obtener_comodato(id_comodato, current_user)
+
+    def crear_comodato(self, data, current_user=None):
+        return _crear_comodato(data, current_user)
+
+    def actualizar_comodato(self, id_comodato, data, current_user=None):
+        return _actualizar_comodato(id_comodato, data, current_user)
+
+    def listar_movimientos(self, id_producto=None, tipo_movimiento=None, busqueda=None, fecha_inicio=None, fecha_fin=None, current_user=None, limit=100, offset=0):
+        return _listar_movimientos(id_producto, tipo_movimiento, busqueda, fecha_inicio, fecha_fin, current_user, limit, offset)
+
+    def almacen_stats(self, current_user=None):
+        return _almacen_stats(current_user)
+
+    def ajustar_existencia(self, id_producto, stock_nuevo, motivo, current_user=None):
+        return _ajustar_existencia(id_producto, stock_nuevo, motivo, current_user)

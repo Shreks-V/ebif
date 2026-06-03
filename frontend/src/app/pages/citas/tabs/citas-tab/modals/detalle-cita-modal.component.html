@@ -1,0 +1,67 @@
+@if (cita) {
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm backdrop-saturate-75 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-slate-900">Detalle de Cita</h2>
+        <button (click)="closed.emit()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="space-y-5">
+        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#00328b] to-[#0052cc] flex items-center justify-center text-white text-sm font-bold">
+            {{ cita.nombrePaciente.charAt(0) || '?' }}
+          </div>
+          <div>
+            <p class="font-bold text-slate-900">{{ cita.nombrePaciente }}</p>
+            <p class="text-sm text-slate-500">Folio: {{ cita.folioPaciente }}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Fecha y Hora</p>
+            <p class="font-bold text-slate-900">{{ formatFechaHoraCita(cita.fechaHora) }}</p>
+          </div>
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Estatus</p>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border" [ngClass]="getEstadoBadgeClass(cita.estatus)">
+              {{ cita.estatus }}
+            </span>
+          </div>
+        </div>
+        @if (cita.notas) {
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Notas</p>
+            <p class="text-sm text-slate-700">{{ cita.notas }}</p>
+          </div>
+        }
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Servicios</p>
+          @if (cita.servicios.length > 0) {
+            <div class="space-y-2">
+              @for (srv of cita.servicios; track srv) {
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div>
+                    <p class="font-semibold text-slate-900 text-sm">{{ srv.nombre }}</p>
+                    <p class="text-xs text-slate-500">Cantidad: {{ srv.cantidad }}</p>
+                  </div>
+                  <span class="text-sm font-bold text-emerald-600">${{ srv.montoPagado | number:'1.2-2' }}</span>
+                </div>
+              }
+            </div>
+          }
+          @if (cita.servicios.length === 0) {
+            <p class="text-sm text-slate-400 italic">Sin servicios registrados.</p>
+          }
+        </div>
+        <div class="flex justify-end pt-4 border-t border-slate-200">
+          <button (click)="closed.emit()" class="px-6 py-3 text-sm font-semibold text-white bg-[#00328b] rounded-xl hover:bg-[#002a75] transition-colors">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Informe resumen de pruebas — EBIF (formato NIST)</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #444;
+      --border: #333;
+      --accent: #0f3d68;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      line-height: 1.45;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 12mm 16mm 20mm;
+      background: #f5f5f5;
+    }
+    .sheet {
+      background: #fff;
+      padding: 18mm 20mm 22mm;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    @media print {
+      body { background: #fff; padding: 0; max-width: none; }
+      .sheet {
+        box-shadow: none;
+        margin: 0;
+        padding: 15mm 18mm;
+        page-break-after: always;
+      }
+      .sheet:last-of-type { page-break-after: auto; }
+      .no-print { display: none !important; }
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+    h2 {
+      font-size: 1.1rem;
+      margin: 1.25rem 0 0.5rem;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.2rem;
+      color: var(--accent);
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 0.5rem 0;
+    }
+    .meta {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 0.35rem 0;
+    }
+    .team {
+      margin: 2rem auto 0;
+      max-width: 32rem;
+    }
+    .team li {
+      margin: 0.35rem 0;
+      list-style: none;
+      padding-left: 0;
+    }
+    .team ul { padding: 0; margin: 0; }
+    .footer-cover {
+      text-align: center;
+      margin-top: 2.5rem;
+      font-weight: 600;
+    }
+    p { margin: 0.65rem 0; text-align: justify; }
+    .doc-info {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+    }
+    .doc-info th,
+    .doc-info td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.6rem;
+      vertical-align: top;
+      text-align: left;
+    }
+    .doc-info th {
+      background: #eef4f9;
+      width: 28%;
+      font-weight: 600;
+    }
+    .doc-info td { width: 72%; }
+    .dist-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.92rem;
+    }
+    .dist-table th,
+    .dist-table td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.6rem;
+    }
+    .dist-table thead th { background: #eef4f9; }
+    .note {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 1.5rem;
+      font-style: italic;
+    }
+    .print-hint {
+      background: #fff9e6;
+      border: 1px solid #e6c200;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .toc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    .toc-table th,
+    .toc-table td {
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.55rem;
+      text-align: left;
+    }
+    .toc-table thead th { background: #eef4f9; }
+    .toc-table td:first-child { width: 3.5rem; text-align: center; font-weight: 600; }
+    h3 {
+      font-size: 1rem;
+      margin: 1rem 0 0.35rem;
+      color: #222;
+      font-weight: 600;
+    }
+    .sec-body { font-size: 0.92rem; }
+    .sec-body ul { margin: 0.4rem 0 0.6rem 1.25rem; }
+    .sec-body li { margin: 0.25rem 0; }
+    .for-example {
+      margin: 0.75rem 0;
+      padding: 0.5rem 0.65rem;
+      background: #f8fafc;
+      border-left: 3px solid var(--accent);
+      font-size: 0.9rem;
+    }
+    .for-example strong { display: block; margin-bottom: 0.35rem; }
+    .resultados-pytest {
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.9rem;
+    }
+    .resultados-pytest th,
+    .resultados-pytest td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .resultados-pytest th {
+      background: #eef4f9;
+      width: 32%;
+    }
+    .effort-table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; font-size: 0.9rem; }
+    .effort-table th, .effort-table td { border: 1px solid var(--border); padding: 0.4rem 0.5rem; text-align: left; }
+    .effort-table thead th { background: #eef4f9; }
+    .effort-table td:nth-child(2), .effort-table td:nth-child(3) { text-align: center; width: 22%; }
+    pre.cmd {
+      font-size: 0.82rem;
+      background: #f1f5f9;
+      padding: 0.5rem 0.65rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 0.35rem 0 0;
+    }
+    .faculty-list {
+      margin: 1rem auto 0;
+      max-width: 36rem;
+      font-size: 0.95rem;
+    }
+    .faculty-list li { margin: 0.4rem 0; }
+    .label-team {
+      text-align: center;
+      font-weight: 700;
+      margin-top: 1.5rem;
+      font-size: 0.98rem;
+      color: var(--accent);
+    }
+    .matriz-pruebas {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin-top: 0.75rem;
+    }
+    .matriz-pruebas th,
+    .matriz-pruebas td {
+      border: 1px solid var(--border);
+      padding: 0.22rem 0.35rem;
+      vertical-align: top;
+    }
+    .matriz-pruebas thead th {
+      background: #eef4f9;
+      position: sticky;
+      top: 0;
+    }
+    .matriz-pruebas td:nth-child(1) { width: 4.2rem; text-align: center; font-weight: 600; }
+    .matriz-pruebas td:nth-child(4) { width: 2.5rem; text-align: center; font-weight: 700; }
+    .matriz-pruebas code { font-size: 0.76rem; }
+    .leyenda-pruebas { font-size: 0.85rem; margin-top: 0.5rem; color: var(--muted); }
+    .links-list { margin: 0.5rem 0 0 1.1rem; }
+    .links-list li { margin: 0.4rem 0; }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+      gap: 0.65rem;
+      margin: 1rem 0;
+    }
+    .metric-card {
+      border: 1px solid var(--border);
+      padding: 0.65rem 0.75rem;
+      background: #f8fafc;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .metric-card strong {
+      display: block;
+      font-size: 1.35rem;
+      color: var(--accent);
+      margin-bottom: 0.2rem;
+    }
+    .metric-card span { font-size: 0.82rem; color: var(--muted); }
+    .evidence-fig {
+      margin: 1.25rem 0;
+      page-break-inside: avoid;
+    }
+    .evidence-fig img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .evidence-fig figcaption {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 0.55rem;
+      text-align: justify;
+      line-height: 1.4;
+    }
+    .evidence-fig strong { color: var(--accent); }
+    @media print {
+      .matriz-pruebas thead th { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+  <p class="print-hint no-print">
+    <strong>Exportar a PDF:</strong> abre este archivo en el navegador, pulsa <strong>Ctrl+P</strong> (Imprimir),
+    elige <strong>Guardar como PDF</strong> como destino y ajusta los márgenes si lo necesitas.
+  </p>
+
+  <!-- Página 1: Portada -->
+  <section class="sheet" aria-label="Portada">
+    <h1>Actividad de clase: formatos NIST</h1>
+    <p class="subtitle">Desarrollo e implantación de sistemas de software (Gpo. 107)</p>
+    <p class="meta">Tecnológico de Monterrey — Campus Monterrey</p>
+    <p class="label-team">Equipo de desarrollo (proyecto EBIF)</p>
+    <div class="team">
+      <ul>
+        <li>Emilio Antonio Peralta Montiel — A01712354</li>
+        <li>Ricardo Bastida Rodríguez — A00839429</li>
+        <li>Marco Antonio Torres Ramírez — A00839451</li>
+        <li>Andrés Huerta Robinson — A00838626</li>
+        <li>Diego Guadiana Manjarrez — A01285889</li>
+      </ul>
+    </div>
+    <p class="meta" style="margin-top: 1.75rem;">El cuerpo docente del curso figura en la siguiente hoja.</p>
+    <p class="footer-cover">Mayo, 2026 — Sprint 2 · Qase FJ26SV · evidencias pytest</p>
+  </section>
+
+  <!-- Cuerpo docente -->
+  <section class="sheet" aria-label="Cuerpo docente">
+    <h1 style="font-size: 1.15rem; text-align: center; color: var(--accent);">Cuerpo docente del curso</h1>
+    <p class="meta" style="margin-bottom: 1rem;">Profesores asignados a la materia (listado académico)</p>
+    <ol class="faculty-list">
+      <li>David Alonso Cantú Delgado</li>
+      <li>Ricardo Antonio Fernández Wong</li>
+      <li>Martha Elizabeth Galindo Vallarino</li>
+      <li>Yolanda Martínez Treviño</li>
+      <li>Cristian Ricardo Polo Garza</li>
+      <li>Alfonso Israel Quintanilla Martínez</li>
+    </ol>
+    <p class="note" style="margin-top: 1.5rem;">
+      Coordinación y seguimiento de la asignatura pueden distribuirse entre los profesores anteriores según el modelo del campus.
+    </p>
+  </section>
+
+  <!-- Página 2: Introducción -->
+  <section class="sheet" aria-label="Introducción">
+    <h2>Introducción</h2>
+    <p>
+      Este documento presenta el reporte de las pruebas automatizadas del sistema, orientadas a
+      verificar el comportamiento acordado en las historias de usuario y criterios de aceptación
+      referenciados en el código mediante identificadores SV-*.
+    </p>
+    <p>
+      Las pruebas se ejecutan con <strong>pytest</strong> desde el repositorio del proyecto, utilizando una
+      configuración <strong>integrada</strong> del código del backend (<strong>FastAPI</strong>) con módulos de prueba ubicados en
+      las carpetas <code>Pruebas/</code> (Sprint 1, criterios SV-*) y <code>pruebas-s2/</code> (Sprint 2, HU-09 … HU-17).
+      Gran parte de las validaciones se realizan contra aplicaciones mínimas levantadas en memoria, con repositorios simulados;
+      Sprint 2 incluye además una prueba opcional de integración con Oracle (<code>EBIF_S2_USE_ORACLE=1</code>).
+    </p>
+    <p>
+      El alcance incluye autenticación y sesión, beneficiarios, citas, pre-registro, recibos y cobros, acciones rápidas del tablero,
+      almacén, reportes, notificaciones, usuarios, comodatos, saldo pendiente, PDF de citas y comprobaciones sobre código fuente
+      del frontend cuando el criterio se valida mejor de forma estática.
+    </p>
+  </section>
+
+  <!-- Página 3: Informe resumen — datos del documento -->
+  <section class="sheet" aria-label="Informe resumen de pruebas">
+    <h1 style="font-size: 1.2rem; text-align: left; border: none; color: var(--text); margin-bottom: 0.25rem;">
+      Informe resumen de pruebas <span style="font-weight: 400; color: var(--muted);">(Test Summary Report, estilo NIST)</span>
+    </h1>
+    <p class="meta" style="text-align: left; margin-bottom: 1rem;">
+      Información del documento — Actividad de clase / Tecnológico de Monterrey
+    </p>
+
+    <table class="doc-info">
+      <tbody>
+        <tr>
+          <th scope="row">ID del proyecto</th>
+          <td>EBIF-GPO107-2026</td>
+        </tr>
+        <tr>
+          <th scope="row">Referencia del documento</th>
+          <td>TSR-EBIF-20260515-02</td>
+        </tr>
+        <tr>
+          <th scope="row">ID de iteración</th>
+          <td>Iteración documentación y pruebas automatizadas + Sprint 2</td>
+        </tr>
+        <tr>
+          <th scope="row">Título del sistema en prueba (AUT)</th>
+          <td>EBIF — Sistema de gestión (backend FastAPI + frontend Angular)</td>
+        </tr>
+        <tr>
+          <th scope="row">Fecha del documento</th>
+          <td>21 de mayo de 2026 (Sprint 2, Qase TestOps, evidencias pytest)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top: 1.25rem; font-size: 1rem;">Distribución</h2>
+    <table class="dist-table">
+      <thead>
+        <tr>
+          <th>Núm. de ejemplar</th>
+          <th>Destinatario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1.</td>
+          <td>Cuerpo docente del curso (seis profesores, hoja «Cuerpo docente»)</td>
+        </tr>
+        <tr>
+          <td>2.</td>
+          <td>Equipo de desarrollo EBIF — alumnos en portada (matrículas A01…)</td>
+        </tr>
+        <tr>
+          <td>3.</td>
+          <td>Repositorio del curso / evidencia de entrega (proyecto ebif)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top: 1.5rem;">Contenido</h2>
+    <table class="toc-table">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Sección / archivo del proyecto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Introducción</td></tr>
+        <tr><td>2</td><td>Panorama general</td></tr>
+        <tr><td>3</td><td>Desviaciones</td></tr>
+        <tr><td>4</td><td>Valoración</td></tr>
+        <tr><td>5</td><td>Resultados (pytest, Qase TestOps, evidencias)</td></tr>
+        <tr><td>6</td><td>Evaluación</td></tr>
+        <tr><td>7</td><td>Resumen de actividades</td></tr>
+        <tr><td>8</td><td>Enlaces y referencias externas</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Sección 1 -->
+  <section class="sheet sec-body" aria-label="Sección 1 Introducción">
+    <h2>1 Introducción</h2>
+    <h3>1.1 Antecedentes</h3>
+    <p>
+      Este documento ofrece el resumen de las actividades de prueba correspondientes a la iteración
+      <strong>Iteración documentación y pruebas automatizadas</strong> del sistema
+      <strong>EBIF — Sistema de gestión (backend FastAPI + frontend Angular)</strong>.
+    </p>
+    <p>
+      El sistema bajo prueba (AUT), EBIF, da soporte a flujos operativos de beneficiarios, citas,
+      pre-registro, recibos y cobros, vistas relacionadas con inventario y acceso autenticado. Las pruebas
+      automatizadas están implementadas con <strong>pytest</strong> en <code>Pruebas/</code> y <code>pruebas-s2/</code>, ejercitando rutas
+      FastAPI mediante repositorios en memoria cuando corresponde. La integración Oracle en Sprint 2 es opcional
+      (<code>test_oracle_s2.py</code>). La versión documentada corresponde a la rama de desarrollo del curso (actualización mayo 2026).
+    </p>
+    <h3>1.2 Alcance de módulos automatizados</h3>
+    <p><strong>Sprint 1 — <code>Pruebas/</code>:</strong> acceso y sesión (SV-1…6), beneficiarios (SV-7…17), pre-registro (SV-24…30),
+      citas (SV-31…35, 37), acciones rápidas (SV-38…43), recibos (SV-44…50).</p>
+    <p><strong>Sprint 2 — <code>pruebas-s2/</code>:</strong> HU-09 CURP, HU-10 almacén, HU-11 reportes, HU-12 notificaciones,
+      HU-13 usuarios, HU-14 comodato, HU-15 saldo pendiente, HU-17 PDF cita, más health check Oracle opcional.
+      <strong>Qase:</strong> mismo proyecto que Sprint 1 (<strong>FJ26SV</strong>); casos S2 en <code>pruebas-s2/qase_manifest.yaml</code>.</p>
+    <h3>1.3 Estructura del informe</h3>
+    <p>El informe se organiza de la siguiente manera:</p>
+    <ul>
+      <li>La <strong>sección 2, Panorama general</strong>, describe los hechos y actividades relevantes de la iteración de pruebas de EBIF.</li>
+      <li>La <strong>sección 3, Desviaciones</strong>, registra diferencias respecto a lo acordado previamente, en especial aquellas que puedan preocupar a quien acepta los resultados, con referencia a la documentación de soporte cuando exista.</li>
+      <li>La <strong>sección 4, Valoración</strong>, valora la exhaustividad del proceso de pruebas frente a los objetivos de la iteración.</li>
+      <li>La <strong>sección 5, Resultados</strong>, resume los resultados de la iteración de pruebas de EBIF e incluye la ejecución documentada de pytest.</li>
+      <li>La <strong>sección 6, Evaluación</strong>, ofrece una evaluación global del proceso de pruebas, problemas y limitaciones.</li>
+      <li>La <strong>sección 7</strong> resume las actividades principales y recursos empleados en la iteración.</li>
+      <li>La <strong>sección 8</strong> reúne enlaces a Qase y pytest.</li>
+    </ul>
+    <h3>1.4 Referencias</h3>
+    <p>Documentos citados en este informe resumen de pruebas:</p>
+    <ul>
+      <li>Este informe HTML, <code>pytest.ini</code>, carpetas <code>Pruebas/</code> y <code>pruebas-s2/</code>.</li>
+      <li>Evidencia pytest: <code>Pruebas/evidencias/ejecucion-sprint1-pytest.png</code>,
+        <code>Pruebas/evidencias/ejecucion-sprint1-sprint2-pytest.png</code>.</li>
+      <li>Brief de la actividad de curso: formato de resumen de pruebas estilo NIST (Gpo. 107, abril 2026).</li>
+      <li>Identificadores internos: criterios de historias de usuario referidos como SV-* en nombres de prueba y documentación.</li>
+      <li>Enlaces externos en la <strong>sección 8</strong> (Qase, pytest).</li>
+    </ul>
+  </section>
+
+  <!-- Sección 2 -->
+  <section class="sheet sec-body" aria-label="Sección 2 Panorama">
+    <h2>2 Panorama general</h2>
+    <p>
+      Esta sección ofrece una visión de alto nivel de los hechos y actividades registrados durante la iteración
+      <strong>Iteración documentación y pruebas automatizadas</strong> sobre
+      <strong>EBIF — Sistema de gestión (backend FastAPI + frontend Angular)</strong>.
+    </p>
+    <p>
+      También delimita el alcance de las pruebas (qué se probó y qué no) y describe el entorno (hardware, software y datos).
+    </p>
+    <p><strong>Alcance probado.</strong> Sprint 1: API de autenticación, beneficiarios, citas, pre-registro, recibos y contrato Angular del tablero.
+      Sprint 2: almacén, reportes, notificaciones agregadas, usuarios del sistema, comodatos, cobros con saldo pendiente, PDF de cita,
+      validación CURP en DTO y health check con Oracle (opcional).</p>
+    <p><strong>Alcance no probado o parcial.</strong> E2E en navegador (SV-40…42); verificación CURP duplicada por API (HU-09, skip);
+      regresión funcional completa de Sprint 2 contra Oracle (solo <code>/api/health</code> con <code>EBIF_S2_USE_ORACLE=1</code>);
+      carga, seguridad ofensiva y cobertura de líneas como umbral de aceptación.</p>
+    <div class="for-example">
+      <strong>Por ejemplo</strong>
+      Las pruebas de la iteración para EBIF se llevaron a cabo en abril de 2026 como parte de las entregas del curso. El
+      esfuerzo se centró en regresión automatizada de endpoints REST con pytest y análisis estático puntual del frontend.
+      La ejecución se realizó en equipos de estudiantes o desarrolladores (entornos típicos Windows 10/11) con Python 3.x,
+      dependencias de <code>backend/requirements-dev.txt</code> y el proyecto configurado con
+      <code>pythonpath = backend .</code> en <code>pytest.ini</code>.
+    </div>
+  </section>
+
+  <!-- Sección 3 -->
+  <section class="sheet sec-body" aria-label="Sección 3 Desviaciones">
+    <h2>3 Desviaciones</h2>
+    <p>
+      Esta sección documenta desviaciones respecto a lo acordado previamente, en especial cuando puedan afectar la
+      aceptación de los resultados, incluyendo referencias a la documentación que explique los motivos.
+    </p>
+    <div class="for-example">
+      <strong>Por ejemplo</strong>
+      La plantilla NIST supone un artefacto formal de plan de pruebas con objetivos firmados; en esta iteración académica
+      los objetivos detallados están embebidos en códigos de historia (SV-*) y docstrings de los módulos de prueba, no en un
+      plan aparte. Algunos criterios (accesibilidad y contraste visual) no se ejecutan en pytest y se omiten de forma
+      explícita: es una desviación respecto a una cobertura de UI “completa”, documentada en
+      <code>Pruebas/test_acciones_rapidas.py</code>.
+    </div>
+  </section>
+
+  <!-- Sección 4 -->
+  <section class="sheet sec-body" aria-label="Sección 4 Valoración">
+    <h2>4 Valoración</h2>
+    <p>
+      Breve valoración de la exhaustividad del proceso de pruebas frente a los objetivos e restricciones de la actividad.
+      Cuando existan mediciones de cobertura de código, deben incluirse aquí —
+      <em>no se usó cobertura de líneas como umbral de aceptación; se priorizaron pruebas funcionales de API y de contrato.</em>
+    </p>
+    <h3 style="font-size:1rem;margin-top:1rem;">4.1 Porcentaje de pruebas automatizadas</h3>
+    <div class="metrics-grid" aria-label="Indicadores de automatización">
+      <div class="metric-card"><strong>100 %</strong><span>Casos con script pytest (69/69)</span></div>
+      <div class="metric-card"><strong>100 %</strong><span>Sprint 2 manifest Qase (22/22)</span></div>
+      <div class="metric-card"><strong>92,8 %</strong><span>Passed sobre total recolectado (64/69)</span></div>
+      <div class="metric-card"><strong>100 %</strong><span>Passed excl. omitidas (64/64)</span></div>
+    </div>
+    <table class="resultados-pytest" style="margin-top:0.5rem;">
+      <tbody>
+        <tr><th scope="row">Omisiones Sprint 1</th><td>3 (SV-40, SV-41, SV-42 — E2E/accesibilidad)</td></tr>
+        <tr><th scope="row">Omisiones Sprint 2</th><td>2: CURP duplicado (API pendiente) + <code>test_s2_oracle_health</code> si no defines <code>EBIF_S2_USE_ORACLE=1</code></td></tr>
+        <tr><th scope="row">Integración Oracle S2</th><td>Ejecutar: <code>EBIF_S2_USE_ORACLE=1 python -m pytest pruebas-s2/test_oracle_s2.py -q</code></td></tr>
+      </tbody>
+    </table>
+    <p>
+      También se identifican aspectos del AUT que no se probaron con la profundidad prevista (tiempo o recursos).
+    </p>
+    <div class="for-example">
+      <strong>Por ejemplo</strong>
+      Se ejecutaron los módulos bajo <code>Pruebas/</code> y <code>pruebas-s2/</code> con omisiones documentadas (E2E y API futura).
+      En la corrida de referencia (mayo 2026): <code>python -m pytest Pruebas/ pruebas-s2/ -q</code> → 64 passed, 5 skipped, 0 failed (~9,7 s).
+      Con <code>EBIF_S2_USE_ORACLE=1</code> suele ser 65 passed, 4 skipped. Las pruebas E2E en navegador y umbrales formales
+      de cobertura de código siguen siendo trabajo opcional posterior.
+    </div>
+  </section>
+
+  <!-- Sección 5 -->
+  <section class="sheet sec-body" aria-label="Sección 5 Resultados">
+    <h2>5 Resultados</h2>
+    <p>
+      Resumen de los resultados de la iteración
+      <strong>Iteración documentación y pruebas automatizadas</strong> sobre
+      <strong>EBIF — Sistema de gestión (backend FastAPI + frontend Angular)</strong>, incidencias resueltas cuando
+      aplica e incidencias pendientes.
+    </p>
+    <div class="for-example">
+      <strong>Por ejemplo</strong>
+      Las pruebas automatizadas de control de acceso, beneficiarios, pre-registro, citas, recibos y comportamientos
+      seleccionados del tablero finalizaron correctamente al ejecutar <code>python -m pytest Pruebas</code>. Limitación
+      conocida: omisiones para foco teclado, activación con Enter y contraste en acciones rápidas; no implican fallo del
+      producto sino ausencia de verificación UI automatizada en esta iteración. Pendiente: incorporar pruebas en navegador
+      o herramientas tipo axe/Lighthouse si el dueño del producto exige evidencia más allá de la revisión estática.
+    </div>
+
+    <h3>5.1 Ejecución automatizada (pytest)</h3>
+    <p>
+      Datos de corrida de referencia desde la raíz del repositorio (mayo 2026), con
+      <code>backend/requirements-dev.txt</code> instalado en el entorno virtual.
+    </p>
+    <table class="resultados-pytest">
+      <tbody>
+        <tr>
+          <th scope="row">Fecha de la ejecución</th>
+          <td>21 de mayo de 2026 — corrida local documentada en este informe</td>
+        </tr>
+        <tr>
+          <th scope="row">Comando (suite completa)</th>
+          <td>
+            <pre class="cmd">cd /home/x3no/Documents/GitHub/ebif
+source backend/.venv/bin/activate
+python -m pytest Pruebas/ pruebas-s2/ -q</pre>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Resultado documentado</th>
+          <td><strong>64</strong> passed, <strong>5</strong> skipped, <strong>0</strong> failed — <strong>69</strong> recolectadas (~9,5–10,5 s)</td>
+        </tr>
+        <tr>
+          <th scope="row">Oracle opcional</th>
+          <td>
+            <pre class="cmd">EBIF_S2_USE_ORACLE=1 python -m pytest pruebas-s2/test_oracle_s2.py -q</pre>
+            (suele sumar 1 passed y quitar 1 skip del total combinado)
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Omisiones (5)</th>
+          <td>S1: SV-40, SV-41, SV-42. S2: CURP duplicado API; <code>test_s2_oracle_health</code> sin <code>EBIF_S2_USE_ORACLE=1</code>.</td>
+        </tr>
+        <tr>
+          <th scope="row">Corrección SV-38</th>
+          <td>Fixture <code>dashboard_source</code> lee <code>.ts</code> + <code>.html</code> (navegación en plantilla Angular).</td>
+        </tr>
+        <tr>
+          <th scope="row">Qase TestOps</th>
+          <td>Proyecto único <strong>FJ26SV</strong>; publicación con <code>QASE_MODE=testops</code> + token (ver §5.1.2).</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top: 0.75rem;">
+      Ejecutar siempre desde la raíz del repo con <code>backend/.venv</code> activado (<code>python -m pytest</code>, no <code>python3</code> del sistema).
+    </p>
+
+    <h3 style="margin-top:1.25rem;">5.1.2 Qase TestOps — test runs y resultados</h3>
+    <p>
+      Sprint 1 y Sprint 2 publican en el mismo proyecto Qase
+      <a href="https://app.qase.io/run/FJ26SV">FJ26SV</a>. El plugin <code>qase-pytest</code> crea un
+      <strong>Test Run</strong> al ejecutar pytest con <code>QASE_MODE=testops</code>.
+    </p>
+    <table class="resultados-pytest">
+      <tbody>
+        <tr>
+          <th scope="row">Variables de entorno</th>
+          <td>
+            <pre class="cmd">export QASE_MODE=testops
+export QASE_TESTOPS_API_TOKEN='tu_token'
+export QASE_TESTOPS_PROJECT=FJ26SV</pre>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Sync casos Sprint 2</th>
+          <td><pre class="cmd">python scripts/qase_sync_sprint2.py</pre>
+            Genera/actualiza casos en Qase y <code>pruebas-s2/pruebas_s2_qase_ids.json</code>.</td>
+        </tr>
+        <tr>
+          <th scope="row">Publicar resultados</th>
+          <td><pre class="cmd">python -m pytest Pruebas/ pruebas-s2/ -v</pre>
+            Al terminar: enlace <code>https://app.qase.io/run/FJ26SV/dashboard/…</code> en consola.</td>
+        </tr>
+        <tr>
+          <th scope="row">Sprint 1 → casos Qase</th>
+          <td>Códigos <code>FJ26SV-1</code> … <code>FJ26SV-50</code>. Enlace opcional:
+            <code>export QASE_ID_FJ26SV_N=id_numérico</code> (N del código visible; id de la URL del caso).</td>
+        </tr>
+        <tr>
+          <th scope="row">Campo <code>layer</code></th>
+          <td>Qase solo acepta <code>api</code>, <code>e2e</code>, <code>unit</code>, <code>unknown</code> (minúsculas).
+            Corregido mayo 2026: antes <code>API</code> / <code>Contrato frontend</code> provocaban error HTTP 422 al subir resultados.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:1.5rem;">5.1.1 Evidencia de ejecución (capturas)</h3>
+    <p>
+      Capturas de pantalla de corridas reales de pytest incluidas en el repositorio bajo
+      <code>Pruebas/evidencias/</code> para respaldo de la entrega.
+    </p>
+
+    <figure class="evidence-fig" id="evidencia-sprint1">
+      <img src="evidencias/ejecucion-sprint1-pytest.png" alt="Terminal pytest Sprint 1: 47 passed en 14.55s" width="900" />
+      <figcaption>
+        <strong>Imagen 1 — Sprint 1.</strong> Ejecución de la carpeta <code>Pruebas/</code> con
+        <code>python -m pytest</code> (entorno de referencia del equipo: macOS, Python 3.14, pytest 8.0.3).
+        Resultado: <strong>47 passed in 14.55s</strong>, 0 failed. Módulos visibles:
+        <code>test_acceso_sesion</code>, <code>test_acciones_rapidas</code>, <code>test_beneficiarios</code>,
+        <code>test_citas</code>, <code>test_preregistro</code>, <code>test_recibos</code>.
+      </figcaption>
+    </figure>
+
+    <figure class="evidence-fig" id="evidencia-sprint2">
+      <img src="evidencias/ejecucion-sprint1-sprint2-pytest.png" alt="Terminal pytest Sprint 1+2: 64 passed, 5 skipped" width="900" />
+      <figcaption>
+        <strong>Imagen 2 — Sprint 1 + Sprint 2 (repositorio actual).</strong> Ejecución desde
+        <code>/home/x3no/Documents/GitHub/ebif</code> con venv en <code>backend/.venv</code> y comando
+        <code>python -m pytest Pruebas/ pruebas-s2/ -q</code> (Linux, Python 3.12.3, pytest 8.4.2).
+        Resultado: <strong>64 passed, 5 skipped in 9.53s</strong>, 0 failed. Los caracteres <code>s</code> en la barra de progreso
+        corresponden a omisiones documentadas (E2E SV-40…42, CURP duplicado, Oracle sin <code>EBIF_S2_USE_ORACLE=1</code>).
+      </figcaption>
+    </figure>
+
+    <figure class="evidence-fig" id="evidencia-oracle">
+      <figcaption style="margin-bottom:0.5rem;">
+        <strong>Integración Oracle (complemento Sprint 2).</strong> Comando:
+        <code>EBIF_S2_USE_ORACLE=1 python -m pytest pruebas-s2/test_oracle_s2.py -v</code> —
+        <code>test_s2_oracle_health PASSED</code> (evidencia en consola del equipo; no capturada en imagen).
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="sheet sec-body" aria-label="Matriz de pruebas EBIF">
+    <p style="margin:0 0 0.5rem;font-size:0.9rem;color:var(--muted);"><strong>Sección 5 (continuación)</strong> — inventario de casos pytest</p>
+    <h3>5.2 Matriz de pruebas automatizadas (detalle)</h3>
+    <p class="leyenda-pruebas">
+      Leyenda: <strong>✓</strong> passed · <strong>⊘</strong> skipped · <strong>✗</strong> failed.
+      Matriz 5.2 — Sprint 1: <strong>47</strong> ítems. Matriz 5.3 — Sprint 2: <strong>22</strong> ítems. Total: <strong>69</strong>.
+    </p>
+    <table class="matriz-pruebas">
+      <thead>
+        <tr>
+          <th scope="col">SV / ref.</th>
+          <th scope="col">Función de prueba</th>
+          <th scope="col">Archivo</th>
+          <th scope="col">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>SV-1</td><td><code>test_sv1_login_correcto</code></td><td><code>test_acceso_sesion.py</code></td><td>✓</td></tr>
+        <tr><td>SV-2</td><td><code>test_sv2_login_password_incorrecta</code></td><td><code>test_acceso_sesion.py</code></td><td>✓</td></tr>
+        <tr><td>SV-2</td><td><code>test_sv2_login_correo_inexistente</code></td><td><code>test_acceso_sesion.py</code></td><td>✓</td></tr>
+        <tr><td>SV-3</td><td><code>test_sv3_usuario_inactivo</code></td><td><code>test_acceso_sesion.py</code></td><td>✓</td></tr>
+        <tr><td>SV-4</td><td><code>test_sv4_jwt_expirado_no_accede_me</code></td><td><code>test_acceso_sesion.py</code></td><td>✓</td></tr>
+        <tr><td>SV-4</td><td><code>test_sv4_jwt_manipulado_no_accede_me</code></td><td><code>test_acceso_sesion.py</code></td><td>✓</td></tr>
+        <tr><td>SV-5</td><td><code>test_sv5_sin_token_no_accede_ruta_protegida</code></td><td><code>test_acceso_sesion.py</code></td><td>✓</td></tr>
+        <tr><td>SV-6</td><td><code>test_sv6_mensajes_iguales_sin_enumeracion</code></td><td><code>test_acceso_sesion.py</code></td><td>✓</td></tr>
+        <tr><td>SV-38</td><td><code>test_sv38_cada_accion_rapida_navega_a_la_pantalla_correcta</code></td><td><code>test_acciones_rapidas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-39</td><td><code>test_sv39_flujo_directo_nuevo_recibo_query_params</code></td><td><code>test_acciones_rapidas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-40</td><td><code>test_sv40_teclado_foco_visible</code></td><td><code>test_acciones_rapidas.py</code></td><td>⊘</td></tr>
+        <tr><td>SV-41</td><td><code>test_sv41_activacion_enter</code></td><td><code>test_acciones_rapidas.py</code></td><td>⊘</td></tr>
+        <tr><td>SV-42</td><td><code>test_sv42_contraste_legibilidad</code></td><td><code>test_acciones_rapidas.py</code></td><td>⊘</td></tr>
+        <tr><td>SV-43</td><td><code>test_sv43_rutas_destino_protegidas_por_auth_guard</code></td><td><code>test_acciones_rapidas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-7</td><td><code>test_sv7_listar_sin_filtros</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-8</td><td><code>test_sv8_filtrar_por_criterios</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-9</td><td><code>test_sv9_alta_datos_minimos</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-10</td><td><code>test_sv10_alta_datos_completos</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-11</td><td><code>test_sv11_edicion_y_persistencia</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-12</td><td><code>test_sv12_validacion_campos_obligatorios_vacios</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-13</td><td><code>test_sv13_validacion_formatos_invalidos</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-14</td><td><code>test_sv14_detalle_por_folio</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-15</td><td><code>test_sv15_historial_beneficiario</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-16</td><td><code>test_sv16_eliminacion_baja_logica</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-17</td><td><code>test_sv17_estadisticas_coherentes</code></td><td><code>test_beneficiarios.py</code></td><td>✓</td></tr>
+        <tr><td>SV-37</td><td><code>test_sv37_citas_hoy_vacias_sin_error</code></td><td><code>test_citas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-31</td><td><code>test_sv31_visualizar_citas_del_dia</code></td><td><code>test_citas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-32</td><td><code>test_sv32_crear_cita_dia_actual_datos_validos</code></td><td><code>test_citas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-33</td><td><code>test_sv33_completar_cita_estado_actualizado</code></td><td><code>test_citas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-34</td><td><code>test_sv34_cancelar_cita_motivo_o_estado</code></td><td><code>test_citas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-35</td><td><code>test_sv35_filtros_listado_citas</code></td><td><code>test_citas.py</code></td><td>✓</td></tr>
+        <tr><td>SV-24</td><td><code>test_sv24_preregistro_publico_flujo_feliz_sin_login</code></td><td><code>test_preregistro.py</code></td><td>✓</td></tr>
+        <tr><td>SV-25</td><td><code>test_sv25_avance_pasos_indicador_paso_actual_coherente</code></td><td><code>test_preregistro.py</code></td><td>✓</td></tr>
+        <tr><td>SV-26</td><td><code>test_sv26_no_avanzar_paso_con_datos_incompletos</code></td><td><code>test_preregistro.py</code></td><td>✓</td></tr>
+        <tr><td>SV-27</td><td><code>test_sv27_respuesta_confirmacion_tras_envio_exitoso</code></td><td><code>test_preregistro.py</code></td><td>✓</td></tr>
+        <tr><td>SV-28</td><td><code>test_sv28_catalogos_publicos_accesibles_tras_flujo</code></td><td><code>test_preregistro.py</code></td><td>✓</td></tr>
+        <tr><td>SV-29</td><td><code>test_sv29_listar_solicitudes_panel_interno</code></td><td><code>test_preregistro.py</code></td><td>✓</td></tr>
+        <tr><td>SV-30</td><td><code>test_sv30_aprobar_rechazar_reflejo_estado</code></td><td><code>test_preregistro.py</code></td><td>✓</td></tr>
+        <tr><td>SV-44</td><td><code>test_sv44_listar_recibos</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+        <tr><td>SV-45</td><td><code>test_sv45_filtrar_folio_beneficiario_fechas</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+        <tr><td>SV-46</td><td><code>test_sv46_nuevo_cobro_un_metodo_total_y_saldo</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+        <tr><td>SV-47</td><td><code>test_sv47_nuevo_cobro_varios_metodos_pago</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+        <tr><td>SV-48</td><td><code>test_sv48_caso_exento_pago</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+        <tr><td>SV-49</td><td><code>test_sv49_cancelar_recibo_motivo_y_listado</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+        <tr><td>SV-50</td><td><code>test_sv50_validacion_api_sin_beneficiario_sin_monto_sin_metodos</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+        <tr><td>SV-50</td><td><code>test_sv50_ui_guardarCobro_validaciones_en_fuente</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+        <tr><td>—</td><td><code>test_stats_y_metodos_pago_disponibles</code></td><td><code>test_recibos.py</code></td><td>✓</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:1.5rem;">5.3 Matriz Sprint 2 — <code>pruebas-s2/</code> (HU-09 … HU-17)</h3>
+    <p class="leyenda-pruebas">Proyecto Qase <strong>FJ26SV</strong>. <code>hu_s2_oracle_health</code> requiere <code>EBIF_S2_USE_ORACLE=1</code>.</p>
+    <table class="matriz-pruebas">
+      <thead>
+        <tr>
+          <th scope="col">HU / ref.</th>
+          <th scope="col">Función de prueba</th>
+          <th scope="col">Archivo</th>
+          <th scope="col">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>HU-09</td><td><code>test_hu09_curp_formato_oficial_valido</code></td><td><code>test_hu09_curp.py</code></td><td>✓</td></tr>
+        <tr><td>HU-09</td><td><code>test_hu09_curp_formato_invalido_rechazado</code></td><td><code>test_hu09_curp.py</code></td><td>✓</td></tr>
+        <tr><td>HU-09</td><td><code>test_hu09_verificacion_curp_duplicado_endpoint_pendiente</code></td><td><code>test_hu09_curp.py</code></td><td>⊘</td></tr>
+        <tr><td>HU-10</td><td><code>test_hu10_listar_productos</code></td><td><code>test_hu10_almacen.py</code></td><td>✓</td></tr>
+        <tr><td>HU-10</td><td><code>test_hu10_stats</code></td><td><code>test_hu10_almacen.py</code></td><td>✓</td></tr>
+        <tr><td>HU-10</td><td><code>test_hu10_crear_producto_encargado</code></td><td><code>test_hu10_almacen.py</code></td><td>✓</td></tr>
+        <tr><td>HU-10</td><td><code>test_hu10_listar_servicios</code></td><td><code>test_hu10_almacen.py</code></td><td>✓</td></tr>
+        <tr><td>HU-11</td><td><code>test_hu11_reporte_resumen</code></td><td><code>test_hu11_reportes.py</code></td><td>✓</td></tr>
+        <tr><td>HU-11</td><td><code>test_hu11_exportar_reporte_pdf</code></td><td><code>test_hu11_reportes.py</code></td><td>✓</td></tr>
+        <tr><td>HU-12</td><td><code>test_hu12_notificaciones_lista</code></td><td><code>test_hu12_notificaciones.py</code></td><td>✓</td></tr>
+        <tr><td>HU-12</td><td><code>test_hu12_notificaciones_con_alertas</code></td><td><code>test_hu12_notificaciones.py</code></td><td>✓</td></tr>
+        <tr><td>HU-13</td><td><code>test_hu13_listar_usuarios</code></td><td><code>test_hu13_usuarios.py</code></td><td>✓</td></tr>
+        <tr><td>HU-13</td><td><code>test_hu13_crear_usuario</code></td><td><code>test_hu13_usuarios.py</code></td><td>✓</td></tr>
+        <tr><td>HU-13</td><td><code>test_hu13_config_publica</code></td><td><code>test_hu13_usuarios.py</code></td><td>✓</td></tr>
+        <tr><td>HU-14</td><td><code>test_hu14_listar_comodatos</code></td><td><code>test_hu14_comodato.py</code></td><td>✓</td></tr>
+        <tr><td>HU-14</td><td><code>test_hu14_crear_comodato</code></td><td><code>test_hu14_comodato.py</code></td><td>✓</td></tr>
+        <tr><td>HU-14</td><td><code>test_hu14_contrato_comodato_pdf</code></td><td><code>test_hu14_comodato.py</code></td><td>✓</td></tr>
+        <tr><td>HU-15</td><td><code>test_hu15_cobro_parcial_saldo_pendiente</code></td><td><code>test_hu15_saldo_pendiente.py</code></td><td>✓</td></tr>
+        <tr><td>HU-15</td><td><code>test_hu15_cobro_completo_saldo_cero</code></td><td><code>test_hu15_saldo_pendiente.py</code></td><td>✓</td></tr>
+        <tr><td>HU-17</td><td><code>test_hu17_comprobante_cita_pdf</code></td><td><code>test_hu17_pdf_cita.py</code></td><td>✓</td></tr>
+        <tr><td>HU-17</td><td><code>test_hu17_comprobante_cita_inexistente</code></td><td><code>test_hu17_pdf_cita.py</code></td><td>✓</td></tr>
+        <tr><td>Oracle S2</td><td><code>test_s2_oracle_health</code></td><td><code>test_oracle_s2.py</code></td><td>✓*</td></tr>
+      </tbody>
+    </table>
+    <p class="note">* Con variables Oracle y wallet configurados.</p>
+  </section>
+
+  <!-- Sección 6 -->
+  <section class="sheet sec-body" aria-label="Sección 6 Evaluación">
+    <h2>6 Evaluación</h2>
+    <p>
+      Evaluación global del proceso de pruebas, problemas y limitaciones.
+    </p>
+    <div class="for-example">
+      <strong>Por ejemplo</strong>
+      Los módulos de backend bajo prueba reciben verificación repetible a nivel de API sin Oracle, lo que acorta el
+      ciclo de retroalimentación. La principal limitación es de fidelidad: el comportamiento en memoria puede diferir
+      levemente del de procedimientos almacenados en producción en casos límite. El riesgo se considera
+      <strong>bajo</strong> para los objetivos de aprendizaje del curso, pero <strong>medio</strong> si este mismo
+      conjunto fuera el único criterio de salida a producción sin pruebas de integración y UI adicionales.
+    </div>
+  </section>
+
+  <!-- Sección 7 -->
+  <section class="sheet sec-body" aria-label="Sección 7 Resumen de actividades">
+    <h2>7 Resumen de actividades</h2>
+    <p>
+      Resumen de las actividades y eventos principales de la iteración
+      <strong>Iteración documentación y pruebas automatizadas</strong> sobre EBIF, e información indicativa de recursos
+      (personal y esfuerzo en persona-día).
+    </p>
+    <p>
+      <strong>Personal de referencia:</strong> seis profesores del cuerpo docente (hoja «Cuerpo docente») y cinco integrantes del equipo de desarrollo en la portada del informe.
+    </p>
+    <p><strong>Inicio de pruebas (referencia):</strong> abril de 2026 &nbsp;&nbsp;&nbsp; <strong>Fin de pruebas (referencia):</strong> 16 de abril de 2026</p>
+    <table class="effort-table">
+      <thead>
+        <tr>
+          <th scope="col">Concepto</th>
+          <th scope="col">Planificado</th>
+          <th scope="col">Real</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Integrantes equipo de desarrollo (alumnos)</td><td>5</td><td>5</td></tr>
+        <tr><td>Esfuerzo de diseño de pruebas (persona-día, indicativo)</td><td>1,5</td><td>2,0</td></tr>
+        <tr><td>Esfuerzo de ejecución de pruebas (persona-día, indicativo)</td><td>2,0</td><td>2,0</td></tr>
+        <tr><td>Esfuerzo de re-prueba tras correcciones (persona-día, indicativo)</td><td>0,5</td><td>0,5</td></tr>
+        <tr><td>Gestión del proceso e informe (persona-día, indicativo)</td><td>0,5</td><td>0,75</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top: 1rem;">
+      Las cifras de esfuerzo son ilustrativas para el reporte académico; ajústalas al timesheet real del equipo si aplica.
+    </p>
+  </section>
+
+  <!-- Sección 8: Enlaces -->
+  <section class="sheet sec-body" aria-label="Enlaces externos">
+    <h2>8 Enlaces y referencias externas</h2>
+    <p>Código, ejecución local y visualización de resultados.</p>
+    <ul class="links-list">
+      <li>
+        <strong>Repositorio (rama Pruebas-S2):</strong>
+        <a href="https://github.com/Shreks-V/EspinaBifidaS1/tree/Pruebas-S2">https://github.com/Shreks-V/EspinaBifidaS1/tree/Pruebas-S2</a>
+        — instrucciones para correr pruebas en <code>README.md</code> (raíz) y <code>Pruebas/README.md</code>.
+      </li>
+      <li>
+        <strong>Ver pruebas y resultados (Qase FJ26SV):</strong>
+        <a href="https://app.qase.io/run/FJ26SV">https://app.qase.io/run/FJ26SV</a>
+        — test runs, estados y trazabilidad Sprint 1 + Sprint 2.
+      </li>
+      <li>
+        <strong>Documentación pytest:</strong>
+        <a href="https://docs.pytest.org/">https://docs.pytest.org/</a>
+      </li>
+    </ul>
+  </section>
+
+</body>
+</html>

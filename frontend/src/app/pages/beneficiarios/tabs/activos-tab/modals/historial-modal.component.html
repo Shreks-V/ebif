@@ -1,0 +1,97 @@
+<div class="fixed inset-0 bg-slate-950/45 backdrop-blur-md backdrop-saturate-75 z-50 flex items-center justify-center">
+  <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-black text-slate-900">Historial - {{ historialData?.nombre }}</h2>
+      <button (click)="closed.emit()" class="w-10 h-10 rounded-xl border-2 border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    @if (historialLoading) {
+      <div class="space-y-4">
+        <div class="h-8 bg-slate-200 rounded-lg animate-pulse w-1/3"></div>
+        <div class="h-20 bg-slate-200 rounded-lg animate-pulse"></div>
+        <div class="h-20 bg-slate-200 rounded-lg animate-pulse"></div>
+      </div>
+    }
+    @if (!historialLoading && historialData) {
+      <div>
+        <div class="flex gap-2 mb-6 border-b border-slate-200 pb-3">
+          <button (click)="historialTab = 'citas'" [class]="historialTab === 'citas' ? 'px-4 py-2 rounded-lg text-sm font-bold bg-[#00328b] text-white' : 'px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100'">Citas ({{ historialData.citas.length }})</button>
+          <button (click)="historialTab = 'pagos'" [class]="historialTab === 'pagos' ? 'px-4 py-2 rounded-lg text-sm font-bold bg-[#00328b] text-white' : 'px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100'">Pagos ({{ historialData.pagos.length }})</button>
+          <button (click)="historialTab = 'comodatos'" [class]="historialTab === 'comodatos' ? 'px-4 py-2 rounded-lg text-sm font-bold bg-[#00328b] text-white' : 'px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100'">Comodatos ({{ historialData.comodatos.length }})</button>
+        </div>
+        @if (historialTab === 'citas') {
+          @if (!historialData.citas.length) { <div class="text-center py-8 text-slate-400 text-sm">Sin citas registradas</div> }
+          @for (c of historialData.citas; track c) {
+            <div class="border-2 border-slate-200 rounded-2xl p-4 mb-3 bg-white shadow-sm">
+              <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div><p class="text-xs font-bold uppercase tracking-wide text-slate-500">Fecha y hora</p><p class="text-base font-black text-slate-900">{{ formatDateTime(c.fecha_hora) }}</p></div>
+                <span [class]="getCitaStatusClass(c.estatus)">{{ getCitaStatusLabel(c.estatus) }}</span>
+              </div>
+              @if (c.servicios.length) {
+                <div class="mb-3"><p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Servicios</p>
+                  <div class="space-y-2">
+                    @for (s of c.servicios; track s) {
+                      <div class="rounded-xl border border-slate-200 px-3 py-2 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2"><span class="text-sm font-semibold text-slate-800">{{ s.nombre || 'Servicio' }}</span>@if (s.cancelado === 'S') { <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">Cancelado</span> }</div>
+                        <div class="text-xs font-semibold text-slate-600 flex items-center gap-3"><span>Cantidad: {{ s.cantidad || 1 }}</span><span>Monto: {{ formatMoney(s.monto_pagado) }}</span></div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+              @if (c.doctores.length) {
+                <div class="mb-2"><p class="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Equipo medico</p>
+                  <div class="flex flex-wrap gap-2">
+                    @for (d of c.doctores; track d) {
+                      <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">{{ d.nombre_doctor }}@if (d.especialidad) { <span> - {{ d.especialidad }}</span> }</span>
+                    }
+                  </div>
+                </div>
+              }
+              @if (c.notas) { <div class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-800"><span class="font-bold">Notas:</span> {{ c.notas }}</div> }
+            </div>
+          }
+        }
+        @if (historialTab === 'pagos') {
+          @if (!historialData.pagos.length) { <div class="text-center py-8 text-slate-400 text-sm">Sin pagos registrados</div> }
+          @for (p of historialData.pagos; track p) {
+            <div class="border-2 border-slate-200 rounded-2xl p-4 mb-3 bg-white shadow-sm">
+              <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div><p class="text-xs font-bold uppercase tracking-wide text-slate-500">Recibo</p><p class="text-base font-black text-slate-900">{{ p.folio_venta || ('Venta #' + p.id_venta) }}</p></div>
+                <span [class]="getPagoStatusClass(p)">{{ getPagoStatusLabel(p) }}</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Fecha</p><p class="text-sm font-semibold text-slate-800">{{ formatDateTime(p.fecha_venta) }}</p></div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Total</p><p class="text-sm font-semibold text-slate-800">{{ formatMoney(p.monto_total) }}</p></div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Saldo pendiente</p><p class="text-sm font-semibold" [class.text-amber-700]="hasPendingAmount(p.saldo_pendiente)" [class.text-emerald-700]="!hasPendingAmount(p.saldo_pendiente)">{{ formatMoney(p.saldo_pendiente) }}</p></div>
+              </div>
+              @if (p.motivo_cancelacion) { <div class="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700"><span class="font-bold">Motivo de cancelacion:</span> {{ p.motivo_cancelacion }}</div> }
+            </div>
+          }
+        }
+        @if (historialTab === 'comodatos') {
+          @if (!historialData.comodatos.length) { <div class="text-center py-8 text-slate-400 text-sm">Sin comodatos registrados</div> }
+          @for (cm of historialData.comodatos; track cm) {
+            <div class="border-2 border-slate-200 rounded-2xl p-4 mb-3 bg-white shadow-sm">
+              <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div><p class="text-xs font-bold uppercase tracking-wide text-slate-500">Equipo</p><p class="text-base font-black text-slate-900">{{ cm.nombre_equipo || cm.folio_comodato }}</p>@if (cm.folio_comodato) { <p class="text-xs font-semibold text-slate-500 mt-0.5">{{ cm.folio_comodato }}</p> }</div>
+                <span [class]="getComodatoStatusClass(cm.estatus)">{{ getComodatoStatusLabel(cm.estatus) }}</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Prestamo</p><p class="text-sm font-semibold text-slate-800">{{ formatDate(cm.fecha_prestamo) }}</p></div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Devolucion</p><p class="text-sm font-semibold text-slate-800">{{ cm.fecha_devolucion ? formatDate(cm.fecha_devolucion) : 'Sin fecha de devolucion' }}</p></div>
+              </div>
+              @if (cm.monto_total !== null || cm.saldo_pendiente !== null) {
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  @if (cm.monto_total !== null && cm.monto_total !== undefined) { <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Monto total</p><p class="text-sm font-semibold text-slate-800">{{ formatMoney(cm.monto_total) }}</p></div> }
+                  @if (cm.saldo_pendiente !== null && cm.saldo_pendiente !== undefined) { <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">Saldo pendiente</p><p class="text-sm font-semibold" [class.text-amber-700]="hasPendingAmount(cm.saldo_pendiente)" [class.text-emerald-700]="!hasPendingAmount(cm.saldo_pendiente)">{{ formatMoney(cm.saldo_pendiente) }}</p></div> }
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>

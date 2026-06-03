@@ -1,0 +1,29 @@
+services:
+  backend:
+    build: ./backend
+    container_name: ebif-backend
+    env_file:
+      - .env
+    environment:
+      ORACLE_CONFIG_DIR: /wallet
+      ORACLE_WALLET_DIR: /wallet
+    volumes:
+      - ./wallet:/wallet:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      target: prod
+    container_name: ebif-frontend
+    ports:
+      - "6542:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

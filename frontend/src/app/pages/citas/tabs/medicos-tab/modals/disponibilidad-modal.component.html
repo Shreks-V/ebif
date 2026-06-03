@@ -1,0 +1,172 @@
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm backdrop-saturate-75 z-50 flex items-center justify-center">
+  @if (medico) {
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-slate-900">Disponibilidad Semanal - Dr. {{ medico.nombre }} {{ medico.apellidoPaterno }}</h2>
+        <button (click)="closed.emit()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Weekly grid -->
+      <div class="mb-6 space-y-3">
+        @for (dia of diasSemana; track dia) {
+          <div class="bg-slate-50 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-bold text-slate-800">{{ dia.nombre }}</h4>
+            </div>
+            @if (getSlotsForDay(dia.num).length === 0) {
+              <div class="text-xs text-slate-400 italic">Sin horario asignado</div>
+            }
+            @for (slot of getSlotsForDay(dia.num); track slot) {
+              <div class="flex items-center gap-3 mb-1.5">
+                <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span class="text-sm font-semibold text-slate-700">{{ slot.hora_inicio }} - {{ slot.hora_fin }}</span>
+                </div>
+                @if (getConflictDoctor(dia.num, slot)) {
+                  <span class="text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-semibold">
+                    También: {{ getConflictDoctor(dia.num, slot) }}
+                  </span>
+                }
+                <button (click)="eliminarSlot(slot)" class="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors ml-auto" title="Eliminar">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+      @if (error) {
+        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">{{ error }}</div>
+      }
+      <!-- Add new slot -->
+      <div class="border-t border-slate-200 pt-6">
+        <h3 class="text-sm font-bold text-slate-700 mb-3">Agregar Horario</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label for="disp-dia-semana" class="block text-xs font-semibold text-slate-500 mb-1">Día de la Semana</label>
+            <select id="disp-dia-semana" [(ngModel)]="nuevoSlot.dia_semana" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors">
+              <option [ngValue]="0" disabled>Seleccionar...</option>
+              @for (dia of diasSemana; track dia) {
+                <option [ngValue]="dia.num">{{ dia.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="disp-hora-inicio" class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
+            <select id="disp-hora-inicio" [(ngModel)]="nuevoSlot.hora_inicio" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors">
+              <option value="" disabled>Seleccionar...</option>
+              @for (h of horasDisponibles; track h) {
+                <option [value]="h">{{ h }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="disp-hora-fin" class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
+            <select id="disp-hora-fin" [(ngModel)]="nuevoSlot.hora_fin" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:outline-none text-sm transition-colors">
+              <option value="" disabled>Seleccionar...</option>
+              @for (h of horasDisponibles; track h) {
+                <option [value]="h" [disabled]="nuevoSlot.hora_inicio && h <= nuevoSlot.hora_inicio">{{ h }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <button (click)="agregarSlot()" [disabled]="guardandoSlot || !nuevoSlot.dia_semana || !nuevoSlot.hora_inicio || !nuevoSlot.hora_fin"
+          class="px-5 py-2.5 text-sm font-semibold text-white bg-[#00328b] rounded-xl hover:bg-[#002a75] transition-colors disabled:opacity-50 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+          </svg>
+          {{ guardandoSlot ? 'Guardando...' : 'Agregar' }}
+        </button>
+      </div>
+
+      <!-- Casos Especiales -->
+      <div class="border-t border-slate-200 mt-6 pt-6">
+        <h3 class="text-base font-bold text-slate-900 mb-4">Casos Especiales (no semanales)</h3>
+        @if (especial.length === 0) {
+          <p class="text-xs text-slate-400 italic mb-4">Sin casos especiales registrados.</p>
+        }
+        <div class="space-y-2 mb-4">
+          @for (de of especial; track de) {
+            <div class="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+              <div class="flex-1 flex items-center gap-2 flex-wrap">
+                <span class="font-mono text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-bold">{{ de.fecha_inicio }}</span>
+                <span class="text-sm font-semibold text-slate-700">{{ de.hora_inicio }} - {{ de.hora_fin }}</span>
+                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">{{ tipoRecurrenciaLabel(de.tipo_recurrencia) }}</span>
+                @if (de.descripcion) {
+                  <span class="text-xs text-slate-500 truncate max-w-[180px]">{{ de.descripcion }}</span>
+                }
+              </div>
+              <button (click)="eliminarDispEspecial(de)" class="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors shrink-0" title="Eliminar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          }
+        </div>
+        @if (dispEspecialError) {
+          <div class="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{{ dispEspecialError }}</div>
+        }
+        <h4 class="text-sm font-semibold text-slate-600 mb-3">Agregar Caso Especial</h4>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label for="disp-fecha" class="block text-xs font-semibold text-slate-500 mb-1">Fecha</label>
+            <input id="disp-fecha" type="date" [(ngModel)]="nuevoDispEspecial.fecha_inicio"
+              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" />
+          </div>
+          <div>
+            <label for="disp-esp-hora-inicio" class="block text-xs font-semibold text-slate-500 mb-1">Hora Inicio</label>
+            <select id="disp-esp-hora-inicio" [(ngModel)]="nuevoDispEspecial.hora_inicio"
+              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm">
+              <option value="" disabled>Seleccionar...</option>
+              @for (h of horasDisponibles; track h) {
+                <option [value]="h">{{ h }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="disp-esp-hora-fin" class="block text-xs font-semibold text-slate-500 mb-1">Hora Fin</label>
+            <select id="disp-esp-hora-fin" [(ngModel)]="nuevoDispEspecial.hora_fin"
+              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm">
+              <option value="" disabled>Seleccionar...</option>
+              @for (h of horasDisponibles; track h) {
+                <option [value]="h" [disabled]="nuevoDispEspecial.hora_inicio !== '' && h <= nuevoDispEspecial.hora_inicio">{{ h }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="disp-esp-recurrencia" class="block text-xs font-semibold text-slate-500 mb-1">Recurrencia</label>
+            <select id="disp-esp-recurrencia" [(ngModel)]="nuevoDispEspecial.tipo_recurrencia"
+              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm">
+              <option value="UNICA">&Uacute;nica vez</option>
+              <option value="QUINCENAL">Quincenal</option>
+              <option value="CADA_3_SEMANAS">Cada 3 semanas</option>
+              <option value="MENSUAL">Mensual</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label for="disp-esp-descripcion" class="block text-xs font-semibold text-slate-500 mb-1">Descripci&oacute;n (opcional)</label>
+            <input id="disp-esp-descripcion" type="text" [(ngModel)]="nuevoDispEspecial.descripcion" maxlength="200"
+              placeholder="Ej: Consulta extraordinaria enero"
+              class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm" />
+          </div>
+        </div>
+        <button (click)="agregarDispEspecial()"
+          [disabled]="guardandoDispEspecial || !nuevoDispEspecial.fecha_inicio || !nuevoDispEspecial.hora_inicio || !nuevoDispEspecial.hora_fin"
+          class="px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+          </svg>
+          {{ guardandoDispEspecial ? 'Guardando...' : 'Agregar Caso Especial' }}
+        </button>
+      </div>
+    </div>
+  }
+</div>

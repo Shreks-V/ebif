@@ -1,0 +1,455 @@
+<div class="min-h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb]/30 via-white to-[#e0f2ff]/50">
+  <app-navbar></app-navbar>
+
+  <main class="flex-1">
+    <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
+
+      <!-- 1. Header -->
+      <div>
+        <h1 class="text-3xl font-black text-slate-900">Panel principal</h1>
+        <p class="text-sm text-slate-600 flex items-center gap-2 mt-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          {{ todayFormatted }}
+        </p>
+      </div>
+
+      <!-- Loading Skeleton -->
+      @if (loading) {
+        <div class="space-y-6">
+          <div class="animate-pulse"><div class="h-36 bg-slate-200 rounded-2xl"></div></div>
+          <div class="animate-pulse grid grid-cols-3 gap-6">
+            <div class="col-span-1 space-y-3">
+              @for (_ of [1,2,3]; track _) { <div class="h-20 bg-slate-200 rounded-2xl"></div> }
+            </div>
+            <div class="col-span-2 space-y-3">
+              <div class="h-44 bg-slate-200 rounded-2xl"></div>
+              <div class="h-44 bg-slate-200 rounded-2xl"></div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 2. Doctor del Día -->
+      @if (!loading) {
+        <div class="bg-gradient-to-br from-[#007BFF] to-[#0056b3] rounded-2xl shadow-2xl overflow-hidden">
+          <div class="p-6">
+            <div class="flex items-start justify-between mb-6">
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center font-black text-2xl backdrop-blur border-2 border-white/30 text-white">
+                  {{ doctorIniciales }}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-200">
+                      <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/>
+                      <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/>
+                    </svg>
+                    <span class="text-xs text-blue-200 font-bold uppercase tracking-wide">Consultorio Hoy</span>
+                  </div>
+                  <h2 class="text-2xl font-black text-white">{{ doctorNombre }}</h2>
+                  <p class="text-sm text-blue-200">{{ doctorEspecialidad }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-200">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <p class="text-xs text-blue-200 font-bold">Horario</p>
+                </div>
+                <p class="text-lg font-black text-white">{{ doctorHorario }}</p>
+              </div>
+              <div class="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
+                <div class="flex items-center gap-2 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-200">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                  </svg>
+                  <p class="text-xs text-blue-200 font-bold">Atendidos</p>
+                </div>
+                <p class="text-lg font-black text-white">{{ doctorAtendidos }} / {{ doctorTotalHoy }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 3. Grid Principal: Acciones | Cola | Alertas -->
+      @if (!loading) {
+        <div class="grid grid-cols-[260px_1fr_260px] gap-6 items-start">
+
+          <!-- Col 1: Acciones Rápidas -->
+          <div class="space-y-3">
+            <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+              <div class="w-1 h-4 bg-[#00328b] rounded-full"></div>
+              Acciones Rápidas
+            </h3>
+            <div class="space-y-3">
+              <button (click)="navigateTo('/recibos', { action: 'nuevo' })"
+                class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white hover:shadow-xl transition-all cursor-pointer border-0">
+                <div class="p-2.5 bg-white/20 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+                    <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>
+                  </svg>
+                </div>
+                <div class="flex-1 text-left">
+                  <p class="font-bold text-sm">Nuevo Recibo</p>
+                  <p class="text-xs text-white/70">Generar comprobante</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button (click)="navigateTo('/recibos', { filter: 'pendientes' })"
+                class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-[#007BFF] to-[#0056b3] text-white hover:shadow-xl transition-all cursor-pointer border-0">
+                <div class="p-2.5 bg-white/20 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+                  </svg>
+                </div>
+                <div class="flex-1 text-left">
+                  <p class="font-bold text-sm">Adeudos</p>
+                  <p class="text-xs text-white/70">Recibos con saldo pendiente</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button (click)="navigateTo('/citas', { action: 'nueva' })"
+                class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-[#f3ad1c] to-[#ffb84d] text-white hover:shadow-xl transition-all cursor-pointer border-0">
+                <div class="p-2.5 bg-white/20 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+                  </svg>
+                </div>
+                <div class="flex-1 text-left">
+                  <p class="font-bold text-sm">Agendar Cita</p>
+                  <p class="text-xs text-white/70">Programar consulta</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button (click)="navigateTo('/almacen', { tab: 'inventario', filter: 'alertas' })"
+                class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white hover:shadow-xl transition-all cursor-pointer border-0">
+                <div class="p-2.5 bg-white/20 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                    <line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+                  </svg>
+                </div>
+                <div class="flex-1 text-left">
+                  <p class="font-bold text-sm">Alertas Inventario</p>
+                  <p class="text-xs text-white/70">Existencias bajas y caducidad</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button (click)="navigateTo('/almacen', { tab: 'comodatos', action: 'nuevo' })"
+                class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-gradient-to-br from-cyan-500 to-cyan-600 text-white hover:shadow-xl transition-all cursor-pointer border-0">
+                <div class="p-2.5 bg-white/20 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/>
+                    <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/>
+                  </svg>
+                </div>
+                <div class="flex-1 text-left">
+                  <p class="font-bold text-sm">Comodato</p>
+                  <p class="text-xs text-white/70">Préstamo de equipos</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button (click)="navigateTo('/reportes')"
+                class="w-full flex items-center gap-4 p-4 rounded-2xl shadow-lg bg-white border-2 border-slate-200 text-slate-700 hover:shadow-xl transition-all cursor-pointer">
+                <div class="p-2.5 bg-slate-100 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+                  </svg>
+                </div>
+                <div class="flex-1 text-left">
+                  <p class="font-bold text-sm">Reportes</p>
+                  <p class="text-xs text-slate-400">Estadísticas y datos</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Col 2: Cola de Pacientes -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
+                Siguiente en Cola
+              </h3>
+              <div class="flex items-center gap-2">
+                <button (click)="openWalkInModal()" class="text-sm text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-md font-bold cursor-pointer border-0 flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                  Atender sin cita
+                </button>
+                <button (click)="navigateTo('/citas')" class="text-xs text-[#00328b] font-bold hover:underline cursor-pointer bg-transparent border-0 flex items-center gap-1">
+                  Ver citas
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg border-2 border-slate-100 overflow-hidden">
+              @for (paciente of pacientes; track paciente; let i = $index) {
+                <div
+                  class="flex items-center gap-4 p-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-all"
+                  [class.bg-amber-50]="paciente.estado === 'EN_CURSO'"
+                  [class.bg-emerald-50]="i === 0 && paciente.estado === 'PROGRAMADA'">
+                  <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                    [ngClass]="paciente.color">
+                    {{ paciente.iniciales }}
+                  </div>
+                  <div class="flex flex-col items-center justify-center min-w-[60px]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 mb-1">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span class="text-sm font-bold text-slate-900">{{ paciente.hora }}</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold text-slate-900">{{ paciente.nombre + ' ' + paciente.apellido }}</p>
+                    <div class="flex items-center gap-2">
+                      <p class="text-xs text-slate-400 font-mono">{{ paciente.folio }}</p>
+                      @if (paciente.servicio) {
+                        <span class="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md truncate max-w-[120px]">{{ paciente.servicio }}</span>
+                      }
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    @if (paciente.estado === 'PROGRAMADA') {
+                      <button (click)="iniciarAtencion(paciente)"
+                        class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer border-0 whitespace-nowrap flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        Atender Ahora
+                      </button>
+                    }
+                    @if (paciente.estado === 'EN_CURSO') {
+                      <span class="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-100 px-2.5 py-1.5 rounded-full whitespace-nowrap">
+                        <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse inline-block"></span>
+                        En consulta
+                      </span>
+                      <button (click)="marcarAtendido(paciente)"
+                        class="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer border-0 whitespace-nowrap flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Marcar Atendido
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+              @if (pacientes.length === 0) {
+                <div class="p-8 text-center text-slate-400 text-sm">No hay pacientes en cola</div>
+              }
+            </div>
+          </div>
+
+          <!-- Col 3: Alertas -->
+          <div class="space-y-3">
+            <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+              <div class="w-1 h-4 bg-red-500 rounded-full"></div>
+              Alertas
+            </h3>
+
+            <!-- Stock bajo -->
+            <div class="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden">
+              <div class="flex items-center gap-2.5 px-4 py-3 bg-red-50 border-b border-red-100">
+                <div class="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+                  </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-bold text-red-700">Inventario bajo</p>
+                  <p class="text-[11px] text-red-400">{{ alertaStockBajo.length }} producto{{ alertaStockBajo.length !== 1 ? 's' : '' }}</p>
+                </div>
+              </div>
+              @if (alertaStockBajo.length === 0) {
+                <div class="px-4 py-4 text-center text-slate-400 text-xs">Sin alertas</div>
+              }
+              <div class="divide-y divide-slate-50">
+                @for (p of alertaStockBajo; track p.id_producto) {
+                  <div class="flex items-center justify-between px-4 py-2.5">
+                    <p class="text-xs font-semibold text-slate-800 truncate">{{ p.nombre }}</p>
+                    <span class="text-xs font-black text-red-600 ml-2 shrink-0">{{ p.cantidad_disponible }}<span class="text-[10px] text-slate-400 font-normal">/{{ p.nivel_minimo }}</span></span>
+                  </div>
+                }
+              </div>
+              <div class="px-4 py-2 border-t border-slate-100 bg-slate-50">
+                <button (click)="navigateTo('/almacen', { tab: 'inventario', filter: 'alertas' })"
+                  class="text-[11px] font-semibold text-[#00328b] hover:underline cursor-pointer bg-transparent border-0">Ver inventario →</button>
+              </div>
+            </div>
+
+            <!-- Por caducar -->
+            <div class="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
+              <div class="flex items-center gap-2.5 px-4 py-3 bg-amber-50 border-b border-amber-100">
+                <div class="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
+                  </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-bold text-amber-700">Por caducar</p>
+                  <p class="text-[11px] text-amber-400">{{ alertasCaducidad.length }} producto{{ alertasCaducidad.length !== 1 ? 's' : '' }}</p>
+                </div>
+              </div>
+              @if (alertasCaducidad.length === 0) {
+                <div class="px-4 py-4 text-center text-slate-400 text-xs">Sin productos próximos</div>
+              }
+              <div class="divide-y divide-slate-50">
+                @for (p of alertasCaducidad; track p.id_producto) {
+                  <div class="flex items-center justify-between px-4 py-2.5">
+                    <p class="text-xs font-semibold text-slate-800 truncate">{{ p.nombre }}</p>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md ml-2 shrink-0"
+                      [ngClass]="p.estatus_caducidad === 'VENCIDO' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'">
+                      {{ p.estatus_caducidad === 'VENCIDO' ? 'Vencido' : formatFechaCad(p.fecha_caducidad) }}
+                    </span>
+                  </div>
+                }
+              </div>
+              <div class="px-4 py-2 border-t border-slate-100 bg-slate-50">
+                <button (click)="navigateTo('/almacen')"
+                  class="text-[11px] font-semibold text-[#00328b] hover:underline cursor-pointer bg-transparent border-0">Ver almacén →</button>
+              </div>
+            </div>
+
+            <!-- Adeudos -->
+            <div class="bg-white rounded-2xl shadow-sm border border-orange-100 overflow-hidden">
+              <div class="flex items-center gap-2.5 px-4 py-3 bg-orange-50 border-b border-orange-100">
+                <div class="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+                  </svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-bold text-orange-700">Adeudos pendientes</p>
+                  <p class="text-[11px] text-orange-400">{{ statPendientes }} recibo{{ statPendientes !== 1 ? 's' : '' }}</p>
+                </div>
+              </div>
+              @if (adeudosPendientes.length === 0) {
+                <div class="px-4 py-4 text-center text-slate-400 text-xs">Sin adeudos</div>
+              }
+              <div class="divide-y divide-slate-50">
+                @for (r of adeudosPendientes; track r.id_venta) {
+                  <div class="flex items-center justify-between px-4 py-2.5">
+                    <p class="text-xs font-semibold text-slate-800 truncate">{{ r.nombre_paciente }}</p>
+                    <span class="text-xs font-black text-orange-600 ml-2 shrink-0">${{ r.saldo_pendiente | number:'1.0-0' }}</span>
+                  </div>
+                }
+              </div>
+              <div class="px-4 py-2 border-t border-slate-100 bg-slate-50">
+                <button (click)="navigateTo('/recibos', { filter: 'pendientes' })"
+                  class="text-[11px] font-semibold text-[#00328b] hover:underline cursor-pointer bg-transparent border-0">Ver adeudos →</button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      }
+
+      <!-- 4. Stats strip: Pulso del Día + Este Mes -->
+      @if (!loading) {
+        <div class="flex items-stretch bg-white rounded-xl border border-slate-100 shadow-sm divide-x divide-slate-100 overflow-hidden">
+
+          <div class="flex items-center px-4 py-3 bg-slate-50 shrink-0">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Hoy</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[80px]">
+            <p class="text-lg font-black text-slate-900 leading-none">{{ statBeneficiariosActivos }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Beneficiarios</p>
+            <p class="text-[9px] leading-none mt-0.5" [ngClass]="deltaBeneficiarios >= 0 ? 'text-emerald-500' : 'text-red-400'">
+              @if (deltaBeneficiarios > 0) {+{{ deltaBeneficiarios }}} @if (deltaBeneficiarios === 0) {=} @if (deltaBeneficiarios < 0) {{{ deltaBeneficiarios }}}
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[72px]">
+            <p class="text-lg font-black text-slate-900 leading-none">{{ statCitas }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Citas</p>
+            <p class="text-[9px] leading-none mt-0.5" [ngClass]="deltaCitas >= 0 ? 'text-emerald-500' : 'text-red-400'">
+              @if (deltaCitas > 0) {+{{ deltaCitas }}} @if (deltaCitas === 0) {=} @if (deltaCitas < 0) {{{ deltaCitas }}}
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[72px]">
+            <p class="text-lg font-black text-slate-900 leading-none">{{ statCobros }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Cobros</p>
+            <p class="text-[9px] leading-none mt-0.5" [ngClass]="deltaRecibos >= 0 ? 'text-emerald-500' : 'text-red-400'">
+              @if (deltaRecibos > 0) {+{{ deltaRecibos }}} @if (deltaRecibos === 0) {=} @if (deltaRecibos < 0) {{{ deltaRecibos }}}
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[72px]">
+            <p class="text-lg font-black leading-none" [ngClass]="statPendientes > 0 ? 'text-red-600' : 'text-slate-900'">{{ statPendientes }}</p>
+            <p class="text-[10px] mt-0.5 font-semibold" [ngClass]="statPendientes > 0 ? 'text-red-400' : 'text-slate-400'">Pendientes</p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[72px]">
+            <p class="text-lg font-black text-slate-900 leading-none">{{ statComodatosActivos }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Comodatos</p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[72px]">
+            <p class="text-lg font-black leading-none" [ngClass]="statBajoStock > 0 ? 'text-amber-500' : 'text-slate-900'">{{ statBajoStock }}</p>
+            <p class="text-[10px] mt-0.5 font-semibold" [ngClass]="statBajoStock > 0 ? 'text-amber-400' : 'text-slate-400'">Alertas</p>
+          </div>
+
+          <div class="flex items-center px-4 py-3 bg-blue-50/60 shrink-0 border-l-2 border-[#007BFF]/20">
+            <div>
+              <span class="text-[10px] font-black text-[#007BFF]/70 uppercase tracking-widest whitespace-nowrap block">Este mes</span>
+              <span class="text-[9px] text-slate-400 whitespace-nowrap">{{ resumenSemanaLabel }}</span>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[72px]" title="Pacientes únicos con al menos 1 cobro este mes">
+            <p class="text-lg font-black text-slate-900 leading-none">{{ resumenNuevosBeneficiarios }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Pac. únicos</p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[72px]" title="Citas médicas completadas este mes">
+            <p class="text-lg font-black text-slate-900 leading-none">{{ resumenCitasCompletadas }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Citas</p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[64px]" title="Número de cobros/tickets generados (visitas) este mes">
+            <p class="text-lg font-black text-slate-900 leading-none">{{ resumenRecibosGenerados }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Visitas</p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center px-5 py-3 min-w-[64px]" title="Total de ítems/servicios entregados (suma de cantidades en cobros)">
+            <p class="text-lg font-black text-slate-900 leading-none">{{ resumenItemsEntregados }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Ítems</p>
+          </div>
+
+          <div class="flex flex-col items-center justify-center flex-1 px-5 py-3">
+            <p class="text-lg font-black text-emerald-600 leading-none">${{ resumenMontoRecaudado | number:'1.0-0' }}</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Recaudado</p>
+          </div>
+
+        </div>
+      }
+
+    </div>
+  </main>
+
+  @if (showWalkInModal) {
+    <app-walk-in-modal (closed)="showWalkInModal = false" (registrado)="onWalkInRegistrado()" />
+  }
+
+  @if (pacienteParaRecibo) {
+    <app-nuevo-cobro
+      [preselectedPaciente]="pacienteParaRecibo"
+      [preselectedServicioId]="pacienteParaRecibo.idServicio ?? null"
+      [preselectedServicioNombre]="pacienteParaRecibo.servicio ?? null"
+      (closed)="pacienteParaRecibo = null"
+      (saved)="onReciboGuardado()" />
+  }
+
+  <app-footer></app-footer>
+</div>

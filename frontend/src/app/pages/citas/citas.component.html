@@ -1,0 +1,57 @@
+<div class="min-h-screen flex flex-col bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff]">
+  <app-navbar></app-navbar>
+
+  <main class="flex-1">
+    <div class="max-w-[1400px] mx-auto px-8 py-6 space-y-6">
+
+      <!-- Header -->
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-2xl flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-3xl font-black text-slate-900 tracking-tight">Hoja de Nuevos - Agenda de Citas</h1>
+          <p class="text-slate-600 font-semibold">Programaci&oacute;n y gesti&oacute;n de citas m&eacute;dicas</p>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 border-b border-slate-200">
+        <button
+          (click)="activeTab = 'citas'"
+          class="px-4 py-2 text-sm font-semibold transition-colors"
+          [ngClass]="activeTab === 'citas' ? 'text-[#00328b] border-b-2 border-[#00328b]' : 'text-slate-600 hover:text-slate-800'"
+          >
+          Agenda de Citas
+        </button>
+        <button
+          (click)="activeTab = 'medicos'"
+          class="px-4 py-2 text-sm font-semibold transition-colors"
+          [ngClass]="activeTab === 'medicos' ? 'text-[#00328b] border-b-2 border-[#00328b]' : 'text-slate-600 hover:text-slate-800'"
+          >
+          M&eacute;dicos
+        </button>
+      </div>
+
+      @defer (when activeTab === 'citas') {
+        <div [hidden]="activeTab !== 'citas'">
+          <app-citas-tab [isAdmin]="isAdmin" />
+        </div>
+      }
+
+      @defer (when activeTab === 'medicos') {
+        <div [hidden]="activeTab !== 'medicos'">
+          <app-medicos-tab />
+        </div>
+      }
+
+    </div>
+  </main>
+
+  <app-footer></app-footer>
+</div>

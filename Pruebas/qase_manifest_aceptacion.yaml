@@ -1,0 +1,283 @@
+# Manifest Qase — Pruebas de Aceptación con Cliente
+# Proyecto: FJ26SV
+# Sesión: 2026-05-27 | Cliente: David Robles Arreola (EBIF) | Equipo: Shrek's V
+# Duración: 36 min 3 s | Ambiente: Producción
+#
+# Veredicto: ACEPTADO con observaciones
+# "Está muy completo y la verdad sí me gusta este manejo de este sistema."
+#
+# Sincronizar manualmente en Qase TestOps:
+#   https://app.qase.io/project/FJ26SV → crear suite "[AT] Aceptación" y subir los casos
+
+project: FJ26SV
+
+suites:
+  - title: "[AT] Aceptación — Sesión cliente 2026-05-27"
+    description: >
+      Pruebas de aceptación ejecutadas manualmente el 27 de mayo de 2026 con
+      Lupita (David Robles Arreola), responsable de la Asociación de Espina Bífida.
+      Sesión de 36 minutos en ambiente de producción con pantalla compartida.
+      Resultado general: ACEPTADO con 3 defectos y 3 mejoras registradas.
+
+    cases:
+      - automation_id: at01_acceso_autenticacion
+        title: "Acceso y autenticación en producción"
+        type: acceptance
+        behavior: positive
+        priority: high
+        layer: e2e
+        status: actual
+        result: passed
+        description: >
+          El cliente accedió a la URL de producción, localizó las credenciales de
+          demostración en el login y autenticó exitosamente. El dashboard cargó
+          correctamente con todas las secciones de navegación visibles.
+        steps:
+          - action: "Abrir la URL de producción de la aplicación"
+            expected: "Página de login visible"
+          - action: "Localizar y copiar credenciales de demostración"
+            expected: "Credenciales visibles en la página de login (modo demo)"
+          - action: "Ingresar correo y contraseña; clic en Iniciar sesión"
+            expected: "Dashboard principal cargado con menú de navegación completo"
+        elapsed: "0:42 – 2:45"
+
+      - automation_id: at02_crear_recibo_cobro
+        title: "Crear recibo de cobro completo (paciente + productos + pago)"
+        type: acceptance
+        behavior: positive
+        priority: high
+        layer: e2e
+        status: actual
+        result: passed
+        description: >
+          El cliente registró un cobro para Juan Carlos García con consulta,
+          sonda (10 und) y gel antibacterial (20 und), pagado en efectivo ($175).
+          Incidente DEF-01: En primer intento, error 500 por concurrencia de sesiones
+          (el equipo tenía otra sesión abierta). Se resolvió con refresh de página.
+        steps:
+          - action: "Hacer clic en 'Nuevo recibo' desde el dashboard"
+            expected: "Formulario de nuevo cobro abierto"
+          - action: "Buscar y seleccionar al paciente Juan Carlos García"
+            expected: "Paciente seleccionado"
+          - action: "Agregar concepto: Consulta (servicio)"
+            expected: "Concepto agregado a la lista"
+          - action: "Agregar concepto: Sonda, cantidad 10"
+            expected: "Concepto agregado a la lista"
+          - action: "Agregar concepto: Gel antibacterial, cantidad 20"
+            expected: "Concepto agregado a la lista"
+          - action: "Clic en 'Agregar 3 conceptos al cobro'"
+            expected: "Conceptos confirmados en el cobro"
+          - action: "Seleccionar método de pago: Efectivo; ingresar monto $175"
+            expected: "Método de pago seleccionado con monto correcto"
+          - action: "Clic en 'Guardar cobro'"
+            expected: "Cobro registrado exitosamente"
+        defects:
+          - id: DEF-01
+            title: "Error 500 por concurrencia de sesiones al guardar cobro"
+            severity: medium
+            resolved: true
+            resolution: "Refrescar la página y reintentar — funcionó en segundo intento"
+        elapsed: "3:00 – 11:44"
+
+      - automation_id: at03_registro_beneficiario
+        title: "Registro de nuevo beneficiario (formulario multi-paso)"
+        type: acceptance
+        behavior: positive
+        priority: high
+        layer: e2e
+        status: actual
+        result: passed
+        description: >
+          El cliente registró un beneficiario de prueba llenando el formulario
+          con nombre, fecha de nacimiento, CURP y tipo de sangre. Verificó la
+          credencial generada desde el menú de acciones.
+          Issue DEF-02: El selector de fecha por doble clic no funcionó en MacBook;
+          el cliente ingresó la fecha manualmente (workaround funcional).
+        steps:
+          - action: "Navegar a módulo Beneficiarios"
+            expected: "Lista de beneficiarios visible"
+          - action: "Clic en 'Nuevo beneficiario'"
+            expected: "Formulario de registro abierto"
+          - action: "Ingresar nombre completo del beneficiario"
+            expected: "Campos de nombre/apellidos completados"
+          - action: "Seleccionar fecha de nacimiento (manualmente o con calendario)"
+            expected: "Fecha de nacimiento registrada"
+          - action: "Ingresar CURP con formato válido"
+            expected: "CURP aceptado (formato correcto)"
+          - action: "Seleccionar tipo de sangre: O Positivo"
+            expected: "Tipo de sangre seleccionado"
+          - action: "Clic en 'Guardar beneficiario'"
+            expected: "Beneficiario registrado; confirmación visible"
+          - action: "Abrir menú de 3 puntitos del beneficiario → Ver credencial"
+            expected: "Credencial del beneficiario generada y visible"
+        defects:
+          - id: DEF-02
+            title: "Selector de fecha (doble clic en ícono) no abre picker en MacBook"
+            severity: low
+            resolved: false
+            resolution: "Workaround: ingresar fecha manualmente"
+        observations:
+          - "El cliente preguntó sobre cambio de formato de credencial — equipo confirmó que puede adaptarse"
+        elapsed: "12:09 – 21:11"
+
+      - automation_id: at04_agregar_existencias_inventario
+        title: "Agregar existencias a producto existente (recepción de mercancía)"
+        type: acceptance
+        behavior: positive
+        priority: medium
+        layer: e2e
+        status: actual
+        result: passed
+        description: >
+          El cliente simuló recibir 700 unidades de Gel Antibacterial 1L y actualizó
+          el stock desde el módulo de Almacén. El stock pasó de 6 a 706 piezas.
+        steps:
+          - action: "Navegar a Almacén > pestaña Inventario"
+            expected: "Inventario visible con lista de productos"
+          - action: "Usar el buscador para buscar 'gel'"
+            expected: "Gel Antibacterial 1L encontrado (6 piezas)"
+          - action: "En columna Acciones, clic en el botón '+' (Agregar unidades)"
+            expected: "Modal de ajuste de existencias abierto"
+          - action: "Ingresar cantidad 700; motivo 'Recepción de mercancía'"
+            expected: "Valores ingresados correctamente"
+          - action: "Clic en 'Confirmar entrada'"
+            expected: "Stock actualizado a 706 piezas; movimiento registrado en bitácora"
+        elapsed: "24:45 – 26:50"
+
+      - automation_id: at05_reporte_consolidado_mensual
+        title: "Reporte consolidado mensual — visualización y desglose"
+        type: acceptance
+        behavior: positive
+        priority: high
+        layer: e2e
+        status: actual
+        result: passed
+        description: >
+          El cliente consultó el reporte del mes en curso, visualizó las gráficas,
+          KPIs en grande y el desglose por método de pago. Aprobó el diseño
+          explícitamente. Se aclaró que la tabla de "visitas mensuales" (promedio
+          de 80-84 personas/mes) se agregará en la entrega final.
+        steps:
+          - action: "Navegar al módulo Reportes"
+            expected: "Sección de reportes cargada"
+          - action: "Verificar que el rango de fechas está en el mes actual"
+            expected: "Fechas del mes en curso pre-seleccionadas"
+          - action: "Clic en 'Consultar'"
+            expected: "Reporte generado con KPIs, gráficas y tabla de desglose"
+          - action: "Revisar sección de desglose por método de pago"
+            expected: "Desglose de efectivo, tarjeta, transferencia visible"
+          - action: "Consultar el reporte en formato David (consolidado histórico)"
+            expected: "Reporte mostrado correctamente"
+        observations:
+          - "Cliente: 'De hecho, me agrada así porque los números están en grande, las gráficas y acá el dato desglosado.'"
+          - "Tabla de visitas mensuales promedio pendiente de agregar (MEJ-02)"
+          - "Cliente ofreció su plantilla de reporte mensual para adaptar el formato (MEJ-03)"
+        elapsed: "27:00 – 30:25"
+
+      - automation_id: at06_exportar_reporte_pdf
+        title: "Exportar reporte consolidado mensual a PDF"
+        type: acceptance
+        behavior: positive
+        priority: high
+        layer: e2e
+        status: actual
+        result: failed
+        description: >
+          El cliente intentó exportar el reporte mensual como PDF. La operación
+          falló con un error de conexión en el ambiente de producción.
+        steps:
+          - action: "Desde el reporte mensual consultado, clic en botón 'PDF'"
+            expected: "PDF generado y descargado correctamente"
+          - action: "Esperar la generación del PDF"
+            expected: "Archivo PDF descargado o abierto en nueva pestaña"
+        actual_result: >
+          ❌ El cliente reportó: 'Dice error de conexión en general PDF, chicos.'
+          El equipo confirmó que el error está relacionado con el cambio a hosting
+          de producción (configuración de WebSocket para exportación PDF).
+        defects:
+          - id: DEF-03
+            title: "Exportar PDF falla con error de conexión en producción"
+            severity: high
+            resolved: false
+            resolution: "Pendiente — requiere configuración de WebSocket en servidor de hosting"
+        elapsed: "28:03 – 28:20"
+
+      - automation_id: at07_mapa_distribucion_geografica
+        title: "Mapa de distribución geográfica de beneficiarios"
+        type: acceptance
+        behavior: positive
+        priority: medium
+        layer: e2e
+        status: actual
+        result: passed
+        description: >
+          El cliente visualizó el mapa interactivo de distribución de beneficiarios
+          por ubicación geográfica y probó el filtro por estado.
+        steps:
+          - action: "En Reportes, navegar a la sección Mapa"
+            expected: "Mapa de México visible con puntos de beneficiarios"
+          - action: "Seleccionar un estado en el filtro"
+            expected: "Mapa actualizado mostrando solo beneficiarios del estado seleccionado"
+        observations:
+          - "Cliente: 'Esta es muy buena idea.'"
+          - "Ricardo: 'Útil para mostrar a inversores o personas interesadas.'"
+        elapsed: "34:12 – 35:09"
+
+      - automation_id: at08_variantes_calibres_sondas
+        title: "Gestión de inventario con múltiples calibres/variantes"
+        type: acceptance
+        behavior: negative
+        priority: medium
+        layer: e2e
+        status: actual
+        result: conditional_pass
+        description: >
+          El cliente planteó el caso de uso real de recibir sondas en 5 calibres
+          distintos (500×Cal8, 500×Cal10, 500×Cal12, 700×Cal14, 200×Cal16).
+          El equipo explicó que actualmente cada calibre se registra como producto
+          separado, y propuso la funcionalidad de variantes.
+        observations:
+          - "El workaround actual (producto por calibre) fue aceptado temporalmente."
+          - "Funcionalidad de variantes en desarrollo — mejora MEJ-01."
+          - "Backend: endpoint POST /api/almacen/productos/{id}/variantes implementado."
+          - "Frontend: botón de variante disponible en inventario para medicamentos padre."
+        elapsed: "23:11 – 24:11"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Resumen ejecutivo
+# ─────────────────────────────────────────────────────────────────────────────
+summary:
+  fecha: "2026-05-27"
+  ambiente: produccion
+  duracion: "36 min 3 s"
+  veredicto: ACEPTADO
+  total_casos: 8
+  passed: 6
+  failed: 1
+  conditional_pass: 1
+  defectos:
+    - id: DEF-01
+      descripcion: "Error 500 por concurrencia de sesiones al guardar cobro"
+      severidad: media
+      estado: resuelto_en_sesion
+    - id: DEF-02
+      descripcion: "Selector de fecha (doble clic) no funciona en MacBook del cliente"
+      severidad: baja
+      estado: pendiente
+    - id: DEF-03
+      descripcion: "Exportar PDF falla con error de conexión en producción"
+      severidad: alta
+      estado: pendiente
+  mejoras_solicitadas:
+    - id: MEJ-01
+      descripcion: "Soporte nativo de variantes de producto (calibres/tallas)"
+      estado: en_desarrollo
+    - id: MEJ-02
+      descripcion: "Tabla de visitas mensuales promedio en reporte de David"
+      estado: pendiente_entrega_final
+    - id: MEJ-03
+      descripcion: "Adaptar formato de reporte mensual al template del cliente"
+      estado: pendiente_template_cliente
+  comentario_cliente: >
+    "Está muy completo y la verdad sí me gusta este manejo de este sistema.
+    Espero que puedan complementarlo con los detalles que salieron ahorita."

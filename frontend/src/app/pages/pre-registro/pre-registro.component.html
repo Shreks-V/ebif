@@ -1,0 +1,622 @@
+<div class="min-h-screen bg-gradient-to-br from-[#b9e5fb] via-white to-[#e0f2ff] py-8 px-4">
+  <div class="max-w-4xl mx-auto">
+
+    <!-- Back button -->
+    <button (click)="router.navigate(['/'])" class="flex items-center gap-2 text-slate-600 hover:text-[#00328b] mb-6 font-semibold transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      Volver al inicio
+    </button>
+
+    <!-- Header -->
+    <div class="flex items-center gap-4 mb-8">
+      <div class="w-14 h-14 bg-gradient-to-br from-[#00328b] to-[#0052cc] rounded-2xl flex items-center justify-center shadow-xl">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+      </div>
+      <div>
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Pre-registro de Beneficiario</h1>
+        <p class="text-slate-600 font-semibold">Completa el formulario para solicitar tu registro</p>
+      </div>
+    </div>
+
+    <!-- Success Screen -->
+    @if (submitted) {
+      <div class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 p-12 text-center">
+        <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 class="text-3xl font-black text-slate-900 mb-3">&iexcl;Pre-registro Enviado!</h2>
+        <p class="text-slate-600 text-lg mb-8 max-w-md mx-auto">Tu solicitud ha sido recibida. Un administrador revisar&aacute; tu informaci&oacute;n y te contactar&aacute; pronto.</p>
+        <button (click)="router.navigate(['/'])" class="px-8 py-3 bg-[#00328b] hover:bg-[#00246d] text-white rounded-2xl font-bold shadow-lg transition-all">
+          Volver al Inicio
+        </button>
+      </div>
+    }
+
+    <!-- Form -->
+    @if (!submitted) {
+      <div>
+        <!-- Progress Steps -->
+        <div class="flex items-center justify-between mb-8 px-4">
+          @for (s of steps; track s; let i = $index) {
+            <div class="flex flex-col items-center" [class.flex-1]="true">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all"
+                 [ngClass]="{
+                   'bg-emerald-500 text-white': currentStep > i + 1,
+                   'bg-[#00328b] text-white shadow-lg scale-110': currentStep === i + 1,
+                   'bg-slate-200 text-slate-500': currentStep < i + 1
+                 }">
+                @if (currentStep > i + 1) {
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                }
+                @if (currentStep <= i + 1) {
+                  <span>{{ i + 1 }}</span>
+                }
+              </div>
+              <span class="text-xs font-semibold mt-2 text-center" [ngClass]="currentStep >= i + 1 ? 'text-[#00328b]' : 'text-slate-400'">{{ s }}</span>
+            </div>
+            @if (i < steps.length - 1) {
+              <div class="flex-1 h-1 rounded-full mx-2 mt-[-20px]"
+              [ngClass]="currentStep > i + 1 ? 'bg-emerald-400' : 'bg-slate-200'"></div>
+            }
+          }
+        </div>
+
+        <!-- Validation Error -->
+        @if (stepError) {
+          <div class="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-2xl flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span class="text-sm font-semibold text-red-700">{{ stepError }}</span>
+          </div>
+        }
+
+        <!-- Step Content Card -->
+        <div class="bg-white rounded-3xl shadow-xl border-2 border-slate-100 p-8">
+
+          <!-- ── Step 1: Documentos + OCR ──────────────────────────────── -->
+          @if (currentStep === 1) {
+            <div>
+              <h2 class="text-xl font-black text-slate-900 mb-2 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Documentos
+              </h2>
+              <p class="text-sm text-slate-500 mb-6">Sube tus documentos (CURP, INE, acta de nacimiento, comprobante de domicilio). La IA extraer&aacute; tus datos autom&aacute;ticamente para pre-llenar el formulario.</p>
+
+              <!-- Drag-drop zone -->
+              <input #docFileInput type="file" multiple accept="image/*,.pdf" class="hidden" (change)="onDocFilesSelected($event)">
+              <button type="button" class="mb-4 block w-full rounded-2xl border-2 border-dashed transition-all duration-200 p-6 text-center cursor-pointer"
+                [class]="ocrDragOver ? 'border-[#0052cc] bg-blue-50' : 'border-slate-200 bg-slate-50 hover:border-[#0052cc] hover:bg-blue-50'"
+                (dragover)="onDocDragOver($event)" (dragleave)="onDocDragLeave()" (drop)="onDocDrop($event)"
+                (click)="docFileInput.click()">
+                <div class="flex flex-col items-center gap-3 pointer-events-none">
+                  <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-bold text-slate-700">Arrastra tus documentos aqu&iacute; o <span class="text-[#0052cc] underline">selecciona archivos</span></p>
+                    <p class="text-xs text-slate-400 mt-1">CURP, INE, acta de nacimiento, comprobante de domicilio &middot; JPG, PNG, PDF &middot; m&aacute;x. 10 MB c/u</p>
+                  </div>
+                </div>
+              </button>
+
+              <!-- File list -->
+              @if (ocrFiles.length > 0) {
+                <div class="mb-4 space-y-2">
+                  @for (item of ocrFiles; track item.id) {
+                    <div class="flex items-center gap-3 p-3 rounded-xl border-2 transition-all"
+                      [ngClass]="{
+                        'border-slate-200 bg-white': item.status === 'pending',
+                        'border-blue-300 bg-blue-50': item.status === 'processing',
+                        'border-emerald-200 bg-emerald-50': item.status === 'done',
+                        'border-red-200 bg-red-50': item.status === 'error'
+                      }">
+                      <!-- Status icon -->
+                      <div class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
+                        [ngClass]="{
+                          'bg-slate-100': item.status === 'pending',
+                          'bg-blue-100': item.status === 'processing',
+                          'bg-emerald-100': item.status === 'done',
+                          'bg-red-100': item.status === 'error'
+                        }">
+                        @if (item.status === 'pending') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        }
+                        @if (item.status === 'processing') {
+                          <svg class="animate-spin w-4 h-4 text-[#0052cc]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                        }
+                        @if (item.status === 'done') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        }
+                        @if (item.status === 'error') {
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        }
+                      </div>
+                      <!-- File info -->
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-slate-700 truncate">{{ item.file.name }}</p>
+                        @if (item.status === 'pending') {
+                          <p class="text-xs text-slate-400">Pendiente de analizar</p>
+                        }
+                        @if (item.status === 'processing') {
+                          <p class="text-xs text-blue-600 font-semibold">Analizando con IA...</p>
+                        }
+                        @if (item.status === 'done' && item.result) {
+                          <p class="text-xs text-emerald-700">{{ item.result.tipo_documento || 'Documento' }} &middot; Confianza {{ item.result.confianza }}</p>
+                        }
+                        @if (item.status === 'error' && item.errorMsg) {
+                          <p class="text-xs text-red-600">{{ item.errorMsg }}</p>
+                        }
+                      </div>
+                      <!-- Type selector: hidden before OCR, shown after with auto-filled value -->
+                      @if (item.status === 'done' || item.status === 'error') {
+                        <label class="flex flex-col gap-0.5 min-w-[150px]">
+                          <span class="text-[10px] text-slate-400 font-medium">Tipo de documento</span>
+                          <select [(ngModel)]="item.tipoId"
+                            class="px-2 py-1.5 border-2 rounded-lg text-xs bg-white focus:border-[#00328b] focus:outline-none transition-all w-full"
+                            [ngClass]="item.tipoId === 0 ? 'border-amber-300' : 'border-emerald-300'">
+                            <option [ngValue]="0">Sin clasificar...</option>
+                            @for (td of tiposDocumento; track td) {
+                              <option [ngValue]="td.id_tipo_documento">{{ td.nombre }}</option>
+                            }
+                          </select>
+                        </label>
+                      }
+                      <!-- Remove button -->
+                      <button type="button" (click)="removeOcrFile(item.id)" [disabled]="item.status === 'processing'"
+                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border-2 border-slate-200 text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-40"
+                        title="Quitar archivo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Analyze button -->
+              @if (ocrFiles.length > 0 && !ocrDone) {
+                <button type="button" (click)="analizarDocumentos()" [disabled]="ocrProcessing"
+                  class="mb-6 w-full px-6 py-3 bg-[#0052cc] hover:bg-[#003d99] text-white rounded-xl font-bold shadow transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                  @if (ocrProcessing) {
+                    <svg class="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    Analizando documentos... ({{ ocrCompletados }}/{{ ocrFiles.length }})
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"/><path d="M16.5 7.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"/><path d="M21 15.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"/><path d="m9.5 10.5 2.5-2.5"/><path d="m11.5 10.5 5 5"/></svg>
+                    Analizar documentos con IA
+                  }
+                </button>
+              }
+
+              <!-- OCR result summary -->
+              @if (ocrDone && ocrMergedCampos.length > 0) {
+                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+                  <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div>
+                      <p class="text-sm font-black text-emerald-800">Datos extra&iacute;dos exitosamente</p>
+                      <p class="text-xs text-emerald-700 mt-0.5">Campos pre-llenados: <strong>{{ ocrMergedCampos.join(', ') }}</strong></p>
+                      <p class="text-xs text-slate-500 mt-1">Verifica y corrige los datos en los pasos siguientes si es necesario.</p>
+                    </div>
+                  </div>
+                  @if (ocrConError > 0) {
+                    <p class="text-xs text-amber-700 mt-3 font-semibold flex items-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      {{ ocrConError }} documento(s) no pudieron procesarse.
+                    </p>
+                  }
+                </div>
+              }
+              @if (ocrDone && ocrMergedCampos.length === 0) {
+                <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                  <p class="text-sm font-bold text-amber-800">No se pudieron extraer datos de los documentos.</p>
+                  <p class="text-xs text-amber-700 mt-1">Completa el formulario manualmente en los siguientes pasos.</p>
+                </div>
+              }
+
+              <!-- Fotografía -->
+              <div class="border-t-2 border-slate-100 pt-5 mt-2">
+                <label for="pr-fotografia" class="block text-sm font-bold text-slate-700 mb-2">Fotograf&iacute;a <span class="text-slate-400 font-normal">(opcional)</span></label>
+                @if (!fotografiaPreview) {
+                  <button type="button" class="block w-full border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-[#00328b] transition-colors cursor-pointer" (click)="fotoInput.click()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <p class="text-sm text-slate-500 font-semibold">Haz clic para subir una fotograf&iacute;a</p>
+                    <p class="text-xs text-slate-400 mt-1">JPG, PNG o WEBP &middot; Se usar&aacute; para la credencial</p>
+                  </button>
+                }
+                @if (fotografiaPreview) {
+                  <div class="flex items-center gap-4 p-4 border-2 border-emerald-200 bg-emerald-50 rounded-xl">
+                    <img [src]="fotografiaPreview" alt="Preview fotografía" class="w-20 h-20 object-cover rounded-lg border-2 border-emerald-300 shadow-sm" />
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-bold text-emerald-700 truncate">{{ fotografiaName }}</p>
+                      <p class="text-xs text-slate-500 mt-0.5">Foto seleccionada &middot; se subir&aacute; al enviar el registro</p>
+                      <div class="flex gap-2 mt-2">
+                        <button type="button" (click)="fotoInput.click()" class="text-xs font-semibold text-[#00328b] hover:underline cursor-pointer">Cambiar</button>
+                        <span class="text-slate-300">|</span>
+                        <button type="button" (click)="quitarFotografia()" class="text-xs font-semibold text-red-500 hover:underline cursor-pointer">Quitar</button>
+                      </div>
+                    </div>
+                  </div>
+                }
+                <input #fotoInput id="pr-fotografia" type="file" accept="image/*" class="hidden" (change)="onFotoSelected($event)">
+              </div>
+
+              @if (ocrFiles.length === 0) {
+                <p class="text-xs text-slate-400 mt-4 italic">Los documentos son opcionales. Puedes continuar sin subirlos y llenar el formulario manualmente.</p>
+              }
+            </div>
+          }
+
+          <!-- ── Step 2: Datos Generales ───────────────────────────────── -->
+          @if (currentStep === 2) {
+            <div>
+              <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Datos Generales
+              </h2>
+
+              @if (ocrMergedCampos.length > 0) {
+                <div class="mb-5 flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 font-semibold">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                  Algunos campos fueron pre-llenados por la IA &mdash; verifica que la informaci&oacute;n sea correcta.
+                </div>
+              }
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label for="pr-nombre" class="block text-sm font-bold text-slate-700 mb-1">Nombre <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-nombre" type="text" [(ngModel)]="formData.nombre" [class]="getFieldClass('nombre')" placeholder="Nombre(s)">
+                  @if (getFieldError('nombre')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombre') }}</p>
+                  }
+                </div>
+                <div>
+                  <label for="pr-apellido-paterno" class="block text-sm font-bold text-slate-700 mb-1">Apellido Paterno <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-apellido-paterno" type="text" [(ngModel)]="formData.apellidoPaterno" [class]="getFieldClass('apellidoPaterno')">
+                  @if (getFieldError('apellidoPaterno')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('apellidoPaterno') }}</p>
+                  }
+                </div>
+                <div>
+                  <label for="pr-apellido-materno" class="block text-sm font-bold text-slate-700 mb-1">Apellido Materno <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-apellido-materno" type="text" [(ngModel)]="formData.apellidoMaterno" [class]="getFieldClass('apellidoMaterno')">
+                  @if (getFieldError('apellidoMaterno')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('apellidoMaterno') }}</p>
+                  }
+                </div>
+                <div>
+                  <label for="pr-fecha-nacimiento" class="block text-sm font-bold text-slate-700 mb-1">Fecha de Nacimiento <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-fecha-nacimiento" type="date" [(ngModel)]="formData.fechaNacimiento" [class]="getFieldClass('fechaNacimiento')" (change)="onFechaNacimientoChange()">
+                </div>
+                <div>
+                  <label for="pr-sexo" class="block text-sm font-bold text-slate-700 mb-1">Sexo <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <select id="pr-sexo" [(ngModel)]="formData.sexo" [class]="getFieldClass('sexo') + ' bg-white'">
+                    <option value="">Seleccionar...</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="pr-curp" class="block text-sm font-bold text-slate-700 mb-1">CURP <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <div class="relative">
+                    <input id="pr-curp" type="text" [ngModel]="formData.curp" (ngModelChange)="onCurpChange($event)" (blur)="onCurpBlur()" [class]="getFieldClass('curp') + ' uppercase pr-10'" maxlength="18" placeholder="18 caracteres">
+                    @if (checkingCurp) {
+                      <span class="absolute right-3 top-1/2 -translate-y-1/2">
+                        <svg class="animate-spin w-5 h-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                      </span>
+                    }
+                    @if (!checkingCurp && curpDisponible === true) {
+                      <span class="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      </span>
+                    }
+                    @if (!checkingCurp && curpDisponible === false) {
+                      <span class="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </span>
+                    }
+                  </div>
+                  @if (getFieldError('curp')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('curp') }}</p>
+                  }
+                </div>
+                <div class="md:col-span-2">
+                  <label for="pr-nombre-padre-madre" class="block text-sm font-bold text-slate-700 mb-1">Nombre del Padre/Madre <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-nombre-padre-madre" type="text" [(ngModel)]="formData.nombrePadreMadre" [class]="getFieldClass('nombrePadreMadre')">
+                  @if (getFieldError('nombrePadreMadre')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombrePadreMadre') }}</p>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ── Step 3: Dirección ─────────────────────────────────────── -->
+          @if (currentStep === 3) {
+            <div>
+              <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Direcci&oacute;n
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="md:col-span-2">
+                  <label for="pr-pais" class="block text-sm font-bold text-slate-700 mb-1">Pa&iacute;s <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <select id="pr-pais" [(ngModel)]="formData.pais" [class]="getFieldClass('pais') + ' bg-white'">
+                    <option value="">Seleccionar...</option>
+                    @for (p of paises; track p.nombre) {
+                      <option [value]="p.nombre">{{ p.bandera }} {{ p.nombre }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label for="pr-estado" class="block text-sm font-bold text-slate-700 mb-1">Estado <span class="text-red-500" aria-hidden="true">*</span></label>
+                  @if (formData.pais === 'México' || !formData.pais) {
+                    <select id="pr-estado" [(ngModel)]="formData.estado" [class]="getFieldClass('estado') + ' bg-white'">
+                      <option value="">Seleccionar...</option>
+                      @for (e of estados; track e) {
+                        <option [value]="e">{{ e }}</option>
+                      }
+                    </select>
+                  } @else {
+                    <input id="pr-estado" type="text" [(ngModel)]="formData.estado" [class]="getFieldClass('estado')" placeholder="Estado / Provincia">
+                  }
+                </div>
+                <div>
+                  <label for="pr-municipio" class="block text-sm font-bold text-slate-700 mb-1">Municipio <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-municipio" type="text" list="municipios-preg-mun" [(ngModel)]="formData.municipio" [class]="getFieldClass('municipio')" autocomplete="off">
+                  <datalist id="municipios-preg-mun">
+                    @for (m of getMunicipiosParaEstado(formData.estado); track m) {
+                      <option [value]="m"></option>
+                    }
+                  </datalist>
+                </div>
+                <div>
+                  <label for="pr-ciudad" class="block text-sm font-bold text-slate-700 mb-1">Ciudad <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-ciudad" type="text" list="municipios-preg-ciu" [(ngModel)]="formData.ciudad" [class]="getFieldClass('ciudad')" autocomplete="off">
+                  <datalist id="municipios-preg-ciu">
+                    @for (m of getMunicipiosParaEstado(formData.estado); track m) {
+                      <option [value]="m"></option>
+                    }
+                  </datalist>
+                </div>
+                <div>
+                  <label for="pr-colonia" class="block text-sm font-bold text-slate-700 mb-1">Colonia <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-colonia" type="text" [(ngModel)]="formData.colonia" [class]="getFieldClass('colonia')">
+                </div>
+                <div class="md:col-span-2">
+                  <label for="pr-calle" class="block text-sm font-bold text-slate-700 mb-1">Calle <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-calle" type="text" [(ngModel)]="formData.calle" [class]="getFieldClass('calle')">
+                </div>
+                <div>
+                  <label for="pr-numero-exterior" class="block text-sm font-bold text-slate-700 mb-1">N&uacute;mero Exterior <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-numero-exterior" type="text" [(ngModel)]="formData.numeroExterior" [class]="getFieldClass('numeroExterior')">
+                </div>
+                <div>
+                  <label for="pr-numero-interior" class="block text-sm font-bold text-slate-700 mb-1">N&uacute;mero Interior</label>
+                  <input id="pr-numero-interior" type="text" [(ngModel)]="formData.numeroInterior" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all">
+                </div>
+                <div>
+                  <label for="pr-codigo-postal" class="block text-sm font-bold text-slate-700 mb-1">C&oacute;digo Postal <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-codigo-postal" type="text" [(ngModel)]="formData.codigoPostal" [class]="getFieldClass('codigoPostal')" maxlength="5">
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ── Step 4: Contacto y Emergencia ────────────────────────── -->
+          @if (currentStep === 4) {
+            <div>
+              <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                Contacto y Emergencia
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">
+                    Teléfono Casa
+                    <span class="flex gap-2 mt-1">
+                      <select [(ngModel)]="formData.telefonoCasaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                        @for (p of paisesTelefono; track p.nombre) {
+                          <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                        }
+                      </select>
+                      <input type="tel" [(ngModel)]="formData.telefonoCasa" [class]="getFieldClass('telefonoCasa') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCasaCodigo)" [placeholder]="formData.telefonoCasaCodigo === '+52' ? '10 dígitos' : 'Número'">
+                    </span>
+                  </label>
+                  @if (getFieldError('telefonoCasa')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoCasa') }}</p>
+                  }
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">
+                    Teléfono Celular <span class="text-red-500" aria-hidden="true">*</span>
+                    <span class="flex gap-2 mt-1">
+                      <select [(ngModel)]="formData.telefonoCelularCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                        @for (p of paisesTelefono; track p.nombre) {
+                          <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                        }
+                      </select>
+                      <input type="tel" [(ngModel)]="formData.telefonoCelular" [class]="getFieldClass('telefonoCelular') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoCelularCodigo)" [placeholder]="formData.telefonoCelularCodigo === '+52' ? '10 dígitos' : 'Número'">
+                    </span>
+                  </label>
+                  @if (getFieldError('telefonoCelular')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoCelular') }}</p>
+                  }
+                </div>
+                <div class="md:col-span-2">
+                  <label for="pr-correo-electronico" class="block text-sm font-bold text-slate-700 mb-1">Correo Electr&oacute;nico</label>
+                  <input id="pr-correo-electronico" type="email" [(ngModel)]="formData.correoElectronico" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all">
+                </div>
+                <div class="md:col-span-2 border-t-2 border-slate-100 pt-5 mt-2">
+                  <h3 class="text-lg font-bold text-red-600 mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    Contacto de Emergencia
+                  </h3>
+                </div>
+                <div>
+                  <label for="pr-emergencia-avisar-a" class="block text-sm font-bold text-slate-700 mb-1">En Emergencia Avisar a <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <input id="pr-emergencia-avisar-a" type="text" [(ngModel)]="formData.enEmergenciaAvisarA" [class]="getFieldClass('enEmergenciaAvisarA')">
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-slate-700 mb-1">
+                    Teléfono de Emergencia <span class="text-red-500" aria-hidden="true">*</span>
+                    <span class="flex gap-2 mt-1">
+                      <select [(ngModel)]="formData.telefonoEmergenciaCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                        @for (p of paisesTelefono; track p.nombre) {
+                          <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                        }
+                      </select>
+                      <input type="tel" [(ngModel)]="formData.telefonoEmergencia" [class]="getFieldClass('telefonoEmergencia') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoEmergenciaCodigo)" [placeholder]="formData.telefonoEmergenciaCodigo === '+52' ? '10 dígitos' : 'Número'">
+                    </span>
+                  </label>
+                  @if (getFieldError('telefonoEmergencia')) {
+                    <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoEmergencia') }}</p>
+                  }
+                </div>
+                <div class="md:col-span-2 mt-2">
+                  <label class="flex items-center gap-3" [class.cursor-pointer]="!esMenorDeEdad" [class.cursor-not-allowed]="esMenorDeEdad">
+                    <input type="checkbox" [(ngModel)]="formData.requiereTutor" [disabled]="esMenorDeEdad" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" aria-label="¿Requiere tutor?">
+                    <span class="text-sm font-bold text-slate-700">&iquest;Requiere tutor?</span>
+                  </label>
+                  @if (esMenorDeEdad) {
+                    <p class="text-xs text-amber-600 font-semibold mt-1 flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      El beneficiario es menor de edad, se requiere tutor obligatoriamente.
+                    </p>
+                  }
+                </div>
+                @if (formData.requiereTutor) {
+                  <div>
+                    <label for="pr-nombre-tutor" class="block text-sm font-bold text-slate-700 mb-1">Nombre del Tutor <span class="text-red-500" aria-hidden="true">*</span></label>
+                    <input id="pr-nombre-tutor" type="text" [(ngModel)]="formData.nombreTutor" [class]="getFieldClass('nombreTutor')">
+                    @if (getFieldError('nombreTutor')) {
+                      <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('nombreTutor') }}</p>
+                    }
+                  </div>
+                  <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">
+                      Teléfono del Tutor <span class="text-red-500" aria-hidden="true">*</span>
+                      <span class="flex gap-2 mt-1">
+                        <select [(ngModel)]="formData.telefonoTutorCodigo" class="px-2 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all bg-white text-sm font-semibold min-w-[90px]">
+                          @for (p of paisesTelefono; track p.nombre) {
+                            <option [value]="p.codigo">{{ p.bandera }} {{ p.codigo }}</option>
+                          }
+                        </select>
+                        <input type="tel" [(ngModel)]="formData.telefonoTutor" [class]="getFieldClass('telefonoTutor') + ' flex-1'" [maxlength]="maxTelefono(formData.telefonoTutorCodigo)" [placeholder]="formData.telefonoTutorCodigo === '+52' ? '10 dígitos' : 'Número'">
+                      </span>
+                    </label>
+                    @if (getFieldError('telefonoTutor')) {
+                      <p class="text-xs text-red-500 font-semibold mt-1">{{ getFieldError('telefonoTutor') }}</p>
+                    }
+                  </div>
+                  <div>
+                    <label for="pr-relacion-tutor" class="block text-sm font-bold text-slate-700 mb-1">Relaci&oacute;n con el beneficiario <span class="text-red-500" aria-hidden="true">*</span></label>
+                    <input id="pr-relacion-tutor" type="text" [(ngModel)]="formData.relacionTutor" [class]="getFieldClass('relacionTutor')" placeholder="Ej: Padre, Madre, T&iacute;o...">
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- ── Step 5: Información Médica ────────────────────────────── -->
+          @if (currentStep === 5) {
+            <div>
+              <h2 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00328b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Informaci&oacute;n M&eacute;dica
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label for="pr-tipo-sangre" class="block text-sm font-bold text-slate-700 mb-1">Tipo de Sangre <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <select id="pr-tipo-sangre" [(ngModel)]="formData.tipoSangre" [class]="getFieldClass('tipoSangre') + ' bg-white'">
+                    <option value="">Seleccionar...</option>
+                    @for (t of tiposSangre; track t) {
+                      <option [value]="t">{{ t }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="flex items-center gap-3 cursor-pointer mt-7">
+                    <input type="checkbox" [(ngModel)]="formData.usaValvula" class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]" aria-label="¿Usa válvula?">
+                    <span class="text-sm font-bold text-slate-700">&iquest;Usa v&aacute;lvula?</span>
+                  </label>
+                </div>
+                <div class="md:col-span-2">
+                  <span class="block text-sm font-bold text-slate-700 mb-2">Tipo(s) de Espina B&iacute;fida <span class="text-red-500" aria-hidden="true">*</span></span>
+                  <p class="text-xs text-slate-500 mb-3">Puedes seleccionar uno o m&aacute;s tipos</p>
+                  @if (tiposEspinaList.length > 0) {
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      @for (tipo of tiposEspinaList; track tipo) {
+                        <label
+                          class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all"
+                          [ngClass]="isEspinaSelected(tipo.id_tipo_espina) ? 'border-[#00328b] bg-blue-50' : 'border-slate-200 hover:border-slate-300'">
+                          <input type="checkbox"
+                            [checked]="isEspinaSelected(tipo.id_tipo_espina)"
+                            (change)="toggleEspina(tipo.id_tipo_espina)"
+                            class="w-5 h-5 rounded border-2 border-slate-300 text-[#00328b] focus:ring-[#00328b]">
+                          <div>
+                            <span class="text-sm font-bold text-slate-800">{{ tipo.nombre }}</span>
+                            @if (tipo.descripcion) {
+                              <p class="text-xs text-slate-500">{{ tipo.descripcion }}</p>
+                            }
+                          </div>
+                        </label>
+                      }
+                    </div>
+                  }
+                  @if (tiposEspinaList.length === 0) {
+                    <p class="text-sm text-slate-400 italic">Cargando tipos...</p>
+                  }
+                  @if (validationAttempted && formData.tiposEspinaIds.length === 0) {
+                    <p class="text-xs text-red-500 font-semibold mt-2">Selecciona al menos un tipo de espina b&iacute;fida</p>
+                  }
+                </div>
+                <div class="md:col-span-2">
+                  <label for="pr-alergias" class="block text-sm font-bold text-slate-700 mb-1">Alergias</label>
+                  <textarea id="pr-alergias" [(ngModel)]="formData.alergias" rows="3" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all resize-none" placeholder="Describe alergias conocidas..."></textarea>
+                </div>
+                <div class="md:col-span-2">
+                  <label for="pr-medicamentos-actuales" class="block text-sm font-bold text-slate-700 mb-1">Medicamentos Actuales</label>
+                  <textarea id="pr-medicamentos-actuales" [(ngModel)]="formData.medicamentosActuales" rows="3" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all resize-none" placeholder="Lista de medicamentos que toma actualmente..."></textarea>
+                </div>
+                <div class="md:col-span-2">
+                  <label for="pr-notas-adicionales" class="block text-sm font-bold text-slate-700 mb-1">Notas Adicionales</label>
+                  <textarea id="pr-notas-adicionales" [(ngModel)]="formData.notasAdicionales" rows="3" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-[#00328b] focus:ring-4 focus:ring-[#00328b]/10 transition-all resize-none" placeholder="Informaci&oacute;n adicional relevante..."></textarea>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Navigation Buttons -->
+          <div class="flex justify-between mt-8 pt-6 border-t-2 border-slate-100">
+            @if (currentStep > 1) {
+              <button (click)="prevStep()"
+                class="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                Anterior
+              </button>
+            }
+            @if (currentStep === 1) {
+              <div></div>
+            }
+            @if (currentStep < 5) {
+              <button (click)="nextStep()" [disabled]="ocrProcessing && currentStep === 1"
+                class="px-8 py-3 bg-[#00328b] hover:bg-[#00246d] text-white rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                Siguiente
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </button>
+            }
+            @if (currentStep === 5) {
+              <button (click)="submitForm()" [disabled]="submitting"
+                class="px-8 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {{ submitting ? 'Enviando...' : 'Enviar Pre-registro' }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

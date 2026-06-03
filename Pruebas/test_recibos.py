@@ -1,0 +1,283 @@
+"""Pruebas SV-44 a SV-50 — módulo Recibos y cobros (API + comprobación mínima UI SV-50)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.infrastructure.security.adapters import JwtAccessTokenIssuer
+from qase.pytest import qase
+
+from Pruebas.qase_decorators import qase_case
+
+BASE = "/api/recibos"
+_RECIBOS_DIR = (
+    Path(__file__).resolve().parents[1]
+    / "frontend"
+    / "src"
+    / "app"
+    / "pages"
+    / "recibos"
+)
+_RECIBOS_COMPONENT = _RECIBOS_DIR / "recibos.component.ts"
+_NUEVO_COBRO_COMPONENT = _RECIBOS_DIR / "nuevo-cobro" / "nuevo-cobro.component.ts"
+
+
+def _jwt_recepcionista() -> str:
+    return JwtAccessTokenIssuer().issue(
+        {
+            "sub": "recep-ben@test.local",
+            "rol": "RECEPCIONISTA",
+            "nombre": "Recepción",
+            "id_usuario": 2,
+        }
+    )
+
+
+def _jwt_administrador() -> str:
+    return JwtAccessTokenIssuer().issue(
+        {
+            "sub": "admin-ben@test.local",
+            "rol": "ADMINISTRADOR",
+            "nombre": "Admin",
+            "id_usuario": 1,
+        }
+    )
+
+
+def _auth(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _h_recep() -> dict[str, str]:
+    return _auth(_jwt_recepcionista())
+
+
+def _h_adm() -> dict[str, str]:
+    return _auth(_jwt_administrador())
+
+
+@pytest.fixture
+def recibos_client(recibos_client_factory) -> TestClient:
+    return recibos_client_factory()
+
+
+@qase_case("Recibos y cobros", "FJ26SV-44", "Listar recibos")
+def test_sv44_listar_recibos(recibos_client: TestClient):
+    r = recibos_client.get(BASE, headers=_h_recep())
+    assert r.status_code == 200
+    data = r.json()
+    assert isinstance(data, list)
+    assert len(data) >= 3
+    row = data[0]
+    for key in (
+        "id_venta",
+        "folio_venta",
+        "id_paciente",
+        "monto_total",
+        "monto_pagado",
+        "saldo_pendiente",
+        "exento_pago",
+        "cancelada",
+        "nombre_paciente",
+        "folio_paciente",
+    ):
+        assert key in row
+
+
+@qase_case("Recibos y cobros", "FJ26SV-45", "Filtrar por folio, beneficiario y rango de fechas")
+def test_sv45_filtrar_folio_beneficiario_fechas(recibos_client: TestClient):
+    """Filtros vía query en la API (la pantalla Recibos aplica filtros adicionales solo en cliente)."""
+    h = _h_recep()
+
+    r_folio = recibos_client.get(BASE, headers=h, params={"search": "2025-200"})
+    assert r_folio.status_code == 200
+    assert len(r_folio.json()) == 1
+    assert r_folio.json()[0]["folio_venta"] == "VTA-2025-200"
+
+    r_nom = recibos_client.get(BASE, headers=h, params={"search": "María"})
+    assert r_nom.status_code == 200
+    assert len(r_nom.json()) == 1
+    assert r_nom.json()[0]["id_paciente"] == 2
+
+    r_pac = recibos_client.get(BASE, headers=h, params={"id_paciente": 3})
+    assert r_pac.status_code == 200
+    assert len(r_pac.json()) == 1
+    assert r_pac.json()[0]["folio_venta"] == "VTA-2025-300"
+
+    r_fecha = recibos_client.get(
+        BASE,
+        headers=h,
+        params={"fecha_inicio": "2025-01-01", "fecha_fin": "2025-01-31"},
+    )
+    assert r_fecha.status_code == 200
+    folios = {x["folio_venta"] for x in r_fecha.json()}
+    assert folios == {"VTA-2025-100"}
+
+
+@qase_case("Recibos y cobros", "FJ26SV-46", "Nuevo cobro con un método de pago: total y saldo correctos")
+def test_sv46_nuevo_cobro_un_metodo_total_y_saldo(recibos_client: TestClient):
+    payload = {
+        "id_paciente": 1,
+        "monto_total": 350.0,
+        "monto_pagado": 0,
+        "saldo_pendiente": 0,
+        "exento_pago": "N",
+        "metodos_pago": [{"id_metodo_pago": 1, "monto": 350.0}],
+    }
+    r = recibos_client.post(BASE, json=payload, headers=_h_recep())
+    assert r.status_code == 201
+    body = r.json()
+    assert body["monto_total"] == pytest.approx(350.0)  # nosonar
+    assert body["monto_pagado"] == pytest.approx(350.0)  # nosonar
+    assert body["saldo_pendiente"] == pytest.approx(0.0)  # nosonar
+    assert len(body.get("metodos_pago") or []) == 1
+    assert body["metodos_pago"][0]["nombre"] == "EFECTIVO"
+
+
+@qase_case("Recibos y cobros", "FJ26SV-47", "Nuevo cobro con varios métodos de pago")
+def test_sv47_nuevo_cobro_varios_metodos_pago(recibos_client: TestClient):
+    payload = {
+        "id_paciente": 2,
+        "monto_total": 400.0,
+        "exento_pago": "N",
+        "metodos_pago": [
+            {"id_metodo_pago": 1, "monto": 100.0},
+            {"id_metodo_pago": 2, "monto": 300.0},
+        ],
+    }
+    r = recibos_client.post(BASE, json=payload, headers=_h_adm())
+    assert r.status_code == 201
+    body = r.json()
+    assert body["monto_pagado"] == pytest.approx(400.0)  # nosonar
+    assert body["saldo_pendiente"] == pytest.approx(0.0)  # nosonar
+    nombres = {m["nombre"] for m in body["metodos_pago"]}
+    assert nombres == {"EFECTIVO", "TARJETA"}
+
+
+@qase_case("Recibos y cobros", "FJ26SV-48", "Caso exento de pago")
+def test_sv48_caso_exento_pago(recibos_client: TestClient):
+    payload = {
+        "id_paciente": 3,
+        "monto_total": 120.0,
+        "exento_pago": "S",
+        "metodos_pago": [{"id_metodo_pago": 4, "monto": 120.0}],
+    }
+    r = recibos_client.post(BASE, json=payload, headers=_h_recep())
+    assert r.status_code == 201
+    body = r.json()
+    assert body["exento_pago"] == "S"
+    assert body["saldo_pendiente"] == pytest.approx(0.0)  # nosonar
+    assert body["monto_pagado"] == pytest.approx(120.0)  # nosonar
+    assert body["metodos_pago"][0]["nombre"] == "EXENTO"
+
+
+@qase_case("Recibos y cobros", "FJ26SV-49", "Cancelar recibo con motivo y reflejo en listado")
+def test_sv49_cancelar_recibo_motivo_y_listado(recibos_client: TestClient):
+    h = _h_recep()
+    cre = recibos_client.post(
+        BASE,
+        headers=h,
+        json={
+            "id_paciente": 1,
+            "monto_total": 50.0,
+            "exento_pago": "N",
+            "metodos_pago": [{"id_metodo_pago": 1, "monto": 50.0}],
+        },
+    )
+    assert cre.status_code == 201
+    id_venta = cre.json()["id_venta"]
+    motivo = "Error de captura en cita"
+    can = recibos_client.put(
+        f"{BASE}/{id_venta}/cancelar",
+        headers=h,
+        params={"motivo": motivo},
+    )
+    assert can.status_code == 200
+    assert can.json()["cancelada"] == "S"
+    assert can.json()["motivo_cancelacion"] == motivo
+
+    lst = recibos_client.get(BASE, headers=h)
+    assert lst.status_code == 200
+    row = next(x for x in lst.json() if x["id_venta"] == id_venta)
+    assert row["cancelada"] == "S"
+    assert row["motivo_cancelacion"] == motivo
+
+
+@qase_case("Recibos y cobros", "FJ26SV-50", "Validación API: sin beneficiario, montos o métodos inválidos")
+def test_sv50_validacion_api_sin_beneficiario_sin_monto_sin_metodos(recibos_client: TestClient):
+    h = _h_recep()
+
+    r0 = recibos_client.post(
+        BASE,
+        headers=h,
+        json={
+            "id_paciente": 0,
+            "monto_total": 100.0,
+            "exento_pago": "N",
+            "metodos_pago": [{"id_metodo_pago": 1, "monto": 100.0}],
+        },
+    )
+    assert r0.status_code == 400
+
+    r_monto = recibos_client.post(
+        BASE,
+        headers=h,
+        json={
+            "id_paciente": 1,
+            "monto_total": 0,
+            "exento_pago": "N",
+            "metodos_pago": [{"id_metodo_pago": 1, "monto": 10.0}],
+        },
+    )
+    assert r_monto.status_code == 400
+
+    r_met = recibos_client.post(
+        BASE,
+        headers=h,
+        json={
+            "id_paciente": 1,
+            "monto_total": 200.0,
+            "exento_pago": "N",
+            "metodos_pago": [],
+        },
+    )
+    assert r_met.status_code == 400
+
+
+@qase_case(
+    "Recibos y cobros",
+    "FJ26SV-50",
+    "Validación UI (guardarCobro): paciente, monto y métodos",
+    layer="api",
+)
+def test_sv50_ui_guardarCobro_validaciones_en_fuente():
+    """La UI no confirma cobro sin paciente, sin monto válido o sin métodos (exento N)."""
+    parts = [_RECIBOS_COMPONENT.read_text(encoding="utf-8")]
+    if _NUEVO_COBRO_COMPONENT.is_file():
+        parts.append(_NUEVO_COBRO_COMPONENT.read_text(encoding="utf-8"))
+    src = "\n".join(parts)
+    assert "if (!this.nuevoCobro.id_paciente)" in src
+    assert "Selecciona un beneficiario" in src
+    assert "this.nuevoCobro.monto_total <= 0" in src
+    assert "monto total debe ser mayor a 0" in src
+    assert "metodosValidos.length === 0" in src
+    assert "método de pago" in src or "metodo de pago" in src
+
+
+@qase.ignore()
+def test_stats_y_metodos_pago_disponibles(recibos_client: TestClient):
+    r_stats = recibos_client.get(f"{BASE}/stats", headers=_h_recep())
+    assert r_stats.status_code == 200
+    s = r_stats.json()
+    assert "monto_total_sum" in s
+    assert "pendientes" in s
+
+    r_mp = recibos_client.get(f"{BASE}/metodos-pago", headers=_h_recep())
+    assert r_mp.status_code == 200
+    nombres = {m["nombre"] for m in r_mp.json()}
+    assert "EFECTIVO" in nombres and "EXENTO" in nombres
