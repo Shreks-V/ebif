@@ -44,6 +44,11 @@ class CitasService:
             raise ValidationError(_MSG_ID_CITA_INVALIDO)
         return self._repository.iniciar_cita(id_cita, current_user)
 
+    def reprogramar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
+        if id_cita <= 0:
+            raise ValidationError(_MSG_ID_CITA_INVALIDO)
+        return self._repository.reprogramar_cita(id_cita, current_user)
+
     def completar_cita(self, id_cita: int, current_user: CurrentUser | None = None):
         if id_cita <= 0:
             raise ValidationError(_MSG_ID_CITA_INVALIDO)
@@ -94,6 +99,9 @@ def actualizar_cita(id_cita: int, data: CitaCreate, current_user: CurrentUser | 
 
 def iniciar_cita(id_cita: int, current_user: CurrentUser | None = None):
     return _svc().iniciar_cita(id_cita, current_user)
+
+def reprogramar_cita(id_cita: int, current_user: CurrentUser | None = None):
+    return _svc().reprogramar_cita(id_cita, current_user)
 
 def completar_cita(id_cita: int, current_user: CurrentUser | None = None):
     return _svc().completar_cita(id_cita, current_user)

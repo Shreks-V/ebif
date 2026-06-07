@@ -74,7 +74,6 @@ _PRODUCTOS_BASE_SQL = """
     SELECT p.ID_PRODUCTO, p.CLAVE_INTERNA, p.NOMBRE, p.DESCRIPCION,
            p.TIPO_PRODUCTO, p.ACTIVO, p.ID_USUARIO_REGISTRO, p.FECHA_REGISTRO,
            p.PRECIO_CUOTA_A, p.PRECIO_CUOTA_B,
-           p.ID_PRODUCTO_PADRE, p.NOMBRE_VARIANTE,
            m.PRESENTACION, m.DOSIS, m.REQUIERE_CADUCIDAD,
            eq.NUMERO_SERIE, eq.MARCA, eq.MODELO, eq.ESTATUS_EQUIPO, eq.OBSERVACIONES,
            ex.CANTIDAD_DISPONIBLE, ex.NIVEL_MINIMO, ex.UNIDAD_MEDIDA, ex.FECHA_CADUCIDAD
@@ -216,133 +215,8 @@ def _fetch_producto(id_producto: int) -> dict:
         if not row:
             raise NotFoundError(_MSG_PRODUCTO_NO_ENCONTRADO)
         producto = _serialize(row)
-        # Include variants if this is a parent product
-        cursor.execute(
-            _PRODUCTOS_BASE_SQL + ' WHERE p.ID_PRODUCTO_PADRE = :id_padre ORDER BY p.NOMBRE_VARIANTE',
-            {'id_padre': id_producto},
-        )
-        variantes_rows = rows_to_dicts(cursor)
-        producto['variantes'] = [_serialize(v) for v in variantes_rows]
     return producto
 
-
-def _listar_variantes(id_producto_padre: int, _current_user: CurrentUser | None = None) -> list:
-    """Listar todas las variantes de un producto padre."""
-    sql = _PRODUCTOS_BASE_SQL + ' WHERE p.ID_PRODUCTO_PADRE = :id_padre ORDER BY p.NOMBRE_VARIANTE'
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute(sql, {'id_padre': id_producto_padre})
-        rows = rows_to_dicts(cursor)
-    return [_serialize(r) for r in rows]
-
-
-def _fetch_padre_producto(cursor, id_producto_padre: int) -> dict:
-    cursor.execute(
-        'SELECT ID_PRODUCTO, NOMBRE, TIPO_PRODUCTO, PRECIO_CUOTA_A, PRECIO_CUOTA_B '
-        "FROM PRODUCTO WHERE ID_PRODUCTO = :id AND ACTIVO = 'S'",
-        {'id': id_producto_padre},
-    )
-    padre = row_to_dict(cursor)
-    if not padre:
-        raise NotFoundError('Producto padre no encontrado')
-    return padre
-
-
-def _generar_clave_variante(cursor, tipo_padre: str) -> str:
-    prefix = 'MED' if tipo_padre == 'MEDICAMENTO' else 'EQP'
-    cursor.execute(
-        """
-        SELECT NVL(MAX(
-            CASE WHEN REGEXP_LIKE(CLAVE_INTERNA, :pattern)
-                 THEN TO_NUMBER(REGEXP_SUBSTR(CLAVE_INTERNA, '[0-9]+$'))
-            END
-        ), 0) AS max_seq FROM PRODUCTO WHERE CLAVE_INTERNA LIKE :prefix
-        """,
-        {'pattern': f'^{prefix}-[0-9]+$', 'prefix': f'{prefix}-%'},
-    )
-    seq_row = row_to_dict(cursor) or {}
-    next_seq = int(seq_row.get('max_seq') or 0) + 1
-    return f'{prefix}-{next_seq:03d}'
-
-
-def _insertar_producto_variante(cursor, padre: dict, data, clave: str, id_usuario: int,
-                                precio_a: float, precio_b: float) -> int:
-    id_var = cursor.var(int)
-    cursor.execute("""
-        INSERT INTO PRODUCTO
-            (CLAVE_INTERNA, NOMBRE, DESCRIPCION, TIPO_PRODUCTO, ACTIVO,
-             ID_USUARIO_REGISTRO, FECHA_REGISTRO,
-             PRECIO_CUOTA_A, PRECIO_CUOTA_B,
-             ID_PRODUCTO_PADRE, NOMBRE_VARIANTE)
-        VALUES (:clave, :nombre, :descripcion, :tipo, 'S',
-                :id_usuario, SYSDATE,
-                :precio_a, :precio_b,
-                :id_padre, :nombre_variante)
-        RETURNING ID_PRODUCTO INTO :id_out
-    """, {
-        'clave': clave,
-        'nombre': padre['nombre'],
-        'descripcion': f'Variante: {data.nombre_variante}',
-        'tipo': padre.get('tipo_producto', 'MEDICAMENTO'),
-        'id_usuario': id_usuario,
-        'precio_a': precio_a,
-        'precio_b': precio_b,
-        'id_padre': padre['id_producto'],
-        'nombre_variante': data.nombre_variante,
-        'id_out': id_var,
-    })
-    return id_var.getvalue()[0]
-
-
-def _insertar_registro_tipo_variante(cursor, tipo_padre: str, id_variante: int, nombre_variante: str) -> None:
-    if tipo_padre == 'MEDICAMENTO':
-        cursor.execute(
-            "INSERT INTO MEDICAMENTO (ID_PRODUCTO, PRESENTACION, DOSIS, REQUIERE_CADUCIDAD) "
-            "VALUES (:id, :pres, NULL, 'N')",
-            {'id': id_variante, 'pres': nombre_variante},
-        )
-
-
-def _insertar_existencia_variante(cursor, id_variante: int, data) -> None:
-    cursor.execute("""
-        INSERT INTO EXISTENCIA_PRODUCTO
-            (ID_PRODUCTO, CANTIDAD_DISPONIBLE, NIVEL_MINIMO, UNIDAD_MEDIDA, ACTIVO)
-        VALUES (:id, :cantidad, :nivel, :unidad, 'S')
-    """, {
-        'id': id_variante,
-        'cantidad': data.cantidad_disponible or 0,
-        'nivel': data.nivel_minimo or 5,
-        'unidad': data.unidad_medida or 'pieza',
-    })
-    if data.fecha_caducidad:
-        cursor.execute(
-            "UPDATE EXISTENCIA_PRODUCTO SET FECHA_CADUCIDAD = TO_DATE(:fc, 'YYYY-MM-DD') "
-            "WHERE ID_PRODUCTO = :id AND ACTIVO = 'S'",
-            {'fc': data.fecha_caducidad, 'id': id_variante},
-        )
-
-
-def _crear_variante(id_producto_padre: int, data, current_user: CurrentUser | None = None) -> dict:
-    """Crear una variante (calibre/talla) de un producto padre existente."""
-    from app.application.almacen.dtos import VarianteCreate  # local import avoids circular
-    assert isinstance(data, VarianteCreate)
-
-    with get_db() as conn:
-        cursor = conn.cursor()
-        id_usuario = current_user.get('id_usuario', 1) if current_user else 1
-        padre = _fetch_padre_producto(cursor, id_producto_padre)
-        tipo_padre = padre.get('tipo_producto', 'MEDICAMENTO')
-        clave = _generar_clave_variante(cursor, tipo_padre)
-        precio_a = data.precio_cuota_a if data.precio_cuota_a is not None else padre.get('precio_cuota_a') or 0
-        precio_b = data.precio_cuota_b if data.precio_cuota_b is not None else padre.get('precio_cuota_b') or 0
-        id_variante = _insertar_producto_variante(cursor, padre, data, clave, id_usuario, precio_a, precio_b)
-        _insertar_registro_tipo_variante(cursor, tipo_padre, id_variante, data.nombre_variante)
-        _insertar_existencia_variante(cursor, id_variante, data)
-        log_insert(conn, 'PRODUCTO', id_variante, id_usuario,
-                   f'Variante {data.nombre_variante} de producto #{id_producto_padre} ({clave}) creada')
-        conn.commit()
-
-    return _fetch_producto(id_variante)
 
 def _actualizar_producto(id_producto: int, data, _current_user: CurrentUser | None = None):
     """Actualizar un producto existente."""
@@ -454,7 +328,7 @@ def _actualizar_servicio(id_servicio: int, data, _current_user: CurrentUser | No
     with get_db() as conn:
         cursor = conn.cursor()
         categoria = getattr(data, 'categoria', None) or 'SERVICIO'
-        cursor.execute('UPDATE SERVICIO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                CUOTA_RECUPERACION = :cuota, ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b,\n                CATEGORIA = :categoria\n               WHERE ID_SERVICIO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'cuota': data.cuota_recuperacion, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'categoria': categoria, 'id': id_servicio})
+        cursor.execute('UPDATE SERVICIO SET\n                NOMBRE = :nombre, DESCRIPCION = :descripcion,\n                CUOTA_RECUPERACION = COALESCE(:cuota, CUOTA_RECUPERACION), ACTIVO = :activo,\n                PRECIO_CUOTA_A = :precio_a, PRECIO_CUOTA_B = :precio_b,\n                CATEGORIA = :categoria\n               WHERE ID_SERVICIO = :id', {'nombre': data.nombre, 'descripcion': data.descripcion, 'cuota': data.cuota_recuperacion, 'activo': data.activo, 'precio_a': data.precio_cuota_a, 'precio_b': data.precio_cuota_b, 'categoria': categoria, 'id': id_servicio})
         if cursor.rowcount == 0:
             raise NotFoundError(_MSG_SERVICIO_NO_ENCONTRADO)
         conn.commit()
@@ -675,12 +549,6 @@ class OracleAlmacenRepository(AlmacenRepository):
 
     def desactivar_producto(self, id_producto, current_user=None):
         return _desactivar_producto(id_producto, current_user)
-
-    def listar_variantes(self, id_producto_padre, current_user=None):
-        return _listar_variantes(id_producto_padre, current_user)
-
-    def crear_variante(self, id_producto_padre, data, current_user=None):
-        return _crear_variante(id_producto_padre, data, current_user)
 
     def listar_servicios(self, busqueda=None, activo=None, categoria=None, current_user=None, limit=100, offset=0):
         return _listar_servicios(busqueda, activo, categoria, current_user, limit, offset)

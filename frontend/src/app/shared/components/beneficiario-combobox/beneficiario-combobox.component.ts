@@ -39,7 +39,7 @@ export class BeneficiarioComboboxComponent implements OnInit {
       this.busqueda = `${this.initialValue.folio} - ${this.initialValue.nombre}`;
     }
 
-    this.api.getBeneficiarios().subscribe({
+    this.api.getBeneficiarios({ limit: 500 }).subscribe({
       next: (data) => {
         this.all = data.map((b) => ({
           id: b.id_paciente ?? 0,

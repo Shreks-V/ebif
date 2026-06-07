@@ -28,7 +28,7 @@
           <svg class="w-8 h-8 text-blue-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
           </svg>
-          <p class="text-4xl font-black text-slate-900">{{ productos.length + servicios.length }}</p>
+          <p class="text-4xl font-black text-slate-900">{{ productos.length }}</p>
           <p class="text-sm text-slate-600 mt-1">Elementos en inventario</p>
           @if (activeTab === 'inventario' && quickInventoryFilter === 'none') {
             <p class="text-xs text-blue-600 font-semibold mt-2">&#10003; Filtro activo</p>

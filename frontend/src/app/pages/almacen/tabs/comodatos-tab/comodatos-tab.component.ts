@@ -1,7 +1,9 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnChanges, Output, EventEmitter, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
+import { ToastService } from '../../../../core/toast.service';
+import { getApiError } from '../../../../shared/utils/error.utils';
 import { AutoGrowDirective } from '../../../../shared/directives/auto-grow.directive';
 import { BeneficiarioComboboxComponent, BeneficiarioSeleccionado } from '../../../../shared/components/beneficiario-combobox/beneficiario-combobox.component';
 import { ComodatoItem, ProductoItem, TableSortState, sortRows } from '../../almacen.models';
@@ -25,7 +27,7 @@ interface ComodatoEditForm {
   imports: [CommonModule, FormsModule, AutoGrowDirective, BeneficiarioComboboxComponent],
   templateUrl: './comodatos-tab.component.html',
 })
-export class ComodatosTabComponent {
+export class ComodatosTabComponent implements OnChanges {
   @Input() comodatos: ComodatoItem[] = [];
   @Input() productos: ProductoItem[] = [];
   @Input() isAdmin = false;
@@ -33,7 +35,20 @@ export class ComodatosTabComponent {
   @Output() refreshNeeded = new EventEmitter<void>();
   @Output() printRequested = new EventEmitter<ComodatoItem>();
 
-  search = '';
+  private _search = '';
+  get search(): string { return this._search; }
+  set search(value: string) { this._search = value; this.page = 1; }
+
+  page = 1;
+  readonly pageSize = 10;
+
+  get paginatedFiltered(): ComodatoItem[] {
+    return this.filtered.slice((this.page - 1) * this.pageSize, this.page * this.pageSize);
+  }
+  get totalPages(): number { return Math.ceil(this.filtered.length / this.pageSize) || 1; }
+  get start(): number { return (this.page - 1) * this.pageSize; }
+  get end(): number { return Math.min(this.start + this.pageSize, this.filtered.length); }
+
   sort: TableSortState = { key: 'fechaPrestamo', direction: 'desc' };
 
   // Nuevo comodato
@@ -54,7 +69,13 @@ export class ComodatosTabComponent {
   comodatoToDevolver: ComodatoItem | null = null;
   submittingDevolucion = false;
 
+  private readonly toast = inject(ToastService);
+
   constructor(private readonly api: ApiService) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['comodatos']) this.page = 1;
+  }
 
   get equiposList(): ProductoItem[] {
     return this.productos.filter(p => p.tipoProducto === 'EQUIPO');
@@ -180,8 +201,8 @@ export class ComodatosTabComponent {
         this.refreshNeeded.emit();
       },
       error: (err) => {
-        console.error('Error creating comodato:', err);
         this.submittingNuevo = false;
+        this.toast.show(getApiError(err, 'Error al crear el comodato. Intenta de nuevo.'), 'error');
       },
     });
   }
@@ -217,8 +238,8 @@ export class ComodatosTabComponent {
         this.refreshNeeded.emit();
       },
       error: (err) => {
-        console.error('Error al actualizar comodato:', err);
         this.submittingEdit = false;
+        this.toast.show(getApiError(err, 'Error al actualizar el comodato. Intenta de nuevo.'), 'error');
       },
     });
   }
@@ -259,8 +280,8 @@ export class ComodatosTabComponent {
         this.refreshNeeded.emit();
       },
       error: (err) => {
-        console.error('Error al registrar devolución:', err);
         this.submittingDevolucion = false;
+        this.toast.show(getApiError(err, 'Error al registrar la devolución. Intenta de nuevo.'), 'error');
       },
     });
   }

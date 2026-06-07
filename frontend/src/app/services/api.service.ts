@@ -60,6 +60,7 @@ export class ApiService {
   createCita(data: object) { return this.citas.createCita(data as Partial<Cita>); } // NOSONAR: typescript:S4325
   updateCita(id: number, data: object) { return this.citas.updateCita(id, data as Partial<Cita>); } // NOSONAR: typescript:S4325
   iniciarCita(id: number) { return this.citas.iniciarCita(id); }
+  reprogramarCita(id: number) { return this.citas.reprogramarCita(id); }
   completarCita(id: number) { return this.citas.completarCita(id); }
   cancelarCita(id: number) { return this.citas.cancelarCita(id); }
   deleteCita(id: number) { return this.citas.deleteCita(id); }

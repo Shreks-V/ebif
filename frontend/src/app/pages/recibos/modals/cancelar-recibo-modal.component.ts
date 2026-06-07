@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../core/toast.service';
+import { getApiError } from '../../../shared/utils/error.utils';
 
 interface ReciboInput { idVenta: number; folioVenta?: string; nombrePaciente?: string; montoTotal?: number; }
 
@@ -18,6 +20,7 @@ export class CancelarReciboModalComponent implements OnChanges {
 
   motivo = '';
   cancelando = false;
+  private readonly toast = inject(ToastService);
 
   constructor(private readonly api: ApiService) {}
 
@@ -38,7 +41,7 @@ export class CancelarReciboModalComponent implements OnChanges {
       },
       error: (err) => {
         this.cancelando = false;
-        console.error('Error al cancelar recibo:', err);
+        this.toast.show(getApiError(err, 'Error al cancelar el recibo. Intenta de nuevo.'), 'error');
       },
     });
   }

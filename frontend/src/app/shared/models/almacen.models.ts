@@ -19,20 +19,6 @@ export interface ProductoRaw {
   nivel_minimo?: number | null;
   unidad_medida?: string;
   fecha_caducidad?: string | null;
-  // Variantes (calibres, tallas, etc.)
-  id_producto_padre?: number | null;
-  nombre_variante?: string | null;
-  variantes?: ProductoRaw[];
-}
-
-export interface VarianteCreatePayload {
-  nombre_variante: string;
-  cantidad_disponible: number;
-  nivel_minimo: number;
-  unidad_medida?: string;
-  fecha_caducidad?: string;
-  precio_cuota_a?: number;
-  precio_cuota_b?: number;
 }
 
 export interface ServicioRaw {

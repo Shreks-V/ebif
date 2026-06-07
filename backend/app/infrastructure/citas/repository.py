@@ -81,7 +81,13 @@ def _citas_stats(_current_user: CurrentUser | None = None):
         cursor = conn.cursor()
         cursor.execute('\n            SELECT ESTATUS, COUNT(*) AS TOTAL\n            FROM CITA\n            GROUP BY ESTATUS\n            ')
         rows = rows_to_dicts(cursor)
-        cursor.execute("\n            SELECT COUNT(*) AS TOTAL_HOY\n            FROM CITA\n            WHERE FECHA_HORA >= TO_DATE(:fecha, 'YYYY-MM-DD')\n              AND FECHA_HORA < TO_DATE(:fecha, 'YYYY-MM-DD') + 1\n              AND ESTATUS = 'PROGRAMADA'\n            ", {'fecha': hoy.isoformat()})
+        cursor.execute(
+            "SELECT COUNT(*) AS TOTAL_HOY FROM CITA"
+            " WHERE FECHA_HORA >= TO_DATE(:fecha, 'YYYY-MM-DD')"
+            " AND FECHA_HORA < TO_DATE(:fecha, 'YYYY-MM-DD') + 1"
+            " AND ESTATUS != 'CANCELADA'",
+            {'fecha': hoy.isoformat()},
+        )
         hoy_row = row_to_dict(cursor)
     stats = {r['estatus']: r['total'] for r in rows}
     stats['total_hoy'] = int(hoy_row['total_hoy']) if hoy_row else 0
@@ -89,7 +95,13 @@ def _citas_stats(_current_user: CurrentUser | None = None):
     with get_db() as conn:
         cursor = conn.cursor()
         ayer = (hoy - timedelta(days=1)).isoformat()
-        cursor.execute("SELECT COUNT(*) AS TOTAL_AYER\n               FROM CITA\n               WHERE FECHA_HORA >= TO_DATE(:fecha, 'YYYY-MM-DD')\n                 AND FECHA_HORA < TO_DATE(:fecha, 'YYYY-MM-DD') + 1\n                 AND ESTATUS = 'PROGRAMADA'", {'fecha': ayer})
+        cursor.execute(
+            "SELECT COUNT(*) AS TOTAL_AYER FROM CITA"
+            " WHERE FECHA_HORA >= TO_DATE(:fecha, 'YYYY-MM-DD')"
+            " AND FECHA_HORA < TO_DATE(:fecha, 'YYYY-MM-DD') + 1"
+            " AND ESTATUS != 'CANCELADA'",
+            {'fecha': ayer},
+        )
         ayer_row = row_to_dict(cursor)
         stats['total_ayer'] = int(ayer_row['total_ayer']) if ayer_row else 0
     return stats
@@ -245,9 +257,34 @@ def _actualizar_cita(id_cita: int, data, _current_user: CurrentUser | None = Non
             },
         )
         if data.servicios is not None:
-            cursor.execute("\n                UPDATE DETALLE_CITA_SERVICIO\n                SET CANCELADO = 'S', MOTIVO_CANCELACION = 'Actualización de cita'\n                WHERE ID_CITA = :id_cita AND CANCELADO = 'N'\n                ", {'id_cita': id_cita})
+            cursor.execute(
+                "UPDATE DETALLE_CITA_SERVICIO"
+                " SET CANCELADO = 'S', MOTIVO_CANCELACION = 'Actualización de cita'"
+                " WHERE ID_CITA = :id_cita",
+                {'id_cita': id_cita},
+            )
             for s in data.servicios:
-                cursor.execute("\n                    INSERT INTO DETALLE_CITA_SERVICIO\n                        (ID_CITA, ID_SERVICIO, CANTIDAD, MONTO_PAGADO, CANCELADO)\n                    VALUES (:id_cita, :id_servicio, :cantidad, :monto_pagado, 'N')\n                    ", {'id_cita': id_cita, 'id_servicio': s['id_servicio'], 'cantidad': s.get('cantidad', 1), 'monto_pagado': s.get('monto_pagado', 0.0)})
+                cursor.execute(
+                    """
+                    MERGE INTO DETALLE_CITA_SERVICIO dst
+                    USING (SELECT :id_cita AS ID_CITA, :id_servicio AS ID_SERVICIO FROM DUAL) src
+                    ON (dst.ID_CITA = src.ID_CITA AND dst.ID_SERVICIO = src.ID_SERVICIO)
+                    WHEN MATCHED THEN
+                        UPDATE SET CANTIDAD = :cantidad,
+                                   MONTO_PAGADO = :monto_pagado,
+                                   CANCELADO = 'N',
+                                   MOTIVO_CANCELACION = NULL
+                    WHEN NOT MATCHED THEN
+                        INSERT (ID_CITA, ID_SERVICIO, CANTIDAD, MONTO_PAGADO, CANCELADO)
+                        VALUES (:id_cita, :id_servicio, :cantidad, :monto_pagado, 'N')
+                    """,
+                    {
+                        'id_cita': id_cita,
+                        'id_servicio': s['id_servicio'],
+                        'cantidad': s.get('cantidad', 1),
+                        'monto_pagado': s.get('monto_pagado', 0.0),
+                    },
+                )
         conn.commit()
         cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
         cita = row_to_dict(cursor)
@@ -263,6 +300,21 @@ def _iniciar_cita(id_cita: int, _current_user: CurrentUser | None = None):
         if row is None:
             raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
         cursor.execute("UPDATE CITA SET ESTATUS = 'EN_CURSO' WHERE ID_CITA = :id_cita", {'id_cita': id_cita})
+        conn.commit()
+        cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
+        cita = row_to_dict(cursor)
+        cita = _enrich_cita(conn, cita)
+    return cita
+
+def _reprogramar_cita(id_cita: int, _current_user: CurrentUser | None = None):
+    """Revertir una cita EN_CURSO de vuelta a PROGRAMADA."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
+        row = cursor.fetchone()
+        if row is None:
+            raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
+        cursor.execute("UPDATE CITA SET ESTATUS = 'PROGRAMADA' WHERE ID_CITA = :id_cita", {'id_cita': id_cita})
         conn.commit()
         cursor.execute(CITA_BASE_QUERY + _WHERE_CITA, {'id_cita': id_cita})
         cita = row_to_dict(cursor)
@@ -339,6 +391,9 @@ class OracleCitasRepository(CitasRepository):
 
     def iniciar_cita(self, id_cita, current_user=None):
         return _iniciar_cita(id_cita, current_user)
+
+    def reprogramar_cita(self, id_cita, current_user=None):
+        return _reprogramar_cita(id_cita, current_user)
 
     def completar_cita(self, id_cita, current_user=None):
         return _completar_cita(id_cita, current_user)

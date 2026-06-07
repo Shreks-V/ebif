@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Annotated, List, Literal
-from app.application.almacen.dtos import ProductoCreate, ServicioCreate, ComodatoCreate, AjusteExistenciaRequest, VarianteCreate
+from app.application.almacen.dtos import ProductoCreate, ServicioCreate, ComodatoCreate, AjusteExistenciaRequest
 from app.presentation.api.schemas import ProductoResponse, ServicioResponse, ComodatoResponse, MovimientoInventario
 from app.application.almacen import use_cases as service
 from app.presentation.api.security import get_current_user, require_role
@@ -36,23 +36,6 @@ def desactivar_producto(id_producto: int, current_user: Annotated[dict, Depends(
 @router.patch('/productos/{id_producto}/existencia')
 def ajustar_existencia(id_producto: int, data: AjusteExistenciaRequest, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'ENCARGADO_ALMACEN'))] = None) -> ProductoResponse:
     return service.ajustar_existencia(id_producto, data.stock_nuevo, data.motivo, current_user)
-
-@router.get('/productos/{id_producto}/variantes')
-def listar_variantes(
-    id_producto: int,
-    current_user: Annotated[dict, Depends(get_current_user)] = None,
-) -> list:
-    """Listar variantes (calibres/tallas) de un producto padre."""
-    return service.listar_variantes(id_producto, current_user)
-
-@router.post('/productos/{id_producto}/variantes', status_code=201)
-def crear_variante(
-    id_producto: int,
-    data: VarianteCreate,
-    current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'ENCARGADO_ALMACEN'))] = None,
-) -> dict:
-    """Crear una nueva variante (calibre 8, calibre 10, talla M, etc.) para un producto padre."""
-    return service.crear_variante(id_producto, data, current_user)
 
 @router.get('/servicios')
 def listar_servicios(

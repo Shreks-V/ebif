@@ -80,7 +80,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                @for (u of usuarios; track u.id_usuario) {
+                @for (u of usuariosPaginados; track u.id_usuario) {
                   <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-6 py-4">
                       <div class="flex items-center gap-3">
@@ -145,6 +145,16 @@
                 }
               </tbody>
             </table>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <span class="text-sm text-slate-500 font-medium">Mostrando {{ start + 1 }}–{{ end }} de {{ usuarios.length }} usuarios</span>
+              <div class="flex items-center gap-2">
+                <button (click)="page > 1 && (page = page - 1)" [disabled]="page <= 1"
+                  class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Anterior</button>
+                <span class="text-sm text-slate-500 font-medium">{{ page }} / {{ totalPages }}</span>
+                <button (click)="page < totalPages && (page = page + 1)" [disabled]="page >= totalPages"
+                  class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Siguiente</button>
+              </div>
+            </div>
           </div>
         }
       </div>

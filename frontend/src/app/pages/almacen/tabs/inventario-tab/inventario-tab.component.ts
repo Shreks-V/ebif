@@ -1,8 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnChanges, Output, EventEmitter, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
-import { AlmacenApiService } from '../../../../services/almacen-api.service';
 import {
   ProductoItem,
   TableSortState,
@@ -30,7 +29,7 @@ export interface InventarioRow {
   imports: [CommonModule, FormsModule],
   templateUrl: './inventario-tab.component.html',
 })
-export class InventarioTabComponent {
+export class InventarioTabComponent implements OnChanges {
   @Input() productos: ProductoItem[] = [];
   @Input() isAdmin = false;
   @Input() stockBajoIds: Set<number> = new Set();
@@ -43,7 +42,20 @@ export class InventarioTabComponent {
   @Output() requestDelete = new EventEmitter<{ id: number; nombre: string; categoria: string }>();
   @Output() refreshNeeded = new EventEmitter<void>();
 
-  search = '';
+  private _search = '';
+  get search(): string { return this._search; }
+  set search(value: string) { this._search = value; this.page = 1; }
+
+  page = 1;
+  readonly pageSize = 15;
+
+  get paginatedRows(): InventarioRow[] {
+    return this.filteredRows.slice((this.page - 1) * this.pageSize, this.page * this.pageSize);
+  }
+  get totalPages(): number { return Math.ceil(this.filteredRows.length / this.pageSize) || 1; }
+  get start(): number { return (this.page - 1) * this.pageSize; }
+  get end(): number { return Math.min(this.start + this.pageSize, this.filteredRows.length); }
+
   sort: TableSortState = { key: 'id', direction: 'asc' };
 
   quickStockItem: { id: number; nombre: string; cantidadActual: number } | null = null;
@@ -51,21 +63,13 @@ export class InventarioTabComponent {
   quickStockMotivo = 'Recepción de mercancía';
   quickStockSubmitting = false;
 
-  // Variante modal
-  varianteParaProducto: { id: number; nombre: string; tipo: string } | null = null;
-  varianteNombre = '';
-  varianteCantidad = 0;
-  varianteNivelMinimo = 5;
-  varianteUnidad = 'pieza';
-  varianteSubmitting = false;
-  varianteError = '';
-
   readonly formatCurrency = formatCurrency;
 
-  constructor(
-    private readonly api: ApiService,
-    private readonly almacenApi: AlmacenApiService,
-  ) {}
+  constructor(private readonly api: ApiService) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['selectedCategory'] || changes['quickFilter'] || changes['productos']) this.page = 1;
+  }
 
   getCategoryCount(categoria: string): number {
     if (categoria === 'Medicamento') return this.productos.filter(p => p.tipoProducto === 'MEDICAMENTO').length;
@@ -93,7 +97,7 @@ export class InventarioTabComponent {
     const showEq = !this.selectedCategory || this.selectedCategory === 'Equipo';
 
     if (showMeds) {
-      this.productos.filter(p => p.tipoProducto === 'MEDICAMENTO' && !p.idProductoPadre).forEach(p => {
+      this.productos.filter(p => p.tipoProducto === 'MEDICAMENTO').forEach(p => {
         let estado: string;
         if (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo) {
           estado = 'Existencias bajas';
@@ -204,56 +208,6 @@ export class InventarioTabComponent {
       },
       error: () => { this.quickStockSubmitting = false; },
     });
-  }
-
-  // ── Variantes ──────────────────────────────────────────────────────────────
-  openVarianteModal(item: InventarioRow): void {
-    this.varianteParaProducto = { id: item.id, nombre: item.nombre, tipo: item.categoria };
-    this.varianteNombre = '';
-    this.varianteCantidad = 0;
-    this.varianteNivelMinimo = 5;
-    this.varianteUnidad = 'pieza';
-    this.varianteError = '';
-  }
-
-  closeVarianteModal(): void { this.varianteParaProducto = null; }
-
-  confirmarVariante(): void {
-    if (!this.varianteParaProducto || !this.varianteNombre.trim() || this.varianteSubmitting) return;
-    this.varianteSubmitting = true;
-    this.varianteError = '';
-    this.almacenApi.createVariante(this.varianteParaProducto.id, {
-      nombre_variante: this.varianteNombre.trim(),
-      cantidad_disponible: this.varianteCantidad,
-      nivel_minimo: this.varianteNivelMinimo,
-      unidad_medida: this.varianteUnidad,
-    }).subscribe({
-      next: () => {
-        this.varianteSubmitting = false;
-        this.varianteParaProducto = null;
-        this.refreshNeeded.emit();
-      },
-      error: (err) => {
-        this.varianteSubmitting = false;
-        this.varianteError = err?.error?.detail || 'Error al crear la variante';
-      },
-    });
-  }
-
-  /** Determina si un producto es padre (standalone sin padre) y puede tener variantes */
-  esPadre(row: InventarioRow): boolean {
-    const prod = this.productos.find(p => p.idProducto === row.id);
-    return !prod?.idProductoPadre && prod?.tipoProducto === 'MEDICAMENTO';
-  }
-
-  /** Cuenta variantes de un producto padre */
-  contarVariantes(row: InventarioRow): number {
-    return this.productos.filter(p => p.idProductoPadre === row.id).length;
-  }
-
-  /** Devuelve las variantes de un producto padre */
-  getVariantes(idPadre: number): ProductoItem[] {
-    return this.productos.filter(p => p.idProductoPadre === idPadre);
   }
 
   private _matchesQuickFilter(item: InventarioRow): boolean {

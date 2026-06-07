@@ -34,6 +34,15 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
   searchMedicos = '';
   medicos: MedicoLocal[] = [];
   medicosFiltrados: MedicoLocal[] = [];
+
+  page = 1;
+  readonly pageSize = 10;
+  get medicosPaginados(): MedicoLocal[] {
+    return this.medicosFiltrados.slice((this.page - 1) * this.pageSize, this.page * this.pageSize);
+  }
+  get totalPages(): number { return Math.ceil(this.medicosFiltrados.length / this.pageSize) || 1; }
+  get start(): number { return (this.page - 1) * this.pageSize; }
+  get end(): number { return Math.min(this.start + this.pageSize, this.medicosFiltrados.length); }
   serviciosList: ServicioRaw[] = [];
   medicosSort: TableSortState = { key: 'nombre', direction: 'asc' };
 
@@ -76,6 +85,7 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
   // ── Filters / Sort ──
 
   filtrarMedicos(): void {
+    this.page = 1;
     const valueGetter = (medico: MedicoLocal, key: string): unknown => {
       switch (key) {
         case 'nombre': return `${medico.nombre} ${medico.apellidoPaterno} ${medico.apellidoMaterno || ''}`;

@@ -135,8 +135,6 @@ class ProductoResponse(ProductoBase):
     nivel_minimo: int | None = 5
     unidad_medida: str | None = None
     fecha_caducidad: str | None = None
-    id_producto_padre: int | None = None
-    nombre_variante: str | None = None
 
 
 # ──────────────────────────── EXISTENCIA PRODUCTO ────────────────────────────

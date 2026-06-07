@@ -1,4 +1,4 @@
-from app.application.almacen.dtos import ProductoCreate, ServicioCreate, ComodatoCreate, VarianteCreate
+from app.application.almacen.dtos import ProductoCreate, ServicioCreate, ComodatoCreate
 from app.domain.almacen.ports import AlmacenRepository
 from app.domain.shared.current_user import CurrentUser
 from app.domain.exceptions import ValidationError
@@ -31,12 +31,6 @@ class AlmacenService:
 
     def desactivar_producto(self, id_producto: int, current_user: CurrentUser | None = None):
         return self._repository.desactivar_producto(id_producto, current_user)
-
-    def listar_variantes(self, id_producto_padre: int, current_user: CurrentUser | None = None):
-        return self._repository.listar_variantes(id_producto_padre, current_user)
-
-    def crear_variante(self, id_producto_padre: int, data: VarianteCreate, current_user: CurrentUser | None = None):
-        return self._repository.crear_variante(id_producto_padre, data, current_user)
 
     def listar_servicios(self, busqueda: str | None = None, activo: str | None = None, categoria: str | None = None, current_user: CurrentUser | None = None, limit: int = 100, offset: int = 0):
         return self._repository.listar_servicios(busqueda, activo, categoria, current_user, limit, offset)
@@ -107,12 +101,6 @@ def actualizar_producto(id_producto: int, data: ProductoCreate, current_user: Cu
 
 def desactivar_producto(id_producto: int, current_user: CurrentUser | None = None):
     return _svc().desactivar_producto(id_producto, current_user)
-
-def listar_variantes(id_producto_padre: int, current_user: CurrentUser | None = None):
-    return _svc().listar_variantes(id_producto_padre, current_user)
-
-def crear_variante(id_producto_padre: int, data: VarianteCreate, current_user: CurrentUser | None = None):
-    return _svc().crear_variante(id_producto_padre, data, current_user)
 
 def listar_servicios(busqueda: str | None = None, activo: str | None = None, categoria: str | None = None, current_user: CurrentUser | None = None, limit: int = 100, offset: int = 0):
     return _svc().listar_servicios(busqueda, activo, categoria, current_user, limit, offset)

@@ -5,6 +5,8 @@ import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../services/api.service';
 import { ServicioRaw } from '../../../../shared/models/almacen.models';
+import { ToastService } from '../../../../core/toast.service';
+import { getApiError } from '../../../../shared/utils/error.utils';
 import { TIMEZONE_MX, ACTION_NUEVO, PDF_REVOKE_DELAY_MS } from '../../../../shared/constants/app.constants';
 import { NuevaCitaModalComponent } from './modals/nueva-cita-modal.component';
 import { DetalleCitaModalComponent } from './modals/detalle-cita-modal.component';
@@ -39,11 +41,10 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   citasView: 'lista' | 'calendario' = 'lista';
   searchCitas = '';
   filtroEstado = 'Todas';
-  filtroTipo = 'Todas';
+  filtroTipo = '';
   readonly todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE_MX });
   filtroFecha = this.todayStr;
   readonly estadoFilters = ['Todas', 'PROGRAMADA', 'EN_CURSO', 'COMPLETADA', 'CANCELADA'];
-  readonly tipoFilters = ['Todas', 'Consulta Neurocirugía', 'Consulta Ortopédica', 'Consulta Urológica', 'Fisioterapia', 'Terapia Ocupacional'];
 
   // Calendar
   calendarYear = new Date().getFullYear();
@@ -79,12 +80,13 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   private readonly _onViewportChange = (): void => { this._repositionCitaMenu(); };
 
   private readonly destroyRef = inject(DestroyRef);
+  private readonly toast = inject(ToastService);
 
   constructor(private readonly api: ApiService, private readonly route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this._cargarCitas();
-    this.api.getServicios().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.getServicios({ activo: 'S', limit: 500 }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => { this.serviciosList = data; },
       error: (err) => console.error('Error al cargar servicios:', err),
     });
@@ -199,7 +201,10 @@ export class CitasTabComponent implements OnInit, OnDestroy {
       });
     }
     if (this.filtroEstado !== 'Todas') resultado = resultado.filter(c => c.estatus === this.filtroEstado);
-    if (this.filtroTipo !== 'Todas') resultado = resultado.filter(c => c.servicios.some((s: CitaServicioLocal) => s.nombre === this.filtroTipo));
+    if (this.filtroTipo) {
+      const qt = this._norm(this.filtroTipo);
+      resultado = resultado.filter(c => c.servicios.some((s: CitaServicioLocal) => this._norm(s.nombre).includes(qt)));
+    }
     this.citasPaginaActual = 1;
     this.citasFiltradas = this._sortRows(resultado, this.citasSort, (cita, key) => {
       switch (key) {
@@ -269,13 +274,13 @@ export class CitasTabComponent implements OnInit, OnDestroy {
   completarCitaInline(cita: CitaLocal): void {
     this.api.completarCita(cita.idCita)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({ next: () => this._cargarCitas(), error: (err) => console.error(err) });
+      .subscribe({ next: () => this._cargarCitas(), error: (err) => this.toast.show(getApiError(err, 'Error al completar la cita.'), 'error') });
   }
 
   cancelarCitaInline(cita: CitaLocal): void {
     this.api.cancelarCita(cita.idCita)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({ next: () => this._cargarCitas(), error: (err) => console.error(err) });
+      .subscribe({ next: () => this._cargarCitas(), error: (err) => this.toast.show(getApiError(err, 'Error al cancelar la cita.'), 'error') });
   }
 
   descargarComprobante(cita: CitaLocal): void {
@@ -326,7 +331,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
 
   private _cargarCitas(): void {
     this.loading = true;
-    this.api.getCitas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    this.api.getCitas({ limit: 500 }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (data) => {
         this.citas = data.map((c) => ({
           idCita: c.id_cita, idPaciente: c.id_paciente ?? 0, nombrePaciente: c.nombre_paciente ?? '',
@@ -381,6 +386,10 @@ export class CitasTabComponent implements OnInit, OnDestroy {
       if (left > right) return 1 * dir;
       return 0;
     });
+  }
+
+  private _norm(s: string): string {
+    return (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   }
 
   private _toComparable(value: unknown): number | string {

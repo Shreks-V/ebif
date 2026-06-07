@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 import { buildParams } from './api-helpers';
 import {
   ProductoRaw, ServicioRaw, ComodatoRaw,
-  AlmacenStats, Movimiento, AjusteExistenciaPayload, VarianteCreatePayload,
+  AlmacenStats, Movimiento, AjusteExistenciaPayload,
 } from '../shared/models/almacen.models';
 
 export interface ProductosFilter {
@@ -13,6 +13,8 @@ export interface ProductosFilter {
   tipo_producto?: string;
   busqueda?: string;
   categoria?: string;
+  limit?: number;
+  offset?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -40,14 +42,6 @@ export class AlmacenApiService {
   ajustarExistencia(id: number, stockNuevo: number, motivo: string): Observable<ProductoRaw> {
     const payload: AjusteExistenciaPayload = { stock_nuevo: stockNuevo, motivo };
     return this.http.patch<ProductoRaw>(`${this.base}/productos/${id}/existencia`, payload);
-  }
-
-  getVariantes(idProductoPadre: number): Observable<ProductoRaw[]> {
-    return this.http.get<ProductoRaw[]>(`${this.base}/productos/${idProductoPadre}/variantes`);
-  }
-
-  createVariante(idProductoPadre: number, data: VarianteCreatePayload): Observable<ProductoRaw> {
-    return this.http.post<ProductoRaw>(`${this.base}/productos/${idProductoPadre}/variantes`, data);
   }
 
   getServicios(filters?: ProductosFilter): Observable<ServicioRaw[]> {

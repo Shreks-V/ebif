@@ -41,6 +41,10 @@ def actualizar_cita(id_cita: int, data: CitaCreate, current_user: Annotated[dict
 def iniciar_cita(id_cita: int, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))] = None) -> dict:
     return service.iniciar_cita(id_cita, current_user)
 
+@router.put('/{id_cita}/reprogramar')
+def reprogramar_cita(id_cita: int, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))] = None) -> dict:
+    return service.reprogramar_cita(id_cita, current_user)
+
 @router.put('/{id_cita}/completar')
 def completar_cita(id_cita: int, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR', 'RECEPCIONISTA'))] = None) -> dict:
     return service.completar_cita(id_cita, current_user)

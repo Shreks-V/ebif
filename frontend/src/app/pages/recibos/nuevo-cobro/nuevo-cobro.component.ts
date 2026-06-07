@@ -318,7 +318,6 @@ export class NuevoCobroComponent implements OnInit {
       error: (err) => {
         this.guardandoCobro = false;
         this._setError(err?.error?.detail || 'Error al guardar el cobro. Intenta de nuevo.');
-        console.error('Error al crear recibo:', err);
       },
     });
   }

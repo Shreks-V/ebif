@@ -1,7 +1,9 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
+import { ToastService } from '../../../../core/toast.service';
+import { getApiError } from '../../../../shared/utils/error.utils';
 import { AutoGrowDirective } from '../../../../shared/directives/auto-grow.directive';
 import { ServicioItem, formatCurrency } from '../../almacen.models';
 
@@ -27,13 +29,27 @@ export class ServiciosTabComponent {
   @Output() requestDelete = new EventEmitter<{ id: number; nombre: string; categoria: string }>();
   @Output() refreshNeeded = new EventEmitter<void>();
 
-  search = '';
+  private _search = '';
+  get search(): string { return this._search; }
+  set search(value: string) { this._search = value; this.page = 1; }
+
+  page = 1;
+  readonly pageSize = 10;
+
+  get paginatedFiltered(): ServicioItem[] {
+    return this.filtered.slice((this.page - 1) * this.pageSize, this.page * this.pageSize);
+  }
+  get totalPages(): number { return Math.ceil(this.filtered.length / this.pageSize) || 1; }
+  get start(): number { return (this.page - 1) * this.pageSize; }
+  get end(): number { return Math.min(this.start + this.pageSize, this.filtered.length); }
+
   showEditModal = false;
   editId = 0;
   editForm: ServicioEditForm | null = null;
   submitting = false;
 
   readonly formatCurrency = formatCurrency;
+  private readonly toast = inject(ToastService);
 
   constructor(private readonly api: ApiService) {}
 
@@ -70,8 +86,8 @@ export class ServiciosTabComponent {
         this.refreshNeeded.emit();
       },
       error: (err) => {
-        console.error('Error al actualizar servicio:', err);
         this.submitting = false;
+        this.toast.show(getApiError(err, 'Error al actualizar el servicio. Intenta de nuevo.'), 'error');
       },
     });
   }

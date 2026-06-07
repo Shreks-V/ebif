@@ -336,17 +336,51 @@ export class ReportesTabComponent implements OnInit {
         // ── ECharts indicadores ──
         this.indicKpiOpt = {
           tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-          grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-          xAxis: { type: 'category', data: ['Activos', 'Nuevos', 'Hombres', 'Mujeres'], axisLabel: { fontSize: 11 } },
-          yAxis: { type: 'value', axisLabel: { fontSize: 10 } },
+          grid: { left: '3%', right: '4%', bottom: '3%', top: '18%', containLabel: true },
+          xAxis: {
+            type: 'category',
+            data: ['Activos', 'Nuevos', 'Hombres', 'Mujeres'],
+            axisLabel: { fontSize: 11 },
+            axisTick: { alignWithLabel: true },
+          },
+          yAxis: {
+            type: 'value',
+            axisLabel: { fontSize: 10 },
+            splitLine: { lineStyle: { type: 'dashed' as const, color: '#e2e8f0' } },
+          },
           series: [{
-            type: 'bar', barMaxWidth: 56,
+            type: 'bar',
+            barMaxWidth: 60,
+            label: { show: true, position: 'top' as const, fontSize: 13, fontWeight: 'bold', color: '#334155' },
             data: [
-              { value: this.indicActivos,  itemStyle: { color: NAVY,      borderRadius: [4,4,0,0] } },
-              { value: this.indicNuevos,   itemStyle: { color: '#10b981', borderRadius: [4,4,0,0] } },
-              { value: this.indicHombres,  itemStyle: { color: '#3b82f6', borderRadius: [4,4,0,0] } },
-              { value: this.indicMujeres,  itemStyle: { color: '#ec4899', borderRadius: [4,4,0,0] } },
+              { value: this.indicActivos,  itemStyle: { color: NAVY,      borderRadius: [6,6,0,0] } },
+              { value: this.indicNuevos,   itemStyle: { color: '#10b981', borderRadius: [6,6,0,0] } },
+              { value: this.indicHombres,  itemStyle: { color: '#3b82f6', borderRadius: [6,6,0,0] } },
+              { value: this.indicMujeres,  itemStyle: { color: '#ec4899', borderRadius: [6,6,0,0] } },
             ],
+            markArea: {
+              silent: true,
+              data: [
+                [
+                  {
+                    name: 'Padrón general',
+                    xAxis: 'Activos',
+                    label: { position: 'insideTop' as const, fontSize: 10, color: '#475569', fontWeight: 'bold', distance: 6 },
+                    itemStyle: { color: 'rgba(0,50,139,0.04)', borderColor: 'rgba(0,50,139,0.18)', borderWidth: 1, borderType: 'dashed' as const },
+                  },
+                  { xAxis: 'Nuevos' },
+                ],
+                [
+                  {
+                    name: 'Distribución por género',
+                    xAxis: 'Hombres',
+                    label: { position: 'insideTop' as const, fontSize: 10, color: '#475569', fontWeight: 'bold', distance: 6 },
+                    itemStyle: { color: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.2)', borderWidth: 1, borderType: 'dashed' as const },
+                  },
+                  { xAxis: 'Mujeres' },
+                ],
+              ],
+            },
           }],
         };
 

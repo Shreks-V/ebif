@@ -43,6 +43,14 @@ const ROL_LABELS: Record<string, string> = {
 })
 export class UsuariosSistemaComponent implements OnInit {
   usuarios: UsuarioSistema[] = [];
+  page = 1;
+  readonly pageSize = 10;
+  get usuariosPaginados(): UsuarioSistema[] {
+    return this.usuarios.slice((this.page - 1) * this.pageSize, this.page * this.pageSize);
+  }
+  get totalPages(): number { return Math.ceil(this.usuarios.length / this.pageSize) || 1; }
+  get start(): number { return (this.page - 1) * this.pageSize; }
+  get end(): number { return Math.min(this.start + this.pageSize, this.usuarios.length); }
   loading = false;
   globalMsg = '';
   globalMsgType: 'success' | 'error' = 'success';

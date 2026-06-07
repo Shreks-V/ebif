@@ -17,10 +17,6 @@ export interface ProductoItem {
   cantidadDisponible: number | null;
   nivelMinimo: number | null;
   unidadMedida: string;
-  // Variantes (calibres, tallas, etc.)
-  idProductoPadre?: number | null;
-  nombreVariante?: string | null;
-  variantes?: ProductoItem[];
 }
 
 export interface ServicioItem {

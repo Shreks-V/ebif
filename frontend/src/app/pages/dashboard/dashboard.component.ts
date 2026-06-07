@@ -52,7 +52,9 @@ export class DashboardComponent implements OnInit {
   doctorHorario = '—';
 
   showWalkInModal = false;
-  pacienteParaRecibo: (PreselectedPacienteCobro & { idServicio?: number | null; servicio?: string | null }) | null = null;
+  pacienteParaRecibo: (PreselectedPacienteCobro & { idServicio?: number | null; servicio?: string | null; idCita?: number }) | null = null;
+  pacienteAcciones: PacienteDashboard | null = null;
+  private _pendingPaciente: PacienteDashboard | null = null;
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
@@ -115,7 +117,16 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  abrirAcciones(paciente: PacienteDashboard): void {
+    this.pacienteAcciones = paciente;
+  }
+
+  cerrarAcciones(): void {
+    this.pacienteAcciones = null;
+  }
+
   iniciarAtencion(paciente: PacienteDashboard): void {
+    this.cerrarAcciones();
     if (!paciente.idCita) return;
     paciente.estado = 'EN_CURSO';
     this.api.iniciarCita(paciente.idCita)
@@ -128,30 +139,52 @@ export class DashboardComponent implements OnInit {
       });
   }
 
-  marcarAtendido(paciente: PacienteDashboard): void {
+  reprogramarCita(paciente: PacienteDashboard): void {
+    this.cerrarAcciones();
     if (!paciente.idCita) return;
-    const backup = [...this.pacientes];
-    this.pacientes = this.pacientes.filter(p => p.idCita !== paciente.idCita);
-    this.doctorAtendidos++;
-    this.api.completarCita(paciente.idCita)
+    paciente.estado = 'PROGRAMADA';
+    this.api.reprogramarCita(paciente.idCita)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: (err) => {
+          paciente.estado = 'EN_CURSO';
+          this.toast.show(getApiError(err, 'Error al reprogramar la cita'), 'error');
+        },
+      });
+  }
+
+  cancelarCita(paciente: PacienteDashboard): void {
+    this.cerrarAcciones();
+    if (!paciente.idCita) return;
+    this.api.cancelarCita(paciente.idCita)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.pacienteParaRecibo = {
-            idPaciente: paciente.idPaciente,
-            nombre: `${paciente.nombre} ${paciente.apellido}`.trim(),
-            folio: paciente.folio,
-            tipoCuota: paciente.tipoCuota || 'A',
-            idServicio: paciente.idServicio ?? null,
-            servicio: paciente.servicio ?? null,
-          };
+          this.pacientes = this.pacientes.filter(p => p.idCita !== paciente.idCita);
+          this.toast.show('Cita cancelada', 'info');
         },
-        error: (err) => {
-          this.pacientes = backup;
-          this.doctorAtendidos = Math.max(0, this.doctorAtendidos - 1);
-          this.toast.show(getApiError(err, 'Error al completar la cita'), 'error');
-        },
+        error: (err) => this.toast.show(getApiError(err, 'Error al cancelar la cita'), 'error'),
       });
+  }
+
+  marcarAtendido(paciente: PacienteDashboard): void {
+    this.cerrarAcciones();
+    if (!paciente.idCita) return;
+    this._pendingPaciente = paciente;
+    this.pacienteParaRecibo = {
+      idPaciente: paciente.idPaciente,
+      nombre: `${paciente.nombre} ${paciente.apellido}`.trim(),
+      folio: paciente.folio,
+      tipoCuota: paciente.tipoCuota || 'A',
+      idServicio: paciente.idServicio ?? null,
+      servicio: paciente.servicio ?? null,
+      idCita: paciente.idCita,
+    };
+  }
+
+  onReciboCancelado(): void {
+    this._pendingPaciente = null;
+    this.pacienteParaRecibo = null;
   }
 
   onWalkInRegistrado(): void {
@@ -170,7 +203,19 @@ export class DashboardComponent implements OnInit {
   }
 
   onReciboGuardado(): void {
+    const paciente = this._pendingPaciente;
+    this._pendingPaciente = null;
     this.pacienteParaRecibo = null;
+    if (!paciente?.idCita) return;
+    this.pacientes = this.pacientes.filter(p => p.idCita !== paciente.idCita);
+    this.doctorAtendidos++;
+    this.api.completarCita(paciente.idCita)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: (err) => {
+          this.toast.show(getApiError(err, 'Error al completar la cita'), 'error');
+        },
+      });
   }
 
   navigateTo(route: string, queryParams?: Record<string, string>): void {

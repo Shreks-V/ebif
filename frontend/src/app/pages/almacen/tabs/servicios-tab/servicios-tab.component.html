@@ -35,7 +35,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (s of filtered; track s.idServicio) {
+      @for (s of paginatedFiltered; track s.idServicio) {
         <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
           <td class="px-5 py-4 text-slate-600 font-mono">{{ s.idServicio }}</td>
           <td class="px-5 py-4 text-slate-800 font-medium">{{ s.nombre }}</td>
@@ -71,6 +71,16 @@
       }
     </tbody>
   </table>
+  <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+    <span class="text-sm text-slate-500 font-medium">Mostrando {{ start + 1 }}–{{ end }} de {{ filtered.length }} servicios</span>
+    <div class="flex items-center gap-2">
+      <button (click)="page > 1 && (page = page - 1)" [disabled]="page <= 1"
+        class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Anterior</button>
+      <span class="text-sm text-slate-500 font-medium">{{ page }} / {{ totalPages }}</span>
+      <button (click)="page < totalPages && (page = page + 1)" [disabled]="page >= totalPages"
+        class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Siguiente</button>
+    </div>
+  </div>
 </div>
 </div><!-- /space-y-5 -->
 

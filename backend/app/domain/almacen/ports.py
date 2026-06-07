@@ -23,10 +23,6 @@ class AlmacenRepository(Protocol):
 
     def desactivar_producto(self, id_producto: int, current_user: CurrentUser | None = None) -> None: ...
 
-    def listar_variantes(self, id_producto_padre: int, current_user: CurrentUser | None = None) -> list: ...
-
-    def crear_variante(self, id_producto_padre: int, data: Any, current_user: CurrentUser | None = None) -> dict: ...
-
     def listar_servicios(
         self,
         busqueda: str | None = None,

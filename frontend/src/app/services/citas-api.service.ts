@@ -47,6 +47,10 @@ export class CitasApiService {
     return this.http.put<Cita>(`${this.citasBase}/${id}/iniciar`, {});
   }
 
+  reprogramarCita(id: number): Observable<Cita> {
+    return this.http.put<Cita>(`${this.citasBase}/${id}/reprogramar`, {});
+  }
+
   completarCita(id: number): Observable<Cita> {
     return this.http.put<Cita>(`${this.citasBase}/${id}/completar`, {});
   }

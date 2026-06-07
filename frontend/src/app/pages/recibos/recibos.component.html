@@ -149,7 +149,7 @@
                     <span class="font-mono text-sm font-bold text-emerald-600">{{ recibo.folioVenta }}</span>
                   </td>
                   <td class="px-5 py-4 text-sm text-slate-700">{{ recibo.nombrePaciente }}</td>
-                  <td class="px-5 py-4 text-sm text-slate-600">{{ recibo.fechaVenta }}</td>
+                  <td class="px-5 py-4 text-sm text-slate-600">{{ recibo.fechaVenta | date:'dd/MM/yyyy HH:mm' }}</td>
                   <td class="px-5 py-4 text-sm font-bold text-slate-900">${{ recibo.montoTotal | number:'1.2-2' }}</td>
                   <td class="px-5 py-4 text-sm font-bold text-slate-900">${{ recibo.montoPagado | number:'1.2-2' }}</td>
                   <td class="px-5 py-4 text-sm font-semibold" [ngClass]="recibo.saldoPendiente > 0 ? 'text-amber-600' : 'text-slate-500'">${{ recibo.saldoPendiente | number:'1.2-2' }}</td>

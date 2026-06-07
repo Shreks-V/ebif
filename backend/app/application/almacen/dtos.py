@@ -39,20 +39,6 @@ class ProductoCreate(ProductoBase):
     nivel_minimo: int = Field(default=5, ge=0)
     unidad_medida: str | None = None
     fecha_caducidad: str | None = None
-    # Variantes (calibres, tallas, etc.)
-    id_producto_padre: int | None = None
-    nombre_variante: str | None = None
-
-
-class VarianteCreate(BaseModel):
-    """Crear una nueva variante de un producto padre existente."""
-    nombre_variante: str = Field(min_length=1, max_length=100, description="Ej: 'Calibre 8', 'Talla M'")
-    cantidad_disponible: int = Field(default=0, ge=0)
-    nivel_minimo: int = Field(default=5, ge=0)
-    unidad_medida: str | None = None
-    fecha_caducidad: str | None = None
-    precio_cuota_a: float | None = Field(default=None, ge=0)
-    precio_cuota_b: float | None = Field(default=None, ge=0)
 
 
 class ComodatoBase(BaseModel):

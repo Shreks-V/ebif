@@ -128,8 +128,6 @@ export class AlmacenComponent implements OnInit, OnDestroy {
           cantidadDisponible: this._toNum(p.cantidad_disponible),
           nivelMinimo: this._toNum(p.nivel_minimo),
           unidadMedida: String(p.unidad_medida ?? '—'),
-          idProductoPadre: p.id_producto_padre ?? null,
-          nombreVariante: p.nombre_variante ?? null,
         })).filter((p: ProductoItem) => p.idProducto > 0 && !!p.nombre);
         if (!silent) this.loading = false;
       },
