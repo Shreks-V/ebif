@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
 import { ReciboItem } from '../../../shared/models/recibo.models';
+import { formatReciboDateOnly } from '../recibos-date.utils';
 
 interface MetodoPagoItem { idMetodoPago?: number; nombre: string; monto: number; }
 interface ReciboInput {
@@ -27,6 +28,10 @@ export class DetalleReciboModalComponent implements OnChanges {
 
   constructor(private readonly api: ApiService) {}
 
+  formatFechaRecibo(fecha?: string | null): string {
+    return formatReciboDateOnly(fecha);
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['recibo'] && this.recibo) {
       this.items = [];
@@ -43,6 +48,7 @@ export class DetalleReciboModalComponent implements OnChanges {
     const r = this.recibo;
     const items = this.items;
     const fmtMoney = (n: number) => `$${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}`;
+    const fechaVenta = this.formatFechaRecibo(r.fechaVenta);
     const itemsRows = items.map(item => `
       <tr>
         <td>${item.tipo === 'PRODUCTO' ? 'Producto' : 'Servicio'}</td>
@@ -89,7 +95,7 @@ export class DetalleReciboModalComponent implements OnChanges {
         </div>
         <div>
           <div class="folio">${r.folioVenta}</div>
-          <div class="folio-date">${r.fechaVenta}</div>
+          <div class="folio-date">${fechaVenta}</div>
         </div>
       </div>
       <div class="info-grid">

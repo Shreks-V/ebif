@@ -13,6 +13,7 @@ import { CancelarReciboModalComponent } from './modals/cancelar-recibo-modal.com
 import { PagoReciboModalComponent } from './modals/pago-recibo-modal.component';
 import { Recibo as ReciboAPI, MetodoPagoReciboItem } from '../../shared/models/recibo.models';
 import { ACTION_NUEVO, DEFAULT_PAGE_SIZE } from '../../shared/constants/app.constants';
+import { formatReciboDateOnly } from './recibos-date.utils';
 
 interface MetodoPagoItem {
   idMetodoPago: number;
@@ -257,6 +258,10 @@ export class RecibosComponent implements OnInit {
       'PENDIENTE': 'text-amber-600',
     };
     return map[label] || 'text-slate-700';
+  }
+
+  formatFechaRecibo(fecha?: string | null): string {
+    return formatReciboDateOnly(fecha);
   }
 
   // ── Private helpers ──
