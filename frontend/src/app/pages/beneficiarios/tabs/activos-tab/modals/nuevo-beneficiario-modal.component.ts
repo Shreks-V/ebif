@@ -41,19 +41,25 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
   readonly diasDisponibles = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
   readonly aniosDisponibles = Array.from({ length: new Date().getFullYear() - 1920 + 1 }, (_, i) => String(new Date().getFullYear() - i));
 
-  get fechaNacDia(): string { return this.formData.fecha_nacimiento?.split('-')[2] ?? ''; }
-  set fechaNacDia(v: string) { this._setFechaNac(undefined, undefined, v); }
+  private fechaNacAnioValue = '';
+  private fechaNacMesValue = '';
+  private fechaNacDiaValue = '';
 
-  get fechaNacMes(): string { return this.formData.fecha_nacimiento?.split('-')[1] ?? ''; }
-  set fechaNacMes(v: string) { this._setFechaNac(undefined, v); }
+  get fechaNacDia(): string { return this.fechaNacDiaValue; }
+  set fechaNacDia(v: string) { this.fechaNacDiaValue = v; this._setFechaNac(); }
 
-  get fechaNacAnio(): string { return this.formData.fecha_nacimiento?.split('-')[0] ?? ''; }
-  set fechaNacAnio(v: string) { this._setFechaNac(v); }
+  get fechaNacMes(): string { return this.fechaNacMesValue; }
+  set fechaNacMes(v: string) { this.fechaNacMesValue = v; this._setFechaNac(); }
 
-  private _setFechaNac(anio?: string, mes?: string, dia?: string): void {
-    const [a, m, d] = this.formData.fecha_nacimiento?.split('-') ?? ['', '', ''];
-    const na = anio ?? a; const nm = mes ?? m; const nd = dia ?? d;
-    if (na && nm && nd) this.formData.fecha_nacimiento = `${na}-${nm}-${nd}`;
+  get fechaNacAnio(): string { return this.fechaNacAnioValue; }
+  set fechaNacAnio(v: string) { this.fechaNacAnioValue = v; this._setFechaNac(); }
+
+  private _setFechaNac(): void {
+    if (this.fechaNacAnioValue && this.fechaNacMesValue && this.fechaNacDiaValue) {
+      this.formData.fecha_nacimiento = `${this.fechaNacAnioValue}-${this.fechaNacMesValue}-${this.fechaNacDiaValue}`;
+      return;
+    }
+    this.formData.fecha_nacimiento = '';
   }
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -122,10 +128,9 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
   }
 
   submitNuevoBeneficiario(): void {
-    if (!this.formData.nombre || !this.formData.apellido_paterno || !this.formData.genero ||
-        !this.formData.fecha_nacimiento || !this.formData.curp || !this.formData.tipo_cuota ||
-        !this.formData.membresia_estatus) {
-      this.nuevoError = 'Por favor completa todos los campos obligatorios marcados con *.';
+    const faltantes = this.getCamposObligatoriosFaltantes();
+    if (faltantes.length > 0) {
+      this.nuevoError = `Completa los campos obligatorios: ${faltantes.join(', ')}.`;
       return;
     }
     const curp = this.formData.curp.trim().toUpperCase();
@@ -141,6 +146,14 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
       usa_valvula: this.formDataUsaValvula ? 'S' : 'N',
       tipos_espina: this.formDataTiposEspina,
     };
+    const documentosIncompletos = this.nuevoBeneficiarioDocumentos.some(d =>
+      (d.id_tipo_documento > 0 && !d.archivo) || (d.id_tipo_documento === 0 && !!d.archivo)
+    );
+    if (documentosIncompletos) {
+      this.submittingNuevo = false;
+      this.nuevoError = 'Completa el tipo y archivo de cada documento, o elimina la fila incompleta.';
+      return;
+    }
     const documentosValidos = this.nuevoBeneficiarioDocumentos.filter(d => d.id_tipo_documento > 0 && !!d.archivo);
     this.api.createBeneficiario(payload)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -177,8 +190,26 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
     this.formDataPais = 'México';
     this.formDataUsaValvula = false;
     this.formDataTiposEspina = [];
+    this.fechaNacAnioValue = '';
+    this.fechaNacMesValue = '';
+    this.fechaNacDiaValue = '';
     this.nuevoBeneficiarioDocumentos = [{ id_tipo_documento: 0, archivo: null }];
     this.creado.emit();
+  }
+
+  private getCamposObligatoriosFaltantes(): string[] {
+    const campos: Array<[string, string]> = [
+      ['nombre', 'Nombre'],
+      ['apellido_paterno', 'Apellido paterno'],
+      ['genero', 'Genero'],
+      ['fecha_nacimiento', 'Fecha de nacimiento'],
+      ['curp', 'CURP'],
+      ['tipo_cuota', 'Tipo de cuota'],
+      ['membresia_estatus', 'Estatus de membresia'],
+    ];
+    return campos
+      .filter(([key]) => !String(this.formData[key as keyof BeneficiarioFormData] ?? '').trim())
+      .map(([, label]) => label);
   }
 
   private emptyForm(): BeneficiarioFormData {

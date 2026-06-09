@@ -2,7 +2,7 @@ import { Component, DestroyRef, EventEmitter, HostListener, Input, OnDestroy, On
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { catchError, forkJoin, map, of } from 'rxjs';
+import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../services/api.service';
 import { CuotaBadgeComponent } from '../../../../shared/components/cuota-badge/cuota-badge.component';
@@ -80,6 +80,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   ];
 
   private _refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly fotoObjectUrls = new Map<number, string>();
 
   readonly getMembresiaBadgeClass = getMembresiaBadgeClass;
   readonly getMembresiaVencimientoClass = getMembresiaVencimientoClass;
@@ -107,6 +108,7 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
     window.visualViewport?.removeEventListener('resize', this.onViewportGeometryChange);
     window.visualViewport?.removeEventListener('scroll', this.onViewportGeometryChange);
     if (this._refreshTimer) clearInterval(this._refreshTimer);
+    this.revokeFotoObjectUrls();
   }
 
   // ──────────── Data loading ────────────
@@ -205,6 +207,11 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   }
 
   private actualizarFotoEnVistas(idPaciente: number, fotoUrl: string | null): void {
+    const previous = this.fotoObjectUrls.get(idPaciente);
+    if (previous && previous !== fotoUrl) URL.revokeObjectURL(previous);
+    if (fotoUrl?.startsWith('blob:')) this.fotoObjectUrls.set(idPaciente, fotoUrl);
+    else this.fotoObjectUrls.delete(idPaciente);
+
     const update = (b: Beneficiario) => b.idPaciente === idPaciente ? { ...b, fotoUrl } : b;
     this.beneficiarios = this.beneficiarios.map(update);
     this.filteredBeneficiarios = this.filteredBeneficiarios.map(update);
@@ -220,12 +227,15 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
     if (!items.length) return;
     const requests = items.map((b) =>
       this.api.getDocumentos(b.idPaciente).pipe(
-        map((docs: Documento[]) => {
+        switchMap((docs: Documento[]) => {
           const fotoDoc = this.seleccionarDocumentoFoto(docs || []);
-          const fotoUrl = fotoDoc?.id_documento
-            ? this.api.getDocumentoArchivoUrl(b.idPaciente, Number(fotoDoc.id_documento))
-            : null;
-          return { idPaciente: b.idPaciente, fotoUrl };
+          if (!fotoDoc?.id_documento) return of({ idPaciente: b.idPaciente, fotoUrl: null });
+          return this.api.getDocumentoBlob(b.idPaciente, Number(fotoDoc.id_documento)).pipe(
+            map((blob: Blob) => ({
+              idPaciente: b.idPaciente,
+              fotoUrl: URL.createObjectURL(blob),
+            }))
+          );
         }),
         catchError(() => of({ idPaciente: b.idPaciente, fotoUrl: null }))
       )
@@ -236,6 +246,11 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
         next: (results) => results.forEach((item) => this.actualizarFotoEnVistas(item.idPaciente, item.fotoUrl)),
         error: (err) => console.error('Error al cargar fotos de beneficiarios:', err)
       });
+  }
+
+  private revokeFotoObjectUrls(): void {
+    this.fotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+    this.fotoObjectUrls.clear();
   }
 
   // ──────────── Filtering / Sorting / Pagination ────────────
@@ -362,7 +377,8 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   }
 
   onFotoActualizada(event: { idPaciente: number; fotoUrl: string }): void {
-    this.actualizarFotoEnVistas(event.idPaciente, event.fotoUrl);
+    const beneficiario = this.beneficiarios.find((b) => b.idPaciente === event.idPaciente);
+    if (beneficiario) this.cargarFotosBeneficiarios([beneficiario]);
   }
 
   confirmarDesactivar(b: Beneficiario): void { this.beneficiarioParaDesactivar = b; }
