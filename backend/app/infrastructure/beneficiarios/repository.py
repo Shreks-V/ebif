@@ -226,14 +226,22 @@ def _crear_beneficiario(data, current_user: CurrentUser | None = None):
     """Crear nuevo beneficiario con folio auto-generado."""
     with get_db() as conn:
         cur = conn.cursor()
+        # Find the next available FOLIO, skipping any that already exist
+        # (rows may exist in non-APROBADO states invisible to the list endpoint)
         cur.execute('SELECT NVL(MAX(ID_PACIENTE), 0) + 1 FROM PACIENTE')
-        next_id = cur.fetchone()[0]
+        next_id = int(cur.fetchone()[0])
         folio = f'BEN-{next_id:06d}'
+        cur.execute('SELECT COUNT(*) FROM PACIENTE WHERE FOLIO = :f', {'f': folio})
+        while cur.fetchone()[0] > 0:
+            next_id += 1
+            folio = f'BEN-{next_id:06d}'
+            cur.execute('SELECT COUNT(*) FROM PACIENTE WHERE FOLIO = :f', {'f': folio})
         payload = data.model_dump()
         tipos_ids = payload.pop('tipos_espina', None) or []
         out_id = cur.var(int)
         cur.execute("\n            INSERT INTO PACIENTE (\n                FOLIO, ACTIVO, NOMBRE, APELLIDO_PATERNO, APELLIDO_MATERNO,\n                GENERO, FECHA_NACIMIENTO, CURP, NOMBRE_PADRE_MADRE,\n                DIRECCION, COLONIA, CIUDAD, ESTADO, CODIGO_POSTAL,\n                TELEFONO_CASA, TELEFONO_CELULAR, CORREO_ELECTRONICO,\n                EN_EMERGENCIA_AVISAR_A, TELEFONO_EMERGENCIA,\n                MUNICIPIO_NACIMIENTO, ESTADO_NACIMIENTO, HOSPITAL_NACIMIENTO,\n                TIPO_SANGRE, USA_VALVULA, NOTAS_ADICIONALES,\n                FECHA_ALTA, MEMBRESIA_ESTATUS, ID_USUARIO_REGISTRO, FECHA_REGISTRO,\n                TIPO_CUOTA, ESTATUS_REGISTRO\n            ) VALUES (\n                :folio, :activo, :nombre, :apellido_paterno, :apellido_materno,\n                :genero, TO_DATE(:fecha_nacimiento, 'YYYY-MM-DD'), :curp, :nombre_padre_madre,\n                :direccion, :colonia, :ciudad, :estado, :codigo_postal,\n                :telefono_casa, :telefono_celular, :correo_electronico,\n                :en_emergencia_avisar_a, :telefono_emergencia,\n                :municipio_nacimiento, :estado_nacimiento, :hospital_nacimiento,\n                :tipo_sangre, :usa_valvula, :notas_adicionales,\n                SYSDATE, :membresia_estatus, :id_usuario_registro, SYSDATE,\n                :tipo_cuota, 'APROBADO'\n            )\n            RETURNING ID_PACIENTE INTO :out_id\n            ", {'folio': folio, 'activo': payload.get('activo', 'S'), 'nombre': payload['nombre'], 'apellido_paterno': payload['apellido_paterno'], 'apellido_materno': payload.get('apellido_materno'), 'genero': payload.get('genero'), 'fecha_nacimiento': _normalize_date_input(payload.get('fecha_nacimiento')), 'curp': encrypt(payload.get('curp')), 'nombre_padre_madre': encrypt(payload.get('nombre_padre_madre')), 'direccion': encrypt(payload.get('direccion')), 'colonia': payload.get('colonia'), 'ciudad': payload.get('ciudad'), 'estado': payload.get('estado'), 'codigo_postal': payload.get('codigo_postal'), 'telefono_casa': encrypt(payload.get('telefono_casa')), 'telefono_celular': encrypt(payload.get('telefono_celular')), 'correo_electronico': encrypt(payload.get('correo_electronico')), 'en_emergencia_avisar_a': encrypt(payload.get('en_emergencia_avisar_a')), 'telefono_emergencia': encrypt(payload.get('telefono_emergencia')), 'municipio_nacimiento': payload.get('municipio_nacimiento'), 'estado_nacimiento': payload.get('estado_nacimiento'), 'hospital_nacimiento': encrypt(payload.get('hospital_nacimiento')), 'tipo_sangre': encrypt(payload.get('tipo_sangre')), 'usa_valvula': payload.get('usa_valvula', 'N'), 'notas_adicionales': encrypt(payload.get('notas_adicionales')), 'membresia_estatus': payload.get('membresia_estatus', 'ACTIVO'), 'id_usuario_registro': current_user.get('id_usuario'), 'tipo_cuota': payload.get('tipo_cuota'), 'out_id': out_id})
-        new_id = out_id.getvalue()[0]
+        raw = out_id.getvalue()
+        new_id = raw[0] if isinstance(raw, (list, tuple)) else raw
         for tid in tipos_ids:
             cur.execute('\n                INSERT INTO PACIENTE_TIPO_ESPINA (ID_PACIENTE, ID_TIPO_ESPINA, FECHA_REGISTRO)\n                VALUES (:id_paciente, :id_tipo_espina, SYSDATE)\n                ', {'id_paciente': new_id, 'id_tipo_espina': tid})
         log_insert(conn, 'PACIENTE', new_id, current_user.get('id_usuario', 1), f'Beneficiario {folio} creado')

@@ -28,6 +28,7 @@ _SP_CANCELAR_CITA_ERRORS = {
 
 _WHERE_CITA = ' WHERE c.ID_CITA = :id_cita'
 _MSG_CITA_NO_ENCONTRADA = 'Cita no encontrada'
+_SQL_GET_CITA_ESTATUS = 'SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita'
 
 CITA_BASE_QUERY = "\n    SELECT c.ID_CITA, c.ID_PACIENTE, c.ID_USUARIO_REGISTRO,\n           c.FECHA_HORA, c.ESTATUS, c.NOTAS, c.FECHA_REGISTRO,\n           p.NOMBRE || ' ' || p.APELLIDO_PATERNO || ' ' || NVL(p.APELLIDO_MATERNO, '') AS NOMBRE_PACIENTE,\n           p.FOLIO AS FOLIO_PACIENTE\n    FROM CITA c\n    JOIN PACIENTE p ON c.ID_PACIENTE = p.ID_PACIENTE\n"
 
@@ -295,7 +296,7 @@ def _iniciar_cita(id_cita: int, _current_user: CurrentUser | None = None):
     """Marcar una cita como EN_CURSO."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(_SQL_GET_CITA_ESTATUS, {'id_cita': id_cita})
         row = cursor.fetchone()
         if row is None:
             raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
@@ -310,7 +311,7 @@ def _reprogramar_cita(id_cita: int, _current_user: CurrentUser | None = None):
     """Revertir una cita EN_CURSO de vuelta a PROGRAMADA."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(_SQL_GET_CITA_ESTATUS, {'id_cita': id_cita})
         row = cursor.fetchone()
         if row is None:
             raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)
@@ -325,7 +326,7 @@ def _completar_cita(id_cita: int, _current_user: CurrentUser | None = None):
     """Marcar una cita como COMPLETADA."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT ESTATUS FROM CITA WHERE ID_CITA = :id_cita', {'id_cita': id_cita})
+        cursor.execute(_SQL_GET_CITA_ESTATUS, {'id_cita': id_cita})
         row = cursor.fetchone()
         if row is None:
             raise NotFoundError(_MSG_CITA_NO_ENCONTRADA)

@@ -8,5 +8,5 @@ export function formatReciboDateOnly(fecha?: string | null): string {
   const slashDate = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(value);
   if (slashDate) return `${slashDate[1]}/${slashDate[2]}/${slashDate[3]}`;
 
-  return value.replace(/[T\s]\d{1,2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/, '');
+  return value.split(/[T ]/)[0];
 }
