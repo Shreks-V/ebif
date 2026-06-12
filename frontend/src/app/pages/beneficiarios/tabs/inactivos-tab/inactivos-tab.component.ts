@@ -1,18 +1,22 @@
-import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { ApiService } from '../../../../services/api.service';
-import { Beneficiario } from '../activos-tab/activos-tab.types';
+import { AvatarInicialesComponent } from '../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
+import { DetalleBeneficiarioModalComponent } from '../activos-tab/modals/detalle-beneficiario-modal.component';
+import { CredencialModalComponent } from '../activos-tab/modals/credencial-modal.component';
+import { Beneficiario, Documento } from '../activos-tab/activos-tab.types';
 import { getApiError } from '../../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-inactivos-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AvatarInicialesComponent, DetalleBeneficiarioModalComponent, CredencialModalComponent],
   templateUrl: './inactivos-tab.component.html',
 })
-export class InactivosTabComponent implements OnInit {
+export class InactivosTabComponent implements OnInit, OnDestroy {
   @Input() isAdmin = false;
   @Output() countChange = new EventEmitter<number>();
   @Output() reactivado = new EventEmitter<void>();
@@ -23,7 +27,11 @@ export class InactivosTabComponent implements OnInit {
   searchTerm = '';
   beneficiarios: Beneficiario[] = [];
   filteredBeneficiarios: Beneficiario[] = [];
+  beneficiarioParaDetalle: Beneficiario | null = null;
+  beneficiarioParaCredencial: Beneficiario | null = null;
+  beneficiarioParaReactivar: Beneficiario | null = null;
 
+  private readonly fotoObjectUrls = new Map<number, string>();
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(private readonly api: ApiService) {}
@@ -32,9 +40,14 @@ export class InactivosTabComponent implements OnInit {
     this.loadBeneficiarios();
   }
 
+  ngOnDestroy(): void {
+    this.revokeFotoObjectUrls();
+  }
+
   loadBeneficiarios(): void {
     this.loading = true;
     this.error = '';
+    this.revokeFotoObjectUrls();
     this.api.getBeneficiarios({ activo: 'N', limit: 500 })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -80,6 +93,7 @@ export class InactivosTabComponent implements OnInit {
           color: index % 2 === 0 ? 'bg-slate-400' : 'bg-slate-500',
         } as Beneficiario));
         this.filter();
+        this.cargarFotosBeneficiarios(this.beneficiarios);
         this.loading = false;
       },
       error: (err) => {
@@ -101,10 +115,18 @@ export class InactivosTabComponent implements OnInit {
     this.countChange.emit(this.filteredBeneficiarios.length);
   }
 
+  verDetalle(b: Beneficiario): void {
+    this.beneficiarioParaDetalle = b;
+  }
+
   reactivar(b: Beneficiario): void {
     if (!this.isAdmin || this.submittingFolio) return;
-    const nombre = `${b.nombre} ${b.apellidoPaterno}`.trim();
-    if (!confirm(`¿Reactivar a ${nombre}?`)) return;
+    this.beneficiarioParaReactivar = b;
+  }
+
+  confirmarReactivar(): void {
+    const b = this.beneficiarioParaReactivar;
+    if (!b || !this.isAdmin || this.submittingFolio) return;
     this.submittingFolio = b.folio;
     this.error = '';
     this.api.reactivarBeneficiario(b.folio)
@@ -112,6 +134,7 @@ export class InactivosTabComponent implements OnInit {
       .subscribe({
       next: () => {
         this.submittingFolio = null;
+        this.beneficiarioParaReactivar = null;
         this.loadBeneficiarios();
         this.reactivado.emit();
       },
@@ -120,5 +143,76 @@ export class InactivosTabComponent implements OnInit {
         this.error = getApiError(err, 'No se pudo reactivar al beneficiario.');
       },
     });
+  }
+
+  private esFormatoImagen(formato: unknown): boolean {
+    return ['JPG', 'JPEG', 'PNG', 'WEBP'].includes(String(formato || '').trim().toUpperCase()); // NOSONAR
+  }
+
+  private obtenerFechaDocumento(valor: unknown): number {
+    if (!valor) return 0;
+    const ms = new Date(valor as string | number).getTime();
+    return Number.isNaN(ms) ? 0 : ms;
+  }
+
+  private seleccionarDocumentoFoto(documentos: Documento[]): Documento | null {
+    if (!Array.isArray(documentos) || documentos.length === 0) return null;
+    const imagenes = documentos.filter((doc) => this.esFormatoImagen(doc?.formato_archivo));
+    if (!imagenes.length) return null;
+    const fotosExplicitas = imagenes.filter((doc) => {
+      const tipo = String(doc?.tipo_nombre || '').toLowerCase();
+      const nombreArchivo = String(doc?.nombre_archivo || '').toLowerCase();
+      return tipo.includes('foto') || tipo.includes('fotografia') || tipo.includes('imagen') || nombreArchivo.includes('foto');
+    });
+    const candidatas = fotosExplicitas.length ? fotosExplicitas : imagenes;
+    return [...candidatas].sort(
+      (a, b) => this.obtenerFechaDocumento(b?.fecha_carga) - this.obtenerFechaDocumento(a?.fecha_carga)
+    )[0] || null;
+  }
+
+  private actualizarFotoEnVistas(idPaciente: number, fotoUrl: string | null): void {
+    const previous = this.fotoObjectUrls.get(idPaciente);
+    if (previous && previous !== fotoUrl) URL.revokeObjectURL(previous);
+    if (fotoUrl?.startsWith('blob:')) this.fotoObjectUrls.set(idPaciente, fotoUrl);
+    else this.fotoObjectUrls.delete(idPaciente);
+
+    const update = (b: Beneficiario) => b.idPaciente === idPaciente ? { ...b, fotoUrl } : b;
+    this.beneficiarios = this.beneficiarios.map(update);
+    this.filteredBeneficiarios = this.filteredBeneficiarios.map(update);
+    if (this.beneficiarioParaDetalle?.idPaciente === idPaciente) {
+      this.beneficiarioParaDetalle = { ...this.beneficiarioParaDetalle, fotoUrl };
+    }
+    if (this.beneficiarioParaCredencial?.idPaciente === idPaciente) {
+      this.beneficiarioParaCredencial = { ...this.beneficiarioParaCredencial, fotoUrl };
+    }
+  }
+
+  private cargarFotosBeneficiarios(items: Beneficiario[]): void {
+    if (!items.length) return;
+    const requests = items.map((b) =>
+      this.api.getDocumentos(b.idPaciente).pipe(
+        switchMap((docs: Documento[]) => {
+          const fotoDoc = this.seleccionarDocumentoFoto(docs || []);
+          if (!fotoDoc?.id_documento) return of({ idPaciente: b.idPaciente, fotoUrl: null });
+          return this.api.getDocumentoBlob(b.idPaciente, Number(fotoDoc.id_documento)).pipe(
+            map((blob: Blob) => ({
+              idPaciente: b.idPaciente,
+              fotoUrl: URL.createObjectURL(blob),
+            }))
+          );
+        }),
+        catchError(() => of({ idPaciente: b.idPaciente, fotoUrl: null }))
+      )
+    );
+    forkJoin(requests)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (results) => results.forEach((item) => this.actualizarFotoEnVistas(item.idPaciente, item.fotoUrl)),
+      });
+  }
+
+  private revokeFotoObjectUrls(): void {
+    this.fotoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+    this.fotoObjectUrls.clear();
   }
 }

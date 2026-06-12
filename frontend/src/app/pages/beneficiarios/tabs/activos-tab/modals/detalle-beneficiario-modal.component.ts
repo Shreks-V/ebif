@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../../../services/api.service';
+import { ToastService } from '../../../../../core/toast.service';
 import { CuotaBadgeComponent } from '../../../../../shared/components/cuota-badge/cuota-badge.component';
 import { AvatarInicialesComponent } from '../../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
 import { Beneficiario, CobroResumen, Documento } from '../activos-tab.types';
@@ -29,7 +30,10 @@ export class DetalleBeneficiarioModalComponent implements OnChanges {
   readonly getMembresiaBadgeClass = getMembresiaBadgeClass;
   readonly getMembresiaVencimientoClass = getMembresiaVencimientoClass;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly toast: ToastService,
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['beneficiario'] && this.beneficiario) {
@@ -64,7 +68,7 @@ export class DetalleBeneficiarioModalComponent implements OnChanges {
         a.href = url; a.download = doc.nombre_archivo || `documento_${doc.id_documento}`; a.click();
         URL.revokeObjectURL(url);
       },
-      error: () => alert('No se pudo descargar el documento.'),
+      error: () => this.toast.show('No se pudo descargar el documento.', 'error'),
     });
   }
 
@@ -78,7 +82,7 @@ export class DetalleBeneficiarioModalComponent implements OnChanges {
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
       },
-      error: () => alert('Error al generar expediente'),
+      error: () => this.toast.show('Error al generar expediente', 'error'),
     });
   }
 }

@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { FooterComponent } from '../../shared/footer/footer.component';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 import { ActivosTabComponent } from './tabs/activos-tab/activos-tab.component';
 import { InactivosTabComponent } from './tabs/inactivos-tab/inactivos-tab.component';
 import { PreregistrosTabComponent } from './tabs/preregistros-tab/preregistros-tab.component';
@@ -26,9 +27,14 @@ export class BeneficiariosComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
 
-  constructor(private readonly route: ActivatedRoute, private readonly auth: AuthService) {}
+  constructor(
+    private readonly route: ActivatedRoute,
+    private readonly auth: AuthService,
+    private readonly api: ApiService,
+  ) {}
 
   ngOnInit(): void {
+    this.loadInactivosCount();
     this.route.queryParams
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
@@ -36,7 +42,25 @@ export class BeneficiariosComponent implements OnInit {
       });
   }
 
+  onBeneficiarioDesactivado(): void {
+    this.loadInactivosCount();
+  }
+
   onBeneficiarioReactivado(): void {
     this.refreshActivosKey++;
+    this.loadInactivosCount();
+  }
+
+  private loadInactivosCount(): void {
+    this.api.getBeneficiariosStats()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (stats) => {
+          this.inactivosCount = stats.inactivos ?? 0;
+        },
+        error: () => {
+          this.inactivosCount = 0;
+        },
+      });
   }
 }

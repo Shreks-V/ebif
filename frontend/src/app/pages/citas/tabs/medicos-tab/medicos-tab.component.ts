@@ -2,6 +2,7 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../services/api.service';
+import { ToastService } from '../../../../core/toast.service';
 import { ServicioRaw } from '../../../../shared/models/almacen.models';
 import { NuevoMedicoModalComponent } from './modals/nuevo-medico-modal.component';
 import { DetalleMedicoModalComponent } from './modals/detalle-medico-modal.component';
@@ -62,7 +63,10 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
   private readonly actionMenuViewportPadding = 8;
   private readonly _onViewportChange = (): void => { this._repositionMedicoMenu(); };
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly toast: ToastService,
+  ) {}
 
   ngOnInit(): void {
     this._cargarDoctores();
@@ -140,7 +144,7 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           medico.activo = previo;
-          alert(err?.error?.detail || 'No se pudo cambiar el estado del médico.');
+          this.toast.show(err?.error?.detail || 'No se pudo cambiar el estado del médico.', 'error');
         },
       });
       return;
@@ -164,7 +168,7 @@ export class MedicosTabComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         medico.activo = previo;
-        alert(err?.error?.detail || 'No se pudo cambiar el estado del médico.');
+        this.toast.show(err?.error?.detail || 'No se pudo cambiar el estado del médico.', 'error');
       },
     });
   }

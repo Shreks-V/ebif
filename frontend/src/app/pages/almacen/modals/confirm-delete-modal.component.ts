@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../core/toast.service';
 
 @Component({
   selector: 'app-confirm-delete-modal',
@@ -15,9 +16,12 @@ export class ConfirmDeleteModalComponent {
 
   submitting = false;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly toast: ToastService,
+  ) {}
 
-  confirm(): void {
+  confirmar(): void {
     if (!this.item) return;
     this.submitting = true;
     const isServicio = this.item.categoria === 'SERVICIO';
@@ -28,7 +32,7 @@ export class ConfirmDeleteModalComponent {
     obs.subscribe({
       next: () => { this.submitting = false; this.eliminado.emit(); },
       error: (err) => {
-        alert(err?.error?.detail || 'No se pudo eliminar el elemento seleccionado.');
+        this.toast.show(err?.error?.detail || 'No se pudo eliminar el elemento seleccionado.', 'error');
         this.submitting = false;
       },
     });

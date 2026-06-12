@@ -304,7 +304,7 @@ export class ComodatosTabComponent implements OnChanges {
         link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 150);
       },
-      error: () => alert('Error al generar contrato de comodato'),
+      error: () => this.toast.show('Error al generar contrato de comodato', 'error'),
     });
   }
 

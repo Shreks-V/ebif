@@ -7,6 +7,7 @@ import type { EChartsOption } from 'echarts';
 import { ApiService } from '../../../../services/api.service';
 import { ReportesApiService } from '../../../../services/reportes-api.service';
 import { ExportacionesWsService } from '../../../../services/exportaciones-ws.service';
+import { ToastService } from '../../../../core/toast.service';
 import { getApiError } from '../../../../shared/utils/error.utils';
 import { AsistenciaMensualHistorico } from '../../../../shared/models/reporte.models';
 import {
@@ -124,6 +125,7 @@ export class ReportesTabComponent implements OnInit {
     private readonly api: ApiService,
     private readonly reportesApi: ReportesApiService,
     private readonly exportWs: ExportacionesWsService,
+    private readonly toast: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -279,7 +281,7 @@ export class ReportesTabComponent implements OnInit {
 
         if (frame.error) {
           this.wsExportando = false;
-          alert('Error al generar PDF: ' + frame.error);
+          this.toast.show('Error al generar PDF: ' + frame.error, 'error');
           return;
         }
         if (frame.data && frame.filename) {
@@ -289,7 +291,7 @@ export class ReportesTabComponent implements OnInit {
       },
       error: () => {
         this.wsExportando = false;
-        alert('Error de conexión al generar PDF');
+        this.toast.show('Error de conexión al generar PDF', 'error');
       },
     });
   }
@@ -307,7 +309,7 @@ export class ReportesTabComponent implements OnInit {
     this.api.exportarReporteExcel('all', { fecha_inicio: this.sec1FechaInicio, fecha_fin: this.sec1FechaFin })
       .subscribe({
         next: (blob) => this._descargar(blob, `reportes_${this.sec1FechaInicio}_${this.sec1FechaFin}.xlsx`),
-        error: () => alert('Error al generar Excel'),
+        error: () => this.toast.show('Error al generar Excel', 'error'),
       });
   }
 
@@ -406,7 +408,7 @@ export class ReportesTabComponent implements OnInit {
   exportarPDFIndicadores(): void {
     this.api.exportarReportePdf('indicadores', { fecha_inicio: this.indicFechaInicio, fecha_fin: this.indicFechaFin }).subscribe({
       next: (blob) => this._descargar(blob, `indicadores_${this.indicFechaInicio}_${this.indicFechaFin}.pdf`),
-      error: () => alert('Error al generar PDF de indicadores'),
+      error: () => this.toast.show('Error al generar PDF de indicadores', 'error'),
     });
   }
 

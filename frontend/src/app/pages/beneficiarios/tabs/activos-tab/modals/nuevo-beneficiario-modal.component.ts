@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../../services/api.service';
+import { ToastService } from '../../../../../core/toast.service';
 import { getMunicipiosParaEstado } from '../../../../../shared/data/mexico-municipios';
 import { PAISES } from '../../../../../shared/data/paises';
 import { BeneficiarioFormData, NuevoBeneficiarioDocumento, TipoDocumento, TipoEspinaCatalogo } from '../activos-tab.types';
@@ -82,7 +83,10 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly toast: ToastService,
+  ) {}
 
   ngOnInit(): void {
     this.api.getTiposEspina()
@@ -169,7 +173,7 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
               error: (err) => {
                 console.error('Beneficiario creado, pero hubo error al subir documentos:', err);
                 this.finalizar();
-                alert('El beneficiario se creo correctamente, pero algunos documentos no se pudieron subir.');
+                this.toast.show('El beneficiario se creo correctamente, pero algunos documentos no se pudieron subir.', 'warning');
               },
             });
             return;

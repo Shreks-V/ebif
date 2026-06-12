@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../../../services/api.service';
+import { ToastService } from '../../../../../core/toast.service';
 import { Beneficiario } from '../activos-tab.types';
 
 @Component({
@@ -13,7 +14,10 @@ export class CredencialModalComponent {
   @Input() beneficiario: Beneficiario | null = null;
   @Output() closed = new EventEmitter<void>();
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly toast: ToastService,
+  ) {}
 
   get padecimiento(): string {
     const tipos = this.beneficiario?.tiposEspina;
@@ -25,7 +29,7 @@ export class CredencialModalComponent {
     if (!this.beneficiario) return;
     this.api.exportarCredencialPdf(this.beneficiario.folio).subscribe({
       next: (blob) => this.abrirPdfEnNuevaTab(blob, `credencial_${this.beneficiario!.folio}.pdf`),
-      error: () => alert('Error al generar credencial'),
+      error: () => this.toast.show('Error al generar credencial', 'error'),
     });
   }
 
@@ -33,7 +37,7 @@ export class CredencialModalComponent {
     if (!this.beneficiario) return;
     this.api.exportarBeneficiarioPdf(this.beneficiario.folio).subscribe({
       next: (blob) => this.abrirPdfEnNuevaTab(blob, `expediente_${this.beneficiario!.folio}.pdf`),
-      error: () => alert('Error al generar expediente'),
+      error: () => this.toast.show('Error al generar expediente', 'error'),
     });
   }
 

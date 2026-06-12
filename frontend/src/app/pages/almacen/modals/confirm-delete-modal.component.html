@@ -23,7 +23,7 @@
       <div class="flex items-center justify-end gap-3">
         <button (click)="closed.emit()"
           class="px-6 py-3 rounded-xl font-semibold text-sm text-slate-600 hover:bg-slate-100 transition-colors border-2 border-slate-200">Cancelar</button>
-        <button (click)="confirm()" [disabled]="submitting"
+        <button (click)="confirmar()" [disabled]="submitting"
           class="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
           {{ submitting ? 'Eliminando...' : 'Eliminar' }}
         </button>

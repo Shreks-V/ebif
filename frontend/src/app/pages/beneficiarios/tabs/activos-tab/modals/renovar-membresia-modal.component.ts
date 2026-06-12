@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../../services/api.service';
+import { ToastService } from '../../../../../core/toast.service';
 import { Beneficiario } from '../activos-tab.types';
 import { getMembresiaBadgeClass } from '../activos-tab.utils';
 import { getApiError } from '../../../../../shared/utils/error.utils';
@@ -32,7 +33,10 @@ export class RenovarMembresiaModalComponent implements OnInit {
 
   readonly getMembresiaBadgeClass = getMembresiaBadgeClass;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly toast: ToastService,
+  ) {}
 
   get totalPagado(): number {
     if (this.renovarExento === 'S') return this.renovarMonto || 0;
@@ -81,7 +85,7 @@ export class RenovarMembresiaModalComponent implements OnInit {
     this.api.renovarMembresia(this.beneficiario.folio, payload).subscribe({
       next: (res: { folio_venta?: string }) => {
         this.renovarSubmitting = false;
-        if (res?.folio_venta) alert(`Membresía renovada. Cobro generado: ${res.folio_venta}`);
+        if (res?.folio_venta) this.toast.show(`Membresía renovada. Cobro generado: ${res.folio_venta}`, 'success');
         this.renovado.emit();
       },
       error: (err: unknown) => {

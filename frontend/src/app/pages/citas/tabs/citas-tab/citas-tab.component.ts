@@ -288,7 +288,7 @@ export class CitasTabComponent implements OnInit, OnDestroy {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (blob) => this._abrirPdfEnNuevaTab(blob),
-        error: () => alert('Error al generar comprobante'),
+        error: () => this.toast.show('Error al generar comprobante', 'error'),
       });
   }
 

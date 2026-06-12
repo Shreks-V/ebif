@@ -44,7 +44,11 @@
 
       @defer (when currentTab === 'activos') {
         <div [hidden]="currentTab !== 'activos'">
-          <app-activos-tab [isAdmin]="isAdmin" [refreshKey]="refreshActivosKey" (countChange)="beneficiariosCount = $event" />
+          <app-activos-tab
+            [isAdmin]="isAdmin"
+            [refreshKey]="refreshActivosKey"
+            (countChange)="beneficiariosCount = $event"
+            (desactivado)="onBeneficiarioDesactivado()" />
         </div>
       }
 

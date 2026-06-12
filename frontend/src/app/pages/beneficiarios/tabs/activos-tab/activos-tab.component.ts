@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../../../services/api.service';
+import { ToastService } from '../../../../core/toast.service';
 import { CuotaBadgeComponent } from '../../../../shared/components/cuota-badge/cuota-badge.component';
 import { AvatarInicialesComponent } from '../../../../shared/components/avatar-iniciales/avatar-iniciales.component';
 import { NuevoBeneficiarioModalComponent } from './modals/nuevo-beneficiario-modal.component';
@@ -41,6 +42,7 @@ export class ActivosTabComponent implements OnChanges, OnInit, OnDestroy {
   @Input() isAdmin = false;
   @Input() refreshKey = 0;
   @Output() countChange = new EventEmitter<number>();
+  @Output() desactivado = new EventEmitter<void>();
 
   loading = true;
   beneficiarios: Beneficiario[] = [];
@@ -88,7 +90,11 @@ export class ActivosTabComponent implements OnChanges, OnInit, OnDestroy {
 
   private readonly destroyRef = inject(DestroyRef);
 
-  constructor(private readonly api: ApiService, private readonly route: ActivatedRoute) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly route: ActivatedRoute,
+    private readonly toast: ToastService,
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['refreshKey'] && !changes['refreshKey'].firstChange) {
@@ -341,7 +347,7 @@ export class ActivosTabComponent implements OnChanges, OnInit, OnDestroy {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (blob) => this.descargarArchivo(blob, `beneficiarios_${new Date().toISOString().slice(0, 10)}.xlsx`),
-        error: () => alert('Error al exportar')
+        error: () => this.toast.show('Error al exportar', 'error')
       });
   }
 
@@ -394,6 +400,7 @@ export class ActivosTabComponent implements OnChanges, OnInit, OnDestroy {
   onDesactivado(): void {
     this.beneficiarioParaDesactivar = null;
     this.loadBeneficiarios();
+    this.desactivado.emit();
   }
 
   abrirRenovarModal(b: Beneficiario): void { this.beneficiarioParaRenovar = b; }
