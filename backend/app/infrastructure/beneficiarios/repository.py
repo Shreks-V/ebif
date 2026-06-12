@@ -106,7 +106,7 @@ def _dashboard_stats(_current_user: CurrentUser | None = None):
         cur.execute(f"""
             SELECT GENERO, COUNT(*) AS cnt
               FROM PACIENTE
-             WHERE {_ACTIVO_APROBADO}
+             WHERE {_ACTIVO_APROBADO} AND MEMBRESIA_ESTATUS = 'ACTIVO'
              GROUP BY GENERO
         """)
         por_genero = {'Hombre': 0, 'Mujer': 0}
@@ -114,13 +114,13 @@ def _dashboard_stats(_current_user: CurrentUser | None = None):
             genero = normalize_genero(row.get('genero'))
             if genero:
                 por_genero[genero] += int(row.get('cnt') or 0)
-        cur.execute(f"SELECT ESTADO, COUNT(*) AS cnt FROM PACIENTE WHERE {_ACTIVO_APROBADO} GROUP BY ESTADO")
+        cur.execute(f"SELECT ESTADO, COUNT(*) AS cnt FROM PACIENTE WHERE {_ACTIVO_APROBADO} AND MEMBRESIA_ESTATUS = 'ACTIVO' GROUP BY ESTADO")
         nuevo_leon = 0
         for row in rows_to_dicts(cur):
             if is_nuevo_leon(row.get('estado')):
                 nuevo_leon += int(row.get('cnt') or 0)
-        foraneos = total - nuevo_leon
-        cur.execute(f"SELECT FECHA_NACIMIENTO FROM PACIENTE WHERE {_ACTIVO_APROBADO}")
+        foraneos = activos - nuevo_leon
+        cur.execute(f"SELECT FECHA_NACIMIENTO FROM PACIENTE WHERE {_ACTIVO_APROBADO} AND MEMBRESIA_ESTATUS = 'ACTIVO'")
         fechas = [row[0] for row in cur.fetchall()]
         etapas: dict[str, int] = {}
         for fn in fechas:

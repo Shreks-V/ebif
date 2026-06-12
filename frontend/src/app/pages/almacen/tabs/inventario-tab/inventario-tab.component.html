@@ -84,7 +84,7 @@
 
 <!-- Inventory Table -->
 <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-  <div>
+  <div class="overflow-auto max-h-[calc(100vh-520px)]">
     <table class="w-full text-sm">
       <thead class="sticky top-0 z-20 shadow-sm bg-slate-50">
         <tr class="bg-slate-50 border-b border-slate-200">
@@ -208,7 +208,8 @@
         }
       </tbody>
     </table>
-    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+  </div>
+  <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
       <span class="text-sm text-slate-500 font-medium">Mostrando {{ start + 1 }}–{{ end }} de {{ filteredRows.length }} productos</span>
       <div class="flex items-center gap-2">
         <button (click)="page > 1 && (page = page - 1)" [disabled]="page <= 1"
@@ -217,7 +218,6 @@
         <button (click)="page < totalPages && (page = page + 1)" [disabled]="page >= totalPages"
           class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Siguiente</button>
       </div>
-    </div>
   </div>
 </div>
 </div><!-- /space-y-5 -->

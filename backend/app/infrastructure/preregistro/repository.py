@@ -161,7 +161,7 @@ def _listar_preregistros(
 def _llamar_sp_crear_paciente(conn, cursor, folio: str, data) -> int:
     """Llama SP_REGISTRAR_PACIENTE_COMPLETO y devuelve el nuevo ID_PACIENTE."""
     fecha_nac = datetime.strptime(str(data.fecha_nacimiento)[:10], '%Y-%m-%d') if data.fecha_nacimiento else None
-    tipos_arr = make_number_list(conn, [int(t) for t in data.tipos_espina])
+    tipos_arr = make_number_list(conn, [int(t) for t in (data.tipos_espina or [])])
     id_out = cursor.var(int)
     try:
         cursor.callproc('SP_REGISTRAR_PACIENTE_COMPLETO', [
@@ -203,8 +203,6 @@ def _corregir_post_sp(cursor, new_id: int, paso_actual: int | None) -> None:
 
 def _crear_preregistro(data) -> dict:
     """Enviar un nuevo pre-registro vía SP_REGISTRAR_PACIENTE_COMPLETO."""
-    if not data.tipos_espina:
-        raise ValidationError('Debe especificar al menos un tipo de espina bífida')
     with get_db() as conn:
         cursor = conn.cursor()
         folio = _generar_folio_preregistro(cursor)

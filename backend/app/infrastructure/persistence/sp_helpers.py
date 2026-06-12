@@ -83,8 +83,8 @@ def sp_error_to_http(
     ``override_detail`` can be None to use a safe generic message.
     Callers should ``raise sp_error_to_http(...)`` as before.
     """
-    code, _ = parse_ora_error(exc)
+    code, msg = parse_ora_error(exc)
     if code is not None and code in code_map:
         status, detail = code_map[code]
-        return _http_status_to_domain(status, detail or "No se pudo completar la operación solicitada")
+        return _http_status_to_domain(status, detail or msg or "No se pudo completar la operación solicitada")
     return _http_status_to_domain(default_status, default_detail)
