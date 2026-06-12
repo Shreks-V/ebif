@@ -34,6 +34,19 @@ export class RenovarMembresiaModalComponent implements OnInit {
 
   constructor(private readonly api: ApiService) {}
 
+  get totalPagado(): number {
+    if (this.renovarExento === 'S') return this.renovarMonto || 0;
+    return this.renovarMetodosPago.reduce((sum, mp) => sum + (Number(mp.monto) || 0), 0);
+  }
+
+  get saldoPendiente(): number {
+    return Math.max(0, (Number(this.renovarMonto) || 0) - this.totalPagado);
+  }
+
+  get pagoExcedeTotal(): boolean {
+    return this.renovarExento !== 'S' && this.totalPagado > (Number(this.renovarMonto) || 0);
+  }
+
   ngOnInit(): void {
     this.api.getMetodosPago().subscribe({
       next: (data: MetodoPagoRaw[]) => {
@@ -52,6 +65,10 @@ export class RenovarMembresiaModalComponent implements OnInit {
     const metodosValidos = this.renovarMetodosPago.filter(m => m.id_metodo_pago > 0 && m.monto > 0);
     if (this.renovarExento !== 'S' && metodosValidos.length === 0) {
       this.renovarError = 'Agrega al menos un método de pago.';
+      return;
+    }
+    if (this.pagoExcedeTotal) {
+      this.renovarError = 'La suma de los métodos de pago no puede exceder el monto de la cuota.';
       return;
     }
     this.renovarSubmitting = true;

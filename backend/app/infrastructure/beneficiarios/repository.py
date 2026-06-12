@@ -4,7 +4,7 @@ import logging
 import oracledb
 from app.domain.beneficiarios.ports import BeneficiariosRepository
 from app.domain.shared.current_user import CurrentUser
-from app.domain.exceptions import NotFoundError, InternalError
+from app.domain.exceptions import NotFoundError, InternalError, ValidationError
 from datetime import date, datetime, timedelta
 from app.infrastructure.audit.bitacora import log_insert, log_delete
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
@@ -414,13 +414,15 @@ def _listar_membresias_proximas_a_vencer(dias: int = 30, _current_user: CurrentU
 
 def _renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None = None):
     """Renueva la membresía por 12 meses y crea el cobro correspondiente."""
-    from app.infrastructure.persistence.sp_helpers import make_number_list, sp_error_to_http
+    from app.infrastructure.persistence.sp_helpers import make_number_list, make_varchar_list, make_decimal_list, sp_error_to_http
     import oracledb
 
     monto_total = float(data.get('monto_total', 0))
     exento_pago = data.get('exento_pago', 'N')
     metodos_pago = data.get('metodos_pago', [])
     id_usuario = (current_user or {}).get('id_usuario', 1)
+    if monto_total <= 0:
+        raise ValidationError('El monto de la cuota debe ser mayor a 0.')
 
     with get_db() as conn:
         cur = conn.cursor()
@@ -445,11 +447,19 @@ def _renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None 
         # 2. Crear cobro vía SP (igual que cualquier venta normal)
         metodos_ids   = [int(mp['id_metodo_pago']) for mp in metodos_pago if mp.get('monto', 0) > 0]
         metodos_montos = [float(mp['monto']) for mp in metodos_pago if mp.get('monto', 0) > 0]
+        total_pagado = round(sum(metodos_montos), 2)
+        if exento_pago != 'S' and not metodos_ids:
+            raise ValidationError('Agrega al menos un método de pago.')
+        if exento_pago != 'S' and total_pagado > round(monto_total, 2):
+            raise ValidationError('La suma de los métodos de pago no puede exceder el monto de la cuota.')
 
-        productos_arr  = make_number_list(conn, [])
-        cantidades_arr = make_number_list(conn, [])
-        metodos_arr    = make_number_list(conn, metodos_ids)
-        montos_arr     = make_number_list(conn, metodos_montos)
+        linea_tipos_arr = make_varchar_list(conn, ['SERVICIO'])
+        linea_ids_arr = make_number_list(conn, [0])
+        linea_descs_arr = make_varchar_list(conn, ['Renovación de membresía'])
+        linea_precios_arr = make_decimal_list(conn, [monto_total])
+        linea_cantidades_arr = make_number_list(conn, [1])
+        metodos_arr = make_number_list(conn, [] if exento_pago == 'S' else metodos_ids)
+        montos_arr = make_decimal_list(conn, [] if exento_pago == 'S' else metodos_montos)
 
         id_venta_out = cur.var(int)
         folio_venta_out = cur.var(str)
@@ -459,8 +469,11 @@ def _renovar_membresia(folio: str, data: dict, current_user: CurrentUser | None 
                 id_usuario,
                 monto_total,
                 exento_pago,
-                productos_arr,
-                cantidades_arr,
+                linea_tipos_arr,
+                linea_ids_arr,
+                linea_descs_arr,
+                linea_precios_arr,
+                linea_cantidades_arr,
                 metodos_arr,
                 montos_arr,
                 id_venta_out,
