@@ -181,7 +181,10 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
   private addMarker(b: MapBeneficiario): void {
     if (b.lat == null || b.lng == null) return;
     const jitter = () => (Math.random() - 0.5) * 0.01; // NOSONAR: jitter visual de marcadores en el mapa, sin uso criptográfico
-    const cuotaLabel = b.tipoCuota === 'CUOTA B' ? 'Cuota B' : b.tipoCuota === 'CUOTA A' ? 'Cuota A' : 'Por definir';
+    let cuotaLabel: string;
+    if (b.tipoCuota === 'CUOTA B') { cuotaLabel = 'Cuota B'; }
+    else if (b.tipoCuota === 'CUOTA A') { cuotaLabel = 'Cuota A'; }
+    else { cuotaLabel = 'Por definir'; }
     const comodatoTag = b.tieneComodato
       ? '<span style="background:#059669;color:#fff;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;margin-left:4px">Material prestado</span>'
       : '';
