@@ -204,7 +204,6 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
       ['genero', 'Genero'],
       ['fecha_nacimiento', 'Fecha de nacimiento'],
       ['curp', 'CURP'],
-      ['tipo_cuota', 'Tipo de cuota'],
       ['membresia_estatus', 'Estatus de membresia'],
     ];
     return campos
@@ -218,7 +217,7 @@ export class NuevoBeneficiarioModalComponent implements OnInit {
       fecha_nacimiento: '', curp: '', nombre_padre_madre: '', direccion: '',
       colonia: '', ciudad: '', estado: '', codigo_postal: '', telefono_casa: '',
       telefono_celular: '', correo_electronico: '', en_emergencia_avisar_a: '',
-      telefono_emergencia: '', tipo_sangre: '', usa_valvula: 'N', tipo_cuota: '', membresia_estatus: '',
+      telefono_emergencia: '', tipo_sangre: '', usa_valvula: 'N', tipo_cuota: 'POR DEFINIR', membresia_estatus: '',
     };
   }
 }

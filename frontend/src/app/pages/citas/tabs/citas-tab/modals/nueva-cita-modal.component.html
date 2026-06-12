@@ -65,6 +65,34 @@
         </select>
       </div>
 
+      <!-- Disponibilidad del doctor -->
+      @if (nuevaCitaIdDoctor) {
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          @if (loadingDisponibilidad) {
+            <p class="text-xs text-slate-400 text-center py-1">Cargando disponibilidad...</p>
+          } @else if (disponibilidadPorDia.length === 0) {
+            <div class="flex items-center gap-2 text-amber-700">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <p class="text-xs font-semibold">Sin disponibilidad registrada para este doctor.</p>
+            </div>
+          } @else {
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Horarios disponibles</p>
+            <div class="space-y-1">
+              @for (dia of disponibilidadPorDia; track dia.dia) {
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-bold text-slate-700 w-20 shrink-0">{{ dia.nombre }}:</span>
+                  @for (slot of dia.slots; track slot.id_disponibilidad) {
+                    <span class="px-2 py-0.5 bg-[#00328b]/10 text-[#00328b] rounded-full text-xs font-semibold">
+                      {{ slot.hora_inicio }} – {{ slot.hora_fin }}
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
       <!-- Servicios — catálogo estilo cobro -->
       <div>
         <span class="block text-sm font-semibold text-slate-700 mb-1.5">Servicios</span>

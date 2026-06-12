@@ -9,18 +9,6 @@ import { FooterComponent } from '../../shared/footer/footer.component';
 import { ApiService } from '../../services/api.service';
 import { GEOCODING_DELAY_MS, SI } from '../../shared/constants/app.constants';
 
-// Fix default Leaflet marker icons (broken with bundlers)
-const iconDefault = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-L.Marker.prototype.options.icon = iconDefault;
-
 interface MapBeneficiario {
   id: number;
   folio: string;
@@ -28,6 +16,7 @@ interface MapBeneficiario {
   ciudad: string;
   estado: string;
   tipoCuota: string;
+  tieneComodato: boolean;
   lat?: number;
   lng?: number;
   geocodingFailed?: boolean;
@@ -50,9 +39,11 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
   geocodingTotal = 0;
   filtroCuota: '' | 'CUOTA A' | 'CUOTA B' = '';
   filtroEstado = '';
+  filtroComodato: '' | 'con-comodato' | 'sin-comodato' = '';
   estados: string[] = [];
   private geocodeCache: Record<string, { lat: number; lng: number }> = {};
   private _geocodingTimer: ReturnType<typeof setTimeout> | null = null;
+  private pacientesConComodato = new Set<number>();
 
   private readonly destroyRef = inject(DestroyRef);
 
@@ -67,7 +58,7 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.initMap();
-    this.loadBeneficiarios();
+    this.loadComodatosYBeneficiarios();
   }
 
   ngOnDestroy(): void {
@@ -86,6 +77,22 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
     }).addTo(this.map);
   }
 
+  private loadComodatosYBeneficiarios(): void {
+    this.api.getComodatos()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (comodatos) => {
+          this.pacientesConComodato = new Set(
+            comodatos
+              .filter((c: { estatus?: string; id_paciente?: number }) => c.estatus === 'PRESTADO' && c.id_paciente)
+              .map((c: { id_paciente: number }) => c.id_paciente)
+          );
+          this.loadBeneficiarios();
+        },
+        error: () => { this.loadBeneficiarios(); },
+      });
+  }
+
   private loadBeneficiarios(): void {
     this.api.getBeneficiarios({ activo: SI, limit: 500 })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -98,6 +105,7 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
             ciudad: b.ciudad ?? '',
             estado: b.estado ?? '',
             tipoCuota: b.tipo_cuota ?? b.tipoCuota ?? '',
+            tieneComodato: this.pacientesConComodato.has(b.id_paciente ?? b.idPaciente),
           }));
           this.estados = [...new Set(this.beneficiarios.map(b => b.estado).filter(Boolean))].sort((a, b) => a.localeCompare(b));
           this.loading = false;
@@ -151,18 +159,42 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
     return new Promise(resolve => { this._geocodingTimer = setTimeout(resolve, ms); });
   }
 
+  private createMarkerIcon(tipoCuota: string, tieneComodato: boolean): L.DivIcon {
+    const esCuotaB = tipoCuota === 'CUOTA B';
+    const esPorDefinir = !tipoCuota || tipoCuota === 'POR DEFINIR';
+    let color = '#00328b';
+    if (esCuotaB) color = '#7c3aed';
+    else if (esPorDefinir) color = '#64748b';
+
+    const ring = tieneComodato
+      ? `outline: 3px solid #059669; outline-offset: 2px; border-radius: 50%;`
+      : '';
+    return L.divIcon({
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);${ring}"></div>`,
+      className: '',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+      popupAnchor: [0, -10],
+    });
+  }
+
   private addMarker(b: MapBeneficiario): void {
     if (b.lat == null || b.lng == null) return;
     const jitter = () => (Math.random() - 0.5) * 0.01; // NOSONAR: jitter visual de marcadores en el mapa, sin uso criptográfico
-    const marker = L.marker([b.lat + jitter(), b.lng + jitter()])
+    const cuotaLabel = b.tipoCuota === 'CUOTA B' ? 'Cuota B' : b.tipoCuota === 'CUOTA A' ? 'Cuota A' : 'Por definir';
+    const comodatoTag = b.tieneComodato
+      ? '<span style="background:#059669;color:#fff;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;margin-left:4px">Material prestado</span>'
+      : '';
+    const marker = L.marker([b.lat + jitter(), b.lng + jitter()], { icon: this.createMarkerIcon(b.tipoCuota, b.tieneComodato) })
       .bindPopup(`
-        <div style="font-family:sans-serif;min-width:160px">
+        <div style="font-family:sans-serif;min-width:180px">
           <p style="font-weight:800;font-size:14px;margin:0 0 4px">${b.nombre}</p>
           <p style="color:#666;font-size:12px;margin:0 0 2px">Folio: <b>${b.folio}</b></p>
           <p style="color:#666;font-size:12px;margin:0 0 6px">${b.ciudad}${b.ciudad && b.estado ? ', ' : ''}${b.estado}</p>
-          <span style="background:#00328b;color:#fff;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">
-            ${b.tipoCuota === 'CUOTA B' ? 'Cuota B' : 'Cuota A'}
-          </span>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            <span style="background:#00328b;color:#fff;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">${cuotaLabel}</span>
+            ${comodatoTag}
+          </div>
         </div>
       `)
       .addTo(this.map);
@@ -175,6 +207,8 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
     const filtered = this.beneficiarios.filter(b => {
       if (this.filtroCuota && b.tipoCuota !== this.filtroCuota) return false;
       if (this.filtroEstado && b.estado !== this.filtroEstado) return false;
+      if (this.filtroComodato === 'con-comodato' && !b.tieneComodato) return false;
+      if (this.filtroComodato === 'sin-comodato' && b.tieneComodato) return false;
       return b.lat != null && b.lng != null;
     });
     filtered.forEach(b => this.addMarker(b));
@@ -190,5 +224,9 @@ export class MapaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get beneficiariosSinUbicacion(): number {
     return this.beneficiarios.filter(b => b.geocodingFailed).length;
+  }
+
+  get beneficiariosConComodato(): number {
+    return this.beneficiarios.filter(b => b.tieneComodato).length;
   }
 }

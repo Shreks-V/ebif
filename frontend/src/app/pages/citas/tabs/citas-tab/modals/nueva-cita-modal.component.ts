@@ -12,6 +12,7 @@ interface ConceptoCitaOption { id: number; nombre: string; precio: number; }
 interface ServicioCitaAgregado { id_servicio: number; nombre: string; cantidad: number; monto_pagado: number; }
 interface MedicoLocal { idDoctor: number; nombre: string; apellidoPaterno: string; especialidad?: string; }
 interface DoctorServicioRaw { id_servicio: number; }
+interface SlotDisponibilidad { id_disponibilidad: number; dia_semana: number; hora_inicio: string; hora_fin: string; }
 
 @Component({
   selector: 'app-nueva-cita-modal',
@@ -39,6 +40,13 @@ export class NuevaCitaModalComponent implements OnInit {
   serviciosAgregados: ServicioCitaAgregado[] = [];
   serviciosFiltradosPorDoctor: ServicioRaw[] = [];
   errorGuardar = '';
+  disponibilidadDoctor: SlotDisponibilidad[] = [];
+  loadingDisponibilidad = false;
+
+  readonly diasSemana: Record<number, string> = {
+    1: 'Lunes', 2: 'Martes', 3: 'Miércoles',
+    4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo',
+  };
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
@@ -57,11 +65,14 @@ export class NuevaCitaModalComponent implements OnInit {
   onDoctorNuevaCitaChange(): void {
     this.cantidadesCatalogo = {};
     this.serviciosAgregados = [];
+    this.disponibilidadDoctor = [];
     if (!this.nuevaCitaIdDoctor) {
       this.serviciosFiltradosPorDoctor = this.serviciosList;
       return;
     }
     this.nuevaCitaLoadingServicios = true;
+    this.loadingDisponibilidad = true;
+
     this.api.getDoctorServicios(this.nuevaCitaIdDoctor)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -75,6 +86,25 @@ export class NuevaCitaModalComponent implements OnInit {
           this.nuevaCitaLoadingServicios = false;
         },
       });
+
+    this.api.getDoctorDisponibilidad(this.nuevaCitaIdDoctor)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (slots: SlotDisponibilidad[]) => {
+          this.disponibilidadDoctor = slots;
+          this.loadingDisponibilidad = false;
+        },
+        error: () => {
+          this.disponibilidadDoctor = [];
+          this.loadingDisponibilidad = false;
+        },
+      });
+  }
+
+  get disponibilidadPorDia(): { dia: number; nombre: string; slots: SlotDisponibilidad[] }[] {
+    return [1, 2, 3, 4, 5, 6, 7]
+      .map(dia => ({ dia, nombre: this.diasSemana[dia], slots: this.disponibilidadDoctor.filter(s => s.dia_semana === dia) }))
+      .filter(d => d.slots.length > 0);
   }
 
   get catalogoVisible(): ConceptoCitaOption[] {
