@@ -1,11 +1,9 @@
-/**
- * 025_sp_registrar_paciente_espina_opcional.sql
- *
- * Hace que el tipo de espina bífida sea opcional en SP_REGISTRAR_PACIENTE_COMPLETO.
- * Antes: requería al menos un elemento en p_tipos_espina (error -20203).
- * Ahora: si el array está vacío o NULL, no inserta filas en PACIENTE_TIPO_ESPINA
- *        y el registro se crea igualmente.
- */
+-- 025_sp_registrar_paciente_espina_opcional.sql
+--
+-- Hace que el tipo de espina bifida sea opcional en SP_REGISTRAR_PACIENTE_COMPLETO.
+-- Antes: requeria al menos un elemento en p_tipos_espina (error -20203).
+-- Ahora: si el array esta vacio o NULL, no inserta filas en PACIENTE_TIPO_ESPINA
+--        y el registro se crea igualmente.
 
 CREATE OR REPLACE PROCEDURE SP_REGISTRAR_PACIENTE_COMPLETO (
   p_folio                 IN  VARCHAR2,

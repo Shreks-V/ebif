@@ -1,10 +1,8 @@
-/**
- * 024_fix_sp_crear_cita_traslape.sql
- *
- * Problema: SP_CREAR_CITA_CON_SERVICIOS bloqueaba nuevas citas si el paciente
- * tenía una cita COMPLETADA dentro de ±1 hora.  Sólo deben bloquear las citas
- * activas (PROGRAMADA o EN_CURSO).
- */
+-- 024_fix_sp_crear_cita_traslape.sql
+--
+-- Problema: SP_CREAR_CITA_CON_SERVICIOS bloqueaba nuevas citas si el paciente
+-- tenía una cita COMPLETADA dentro de +-1 hora.  Solo deben bloquear las citas
+-- activas (PROGRAMADA o EN_CURSO).
 
 CREATE OR REPLACE PROCEDURE SP_CREAR_CITA_CON_SERVICIOS (
   p_id_paciente         IN  NUMBER,

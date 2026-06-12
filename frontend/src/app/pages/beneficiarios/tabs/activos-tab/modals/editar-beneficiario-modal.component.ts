@@ -84,7 +84,7 @@ export class EditarBeneficiarioModalComponent implements OnChanges {
       const b = this.beneficiario;
       this.editFormData = {
         nombre: b.nombre, apellido_paterno: b.apellidoPaterno, apellido_materno: b.apellidoMaterno || '',
-        genero: b.genero, fecha_nacimiento: b.fechaNacimiento ? b.fechaNacimiento.split('T')[0] : '',
+        genero: b.genero || '', fecha_nacimiento: b.fechaNacimiento ? b.fechaNacimiento.split('T')[0] : '',
         curp: b.curp, nombre_padre_madre: b.nombrePadreMadre || '', direccion: b.direccion || '',
         colonia: b.colonia || '', ciudad: b.ciudad || '', estado: b.estado || '',
         codigo_postal: b.codigoPostal || '', telefono_casa: b.telefonoCasa || '',

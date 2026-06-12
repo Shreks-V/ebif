@@ -19,7 +19,7 @@ from app.domain.shared.current_user import CurrentUser
 from app.domain.exportaciones.entities import FilePayload
 from app.domain.exceptions import InternalError, NotFoundError, ValidationError
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
-from app.infrastructure.privacy.crypto import decrypt_row, PACIENTE_ENCRYPTED_FIELDS
+from app.infrastructure.privacy.crypto import decrypt_row, decrypt_bytes, PACIENTE_ENCRYPTED_FIELDS
 
 logger = logging.getLogger(__name__)
 
@@ -767,8 +767,12 @@ def _credencial_pdf_draw_photo(cv, _w, h, hdr_h, foto_path, theme, cm):
     cv.rect(photo_x, photo_y, photo_w, photo_h, fill=1, stroke=1)
     if foto_path:
         try:
+            from reportlab.lib.utils import ImageReader
+            raw = foto_path.read_bytes()
+            decrypted = decrypt_bytes(raw)
+            img_buf = io.BytesIO(decrypted)
             cv.drawImage(
-                str(foto_path),
+                ImageReader(img_buf),
                 photo_x + 0.05 * cm, photo_y + 0.05 * cm,
                 photo_w - 0.10 * cm, photo_h - 0.10 * cm,
                 preserveAspectRatio=True, anchor='c', mask='auto',
