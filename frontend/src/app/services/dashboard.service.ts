@@ -38,7 +38,7 @@ export class DashboardService {
     const citasHoy = res.citasHoy;
     const citas: Cita[] = citasHoy.citas || citasHoy || [];
 
-    const pacientes = this._buildPacientes(citas);
+    const pacientes = this.buildPacientes(citas);
     const doctor = this._buildDoctor(res.doctor);
 
     const recibosStats = res.recibosStats;
@@ -72,7 +72,7 @@ export class DashboardService {
     };
   }
 
-  private _buildPacientes(citas: Cita[]): PacienteDashboard[] {
+  buildPacientes(citas: Cita[]): PacienteDashboard[] {
     return citas
       .filter(c => c.estatus === 'PROGRAMADA' || c.estatus === 'EN_CURSO')
       .map((cita, i) => {

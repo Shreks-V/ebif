@@ -577,7 +577,7 @@ def _reporte_por_ciudad(_current_user: CurrentUser | None = None):
             cursor.execute(
                 "SELECT INITCAP(TRIM(NVL(CIUDAD,'Sin dato'))) AS label, "
                 "INITCAP(TRIM(NVL(ESTADO,'Sin dato'))) AS estado, COUNT(*) AS cnt "
-                "FROM PACIENTE WHERE ACTIVO='S' "
+                "FROM PACIENTE WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO' "
                 "GROUP BY INITCAP(TRIM(NVL(CIUDAD,'Sin dato'))), INITCAP(TRIM(NVL(ESTADO,'Sin dato'))) "
                 "ORDER BY cnt DESC"
             )
@@ -597,7 +597,7 @@ def _reporte_por_ciudad(_current_user: CurrentUser | None = None):
 
 def _count_genero_activos(cursor) -> tuple[int, int]:
     """Query PACIENTE and return (hombres, mujeres) counts for active records."""
-    cursor.execute("SELECT NVL(GENERO,'') AS genero, COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY GENERO")
+    cursor.execute("SELECT NVL(GENERO,'') AS genero, COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO' GROUP BY GENERO")
     hombres = mujeres = 0
     for r in rows_to_dicts(cursor):
         genero = _genero_label(r.get('genero'))
@@ -613,7 +613,7 @@ def _fetch_municipios_nl(cursor, reside_nl_expr: str) -> list[dict]:
     """Query active patients in N.L. and return normalized municipio list."""
     cursor.execute(
         "SELECT UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) AS ciudad, COUNT(*) AS cnt FROM PACIENTE "
-        f"WHERE ACTIVO='S' AND {reside_nl_expr} "
+        f"WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO' AND {reside_nl_expr} "
         "GROUP BY UPPER(TRIM(NVL(CIUDAD,'Sin dato'))) ORDER BY cnt DESC"
     )
     mun_rows = rows_to_dicts(cursor)
@@ -628,7 +628,7 @@ def _process_curp_cross(cursor, etapa_expr: str) -> tuple[dict, dict, dict]:
     """Build three cross tables (por CURP origin / gender) from a single patient scan."""
     cursor.execute(
         f"SELECT {etapa_expr} AS etapa, NVL(GENERO,'') AS genero, CURP AS curp "
-        "FROM PACIENTE WHERE ACTIVO='S'"
+        "FROM PACIENTE WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO'"
     )
     t1_cross: dict = {}
     t2_cross: dict = {}
@@ -649,7 +649,7 @@ def _build_t6_etapa_genero(cursor, etapa_expr: str, etapas: list[str]) -> list[d
     """Build gender-by-etapa table (t6) including a totals row."""
     cursor.execute(
         f"SELECT {etapa_expr} AS etapa, NVL(GENERO,'') AS genero, COUNT(*) AS cnt "
-        f"FROM PACIENTE WHERE ACTIVO='S' GROUP BY {etapa_expr}, GENERO"
+        f"FROM PACIENTE WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO' GROUP BY {etapa_expr}, GENERO"
     )
     genero_etapa: dict = {}
     for r in rows_to_dicts(cursor):
@@ -694,10 +694,10 @@ def _indicadores_desempeno(fecha_inicio: str | None=None, fecha_fin: str | None=
         with get_db() as conn:
             cursor = conn.cursor()
 
-            cursor.execute("SELECT COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S'")
+            cursor.execute("SELECT COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO'")
             activos = int((row_to_dict(cursor) or {}).get('cnt') or 0)
 
-            cursor.execute(f"SELECT COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' AND {periodo_clause}", periodo_params)
+            cursor.execute(f"SELECT COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO' AND {periodo_clause}", periodo_params)
             nuevos = int((row_to_dict(cursor) or {}).get('cnt') or 0)
 
             hombres, mujeres = _count_genero_activos(cursor)
@@ -717,7 +717,7 @@ def _indicadores_desempeno(fecha_inicio: str | None=None, fecha_fin: str | None=
             t4_cross = _run_cross(cursor,
                 f"SELECT {ETAPA_EXPR} AS etapa, "
                 f"CASE WHEN {RESIDE_NL_EXPR} THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END AS col_val, "
-                f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
+                f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO' GROUP BY {ETAPA_EXPR}, "
                 f"CASE WHEN {RESIDE_NL_EXPR} THEN 'Viven en N.L.' ELSE 'Viven en otros estados' END"
             )
             t4 = _build_indicadores_rows(t4_cross, ['Viven en N.L.', 'Viven en otros estados'], ETAPAS)
@@ -725,7 +725,7 @@ def _indicadores_desempeno(fecha_inicio: str | None=None, fecha_fin: str | None=
             t5_cross = _run_cross(cursor,
                 f"SELECT {ETAPA_EXPR} AS etapa, "
                 "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%EXTRAN%' THEN 'Nac. extranjera' ELSE 'Mexicanos' END AS col_val, "
-                f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' GROUP BY {ETAPA_EXPR}, "
+                f"COUNT(*) AS cnt FROM PACIENTE WHERE ACTIVO='S' AND ESTATUS_REGISTRO='APROBADO' GROUP BY {ETAPA_EXPR}, "
                 "CASE WHEN UPPER(NVL(ESTADO_NACIMIENTO,'')) LIKE '%EXTRAN%' THEN 'Nac. extranjera' ELSE 'Mexicanos' END"
             )
             t5 = _build_indicadores_rows(t5_cross, ['Mexicanos', 'Nac. extranjera'], ETAPAS)

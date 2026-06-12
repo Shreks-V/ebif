@@ -528,7 +528,7 @@
               </h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label for="pr-tipo-sangre" class="block text-sm font-bold text-slate-700 mb-1">Tipo de Sangre <span class="text-red-500" aria-hidden="true">*</span></label>
+                  <label for="pr-tipo-sangre" class="block text-sm font-bold text-slate-700 mb-1">Tipo de Sangre</label>
                   <select id="pr-tipo-sangre" [(ngModel)]="formData.tipoSangre" [class]="getFieldClass('tipoSangre') + ' bg-white'">
                     <option value="">Seleccionar...</option>
                     @for (t of tiposSangre; track t) {
@@ -543,7 +543,7 @@
                   </label>
                 </div>
                 <div class="md:col-span-2">
-                  <span class="block text-sm font-bold text-slate-700 mb-2">Tipo(s) de Espina B&iacute;fida <span class="text-red-500" aria-hidden="true">*</span></span>
+                  <span class="block text-sm font-bold text-slate-700 mb-2">Tipo(s) de Espina B&iacute;fida</span>
                   <p class="text-xs text-slate-500 mb-3">Puedes seleccionar uno o m&aacute;s tipos</p>
                   @if (tiposEspinaList.length > 0) {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -567,9 +567,6 @@
                   }
                   @if (tiposEspinaList.length === 0) {
                     <p class="text-sm text-slate-400 italic">Cargando tipos...</p>
-                  }
-                  @if (validationAttempted && formData.tiposEspinaIds.length === 0) {
-                    <p class="text-xs text-red-500 font-semibold mt-2">Selecciona al menos un tipo de espina b&iacute;fida</p>
                   }
                 </div>
                 <div class="md:col-span-2">

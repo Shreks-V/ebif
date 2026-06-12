@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -14,6 +15,10 @@ router = APIRouter()
 _STOP_WORDS = frozenset({"de", "del", "la", "el", "los", "las", "y", "o", "en", "a", "al"})
 
 
+def _normalize(text: str) -> str:
+    return unicodedata.normalize("NFD", text).encode("ascii", "ignore").decode("ascii")
+
+
 def _tokens(text: str) -> list[str]:
     return [w for w in re.split(r"\W+", text.lower()) if w and w not in _STOP_WORDS]
 
@@ -21,7 +26,7 @@ def _tokens(text: str) -> list[str]:
 def _score_field(query: str, value: str | None, weight: int) -> int:
     if not value:
         return 0
-    q, v = query.lower().strip(), str(value).lower().strip()
+    q, v = _normalize(query.lower().strip()), _normalize(str(value).lower().strip())
     if v == q:
         return weight * 4          # coincidencia exacta
     if v.startswith(q):

@@ -193,12 +193,13 @@ export class DashboardComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (resp) => {
-          const citas = resp.citas || resp || [];
-          const nuevos = this.dashboardService['_buildPacientes'](citas);
-          this.pacientes = nuevos;
-          this.doctorTotalHoy = resp.total ?? citas.length ?? 0;
+          const citas = resp.citas ?? [];
+          this.pacientes = this.dashboardService.buildPacientes(citas);
+          this.doctorTotalHoy = resp.total ?? citas.length;
         },
-        error: () => {},
+        error: () => {
+          this.toast.show('No se pudo actualizar la lista de citas', 'error');
+        },
       });
   }
 

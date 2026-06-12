@@ -118,7 +118,7 @@ export class PreRegistroComponent implements OnInit {
     2: ['nombre', 'apellidoPaterno', 'apellidoMaterno', 'fechaNacimiento', 'sexo', 'curp', 'nombrePadreMadre'],
     3: ['pais', 'calle', 'numeroExterior', 'colonia', 'municipio', 'ciudad', 'estado', 'codigoPostal'],
     4: ['telefonoCelular', 'enEmergenciaAvisarA', 'telefonoEmergencia'],
-    5: ['tipoSangre'],
+    5: [],
   };
 
   ngOnInit(): void {
@@ -365,7 +365,6 @@ export class PreRegistroComponent implements OnInit {
 
     if (step === 2) this._validateDatosPersonales();
     if (step === 4) this._validateContacto();
-    if (step === 5 && this.formData.tiposEspinaIds.length === 0) this.invalidFields.push('tiposEspinaIds');
 
     if (this.invalidFields.length > 0) {
       if (!this.stepError) this.stepError = 'Por favor completa todos los campos obligatorios marcados con *';

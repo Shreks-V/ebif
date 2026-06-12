@@ -179,15 +179,21 @@ export class NuevoCobroComponent implements OnInit {
   }
 
   agregarSeleccionados(): void {
-    const allItems = [...this.serviciosCatalogo, ...this.laboratoriosCatalogo, ...this.productosCatalogo];
     for (const [key, cantidad] of Object.entries(this.cantidadesCatalogo)) {
       if (cantidad <= 0) continue;
-      const [tipoStr, idStr] = key.split('_');
-      const tipo = tipoStr as 'SERVICIO' | 'PRODUCTO';
+      const [tabStr, idStr] = key.split('_');
       const id = Number(idStr);
-      const found = allItems.find(c => c.tipo === tipo && c.id === id);
+      let found: ConceptoCobroOption | undefined;
+      if (tabStr === 'LABORATORIO') {
+        found = this.laboratoriosCatalogo.find(c => c.id === id);
+      } else if (tabStr === 'SERVICIO') {
+        found = this.serviciosCatalogo.find(c => c.id === id);
+      } else {
+        found = this.productosCatalogo.find(c => c.id === id);
+      }
       if (!found) continue;
       const precio = this.precioParaCuota(found);
+      const tipo = found.tipo;
       const existing = this.itemsNuevoCobro.findIndex(i => i.id === id && i.tipo === tipo);
       if (existing >= 0) {
         this.itemsNuevoCobro[existing].cantidad += cantidad;

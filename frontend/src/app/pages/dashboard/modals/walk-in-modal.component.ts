@@ -29,7 +29,7 @@ export class WalkInModalComponent implements OnInit {
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
-    this.api.getBeneficiarios({ limit: 500 }).subscribe({
+    this.api.getBeneficiarios({ limit: 500, membresia_estatus: 'ACTIVO' }).subscribe({
       next: (data) => { this.allBeneficiarios = data || []; },
       error: () => { this.error = 'No se pudieron cargar los beneficiarios'; },
     });

@@ -151,7 +151,7 @@
           </h3>
           <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
             <table class="w-full">
-              <thead class="bg-slate-50 border-b-2 border-slate-200">
+              <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th class="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">Servicio / Producto</th>
                   <th class="text-right px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">Cantidad</th>
@@ -185,7 +185,7 @@
           @if (sec1CiudadesList.length > 0) {
             <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
               <table class="w-full">
-                <thead class="bg-slate-50 border-b-2 border-slate-200">
+                <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
                   <tr>
                     <th class="text-left px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Ciudad</th>
                     <th class="text-left px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Estado</th>
@@ -217,7 +217,7 @@
           @if (sec1EstudiosList.length > 0) {
             <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
               <table class="w-full">
-                <thead class="bg-slate-50 border-b-2 border-slate-200">
+                <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
                   <tr>
                     <th class="text-left px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Estudio</th>
                     <th class="text-right px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Cantidad</th>
@@ -247,7 +247,7 @@
           @if (sec1PagosPorMetodo.length > 0) {
             <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
               <table class="w-full">
-                <thead class="bg-teal-600 text-white">
+                <thead class="bg-teal-600 text-white sticky top-0 z-10">
                   <tr>
                     <th class="text-left px-4 py-2.5 text-xs font-bold">Método</th>
                     <th class="text-right px-4 py-2.5 text-xs font-bold">Pagos</th>
@@ -408,7 +408,7 @@
           </h3>
           <div class="rounded-xl border-2 border-slate-200 overflow-hidden">
             <table class="w-full">
-              <thead class="bg-slate-50 border-b-2 border-slate-200">
+              <thead class="bg-slate-50 border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
                 <tr>
                   <th class="text-left px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Municipio / Ciudad</th>
                   <th class="text-right px-4 py-2.5 text-xs font-bold text-slate-600 uppercase">Beneficiarios</th>
@@ -442,7 +442,7 @@
             </div>
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
-                <thead class="bg-[#00328b] text-white">
+                <thead class="bg-[#00328b] text-white sticky top-0 z-10">
                   <tr>
                     <th class="text-left px-3 py-2 text-xs font-bold">Etapa de vida</th>
                     @for (col of tabla.cols; track col) {
@@ -539,7 +539,7 @@
             <h4 class="text-sm font-bold text-slate-700">Por Género</h4>
           </div>
           <table class="w-full">
-            <thead class="bg-blue-600 text-white">
+            <thead class="bg-blue-600 text-white sticky top-0 z-10">
               <tr>
                 <th class="text-left px-4 py-2.5 text-xs font-bold">Género</th>
                 <th class="text-right px-4 py-2.5 text-xs font-bold">Beneficiarios</th>
@@ -573,7 +573,7 @@
             <h4 class="text-sm font-bold text-slate-700">Por Tipo de Espina Bífida</h4>
           </div>
           <table class="w-full">
-            <thead class="bg-purple-700 text-white">
+            <thead class="bg-purple-700 text-white sticky top-0 z-10">
               <tr>
                 <th class="text-left px-4 py-2.5 text-xs font-bold">Tipo</th>
                 <th class="text-right px-4 py-2.5 text-xs font-bold">Beneficiarios</th>
@@ -612,7 +612,7 @@
             <h4 class="text-sm font-bold text-slate-700">Por Etapa de Vida</h4>
           </div>
           <table class="w-full">
-            <thead class="bg-amber-600 text-white">
+            <thead class="bg-amber-600 text-white sticky top-0 z-10">
               <tr>
                 <th class="text-left px-4 py-2.5 text-xs font-bold">Etapa</th>
                 <th class="text-right px-4 py-2.5 text-xs font-bold">Beneficiarios</th>
@@ -646,7 +646,7 @@
             <h4 class="text-sm font-bold text-slate-700">Por Estado / Procedencia</h4>
           </div>
           <table class="w-full">
-            <thead class="bg-sky-600 text-white">
+            <thead class="bg-sky-600 text-white sticky top-0 z-10">
               <tr>
                 <th class="text-left px-4 py-2.5 text-xs font-bold">Estado</th>
                 <th class="text-right px-4 py-2.5 text-xs font-bold">Beneficiarios</th>
@@ -757,7 +757,7 @@
       <!-- Tabla detalle -->
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead>
+          <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
             <tr class="bg-slate-50">
               <th class="px-4 py-2.5 text-left font-semibold text-slate-600">Mes</th>
               <th class="px-4 py-2.5 text-right font-semibold text-emerald-700">Pacientes únicos</th>
