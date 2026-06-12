@@ -36,17 +36,17 @@
         </button>
 
         <!-- Alertas de existencias -->
-        <button type="button" (click)="mostrarExistenciasBajas()" [disabled]="getBajoStockCount() === 0"
-          [class]="(activeTab === 'inventario' && quickInventoryFilter === 'existencias-bajas')
+        <button type="button" (click)="mostrarExistenciasBajas()" [disabled]="getAlertasInventarioCount() === 0"
+          [class]="(activeTab === 'inventario' && quickInventoryFilter === 'alertas')
             ? 'relative rounded-2xl p-6 shadow-lg border-2 text-left transition-all bg-amber-50 border-amber-500 ring-2 ring-amber-300 cursor-pointer'
             : 'relative bg-white rounded-2xl p-6 shadow-lg border-2 border-amber-200 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer hover:shadow-xl hover:border-amber-400'">
           <div class="absolute top-4 right-4 w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
           <svg class="w-8 h-8 text-amber-600 mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
           </svg>
-          <p class="text-4xl font-black text-slate-900">{{ getBajoStockCount() }}</p>
-          <p class="text-sm text-slate-600 mt-1">Alertas de existencias</p>
-          @if (activeTab === 'inventario' && quickInventoryFilter === 'existencias-bajas') {
+          <p class="text-4xl font-black text-slate-900">{{ getAlertasInventarioCount() }}</p>
+          <p class="text-sm text-slate-600 mt-1">Alertas de inventario</p>
+          @if (activeTab === 'inventario' && quickInventoryFilter === 'alertas') {
             <p class="text-xs text-amber-600 font-semibold mt-2">&#10003; Filtro activo</p>
           }
         </button>
@@ -71,7 +71,7 @@
       <!-- Tab Nav -->
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-1.5">
         <div class="flex gap-1.5">
-          <button (click)="activeTab = 'inventario'"
+          <button (click)="setActiveTab('inventario')"
             [class]="activeTab === 'inventario'
               ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
               : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'">
@@ -80,7 +80,7 @@
             </svg>
             Inventario
           </button>
-          <button (click)="activeTab = 'servicios'"
+          <button (click)="setActiveTab('servicios')"
             [class]="activeTab === 'servicios'
               ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
               : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'">
@@ -91,7 +91,7 @@
             </svg>
             Servicios
           </button>
-          <button (click)="activeTab = 'comodatos'"
+          <button (click)="setActiveTab('comodatos')"
             [class]="activeTab === 'comodatos'
               ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
               : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'">
@@ -100,7 +100,7 @@
             </svg>
             Comodatos
           </button>
-          <button (click)="activeTab = 'historial'"
+          <button (click)="setActiveTab('historial')"
             [class]="activeTab === 'historial'
               ? 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all bg-[#00328b] text-white shadow-lg flex items-center justify-center gap-2'
               : 'flex-1 px-6 py-3 rounded-lg font-semibold transition-all text-slate-600 hover:bg-slate-100 flex items-center justify-center gap-2'">
@@ -139,11 +139,12 @@
 
       <!-- TAB: Inventario -->
       @if (activeTab === 'inventario' && !loading) {
-        <div>
+        <div id="inventario-alertas">
           <app-inventario-tab
             [productos]="productos"
             [isAdmin]="isAdmin"
             [stockBajoIds]="stockBajoProductoIds"
+            [caducidadIds]="caducidadProductoIds"
             [quickFilter]="quickInventoryFilter"
             [selectedCategory]="selectedCategory"
             (quickFilterChange)="quickInventoryFilter = $event"

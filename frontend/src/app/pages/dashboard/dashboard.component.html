@@ -501,6 +501,7 @@
   @if (pacienteParaRecibo) {
     <app-nuevo-cobro
       [preselectedPaciente]="pacienteParaRecibo"
+      [preselectedServicios]="pacienteParaRecibo.servicios ?? []"
       [preselectedServicioId]="pacienteParaRecibo.idServicio ?? null"
       [preselectedServicioNombre]="pacienteParaRecibo.servicio ?? null"
       (closed)="onReciboCancelado()"

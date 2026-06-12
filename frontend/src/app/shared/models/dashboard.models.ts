@@ -11,6 +11,7 @@ export interface PacienteDashboard {
   iniciales: string;
   servicio: string;
   idServicio: number | null;
+  servicios: { idServicio: number; nombre: string; cantidad: number }[];
   color: string;
   estado: 'PROGRAMADA' | 'EN_CURSO';
 }

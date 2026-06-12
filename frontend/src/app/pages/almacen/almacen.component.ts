@@ -18,6 +18,8 @@ import { ProductoItem, ServicioItem, ComodatoItem } from './almacen.models';
 import { ProductoRaw, ServicioRaw, ComodatoRaw, AlmacenStats, AlmacenAlertaRaw } from '../../shared/models/almacen.models';
 import { REFRESH_INTERVAL_MS, PRINT_DELAY_MS, SI, ACTION_NUEVO } from '../../shared/constants/app.constants';
 
+type QuickInventoryFilter = 'none' | 'alertas' | 'existencias-bajas' | 'caducidad';
+
 @Component({
   selector: 'app-almacen',
   standalone: true,
@@ -39,7 +41,7 @@ import { REFRESH_INTERVAL_MS, PRINT_DELAY_MS, SI, ACTION_NUEVO } from '../../sha
 })
 export class AlmacenComponent implements OnInit, OnDestroy {
   activeTab: 'inventario' | 'servicios' | 'comodatos' | 'historial' = 'inventario';
-  quickInventoryFilter: 'none' | 'existencias-bajas' = 'none';
+  quickInventoryFilter: QuickInventoryFilter = 'none';
   selectedCategory: string | null = null;
 
   loading = true;
@@ -47,6 +49,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   servicios: ServicioItem[] = [];
   comodatos: ComodatoItem[] = [];
   stockBajoProductoIds = new Set<number>();
+  caducidadProductoIds = new Set<number>();
 
   // Print comodato (must live in parent so it's outside the hidden-during-print div)
   printingComodato: ComodatoItem | null = null;
@@ -60,6 +63,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   get debugMode(): boolean { return this.config.debug; }
 
   private _refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private _pendingInventoryFocus = false;
 
   private readonly destroyRef = inject(DestroyRef);
 
@@ -90,7 +94,14 @@ export class AlmacenComponent implements OnInit, OnDestroy {
           this.activeTab = tab;
         }
         const filter = String(params['filter'] || '').toLowerCase();
-        if (filter === 'alertas') { this.quickInventoryFilter = 'existencias-bajas'; this.activeTab = 'inventario'; }
+        if (filter === 'alertas' || filter === 'existencias-bajas' || filter === 'caducidad') {
+          this.quickInventoryFilter = filter as QuickInventoryFilter;
+          this.activeTab = 'inventario';
+          this.selectedCategory = null;
+          this._focusInventoryAlerts();
+        } else if (!filter) {
+          this.quickInventoryFilter = 'none';
+        }
         if (params['action'] === ACTION_NUEVO) {
           setTimeout(() => {
             if (this.activeTab !== 'comodatos') this.openNuevoProductoModal();
@@ -120,6 +131,8 @@ export class AlmacenComponent implements OnInit, OnDestroy {
           activo: String(p.activo ?? 'S'),
           presentacion: p.presentacion,
           dosis: p.dosis,
+          requiereCaducidad: p.requiere_caducidad,
+          fechaCaducidad: p.fecha_caducidad,
           numeroSerie: p.numero_serie,
           marca: p.marca,
           modelo: p.modelo,
@@ -130,6 +143,7 @@ export class AlmacenComponent implements OnInit, OnDestroy {
           unidadMedida: String(p.unidad_medida ?? '—'),
         })).filter((p: ProductoItem) => p.idProducto > 0 && !!p.nombre);
         if (!silent) this.loading = false;
+        this._scrollToInventoryAlertsIfReady();
       },
       error: () => { if (!silent) this.loading = false; },
     });
@@ -182,12 +196,17 @@ export class AlmacenComponent implements OnInit, OnDestroy {
     this.api.getAlmacenStats().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (stats: AlmacenStats) => {
         const stockBajo: AlmacenAlertaRaw[] = Array.isArray(stats?.stock_bajo) ? stats.stock_bajo : [];
+        const proximosVencer: AlmacenAlertaRaw[] = Array.isArray(stats?.proximos_vencer) ? stats.proximos_vencer : [];
         this.stockBajoProductoIds = new Set(
           stockBajo.map((i: AlmacenAlertaRaw) => Number(i?.id_producto)).filter((id: number) => Number.isInteger(id) && id > 0)
+        );
+        this.caducidadProductoIds = new Set(
+          proximosVencer.map((i: AlmacenAlertaRaw) => Number(i?.id_producto)).filter((id: number) => Number.isInteger(id) && id > 0)
         );
       },
       error: () => {
         this.stockBajoProductoIds.clear();
+        this.caducidadProductoIds.clear();
       },
     });
   }
@@ -198,6 +217,37 @@ export class AlmacenComponent implements OnInit, OnDestroy {
     return this.productos.filter(p =>
       p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo
     ).length;
+  }
+
+  getCaducidadCount(): number {
+    if (this.caducidadProductoIds.size > 0) return this.caducidadProductoIds.size;
+    const limite = new Date();
+    limite.setDate(limite.getDate() + 30);
+    return this.productos.filter(p => {
+      if (!p.fechaCaducidad) return false;
+      const fecha = new Date(p.fechaCaducidad);
+      return !Number.isNaN(fecha.getTime()) && fecha <= limite;
+    }).length;
+  }
+
+  getAlertasInventarioCount(): number {
+    const ids = new Set<number>();
+    const limiteCaducidad = new Date();
+    limiteCaducidad.setDate(limiteCaducidad.getDate() + 30);
+    this.productos.forEach(p => {
+      if (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo) {
+        ids.add(p.idProducto);
+      }
+      if (p.fechaCaducidad) {
+        const fecha = new Date(p.fechaCaducidad);
+        if (!Number.isNaN(fecha.getTime()) && fecha <= limiteCaducidad) {
+          ids.add(p.idProducto);
+        }
+      }
+    });
+    this.stockBajoProductoIds.forEach(id => ids.add(id));
+    this.caducidadProductoIds.forEach(id => ids.add(id));
+    return ids.size;
   }
 
   getComodatosActivosCount(): number {
@@ -211,15 +261,26 @@ export class AlmacenComponent implements OnInit, OnDestroy {
   }
 
   mostrarExistenciasBajas(): void {
-    if (this.getBajoStockCount() === 0 && this.stockBajoProductoIds.size === 0) return;
+    if (this.getAlertasInventarioCount() === 0) return;
     this.activeTab = 'inventario';
-    this.quickInventoryFilter = 'existencias-bajas';
+    this.quickInventoryFilter = 'alertas';
     this.selectedCategory = null;
+    this._focusInventoryAlerts();
   }
 
   mostrarComodatosActivos(): void {
     if (this.getComodatosActivosCount() === 0) return;
     this.activeTab = 'comodatos';
+    this.quickInventoryFilter = 'none';
+    this.selectedCategory = null;
+  }
+
+  setActiveTab(tab: 'inventario' | 'servicios' | 'comodatos' | 'historial'): void {
+    this.activeTab = tab;
+    if (tab !== 'inventario') {
+      this.quickInventoryFilter = 'none';
+      this.selectedCategory = null;
+    }
   }
 
   // ── Shared Modal: Nuevo/Editar Producto ──
@@ -275,6 +336,22 @@ export class AlmacenComponent implements OnInit, OnDestroy {
     if (value === null || value === undefined || value === '') return null;
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
+  }
+
+  private _focusInventoryAlerts(): void {
+    this._pendingInventoryFocus = true;
+    this._scrollToInventoryAlertsIfReady();
+  }
+
+  private _scrollToInventoryAlertsIfReady(): void {
+    if (!this._pendingInventoryFocus || this.loading || this.activeTab !== 'inventario') return;
+    this._pendingInventoryFocus = false;
+    setTimeout(() => {
+      globalThis.document?.getElementById('inventario-alertas')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 0);
   }
 
 }

@@ -39,6 +39,12 @@ export interface PreselectedPacienteCobro {
   tipoCuota: string;
 }
 
+export interface PreselectedCobroServicio {
+  idServicio: number;
+  nombre: string;
+  cantidad?: number;
+}
+
 @Component({
   selector: 'app-nuevo-cobro',
   standalone: true,
@@ -47,6 +53,7 @@ export interface PreselectedPacienteCobro {
 })
 export class NuevoCobroComponent implements OnInit {
   @Input() preselectedPaciente: PreselectedPacienteCobro | null = null;
+  @Input() preselectedServicios: PreselectedCobroServicio[] = [];
   @Input() preselectedServicioId: number | null = null;
   @Input() preselectedServicioNombre: string | null = null;
 
@@ -78,6 +85,9 @@ export class NuevoCobroComponent implements OnInit {
   };
 
   private static readonly CART_KEY = 'ebif_nuevo_cobro_cart';
+  private serviciosCobroCargados = false;
+  private laboratoriosCobroCargados = false;
+  private preselectedServiciosAgregados = false;
 
   constructor(private readonly api: ApiService) {}
 
@@ -88,7 +98,7 @@ export class NuevoCobroComponent implements OnInit {
     }
 
     // Restaurar carrito desde localStorage si no hay paciente preseleccionado
-    if (!this.preselectedPaciente && !this.preselectedServicioId) {
+    if (!this.preselectedPaciente && !this.preselectedServicioId && this.preselectedServicios.length === 0) {
       try {
         const saved = localStorage.getItem(NuevoCobroComponent.CART_KEY);
         if (saved) {
@@ -328,25 +338,41 @@ export class NuevoCobroComponent implements OnInit {
     });
   }
 
-  private _preAddServicio(): void {
-    if (!this.preselectedServicioId || this.itemsNuevoCobro.length > 0) return;
-    const tipoCuota = this.preselectedPaciente?.tipoCuota || 'A';
-    const found = this.serviciosCatalogo.find(s => s.id === this.preselectedServicioId);
-    if (found) {
-      let precio = tipoCuota === 'B' ? found.precioB : found.precioA;
-      if (!precio || precio <= 0) precio = found.precioDefault || 0;
+  private _serviciosPreseleccionados(): PreselectedCobroServicio[] {
+    if (this.preselectedServicios.length > 0) return this.preselectedServicios;
+    if (!this.preselectedServicioId) return [];
+    return [{
+      idServicio: this.preselectedServicioId,
+      nombre: this.preselectedServicioNombre || 'Servicio de la cita',
+      cantidad: 1,
+    }];
+  }
+
+  private _preAddServicios(): void {
+    const servicios = this._serviciosPreseleccionados();
+    if (
+      servicios.length === 0 ||
+      this.preselectedServiciosAgregados ||
+      this.itemsNuevoCobro.length > 0 ||
+      !this.serviciosCobroCargados ||
+      !this.laboratoriosCobroCargados
+    ) return;
+
+    for (const servicio of servicios) {
+      const found = this.serviciosCatalogo.find(s => s.id === servicio.idServicio)
+        || this.laboratoriosCatalogo.find(s => s.id === servicio.idServicio);
+      const cantidad = Math.max(1, Math.floor(Number(servicio.cantidad) || 1));
+      const precio = found ? this.precioParaCuota(found) : 0;
       this.itemsNuevoCobro.push({
-        tipo: 'SERVICIO', id: found.id, descripcion: found.nombre,
-        cantidad: 1, precio_unitario: precio,
-        subtotal: Number(precio.toFixed(2)),
-      });
-    } else if (this.preselectedServicioNombre) {
-      this.itemsNuevoCobro.push({
-        tipo: 'SERVICIO', id: this.preselectedServicioId,
-        descripcion: this.preselectedServicioNombre,
-        cantidad: 1, precio_unitario: 0, subtotal: 0,
+        tipo: 'SERVICIO',
+        id: found?.id ?? servicio.idServicio,
+        descripcion: found?.nombre ?? servicio.nombre,
+        cantidad,
+        precio_unitario: precio,
+        subtotal: Number((precio * cantidad).toFixed(2)),
       });
     }
+    this.preselectedServiciosAgregados = true;
     this.recalcularTotalDesdeItems();
   }
 
@@ -359,9 +385,14 @@ export class NuevoCobroComponent implements OnInit {
           precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
           precioDefault: Number(s.cuota_recuperacion ?? s.precio_cuota_a ?? s.precio_cuota_b ?? 0),
         }));
-        this._preAddServicio();
+        this.serviciosCobroCargados = true;
+        this._preAddServicios();
       },
-      error: (err) => console.error('Error al cargar servicios para cobro:', err),
+      error: (err) => {
+        this.serviciosCobroCargados = true;
+        this._preAddServicios();
+        console.error('Error al cargar servicios para cobro:', err);
+      },
     });
 
     this.api.getServicios({ activo: 'S', categoria: 'LABORATORIO' }).subscribe({
@@ -372,8 +403,14 @@ export class NuevoCobroComponent implements OnInit {
           precioB: Number(s.precio_cuota_b ?? s.cuota_recuperacion ?? 0),
           precioDefault: Number(s.cuota_recuperacion ?? s.precio_cuota_a ?? s.precio_cuota_b ?? 0),
         }));
+        this.laboratoriosCobroCargados = true;
+        this._preAddServicios();
       },
-      error: (err) => console.error('Error al cargar laboratorios para cobro:', err),
+      error: (err) => {
+        this.laboratoriosCobroCargados = true;
+        this._preAddServicios();
+        console.error('Error al cargar laboratorios para cobro:', err);
+      },
     });
 
     this.api.getProductos({ activo: 'S' }).subscribe({

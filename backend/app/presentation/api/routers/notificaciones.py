@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _WS_PUSH_INTERVAL = 60
+_ALMACEN_ALERTAS_LINK = '/almacen?tab=inventario&filter=alertas'
 
 
 def _s(n: int) -> str:
@@ -70,14 +71,14 @@ def _noti_almacen(current_user) -> list[dict]:
             'id': 'stock_bajo', 'categoria': 'almacen', 'tipo': 'warning',
             'titulo': 'Inventario en riesgo',
             'detalle': f"{stock_bajo} producto{_s(stock_bajo)} con existencias bajas.",
-            'count': stock_bajo, 'link': '/almacen',
+            'count': stock_bajo, 'link': _ALMACEN_ALERTAS_LINK,
         })
     if caducidad > 0:
         result.append({
             'id': 'caducidad', 'categoria': 'almacen', 'tipo': 'warning',
             'titulo': 'Productos por caducar',
             'detalle': f"{caducidad} producto{_s(caducidad)} próximo{_s(caducidad)} a caducar.",
-            'count': caducidad, 'link': '/almacen',
+            'count': caducidad, 'link': _ALMACEN_ALERTAS_LINK,
         })
     return result
 

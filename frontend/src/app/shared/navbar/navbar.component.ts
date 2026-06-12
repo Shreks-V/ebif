@@ -144,7 +144,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   navegarNotificacion(n: NavbarNotification): void {
     this.notificationsOpen = false;
-    this.router.navigate([n.link]);
+    if (n.categoria === 'almacen') {
+      this.router.navigate(['/almacen'], { queryParams: { tab: 'inventario', filter: 'alertas' } });
+      return;
+    }
+    this.router.navigateByUrl(n.link || '/dashboard');
   }
 
   dismissNotification(id: string, event: MouseEvent): void {

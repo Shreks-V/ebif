@@ -9,7 +9,7 @@ import {
   formatCurrency,
 } from '../../almacen.models';
 
-type QuickFilter = 'none' | 'existencias-bajas';
+type QuickFilter = 'none' | 'alertas' | 'existencias-bajas' | 'caducidad';
 
 export interface InventarioRow {
   id: number;
@@ -18,6 +18,7 @@ export interface InventarioRow {
   unidadMedida: string;
   cantidadDisponible: number | null;
   nivelMinimo: number | null;
+  fechaCaducidad?: string | null;
   precioA: number | null;
   precioB: number | null;
   estado: string;
@@ -33,6 +34,7 @@ export class InventarioTabComponent implements OnChanges {
   @Input() productos: ProductoItem[] = [];
   @Input() isAdmin = false;
   @Input() stockBajoIds: Set<number> = new Set();
+  @Input() caducidadIds: Set<number> = new Set();
   @Input() quickFilter: QuickFilter = 'none';
   @Input() selectedCategory: string | null = null;
   @Output() quickFilterChange = new EventEmitter<QuickFilter>();
@@ -87,7 +89,9 @@ export class InventarioTabComponent implements OnChanges {
   }
 
   get quickFilterLabel(): string {
+    if (this.quickFilter === 'alertas') return 'Mostrando: alertas de inventario';
     if (this.quickFilter === 'existencias-bajas') return 'Mostrando: existencias bajas';
+    if (this.quickFilter === 'caducidad') return 'Mostrando: próximos a caducar';
     return '';
   }
 
@@ -99,8 +103,10 @@ export class InventarioTabComponent implements OnChanges {
     if (showMeds) {
       this.productos.filter(p => p.tipoProducto === 'MEDICAMENTO').forEach(p => {
         let estado: string;
-        if (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo) {
+        if (this._isLowStock(p.idProducto, p.cantidadDisponible, p.nivelMinimo)) {
           estado = 'Existencias bajas';
+        } else if (this._isExpiring(p.idProducto, p.fechaCaducidad)) {
+          estado = this._isExpired(p.fechaCaducidad) ? 'Vencido' : 'Por caducar';
         } else if (p.cantidadDisponible === 0) {
           estado = 'Agotado';
         } else {
@@ -109,6 +115,7 @@ export class InventarioTabComponent implements OnChanges {
         items.push({
           id: p.idProducto, categoria: 'MEDICAMENTO', nombre: p.nombre, unidadMedida: p.unidadMedida,
           cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
+          fechaCaducidad: p.fechaCaducidad,
           precioA: p.precioA, precioB: p.precioB, estado,
         });
       });
@@ -119,7 +126,7 @@ export class InventarioTabComponent implements OnChanges {
         let estadoEq: string;
         if (p.cantidadDisponible === 0) {
           estadoEq = 'Agotado';
-        } else if (p.cantidadDisponible !== null && p.nivelMinimo !== null && p.cantidadDisponible < p.nivelMinimo) {
+        } else if (this._isLowStock(p.idProducto, p.cantidadDisponible, p.nivelMinimo)) {
           estadoEq = 'Existencias bajas';
         } else {
           estadoEq = p.estatusEquipo ?? 'N/A';
@@ -127,6 +134,7 @@ export class InventarioTabComponent implements OnChanges {
         items.push({
           id: p.idProducto, categoria: 'EQUIPO', nombre: p.nombre, unidadMedida: p.unidadMedida,
           cantidadDisponible: p.cantidadDisponible, nivelMinimo: p.nivelMinimo,
+          fechaCaducidad: null,
           precioA: p.precioA, precioB: p.precioB, estado: estadoEq,
         });
       });
@@ -179,6 +187,8 @@ export class InventarioTabComponent implements OnChanges {
     switch (estado) {
       case 'Normal': case 'DISPONIBLE': return 'bg-green-100 text-green-700';
       case 'Existencias bajas': case 'Bajo Stock': return 'bg-amber-100 text-amber-700';
+      case 'Por caducar': return 'bg-orange-100 text-orange-700';
+      case 'Vencido': return 'bg-red-100 text-red-700';
       case 'EN_PRESTAMO': return 'bg-blue-100 text-blue-700';
       case 'Agotado': return 'bg-red-100 text-red-700';
       case 'EN_MANTENIMIENTO': return 'bg-orange-100 text-orange-700';
@@ -211,10 +221,40 @@ export class InventarioTabComponent implements OnChanges {
   }
 
   private _matchesQuickFilter(item: InventarioRow): boolean {
+    if (this.quickFilter === 'alertas') {
+      return this._isLowStock(item.id, item.cantidadDisponible, item.nivelMinimo)
+        || this._isExpiring(item.id, item.fechaCaducidad);
+    }
     if (this.quickFilter === 'existencias-bajas') {
-      if (this.stockBajoIds.size > 0) return this.stockBajoIds.has(item.id);
-      return item.cantidadDisponible !== null && item.nivelMinimo !== null && item.cantidadDisponible < item.nivelMinimo;
+      return this._isLowStock(item.id, item.cantidadDisponible, item.nivelMinimo);
+    }
+    if (this.quickFilter === 'caducidad') {
+      return this._isExpiring(item.id, item.fechaCaducidad);
     }
     return true;
+  }
+
+  private _isLowStock(id: number, cantidadDisponible: number | null, nivelMinimo: number | null): boolean {
+    if (this.stockBajoIds.size > 0) return this.stockBajoIds.has(id);
+    return cantidadDisponible !== null && nivelMinimo !== null && cantidadDisponible < nivelMinimo;
+  }
+
+  private _isExpiring(id: number, fechaCaducidad?: string | null): boolean {
+    if (this.caducidadIds.size > 0) return this.caducidadIds.has(id);
+    if (!fechaCaducidad) return false;
+    const fecha = new Date(fechaCaducidad);
+    if (Number.isNaN(fecha.getTime())) return false;
+    const limite = new Date();
+    limite.setDate(limite.getDate() + 30);
+    return fecha <= limite;
+  }
+
+  private _isExpired(fechaCaducidad?: string | null): boolean {
+    if (!fechaCaducidad) return false;
+    const fecha = new Date(fechaCaducidad);
+    if (Number.isNaN(fecha.getTime())) return false;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return fecha < hoy;
   }
 }

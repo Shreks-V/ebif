@@ -168,7 +168,17 @@
                 <span class="text-slate-700">{{ item.categoria || '—' }}</span>
               </div>
             </td>
-            <td class="px-5 py-4 text-slate-800 font-medium">{{ item.nombre || '—' }}</td>
+            <td class="px-5 py-4 text-slate-800 font-medium">
+              <div>
+                <p>{{ item.nombre || '—' }}</p>
+                @if (item.fechaCaducidad && (item.estado === 'Por caducar' || item.estado === 'Vencido')) {
+                  <p class="text-xs font-semibold mt-0.5"
+                    [class]="item.estado === 'Vencido' ? 'text-red-600' : 'text-orange-600'">
+                    Caduca: {{ item.fechaCaducidad | date:'dd/MM/yyyy' }}
+                  </p>
+                }
+              </div>
+            </td>
             <td class="px-5 py-4 text-slate-600">{{ item.unidadMedida || '—' }}</td>
             <td class="px-5 py-4 text-slate-800 font-semibold">{{ item.cantidadDisponible ?? '—' }}</td>
             <td class="px-5 py-4">
@@ -281,5 +291,4 @@
     </div>
   </div>
 }
-
 

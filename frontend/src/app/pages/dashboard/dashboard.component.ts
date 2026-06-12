@@ -8,7 +8,7 @@ import { ApiService } from '../../services/api.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { ToastService } from '../../core/toast.service';
 import { WalkInModalComponent } from './modals/walk-in-modal.component';
-import { NuevoCobroComponent, PreselectedPacienteCobro } from '../recibos/nuevo-cobro/nuevo-cobro.component';
+import { NuevoCobroComponent, PreselectedCobroServicio, PreselectedPacienteCobro } from '../recibos/nuevo-cobro/nuevo-cobro.component';
 import { PacienteDashboard, AlmacenAlerta } from '../../shared/models/dashboard.models';
 import { Recibo } from '../../shared/models/recibo.models';
 import { getApiError } from '../../shared/utils/error.utils';
@@ -52,7 +52,7 @@ export class DashboardComponent implements OnInit {
   doctorHorario = '—';
 
   showWalkInModal = false;
-  pacienteParaRecibo: (PreselectedPacienteCobro & { idServicio?: number | null; servicio?: string | null; idCita?: number }) | null = null;
+  pacienteParaRecibo: (PreselectedPacienteCobro & { idServicio?: number | null; servicio?: string | null; servicios?: PreselectedCobroServicio[]; idCita?: number }) | null = null;
   pacienteAcciones: PacienteDashboard | null = null;
   private _pendingPaciente: PacienteDashboard | null = null;
 
@@ -178,6 +178,7 @@ export class DashboardComponent implements OnInit {
       tipoCuota: paciente.tipoCuota || 'A',
       idServicio: paciente.idServicio ?? null,
       servicio: paciente.servicio ?? null,
+      servicios: paciente.servicios ?? [],
       idCita: paciente.idCita,
     };
   }

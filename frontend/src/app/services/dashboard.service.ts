@@ -81,6 +81,12 @@ export class DashboardService {
         const nombre = parts[0] || '';
         const apellido = parts.slice(1).join(' ') || '';
         const iniciales = (nombre.charAt(0) + (apellido.charAt(0) || '')).toUpperCase();
+        const servicios = (cita.servicios || []).map(s => ({
+          idServicio: s.id_servicio,
+          nombre: s.nombre,
+          cantidad: Math.max(1, Math.floor(Number(s.cantidad) || 1)),
+        }));
+        const primerServicio = servicios[0] ?? null;
         let hora = '';
         if (cita.fecha_hora) {
           hora = new Date(cita.fecha_hora).toLocaleTimeString('es-MX', {
@@ -96,8 +102,9 @@ export class DashboardService {
           tipoCuota: cita.tipo_cuota || 'A',
           hora,
           iniciales,
-          servicio: cita.servicios?.[0]?.nombre || 'Consulta',
-          idServicio: cita.servicios?.[0]?.id_servicio ?? null,
+          servicio: primerServicio?.nombre || 'Consulta',
+          idServicio: primerServicio?.idServicio ?? null,
+          servicios,
           color: AVATAR_COLORS[i % AVATAR_COLORS.length],
           estado: cita.estatus === 'EN_CURSO' ? 'EN_CURSO' : 'PROGRAMADA',
         };

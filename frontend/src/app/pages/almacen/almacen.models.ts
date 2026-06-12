@@ -9,6 +9,8 @@ export interface ProductoItem {
   activo: string;
   presentacion?: string;
   dosis?: string;
+  requiereCaducidad?: string;
+  fechaCaducidad?: string | null;
   numeroSerie?: string;
   marca?: string;
   modelo?: string;
