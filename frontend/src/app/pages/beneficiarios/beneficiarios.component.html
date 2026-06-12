@@ -29,6 +29,12 @@
           Beneficiarios ({{ beneficiariosCount }})
         </button>
         <button
+          (click)="currentTab = 'inactivos'"
+          class="px-4 py-2 text-sm font-semibold transition-colors"
+          [ngClass]="currentTab === 'inactivos' ? 'text-[#00328b] border-b-2 border-[#00328b]' : 'text-slate-600 hover:text-slate-800'">
+          Inactivos ({{ inactivosCount }})
+        </button>
+        <button
           (click)="currentTab = 'preregistros'"
           class="px-4 py-2 text-sm font-semibold transition-colors"
           [ngClass]="currentTab === 'preregistros' ? 'text-[#00328b] border-b-2 border-[#00328b]' : 'text-slate-600 hover:text-slate-800'">
@@ -38,7 +44,16 @@
 
       @defer (when currentTab === 'activos') {
         <div [hidden]="currentTab !== 'activos'">
-          <app-activos-tab [isAdmin]="isAdmin" (countChange)="beneficiariosCount = $event" />
+          <app-activos-tab [isAdmin]="isAdmin" [refreshKey]="refreshActivosKey" (countChange)="beneficiariosCount = $event" />
+        </div>
+      }
+
+      @defer (when currentTab === 'inactivos') {
+        <div [hidden]="currentTab !== 'inactivos'">
+          <app-inactivos-tab
+            [isAdmin]="isAdmin"
+            (countChange)="inactivosCount = $event"
+            (reactivado)="onBeneficiarioReactivado()" />
         </div>
       }
 

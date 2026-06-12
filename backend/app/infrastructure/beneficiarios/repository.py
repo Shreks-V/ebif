@@ -6,7 +6,7 @@ from app.domain.beneficiarios.ports import BeneficiariosRepository
 from app.domain.shared.current_user import CurrentUser
 from app.domain.exceptions import NotFoundError, InternalError, ValidationError
 from datetime import date, datetime, timedelta
-from app.infrastructure.audit.bitacora import log_insert, log_delete
+from app.infrastructure.audit.bitacora import log_insert, log_delete, log_update
 from app.infrastructure.persistence.oracle import get_db, rows_to_dicts, row_to_dict
 from app.infrastructure.persistence.helpers import (
     normalize_pagination as _normalize_pagination,
@@ -176,13 +176,17 @@ def _sync_membresias_vencidas(conn) -> int:
     return updated
 
 
-def _listar_beneficiarios(nombre: str | None=None, estado: str | None=None, genero: str | None=None, busqueda: str | None=None, membresia_estatus: str | None=None, tipo_cuota: str | None=None, _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
+def _listar_beneficiarios(nombre: str | None=None, estado: str | None=None, genero: str | None=None, busqueda: str | None=None, membresia_estatus: str | None=None, tipo_cuota: str | None=None, activo: str | None='S', _current_user: CurrentUser | None = None, limit: int=100, offset: int=0):
     """Listar beneficiarios con filtros opcionales."""
     with get_db() as conn:
         safe_limit, safe_offset = _normalize_pagination(limit, offset)
         _sync_membresias_vencidas(conn)
-        conditions = ["p.ACTIVO = 'S'", "p.ESTATUS_REGISTRO = 'APROBADO'"]
         params: dict = {}
+        conditions = ["p.ESTATUS_REGISTRO = 'APROBADO'"]
+        activo_normalizado = str(activo or 'S').strip().upper()
+        if activo_normalizado != 'TODOS':
+            conditions.append('p.ACTIVO = :activo')
+            params['activo'] = 'N' if activo_normalizado == 'N' else 'S'
         if nombre:
             conditions.append('(LOWER(p.NOMBRE) LIKE :nombre OR LOWER(p.APELLIDO_PATERNO) LIKE :nombre OR LOWER(p.APELLIDO_MATERNO) LIKE :nombre)')
             params['nombre'] = f'%{nombre.lower()}%'
@@ -294,6 +298,31 @@ def _eliminar_beneficiario(folio: str, current_user: CurrentUser | None = None):
         log_delete(conn, 'PACIENTE', id_paciente, current_user.get('id_usuario', 1), f'Beneficiario {folio} desactivado')
         conn.commit()
         return {'detail': 'Beneficiario eliminado correctamente'}
+
+def _reactivar_beneficiario(folio: str, current_user: CurrentUser | None = None):
+    """Reactivar beneficiario previamente desactivado."""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute('SELECT ID_PACIENTE, ACTIVO FROM PACIENTE WHERE FOLIO = :folio', {'folio': folio})
+        row = cur.fetchone()
+        if row is None:
+            raise NotFoundError(_MSG_BENEFICIARIO_NO_ENCONTRADO)
+        id_paciente, activo_anterior = row[0], _strip_char(row[1])
+        cur.execute("UPDATE PACIENTE SET ACTIVO = 'S' WHERE FOLIO = :folio", {'folio': folio})
+        log_update(
+            conn,
+            'PACIENTE',
+            id_paciente,
+            'ACTIVO',
+            activo_anterior,
+            'S',
+            current_user.get('id_usuario', 1),
+            f'Beneficiario {folio} reactivado',
+        )
+        conn.commit()
+        cur.execute(_SELECT_PACIENTE_BY_ID, {'id': id_paciente})
+        row_dict = row_to_dict(cur)
+        return _patient_row_to_response(row_dict, conn)
 
 def _historial_beneficiario(
     folio: str,
@@ -589,8 +618,8 @@ class OracleBeneficiariosRepository(BeneficiariosRepository):
     def dashboard_stats(self, current_user=None):
         return _dashboard_stats(current_user)
 
-    def listar_beneficiarios(self, nombre=None, estado=None, genero=None, busqueda=None, membresia_estatus=None, tipo_cuota=None, current_user=None, limit=100, offset=0):
-        return _listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
+    def listar_beneficiarios(self, nombre=None, estado=None, genero=None, busqueda=None, membresia_estatus=None, tipo_cuota=None, activo='S', current_user=None, limit=100, offset=0):
+        return _listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, activo, current_user, limit, offset)
 
     def obtener_beneficiario(self, folio, current_user=None):
         return _obtener_beneficiario(folio, current_user)
@@ -603,6 +632,9 @@ class OracleBeneficiariosRepository(BeneficiariosRepository):
 
     def eliminar_beneficiario(self, folio, current_user=None):
         return _eliminar_beneficiario(folio, current_user)
+
+    def reactivar_beneficiario(self, folio, current_user=None):
+        return _reactivar_beneficiario(folio, current_user)
 
     def historial_beneficiario(self, folio, current_user=None, limit_citas=100, offset_citas=0, limit_pagos=100, offset_pagos=0, limit_comodatos=100, offset_comodatos=0):
         return _historial_beneficiario(folio, current_user, limit_citas, offset_citas, limit_pagos, offset_pagos, limit_comodatos, offset_comodatos)

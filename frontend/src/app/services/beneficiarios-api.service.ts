@@ -15,6 +15,7 @@ export interface BeneficiariosFilter {
   busqueda?: string;
   membresia_estatus?: string;
   tipo_cuota?: string;
+  activo?: string;
   limit?: number;
   offset?: number;
 }
@@ -43,6 +44,10 @@ export class BeneficiariosApiService {
 
   deleteBeneficiario(folio: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${folio}`);
+  }
+
+  reactivarBeneficiario(folio: string): Observable<Beneficiario> {
+    return this.http.patch<Beneficiario>(`${this.base}/${folio}/reactivar`, {});
   }
 
   getBeneficiarioHistorial(folio: string): Observable<HistorialData> {

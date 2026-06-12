@@ -19,6 +19,7 @@ class BeneficiariosRepository(Protocol):
         busqueda: str | None = None,
         membresia_estatus: str | None = None,
         tipo_cuota: str | None = None,
+        activo: str | None = "S",
         current_user: CurrentUser | None = None,
         limit: int = 100,
         offset: int = 0,
@@ -31,6 +32,8 @@ class BeneficiariosRepository(Protocol):
     def actualizar_beneficiario(self, folio: str, data: Any, current_user: CurrentUser | None = None) -> Beneficiario: ...
 
     def eliminar_beneficiario(self, folio: str, current_user: CurrentUser | None = None) -> None: ...
+
+    def reactivar_beneficiario(self, folio: str, current_user: CurrentUser | None = None) -> Beneficiario: ...
 
     def historial_beneficiario(
         self,

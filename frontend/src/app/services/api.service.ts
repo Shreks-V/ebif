@@ -45,6 +45,7 @@ export class ApiService {
   createBeneficiario(data: object) { return this.beneficiarios.createBeneficiario(data as Partial<Beneficiario>); } // NOSONAR: typescript:S4325
   updateBeneficiario(folio: string, data: object) { return this.beneficiarios.updateBeneficiario(folio, data as Partial<Beneficiario>); } // NOSONAR: typescript:S4325
   deleteBeneficiario(folio: string) { return this.beneficiarios.deleteBeneficiario(folio); }
+  reactivarBeneficiario(folio: string) { return this.beneficiarios.reactivarBeneficiario(folio); }
   getBeneficiarioHistorial(folio: string) { return this.beneficiarios.getBeneficiarioHistorial(folio); }
   getBeneficiariosStats() { return this.beneficiarios.getBeneficiariosStats(); }
   getDashboardStats() { return this.beneficiarios.getDashboardStats(); }

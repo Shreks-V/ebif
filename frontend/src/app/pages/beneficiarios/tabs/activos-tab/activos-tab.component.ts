@@ -1,4 +1,4 @@
-import { Component, DestroyRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -37,8 +37,9 @@ import { REFRESH_INTERVAL_MS, BLOB_REVOKE_DELAY_MS, ACTION_NUEVO, MEMBRESIA_ACTI
     CredencialModalComponent],
   templateUrl: './activos-tab.component.html',
 })
-export class ActivosTabComponent implements OnInit, OnDestroy {
+export class ActivosTabComponent implements OnChanges, OnInit, OnDestroy {
   @Input() isAdmin = false;
+  @Input() refreshKey = 0;
   @Output() countChange = new EventEmitter<number>();
 
   loading = true;
@@ -88,6 +89,13 @@ export class ActivosTabComponent implements OnInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(private readonly api: ApiService, private readonly route: ActivatedRoute) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['refreshKey'] && !changes['refreshKey'].firstChange) {
+      this.loadBeneficiarios();
+      this.loadAlertasMembresia();
+    }
+  }
 
   ngOnInit(): void {
     this.loadBeneficiarios();

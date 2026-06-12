@@ -26,11 +26,12 @@ def listar_beneficiarios(
     busqueda: Annotated[str | None, Query(max_length=120)] = None,
     membresia_estatus: Annotated[str | None, Query(max_length=40)] = None,
     tipo_cuota: Annotated[str | None, Query(max_length=10)] = None,
+    activo: Annotated[str | None, Query(max_length=10)] = 'S',
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
     current_user: Annotated[dict, Depends(get_current_user)] = None,
 ) -> list[BeneficiarioResponse]:
-    return service.listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
+    return service.listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, activo, current_user, limit, offset)
 
 @router.get('/mapa')
 def mapa_beneficiarios(current_user: Annotated[dict, Depends(get_current_user)] = None) -> list:
@@ -51,6 +52,10 @@ def actualizar_beneficiario(folio: str, data: BeneficiarioCreate, current_user: 
 @router.delete('/{folio}', status_code=200)
 def eliminar_beneficiario(folio: str, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR'))] = None) -> dict:
     return service.eliminar_beneficiario(folio, current_user)
+
+@router.patch('/{folio}/reactivar', status_code=200)
+def reactivar_beneficiario(folio: str, current_user: Annotated[dict, Depends(require_role('ADMINISTRADOR'))] = None) -> BeneficiarioResponse:
+    return service.reactivar_beneficiario(folio, current_user)
 
 @router.get('/{folio}/historial')
 def historial_beneficiario(

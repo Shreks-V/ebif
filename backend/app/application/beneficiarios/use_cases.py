@@ -19,8 +19,8 @@ class BeneficiariosService:
     def dashboard_stats(self, current_user: CurrentUser | None = None):
         return self._repository.dashboard_stats(current_user)
 
-    def listar_beneficiarios(self, nombre: str | None = None, estado: str | None = None, genero: str | None = None, busqueda: str | None = None, membresia_estatus: str | None = None, tipo_cuota: str | None = None, current_user: CurrentUser | None = None, limit: int = 100, offset: int = 0):
-        return self._repository.listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
+    def listar_beneficiarios(self, nombre: str | None = None, estado: str | None = None, genero: str | None = None, busqueda: str | None = None, membresia_estatus: str | None = None, tipo_cuota: str | None = None, activo: str | None = 'S', current_user: CurrentUser | None = None, limit: int = 100, offset: int = 0):
+        return self._repository.listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, activo, current_user, limit, offset)
 
     def obtener_beneficiario(self, folio: str, current_user: CurrentUser | None = None):
         if not folio or not folio.strip():
@@ -58,6 +58,11 @@ class BeneficiariosService:
     def eliminar_beneficiario(self, folio: str, current_user: CurrentUser | None = None):
         return self._repository.eliminar_beneficiario(folio, current_user)
 
+    def reactivar_beneficiario(self, folio: str, current_user: CurrentUser | None = None):
+        if not folio or not folio.strip():
+            raise ValidationError('El folio del beneficiario es requerido')
+        return self._repository.reactivar_beneficiario(folio.strip(), current_user)
+
     def historial_beneficiario(self, folio: str, current_user: CurrentUser | None = None, limit_citas: int = 100, offset_citas: int = 0, limit_pagos: int = 100, offset_pagos: int = 0, limit_comodatos: int = 100, offset_comodatos: int = 0):
         return self._repository.historial_beneficiario(folio, current_user, limit_citas, offset_citas, limit_pagos, offset_pagos, limit_comodatos, offset_comodatos)
 
@@ -94,8 +99,8 @@ def stats_beneficiarios(current_user: CurrentUser | None = None):
 def dashboard_stats(current_user: CurrentUser | None = None):
     return _svc().dashboard_stats(current_user)
 
-def listar_beneficiarios(nombre: str | None = None, estado: str | None = None, genero: str | None = None, busqueda: str | None = None, membresia_estatus: str | None = None, tipo_cuota: str | None = None, current_user: CurrentUser | None = None, limit: int = 100, offset: int = 0):
-    return _svc().listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, current_user, limit, offset)
+def listar_beneficiarios(nombre: str | None = None, estado: str | None = None, genero: str | None = None, busqueda: str | None = None, membresia_estatus: str | None = None, tipo_cuota: str | None = None, activo: str | None = 'S', current_user: CurrentUser | None = None, limit: int = 100, offset: int = 0):
+    return _svc().listar_beneficiarios(nombre, estado, genero, busqueda, membresia_estatus, tipo_cuota, activo, current_user, limit, offset)
 
 def obtener_beneficiario(folio: str, current_user: CurrentUser | None = None):
     return _svc().obtener_beneficiario(folio, current_user)
@@ -108,6 +113,9 @@ def actualizar_beneficiario(folio: str, data: BeneficiarioCreate, current_user: 
 
 def eliminar_beneficiario(folio: str, current_user: CurrentUser | None = None):
     return _svc().eliminar_beneficiario(folio, current_user)
+
+def reactivar_beneficiario(folio: str, current_user: CurrentUser | None = None):
+    return _svc().reactivar_beneficiario(folio, current_user)
 
 def historial_beneficiario(folio: str, current_user: CurrentUser | None = None, limit_citas: int = 100, offset_citas: int = 0, limit_pagos: int = 100, offset_pagos: int = 0, limit_comodatos: int = 100, offset_comodatos: int = 0):
     return _svc().historial_beneficiario(folio, current_user, limit_citas, offset_citas, limit_pagos, offset_pagos, limit_comodatos, offset_comodatos)
